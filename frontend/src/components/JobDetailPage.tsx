@@ -689,7 +689,7 @@ export function JobDetailPage({
           {/* Sidebar */}
           <div className="md:col-span-1 space-y-6">
             {/* Apply Card */}
-            <Card className="p-6 sticky top-20">
+            <Card className="p-6 md:sticky md:top-20">
               <div className="space-y-4">
                 {daysLeft > 0 && (
                   <Alert

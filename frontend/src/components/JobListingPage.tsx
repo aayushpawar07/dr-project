@@ -155,7 +155,6 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
         if (filters.qualification) params.qualification = filters.qualification;
         if (filters.state) params.state = filters.state;
         if (filters.city) params.city = filters.city;
-        params.openOnly = true;
 
         const res = await fetchJobs(params);
         let content = res?.content || [];

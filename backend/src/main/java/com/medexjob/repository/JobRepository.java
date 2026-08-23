@@ -128,18 +128,6 @@ public interface JobRepository extends JpaRepository<Job, UUID>, JpaSpecificatio
     @Query("SELECT j FROM Job j WHERE j.status = :status ORDER BY j.applicationsCount DESC")
     Page<Job> findJobsWithMostApplications(@Param("status") Job.JobStatus status, Pageable pageable);
 
-    // Find all active jobs that have passed their expiration date
-    @Query("SELECT j FROM Job j WHERE j.status = :status AND j.deletedAt IS NULL AND j.lastDate < :today")
-    List<Job> findExpiredActiveJobs(@Param("status") Job.JobStatus status, @Param("today") LocalDate today);
-
-    // Auto-close expired jobs in batch
-    @Modifying
-    @Transactional
-    @Query("UPDATE Job j SET j.status = :closedStatus, j.updatedAt = CURRENT_TIMESTAMP WHERE j.status = :activeStatus AND j.deletedAt IS NULL AND j.lastDate < :today")
-    int closeExpiredActiveJobs(@Param("closedStatus") Job.JobStatus closedStatus,
-                               @Param("activeStatus") Job.JobStatus activeStatus,
-                               @Param("today") LocalDate today);
-
     // Candidate-facing filter metadata. Keep it aligned with public listings so
     // draft/deleted records and the opposite sector never leak into filter options.
     @Query("SELECT DISTINCT j.category FROM Job j " +

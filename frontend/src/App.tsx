@@ -360,6 +360,14 @@ function AppContent() {
                 element={<EditJobPage onNavigate={handleNavigate} />}
               />
               <Route
+                path="/edit-job/:jobId"
+                element={<EditJobPage onNavigate={handleNavigate} />}
+              />
+              <Route
+                path="/employer/jobs/edit/:jobId"
+                element={<EditJobPage onNavigate={handleNavigate} />}
+              />
+              <Route
                 path="/admin-news"
                 element={
                   <AdminNewsManagementPage onNavigate={handleNavigate} />

@@ -20,6 +20,7 @@ import {
   Check,
   MessageCircle,
   Send,
+  Edit,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -487,15 +488,28 @@ export function JobDetailPage({
                       Featured
                     </Badge>
                   )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="ml-auto text-xs flex items-center gap-1 text-gray-600 hover:text-blue-600 hover:bg-blue-50 border-gray-300"
-                    onClick={handleNativeShare}
-                  >
-                    <Share2 className="w-3.5 h-3.5" />
-                    Share
-                  </Button>
+                  <div className="ml-auto flex items-center gap-2">
+                    {isAuthenticated && user && (user.role === "admin" || user.role === "employer") && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs flex items-center gap-1 text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-300"
+                        onClick={() => onNavigate("edit-job", job.id || jobId)}
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                        Edit Job
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs flex items-center gap-1 text-gray-600 hover:text-blue-600 hover:bg-blue-50 border-gray-300"
+                      onClick={handleNativeShare}
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                      Share
+                    </Button>
+                  </div>
                 </div>
 
                 <div>
@@ -1538,6 +1552,20 @@ export function JobDetailPage({
                           Save Job
                         </>
                       )}
+                    </Button>
+                  </>
+                )}
+
+                {isAuthenticated && user && (user.role === "admin" || user.role === "employer") && (
+                  <>
+                    <Separator />
+                    <Button
+                      variant="outline"
+                      className="w-full text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-300 font-medium"
+                      onClick={() => onNavigate("edit-job", job.id || jobId)}
+                    >
+                      <Edit className="w-4 h-4 mr-2 text-amber-700" />
+                      Edit This Job
                     </Button>
                   </>
                 )}

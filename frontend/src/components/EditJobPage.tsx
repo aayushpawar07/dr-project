@@ -124,8 +124,12 @@ export function EditJobPage({ onNavigate }: EditJobPageProps) {
 
       toast.success("Job updated successfully!");
 
-      // Navigate back to admin jobs page
-      navigate("/admin-jobs");
+      // Navigate back to appropriate dashboard
+      if (user?.role === "employer") {
+        navigate("/dashboard/employer");
+      } else {
+        navigate("/admin-jobs");
+      }
     } catch (e: any) {
       console.error("Error updating job:", e);
       const errorMessage =
@@ -137,21 +141,25 @@ export function EditJobPage({ onNavigate }: EditJobPageProps) {
   };
 
   const handleCancel = () => {
-    navigate("/admin-jobs");
+    if (user?.role === "employer") {
+      navigate("/dashboard/employer");
+    } else {
+      navigate("/admin-jobs");
+    }
   };
 
-  // Check if user is admin
-  if (!user || user.role !== "admin") {
+  // Check if user is admin or employer
+  if (!user || (user.role !== "admin" && user.role !== "employer")) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="p-8 text-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="p-6 md:p-8 text-center max-w-md w-full">
           <h2 className="text-xl font-semibold text-red-600 mb-4">
             Access Denied
           </h2>
           <p className="text-gray-600 mb-4">
-            You don't have permission to edit jobs.
+            You don't have permission to edit jobs. Please login with an admin or employer account.
           </p>
-          <Button onClick={() => navigate("/login")}>Login as Admin</Button>
+          <Button onClick={() => navigate("/login")} className="w-full">Login</Button>
         </Card>
       </div>
     );

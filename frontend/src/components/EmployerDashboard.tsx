@@ -227,7 +227,7 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
   }, [user, token]);
 
   const handleEditJob = (jobId: string) => {
-    alert(`Editing job ${jobId}`);
+    onNavigate('edit-job', jobId);
   };
 
   const handleCloseJob = (jobId: string) => {
@@ -656,9 +656,8 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                                   className="h-9 w-9 p-0 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200"
                                   onClick={() => handleEditJob(job.id)}
                                   title="Edit Job"
-                                  disabled
                                 >
-                                  <Edit className="w-4 h-4" />
+                                  <Edit className="w-4 h-4 text-amber-600" />
                                 </Button>
                                 <Button 
                                   variant="ghost" 

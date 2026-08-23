@@ -134,28 +134,25 @@ export function HomePage({ onNavigate }: HomePageProps) {
     (async () => {
       try {
         const [feat, latest, all, gov, priv, meta, news] = await Promise.all([
-          fetchJobs({ featured: true, size: 6, status: "active", openOnly: true }).then(
+          fetchJobs({ featured: true, size: 6, status: "active" }).then(
             (r) => r.content ?? [],
           ),
           fetchJobs({
             size: 6,
             sort: "createdAt,desc",
             status: "active",
-            openOnly: true,
           }).then((r) => r.content ?? []),
           fetchJobs({
             size: 10,
             sort: "createdAt,desc",
             status: "active",
-            openOnly: true,
           }).then((r) => r.content ?? []),
           fetchJobs({
             sector: "government",
             size: 10,
             status: "active",
-            openOnly: true,
           }).then((r) => r.content ?? []),
-          fetchJobs({ sector: "private", size: 10, status: "active", openOnly: true }).then(
+          fetchJobs({ sector: "private", size: 10, status: "active" }).then(
             (r) => r.content ?? [],
           ),
           fetchJobsMeta(),

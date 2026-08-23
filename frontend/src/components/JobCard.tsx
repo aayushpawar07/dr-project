@@ -12,7 +12,6 @@ interface JobCardProps {
 }
 
 export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps) {
-  // Default to 'private' if sector is missing
   const sector = job.sector || 'private';
   const isGovernment = sector === 'government';
   const daysLeft = Math.ceil((new Date(job.lastDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
@@ -21,151 +20,135 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
     (job as any).state
   ].filter(Boolean).join(', ');
 
-  // White background for all cards
-  const getCardColors = () => {
-    return {
-      gradientBg: '#ffffff',
-      borderColor: '#e5e7eb',
-      accentGradient: 'transparent',
-      shadowColor: 'rgba(0, 0, 0, 0.1)',
-      patternBg: 'transparent'
-    };
-  };
-
-  const colors = getCardColors();
-  
   return (
-    <Card
-      className="relative h-full cursor-pointer overflow-hidden rounded-2xl border-2 p-5 md:p-6 shadow-md transition-all duration-300 ease-out hover:-translate-y-2 hover:shadow-2xl hover:shadow-xl focus-visible:-translate-y-2 focus-visible:shadow-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-200 group"
-      style={{
-        background: colors.gradientBg,
-        borderColor: colors.borderColor,
-        boxShadow: `0 4px 6px -1px ${colors.shadowColor}, 0 2px 4px -2px ${colors.shadowColor}`,
-        minHeight: 'clamp(280px, 30vw, 320px)'
-      }}
-    >
-
-      <div className="relative flex h-full flex-col gap-4">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1 min-w-0 space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span 
-                className={`${
-                  isGovernment 
-                    ? '!bg-gradient-to-r !from-blue-500 !to-blue-600 !text-white' 
-                    : '!bg-gradient-to-r !from-emerald-500 !to-emerald-600 !text-white'
-                } !border-0 shadow-md hover:shadow-lg transition-all duration-200 px-4 py-1.5 text-xs font-bold uppercase tracking-wide flex items-center gap-1.5 rounded-md inline-flex`}
-                style={{
-                  background: isGovernment 
-                    ? 'linear-gradient(to right, rgb(59 130 246), rgb(37 99 235))' 
-                    : 'linear-gradient(to right, rgb(16 185 129), rgb(5 150 105))',
-                  color: 'white'
-                }}
-              >
-                {isGovernment ? (
-                  <>
-                    <Shield className="w-3.5 h-3.5" />
-                    Government
-                  </>
-                ) : (
-                  <>
-                    <BriefcaseIcon className="w-3.5 h-3.5" />
-                    Private
-                  </>
-                )}
-              </span>
-              <Badge variant="outline" className="px-3 py-1 text-xs font-semibold">{job.category}</Badge>
-              {job.featured && (
-                <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200 px-3 py-1 text-xs font-semibold" variant="outline">
-                  <Star className="w-3 h-3 mr-1 fill-yellow-500" />
-                  Featured
-                </Badge>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              <h3 
-                className="text-lg md:text-xl text-gray-900 group-hover:text-slate-950 transition-colors line-clamp-2"
-                onClick={() => onViewDetails(job.id)}
-              >
-                {job.title}
-              </h3>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Building2 className="w-4 h-4" />
-              <span className="truncate">{job.organization}</span>
-            </div>
-          </div>
-          
-          {onSaveJob && (
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="shrink-0 text-slate-500 hover:text-yellow-500"
-              onClick={(e) => {
-                e.stopPropagation();
-                onSaveJob(job.id);
+    <Card className="relative cursor-pointer overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 md:p-6 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-md group h-full flex flex-col">
+      <div className="flex flex-col h-full justify-between gap-3 flex-1">
+        <div className="flex flex-col gap-3">
+          {/* Sector + Category + Featured badges */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-white"
+              style={{
+                background: isGovernment
+                  ? 'linear-gradient(to right, #3b82f6, #2563eb)'
+                  : 'linear-gradient(to right, #10b981, #059669)',
               }}
             >
-              <Star className={`w-5 h-5 ${isSaved ? 'fill-yellow-500 text-yellow-500' : ''}`} />
-            </Button>
-          )}
-        </div>
-
-        {/* Meta pills - Colorful */}
-        <div className="flex flex-wrap gap-3 text-sm text-gray-700">
-          <span className="inline-flex items-center gap-2 bg-blue-100/90 border border-blue-200 text-blue-700 rounded-full px-3 py-1.5 shadow-sm hover:bg-blue-200 transition-colors">
-            <MapPin className="w-4 h-4 text-blue-600" />
-            {locationText || 'Location'}
-          </span>
-          <span className="inline-flex items-center gap-2 bg-purple-100/90 border border-purple-200 text-purple-700 rounded-full px-3 py-1.5 shadow-sm hover:bg-purple-200 transition-colors">
-            <Briefcase className="w-4 h-4 text-purple-600" />
-            {job.numberOfPosts} Post{job.numberOfPosts > 1 ? 's' : ''}
-          </span>
-          <span className="inline-flex items-center gap-2 bg-orange-100/90 border border-orange-200 text-orange-700 rounded-full px-3 py-1.5 shadow-sm hover:bg-orange-200 transition-colors">
-            <Calendar className="w-4 h-4 text-orange-600" />
-            Apply by {new Date(job.lastDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-          </span>
-          <span className="inline-flex items-center gap-2 bg-indigo-100/90 border border-indigo-200 text-indigo-700 rounded-full px-3 py-1.5 shadow-sm hover:bg-indigo-200 transition-colors">
-            <Gift className="w-4 h-4 text-indigo-600" />
-            Qualification: {job.qualification}
-          </span>
-        </div>
-
-        {/* Salary & Experience - More colorful */}
-        <div className="flex flex-wrap items-center gap-3 text-sm">
-          {job.salary && (
-            <span className="inline-flex items-center gap-1.5 text-green-700 bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-300 rounded-full px-4 py-1.5 font-semibold shadow-sm hover:shadow-md transition-shadow">
-              💰 {job.salary}
+              {isGovernment ? <Shield className="w-3.5 h-3.5" /> : <BriefcaseIcon className="w-3.5 h-3.5" />}
+              {isGovernment ? 'Government' : 'Private'}
             </span>
-          )}
-          <span className="inline-flex items-center gap-1.5 text-teal-700 bg-gradient-to-r from-teal-100 to-cyan-100 border-2 border-teal-300 rounded-full px-4 py-1.5 font-semibold shadow-sm hover:shadow-md transition-shadow">
-            📊 Experience: {job.experience}
-          </span>
-        </div>
 
-        {/* Footer */}
-        <div className="mt-auto flex flex-col gap-3 border-t border-slate-100 pt-3 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-4 text-xs text-gray-500">
-            <span>{job.views} views</span>
-            <span>{job.applications} applications</span>
-            {daysLeft > 0 && daysLeft <= 7 && (
-              <Badge variant="destructive" className="text-[11px]">
-                {daysLeft} days left
+            {job.category && (
+              <Badge variant="outline" className="px-3 py-1 text-xs font-medium text-gray-600 border-gray-300">
+                {job.category}
+              </Badge>
+            )}
+
+            {job.featured && (
+              <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200 px-3 py-1 text-xs font-medium" variant="outline">
+                <Star className="w-3 h-3 mr-1 fill-yellow-500 text-yellow-500" />
+                Featured
               </Badge>
             )}
           </div>
-          <Button 
-            size="sm" 
-            onClick={() => onViewDetails(job.id)}
-            className="inline-flex min-w-[140px] items-center justify-center gap-2 text-white shadow-lg hover:shadow-xl transition-all bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-            style={{
-              background: 'linear-gradient(to right, #2563eb, #1d4ed8)'
-            }}
-          >
-            View Details
-            <ArrowUpRight className="w-4 h-4" />
-          </Button>
+
+          {/* Title + Organization */}
+          <div>
+            <h3
+              className="text-lg font-semibold text-gray-900 leading-snug hover:text-blue-700 transition-colors cursor-pointer line-clamp-2"
+              onClick={() => onViewDetails(job.slug || job.id)}
+            >
+              {job.title}
+            </h3>
+            {job.organization && (
+              <div className="flex items-center gap-1.5 mt-1 text-sm text-gray-500">
+                <Building2 className="w-4 h-4 shrink-0" />
+                <span className="truncate">{job.organization}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Meta pills: Location, Posts, Apply by */}
+          <div className="flex flex-wrap gap-2 text-sm">
+            {locationText && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-blue-700">
+                <MapPin className="w-3.5 h-3.5" />
+                {locationText}
+              </span>
+            )}
+            {job.numberOfPosts != null && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-purple-700">
+                <Briefcase className="w-3.5 h-3.5" />
+                {job.numberOfPosts} Post{job.numberOfPosts > 1 ? 's' : ''}
+              </span>
+            )}
+            {job.lastDate && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-orange-700">
+                <Calendar className="w-3.5 h-3.5" />
+                Apply by {new Date(job.lastDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </span>
+            )}
+          </div>
+
+          {/* Qualification */}
+          {job.qualification && (
+            <div>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-600">
+                <Gift className="w-3.5 h-3.5 text-gray-400" />
+                Qualification: {job.qualification}
+              </span>
+            </div>
+          )}
+
+          {/* Salary & Experience */}
+          {(job.salary || job.experience) && (
+            <div className="flex flex-wrap gap-2 text-sm">
+              {job.salary && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-3 py-1.5 text-green-700 font-medium">
+                  💰 {job.salary}
+                </span>
+              )}
+              {job.experience && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-gray-600">
+                  📊 Experience: {job.experience}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer pinned to bottom */}
+        <div className="flex items-center justify-between border-t border-gray-100 pt-3 mt-auto">
+          <div className="flex items-center gap-3 text-xs text-gray-400">
+            <span>{job.views ?? 0} views</span>
+            <span>{job.applications ?? 0} applications</span>
+            {daysLeft > 0 && daysLeft <= 7 && (
+              <Badge variant="destructive" className="text-[11px] px-1.5 py-0.5">
+                {daysLeft}d left
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {onSaveJob && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-gray-400 hover:text-yellow-500"
+                onClick={(e) => { e.stopPropagation(); onSaveJob(job.id); }}
+              >
+                <Star className={`w-4 h-4 ${isSaved ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+              </Button>
+            )}
+            <Button
+              size="sm"
+              onClick={() => onViewDetails(job.slug || job.id)}
+              className="inline-flex items-center gap-1.5 rounded-full text-white text-sm font-semibold px-5 py-2 shadow hover:shadow-md transition-all"
+              style={{ background: 'linear-gradient(to right, #2563eb, #1d4ed8)' }}
+            >
+              View Details
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </Button>
+          </div>
         </div>
       </div>
     </Card>

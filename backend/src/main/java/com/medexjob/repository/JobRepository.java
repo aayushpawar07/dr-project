@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -33,6 +34,10 @@ public interface JobRepository extends JpaRepository<Job, UUID>, JpaSpecificatio
     
     // Find jobs by employer
     List<Job> findByEmployerId(UUID employerId);
+
+    Optional<Job> findFirstBySourceVacancyId(UUID sourceVacancyId);
+
+    Optional<Job> findBySlug(String slug);
     
     // Find active jobs
     Page<Job> findByStatusAndLastDateAfter(Job.JobStatus status, LocalDate date, Pageable pageable);
@@ -121,13 +126,49 @@ public interface JobRepository extends JpaRepository<Job, UUID>, JpaSpecificatio
     @Query("SELECT j FROM Job j WHERE j.status = :status ORDER BY j.applicationsCount DESC")
     Page<Job> findJobsWithMostApplications(@Param("status") Job.JobStatus status, Pageable pageable);
 
-    // Distinct categories (for meta)
-    @Query("SELECT DISTINCT j.category FROM Job j WHERE j.category IS NOT NULL")
-    List<Job.JobCategory> findDistinctCategories();
+    // Candidate-facing filter metadata. Keep it aligned with public listings so
+    // draft/deleted records and the opposite sector never leak into filter options.
+    @Query("SELECT DISTINCT j.category FROM Job j " +
+            "WHERE j.status = :status AND j.deletedAt IS NULL AND j.category IS NOT NULL " +
+            "AND (:sector IS NULL OR j.sector = :sector)")
+    List<Job.JobCategory> findDistinctCategoriesForPublic(
+            @Param("status") Job.JobStatus status,
+            @Param("sector") Job.JobSector sector);
 
-    // Distinct locations (for meta)
-    @Query("SELECT DISTINCT j.location FROM Job j WHERE j.location IS NOT NULL AND j.location <> ''")
-    List<String> findDistinctLocations();
+    @Query("SELECT DISTINCT j.location FROM Job j " +
+            "WHERE j.status = :status AND j.deletedAt IS NULL AND j.location IS NOT NULL AND j.location <> '' " +
+            "AND (:sector IS NULL OR j.sector = :sector)")
+    List<String> findDistinctLocationsForPublic(
+            @Param("status") Job.JobStatus status,
+            @Param("sector") Job.JobSector sector);
+
+    @Query("SELECT DISTINCT j.speciality FROM Job j " +
+            "WHERE j.status = :status AND j.deletedAt IS NULL AND j.speciality IS NOT NULL AND j.speciality <> '' " +
+            "AND (:sector IS NULL OR j.sector = :sector)")
+    List<String> findDistinctSpecialitiesForPublic(
+            @Param("status") Job.JobStatus status,
+            @Param("sector") Job.JobSector sector);
+
+    @Query("SELECT DISTINCT j.department FROM Job j " +
+            "WHERE j.status = :status AND j.deletedAt IS NULL AND j.department IS NOT NULL AND j.department <> '' " +
+            "AND (:sector IS NULL OR j.sector = :sector)")
+    List<String> findDistinctDepartmentsForPublic(
+            @Param("status") Job.JobStatus status,
+            @Param("sector") Job.JobSector sector);
+
+    @Query("SELECT DISTINCT j.jobType FROM Job j " +
+            "WHERE j.status = :status AND j.deletedAt IS NULL AND j.jobType IS NOT NULL AND j.jobType <> '' " +
+            "AND (:sector IS NULL OR j.sector = :sector)")
+    List<String> findDistinctJobTypesForPublic(
+            @Param("status") Job.JobStatus status,
+            @Param("sector") Job.JobSector sector);
+
+    @Query("SELECT DISTINCT j.qualification FROM Job j " +
+            "WHERE j.status = :status AND j.deletedAt IS NULL AND j.qualification IS NOT NULL AND j.qualification <> '' " +
+            "AND (:sector IS NULL OR j.sector = :sector)")
+    List<String> findDistinctQualificationsForPublic(
+            @Param("status") Job.JobStatus status,
+            @Param("sector") Job.JobSector sector);
     
     // Get all distinct job titles from active jobs (for dropdown)
     @Query("SELECT DISTINCT j.title FROM Job j WHERE j.status = :status AND j.title IS NOT NULL AND j.title <> '' ORDER BY j.title ASC")

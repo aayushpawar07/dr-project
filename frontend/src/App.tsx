@@ -49,6 +49,8 @@ import { ForgotPasswordPage } from "./components/ForgotPasswordPage";
 import { AdminPricingManagement } from "./components/AdminPricingManagement";
 import { PricingPage } from "./components/PricingPage";
 import { EditJobPage } from "./components/EditJobPage";
+import { AiBulkJobUploader } from "./components/AiBulkJobUploader";
+import { RecruitmentPage } from "./components/RecruitmentPage";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 
@@ -161,6 +163,10 @@ function AppContent() {
             element={
               <JobListingPage onNavigate={handleNavigate} sector="private" />
             }
+          />
+          <Route
+            path="/recruitment/:recruitmentId"
+            element={<RecruitmentPage />}
           />
           <Route
             path="/news"
@@ -344,6 +350,10 @@ function AppContent() {
               <Route
                 path="/admin-jobs"
                 element={<AdminJobManagementPage onNavigate={handleNavigate} />}
+              />
+              <Route
+                path="/admin-ai-bulk-upload"
+                element={<AiBulkJobUploader onNavigate={handleNavigate} />}
               />
               <Route
                 path="/admin/jobs/edit/:jobId"

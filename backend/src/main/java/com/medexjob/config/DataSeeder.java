@@ -16,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Locale;
 
 @Component
@@ -40,17 +41,17 @@ public class DataSeeder implements CommandLineRunner {
     @Value("${SEED_USER_PHONE:9999999999}")
     private String userPhone;
 
-    @Value("${SEED_USER_PASSWORD:ChangeMe@123}")
+    @Value("${SEED_USER_PASSWORD:}")
     private String userPassword;
 
-    // Job 1
-    @Value("${SEED_JOB1_TITLE:Andhra Pradesh Medical Officer}")
+    // Job 1 and Job 2 remain configurable for targeted local testing.
+    @Value("${SEED_JOB1_TITLE:Apollo Medical Officer - Delhi}")
     private String job1Title;
     @Value("${SEED_JOB1_SECTOR:government}")
     private String job1Sector;
     @Value("${SEED_JOB1_CATEGORY:Medical Officer}")
     private String job1Category;
-    @Value("${SEED_JOB1_LOCATION:Andhra Pradesh}")
+    @Value("${SEED_JOB1_LOCATION:New Delhi}")
     private String job1Location;
     @Value("${SEED_JOB1_QUALIFICATION:MBBS}")
     private String job1Qualification;
@@ -60,7 +61,7 @@ public class DataSeeder implements CommandLineRunner {
     private Integer job1Posts;
     @Value("${SEED_JOB1_SALARY:As per norms}")
     private String job1Salary;
-    @Value("${SEED_JOB1_LAST_DATE:2025-12-31}")
+    @Value("${SEED_JOB1_LAST_DATE:2027-03-31}")
     private String job1LastDate;
     @Value("${SEED_JOB1_DESCRIPTION:Official notification as per PDF}")
     private String job1Description;
@@ -72,7 +73,7 @@ public class DataSeeder implements CommandLineRunner {
     private boolean job1Featured;
 
     // Job 2
-    @Value("${SEED_JOB2_TITLE:Second Job}")
+    @Value("${SEED_JOB2_TITLE:Sunrise Specialist - Mumbai}")
     private String job2Title;
     @Value("${SEED_JOB2_SECTOR:private}")
     private String job2Sector;
@@ -88,7 +89,7 @@ public class DataSeeder implements CommandLineRunner {
     private Integer job2Posts;
     @Value("${SEED_JOB2_SALARY:Negotiable}")
     private String job2Salary;
-    @Value("${SEED_JOB2_LAST_DATE:2025-12-31}")
+    @Value("${SEED_JOB2_LAST_DATE:2027-04-15}")
     private String job2LastDate;
     @Value("${SEED_JOB2_DESCRIPTION:As per PDF}")
     private String job2Description;
@@ -111,6 +112,9 @@ public class DataSeeder implements CommandLineRunner {
         seedSubscriptionPlans();
         
         if (!seedJobs) return; // only run when explicitly enabled
+        if (userPassword == null || userPassword.isBlank()) {
+            throw new IllegalStateException("SEED_USER_PASSWORD must be set when SEED_JOBS=true");
+        }
 
         // Create Employer User if not exists
         User user = userRepository.findAll().stream()
@@ -140,48 +144,87 @@ public class DataSeeder implements CommandLineRunner {
                     return employerRepository.save(e);
                 });
 
-        // Seed Job 1
-        Job j1 = new Job();
-        j1.setEmployer(employer);
-        j1.setTitle(job1Title);
-        j1.setDescription(job1Description);
-        j1.setSector(parseSector(job1Sector));
-        j1.setCategory(parseCategory(job1Category));
-        j1.setLocation(job1Location);
-        j1.setQualification(job1Qualification);
-        j1.setExperience(job1Experience);
-        j1.setNumberOfPosts(job1Posts);
-        j1.setSalaryRange(blankToNull(job1Salary));
-        j1.setLastDate(parseDate(job1LastDate));
-        j1.setContactEmail(user.getEmail());
-        j1.setContactPhone(user.getPhone());
-        j1.setPdfUrl(blankToNull(job1PdfUrl));
-        j1.setApplyLink(blankToNull(job1ApplyLink));
-        j1.setStatus(Job.JobStatus.ACTIVE);
-        j1.setIsFeatured(job1Featured);
-        jobRepository.save(j1);
+        List<JobSeed> jobs = List.of(
+            new JobSeed(job1Title, job1Sector, job1Category, job1Location, job1Qualification,
+                job1Experience, job1Posts, job1Salary, job1LastDate, job1Description, job1Featured,
+                "Emergency Medicine", "FULL_TIME", "MID"),
+            new JobSeed(job2Title, job2Sector, job2Category, job2Location, job2Qualification,
+                job2Experience, job2Posts, job2Salary, job2LastDate, job2Description, job2Featured,
+                "Cardiology", "FULL_TIME", "SENIOR"),
+            new JobSeed("Junior Resident - Bengaluru", "private", "junior resident", "Bengaluru", "MBBS with internship completion",
+                "0-2 years", 4, "INR 70,000 - 90,000 per month", "2027-05-01", "Resident doctor role in a multispecialty hospital with supervised clinical rotations.", false,
+                "Internal Medicine", "FULL_TIME", "ENTRY"),
+            new JobSeed("Senior Resident - Chennai", "government", "senior resident", "Chennai", "MD or DNB in Pediatrics",
+                "2-5 years", 3, "INR 1,10,000 - 1,40,000 per month", "2027-05-15", "Senior resident position supporting pediatric inpatient and emergency services.", true,
+                "Pediatrics", "CONTRACT", "SENIOR"),
+            new JobSeed("Staff Nurse - Pune", "private", "paramedical", "Pune", "B.Sc Nursing or GNM with valid registration",
+                "2-5 years", 8, "INR 45,000 - 65,000 per month", "2027-06-01", "Staff nurse position for critical care and patient education across rotating shifts.", false,
+                "Critical Care", "FULL_TIME", "MID"),
+            new JobSeed("AYUSH Medical Officer - Jaipur", "government", "ayush", "Jaipur", "BAMS with State Medical Council registration",
+                "2-5 years", 2, "INR 75,000 - 95,000 per month", "2027-06-10", "AYUSH medical officer serving outpatient consultation and preventive health programs.", false,
+                "Ayurveda", "FULL_TIME", "MID"),
+            new JobSeed("Assistant Professor - Lucknow", "private", "faculty", "Lucknow", "MD/MS with teaching experience",
+                "5-10 years", 1, "INR 1,50,000 - 2,00,000 per month", "2027-06-20", "Teaching faculty role combining medical education, clinical duties, and academic mentoring.", true,
+                "Anatomy", "FULL_TIME", "SENIOR"),
+            new JobSeed("Medical Officer - Kochi", "government", "medical officer", "Kochi", "MBBS and valid medical registration",
+                "0-2 years", 5, "INR 80,000 - 1,00,000 per month", "2027-07-01", "Medical officer role providing primary care, screening, and referral services.", false,
+                "Primary Care", "CONTRACT", "ENTRY"),
+            new JobSeed("Radiology Specialist - Ahmedabad", "private", "specialist", "Ahmedabad", "MD/DNB Radiodiagnosis",
+                "5-10 years", 1, "INR 2,00,000 - 2,75,000 per month", "2027-07-15", "Radiology specialist role covering reporting, imaging protocols, and multidisciplinary case review.", false,
+                "Radiology", "FULL_TIME", "SENIOR"),
+            new JobSeed("Clinical Pharmacist - Hyderabad", "private", "paramedical", "Hyderabad", "B.Pharm or Pharm.D with registration",
+                "2-5 years", 2, "INR 55,000 - 80,000 per month", "2027-08-01", "Clinical pharmacist role supporting medication safety, counselling, and inpatient rounds.", false,
+                "Clinical Pharmacy", "FULL_TIME", "MID")
+        );
 
-        // Seed Job 2
-        Job j2 = new Job();
-        j2.setEmployer(employer);
-        j2.setTitle(job2Title);
-        j2.setDescription(job2Description);
-        j2.setSector(parseSector(job2Sector));
-        j2.setCategory(parseCategory(job2Category));
-        j2.setLocation(job2Location);
-        j2.setQualification(job2Qualification);
-        j2.setExperience(job2Experience);
-        j2.setNumberOfPosts(job2Posts);
-        j2.setSalaryRange(blankToNull(job2Salary));
-        j2.setLastDate(parseDate(job2LastDate));
-        j2.setContactEmail(user.getEmail());
-        j2.setContactPhone(user.getPhone());
-        j2.setPdfUrl(blankToNull(job2PdfUrl));
-        j2.setApplyLink(blankToNull(job2ApplyLink));
-        j2.setStatus(Job.JobStatus.ACTIVE);
-        j2.setIsFeatured(job2Featured);
-        jobRepository.save(j2);
+        jobs.forEach(job -> saveSeedJob(job, employer, user));
     }
+
+        private void saveSeedJob(JobSeed seed, Employer employer, User user) {
+        boolean exists = jobRepository.findByEmployerId(employer.getId()).stream()
+            .anyMatch(job -> job.getTitle().equalsIgnoreCase(seed.title()));
+        if (exists) return;
+
+        Job job = new Job();
+        job.setEmployer(employer);
+        job.setTitle(seed.title());
+        job.setDescription(seed.description());
+        job.setSector(parseSector(seed.sector()));
+        job.setCategory(parseCategory(seed.category()));
+        job.setLocation(seed.location());
+        job.setQualification(seed.qualification());
+        job.setExperience(seed.experience());
+        job.setExperienceLevel(Job.ExperienceLevel.valueOf(seed.experienceLevel()));
+        job.setSpeciality(seed.speciality());
+        job.setDutyType(Job.DutyType.valueOf(seed.dutyType()));
+        job.setNumberOfPosts(seed.posts());
+        job.setSalaryRange(seed.salary());
+        job.setRequirements("Valid registration, strong communication, patient-first approach, and role-specific clinical competence.");
+        job.setBenefits("Health insurance, professional development support, paid leave, and structured onboarding.");
+        job.setLastDate(parseDate(seed.lastDate()));
+        job.setContactEmail(user.getEmail());
+        job.setContactPhone(user.getPhone());
+        job.setStatus(Job.JobStatus.ACTIVE);
+        job.setIsFeatured(seed.featured());
+        jobRepository.save(job);
+        }
+
+        private record JobSeed(
+            String title,
+            String sector,
+            String category,
+            String location,
+            String qualification,
+            String experience,
+            Integer posts,
+            String salary,
+            String lastDate,
+            String description,
+            boolean featured,
+            String speciality,
+            String dutyType,
+            String experienceLevel
+        ) {}
 
     private Employer.CompanyType parseCompanyType(String s) {
         String v = (s == null ? "" : s).trim().toUpperCase(Locale.ROOT);
@@ -207,8 +250,18 @@ public class DataSeeder implements CommandLineRunner {
             case "medical officer" -> Job.JobCategory.MEDICAL_OFFICER;
             case "faculty" -> Job.JobCategory.FACULTY;
             case "specialist" -> Job.JobCategory.SPECIALIST;
+            case "dental" -> Job.JobCategory.DENTAL;
             case "ayush" -> Job.JobCategory.AYUSH;
-            case "paramedical / nursing", "paramedical", "nursing" -> Job.JobCategory.PARAMEDICAL_NURSING;
+            case "nursing" -> Job.JobCategory.NURSING;
+            case "paramedical" -> Job.JobCategory.PARAMEDICAL;
+            case "paramedical / nursing" -> Job.JobCategory.PARAMEDICAL_NURSING;
+            case "allied health", "allied health professionals" -> Job.JobCategory.ALLIED_HEALTH;
+            case "pharmacy" -> Job.JobCategory.PHARMACY;
+            case "psychology & mental health", "psychology" -> Job.JobCategory.PSYCHOLOGY_MENTAL_HEALTH;
+            case "nutrition & dietetics", "nutrition" -> Job.JobCategory.NUTRITION_DIETETICS;
+            case "life science & research", "research" -> Job.JobCategory.LIFE_SCIENCE_RESEARCH;
+            case "hospital administration", "administration" -> Job.JobCategory.HOSPITAL_ADMINISTRATION;
+            case "public health" -> Job.JobCategory.PUBLIC_HEALTH;
             default -> Job.JobCategory.SPECIALIST;
         };
     }

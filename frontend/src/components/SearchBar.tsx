@@ -1,66 +1,34 @@
-import React, {
-  useState,
-  useCallback,
-  useRef,
-  useEffect,
-  useMemo,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { fetchJobOptions, fetchJobsMeta } from "../api/jobs";
+import { fetchJobSuggestions, fetchJobsMeta } from "../api/jobs";
 import "./SearchBar.css";
 
 interface SearchBarProps {
   initialQuery?: string;
   initialLocation?: string;
   onSearch?: (query: string, location: string) => void;
+  onLiveSearch?: (query: string, location: string) => void;
   showLabels?: boolean;
   compact?: boolean;
+  sector?: "government" | "private";
 }
 
-// Icons as components for better performance
 const SearchIcon = ({ size = 20 }: { size?: number }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="11" cy="11" r="8" />
     <path d="m21 21-4.35-4.35" />
   </svg>
 );
 
 const LocationIcon = ({ size = 20 }: { size?: number }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
     <circle cx="12" cy="10" r="3" />
   </svg>
 );
 
 const BriefcaseIcon = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
     <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
   </svg>
@@ -70,373 +38,211 @@ const SearchBar: React.FC<SearchBarProps> = ({
   initialQuery = "",
   initialLocation = "",
   onSearch,
+  onLiveSearch,
   showLabels = true,
   compact = false,
+  sector,
 }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-
-  // State
-  const [jobQuery, setJobQuery] = useState(
-    initialQuery || searchParams.get("search") || "",
-  );
-  const [locationQuery, setLocationQuery] = useState(
-    initialLocation || searchParams.get("location") || "",
-  );
+  const [jobQuery, setJobQuery] = useState(initialQuery || searchParams.get("search") || "");
+  const [locationQuery, setLocationQuery] = useState(initialLocation || searchParams.get("location") || "");
   const [jobSuggestions, setJobSuggestions] = useState<string[]>([]);
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
+  const [locations, setLocations] = useState<string[]>([]);
   const [showJobDropdown, setShowJobDropdown] = useState(false);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [isLoadingJobs, setIsLoadingJobs] = useState(false);
-  const [isLoadingLocations, setIsLoadingLocations] = useState(false);
   const [activeJobIndex, setActiveJobIndex] = useState(-1);
   const [activeLocationIndex, setActiveLocationIndex] = useState(-1);
-
-  // Cached options from database
-  const [cachedJobOptions, setCachedJobOptions] = useState<string[]>([]);
-  const [cachedLocations, setCachedLocations] = useState<string[]>([]);
-  const [optionsLoaded, setOptionsLoaded] = useState(false);
-
-  // Refs
   const jobInputRef = useRef<HTMLInputElement>(null);
   const locationInputRef = useRef<HTMLInputElement>(null);
   const jobDropdownRef = useRef<HTMLUListElement>(null);
   const locationDropdownRef = useRef<HTMLUListElement>(null);
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const jobTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const jobRequestSeqRef = useRef(0);
 
-  // Load options from database on mount
   useEffect(() => {
-    const loadOptions = async () => {
-      try {
-        const [jobOptions, meta] = await Promise.all([
-          fetchJobOptions(),
-          fetchJobsMeta(),
-        ]);
+    setJobQuery(initialQuery || searchParams.get("search") || "");
+  }, [initialQuery, searchParams]);
 
-        // Combine titles and companies for job suggestions
-        const allJobOptions = [
-          ...(jobOptions.titles || []),
-          ...(jobOptions.companies || []),
-        ];
-        // Remove duplicates and sort
-        const uniqueJobOptions = [...new Set(allJobOptions)].sort((a, b) =>
-          a.toLowerCase().localeCompare(b.toLowerCase()),
-        );
-        setCachedJobOptions(uniqueJobOptions);
-        setCachedLocations(meta.locations || []);
-        setOptionsLoaded(true);
-      } catch (error) {
-        console.error("Error loading search options:", error);
-        setOptionsLoaded(true);
-      }
-    };
-    loadOptions();
+  useEffect(() => {
+    setLocationQuery(initialLocation || searchParams.get("location") || "");
+  }, [initialLocation, searchParams]);
+
+  useEffect(() => {
+    fetchJobsMeta(sector).then((meta) => setLocations(meta.locations || [])).catch(() => setLocations([]));
+  }, [sector]);
+
+  useEffect(() => () => {
+    if (jobTimerRef.current) clearTimeout(jobTimerRef.current);
+    jobRequestSeqRef.current += 1;
   }, []);
 
-  // Filter job suggestions locally from cached options
-  const fetchJobSuggestions = useCallback(
-    (query: string) => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+  const requestJobSuggestions = useCallback((value: string) => {
+    if (jobTimerRef.current) clearTimeout(jobTimerRef.current);
+    const requestSeq = ++jobRequestSeqRef.current;
+    const q = value.trim();
+    if (q.length < 1) {
+      setJobSuggestions([]);
+      setShowJobDropdown(false);
+      setIsLoadingJobs(false);
+      return;
+    }
 
-      if (query.length < 2) {
-        setJobSuggestions([]);
-        setIsLoadingJobs(false);
-        return;
-      }
+    setIsLoadingJobs(true);
+    jobTimerRef.current = setTimeout(async () => {
+      const results = await fetchJobSuggestions(q, sector, 8);
+      // Ignore an older response if the user typed again while it was in flight.
+      if (requestSeq !== jobRequestSeqRef.current) return;
+      setJobSuggestions(results);
+      setShowJobDropdown(results.length > 0);
+      setIsLoadingJobs(false);
+    }, 250);
+  }, [sector]);
 
-      setIsLoadingJobs(true);
-      debounceTimerRef.current = setTimeout(() => {
-        const lowerQuery = query.toLowerCase();
-        const filtered = cachedJobOptions
-          .filter((option) => option.toLowerCase().includes(lowerQuery))
-          .slice(0, 8);
-        setJobSuggestions(filtered);
-        setIsLoadingJobs(false);
-      }, 100);
-    },
-    [cachedJobOptions],
-  );
+  const requestLocationSuggestions = useCallback((value: string) => {
+    const q = value.trim().toLowerCase();
+    if (q.length < 1) {
+      setLocationSuggestions([]);
+      return;
+    }
+    setLocationSuggestions(locations.filter((item) => item.toLowerCase().includes(q)).slice(0, 8));
+  }, [locations]);
 
-  // Filter location suggestions locally from cached locations
-  const fetchLocationSuggestions = useCallback(
-    (query: string) => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+  const handleSearch = useCallback(() => {
+    setShowJobDropdown(false);
+    setShowLocationDropdown(false);
+    const q = jobQuery.trim();
+    const loc = locationQuery.trim();
 
-      if (query.length < 2) {
-        setLocationSuggestions([]);
-        setIsLoadingLocations(false);
-        return;
-      }
+    if (onSearch) {
+      onSearch(q, loc);
+      return;
+    }
 
-      setIsLoadingLocations(true);
-      debounceTimerRef.current = setTimeout(() => {
-        const lowerQuery = query.toLowerCase();
-        const filtered = cachedLocations
-          .filter((loc) => loc.toLowerCase().includes(lowerQuery))
-          .slice(0, 8);
-        setLocationSuggestions(filtered);
-        setIsLoadingLocations(false);
-      }, 100);
-    },
-    [cachedLocations],
-  );
-
-  // Cleanup debounce timer
-  useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-    };
-  }, []);
-
-  // Handlers
-  const handleJobChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      setJobQuery(value);
-      setShowJobDropdown(true);
-      setActiveJobIndex(-1);
-      fetchJobSuggestions(value);
-    },
-    [fetchJobSuggestions],
-  );
-
-  const handleLocationChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value;
-      setLocationQuery(value);
-      setShowLocationDropdown(true);
-      setActiveLocationIndex(-1);
-      fetchLocationSuggestions(value);
-    },
-    [fetchLocationSuggestions],
-  );
+    const params = new URLSearchParams();
+    if (q) params.set("search", q);
+    if (loc) params.set("location", loc);
+    const path = sector === "government" ? "/govt-jobs" : sector === "private" ? "/private-jobs" : "/jobs";
+    navigate(`${path}${params.toString() ? `?${params.toString()}` : ""}`);
+  }, [jobQuery, locationQuery, onSearch, navigate, sector]);
 
   const selectJobSuggestion = useCallback((suggestion: string) => {
     setJobQuery(suggestion);
     setShowJobDropdown(false);
     setJobSuggestions([]);
+    onLiveSearch?.(suggestion, locationQuery);
     locationInputRef.current?.focus();
-  }, []);
+  }, [locationQuery, onLiveSearch]);
 
   const selectLocationSuggestion = useCallback((suggestion: string) => {
     setLocationQuery(suggestion);
     setShowLocationDropdown(false);
     setLocationSuggestions([]);
-  }, []);
+    onLiveSearch?.(jobQuery, suggestion);
+  }, [jobQuery, onLiveSearch]);
 
-  const handleSearch = useCallback(() => {
-    setShowJobDropdown(false);
-    setShowLocationDropdown(false);
-
-    if (onSearch) {
-      onSearch(jobQuery.trim(), locationQuery.trim());
-    } else {
-      const params = new URLSearchParams();
-      if (jobQuery.trim()) params.set("search", jobQuery.trim());
-      if (locationQuery.trim()) params.set("location", locationQuery.trim());
-      navigate(`/jobs?${params.toString()}`);
+  const handleJobKeyDown = useCallback((event: React.KeyboardEvent) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      if (activeJobIndex >= 0 && jobSuggestions[activeJobIndex]) {
+        selectJobSuggestion(jobSuggestions[activeJobIndex]);
+      } else {
+        handleSearch();
+      }
+    } else if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActiveJobIndex((index) => Math.min(index + 1, jobSuggestions.length - 1));
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveJobIndex((index) => Math.max(index - 1, -1));
+    } else if (event.key === "Escape") {
+      setShowJobDropdown(false);
     }
-  }, [jobQuery, locationQuery, onSearch, navigate]);
+  }, [activeJobIndex, jobSuggestions, handleSearch, selectJobSuggestion]);
 
-  // Keyboard navigation
-  const handleJobKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (!showJobDropdown || jobSuggestions.length === 0) {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          handleSearch();
-        }
-        return;
+  const handleLocationKeyDown = useCallback((event: React.KeyboardEvent) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      if (activeLocationIndex >= 0 && locationSuggestions[activeLocationIndex]) {
+        selectLocationSuggestion(locationSuggestions[activeLocationIndex]);
+      } else {
+        handleSearch();
       }
+    } else if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActiveLocationIndex((index) => Math.min(index + 1, locationSuggestions.length - 1));
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveLocationIndex((index) => Math.max(index - 1, -1));
+    } else if (event.key === "Escape") {
+      setShowLocationDropdown(false);
+    }
+  }, [activeLocationIndex, locationSuggestions, handleSearch, selectLocationSuggestion]);
 
-      switch (e.key) {
-        case "ArrowDown":
-          e.preventDefault();
-          setActiveJobIndex((prev) =>
-            Math.min(prev + 1, jobSuggestions.length - 1),
-          );
-          break;
-        case "ArrowUp":
-          e.preventDefault();
-          setActiveJobIndex((prev) => Math.max(prev - 1, -1));
-          break;
-        case "Enter":
-          e.preventDefault();
-          if (activeJobIndex >= 0 && activeJobIndex < jobSuggestions.length) {
-            selectJobSuggestion(jobSuggestions[activeJobIndex]);
-          } else {
-            handleSearch();
-          }
-          break;
-        case "Escape":
-          setShowJobDropdown(false);
-          break;
-        case "Tab":
-          setShowJobDropdown(false);
-          break;
-      }
-    },
-    [
-      showJobDropdown,
-      jobSuggestions,
-      activeJobIndex,
-      selectJobSuggestion,
-      handleSearch,
-    ],
-  );
-
-  const handleLocationKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (!showLocationDropdown || locationSuggestions.length === 0) {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          handleSearch();
-        }
-        return;
-      }
-
-      switch (e.key) {
-        case "ArrowDown":
-          e.preventDefault();
-          setActiveLocationIndex((prev) =>
-            Math.min(prev + 1, locationSuggestions.length - 1),
-          );
-          break;
-        case "ArrowUp":
-          e.preventDefault();
-          setActiveLocationIndex((prev) => Math.max(prev - 1, -1));
-          break;
-        case "Enter":
-          e.preventDefault();
-          if (
-            activeLocationIndex >= 0 &&
-            activeLocationIndex < locationSuggestions.length
-          ) {
-            selectLocationSuggestion(locationSuggestions[activeLocationIndex]);
-          } else {
-            handleSearch();
-          }
-          break;
-        case "Escape":
-          setShowLocationDropdown(false);
-          break;
-        case "Tab":
-          setShowLocationDropdown(false);
-          break;
-      }
-    },
-    [
-      showLocationDropdown,
-      locationSuggestions,
-      activeLocationIndex,
-      selectLocationSuggestion,
-      handleSearch,
-    ],
-  );
-
-  // Click outside handler
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as Node;
-
-      if (
-        jobDropdownRef.current &&
-        !jobDropdownRef.current.contains(target) &&
-        !jobInputRef.current?.contains(target)
-      ) {
-        setShowJobDropdown(false);
-      }
-      if (
-        locationDropdownRef.current &&
-        !locationDropdownRef.current.contains(target) &&
-        !locationInputRef.current?.contains(target)
-      ) {
-        setShowLocationDropdown(false);
-      }
+    const close = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (!jobDropdownRef.current?.contains(target) && !jobInputRef.current?.contains(target)) setShowJobDropdown(false);
+      if (!locationDropdownRef.current?.contains(target) && !locationInputRef.current?.contains(target)) setShowLocationDropdown(false);
     };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
   }, []);
 
-  // Highlight matching text - memoized for performance
-  const highlightMatch = useMemo(
-    () => (text: string, query: string) => {
-      if (!query || query.length < 2) return <span>{text}</span>;
+  const highlightMatch = useCallback((text: string, query: string) => {
+    if (query.trim().length < 1) return <span>{text}</span>;
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const parts = text.split(new RegExp(`(${escaped})`, "gi"));
+    return <>{parts.map((part, index) => part.toLowerCase() === query.toLowerCase() ? <mark key={index}>{part}</mark> : <span key={index}>{part}</span>)}</>;
+  }, []);
 
-      const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const regex = new RegExp(`(${escapedQuery})`, "gi");
-      const parts = text.split(regex);
-
-      return (
-        <>
-          {parts.map((part, i) =>
-            regex.test(part) ? (
-              <mark key={i}>{part}</mark>
-            ) : (
-              <span key={i}>{part}</span>
-            ),
-          )}
-        </>
-      );
-    },
-    [],
-  );
-
-  const containerClass = useMemo(
-    () => `search-bar ${compact ? "search-bar--compact" : ""}`.trim(),
-    [compact],
-  );
+  const containerClass = useMemo(() => `search-bar ${compact ? "search-bar--compact" : ""}`.trim(), [compact]);
 
   return (
     <div className={containerClass}>
       <div className="search-bar__container">
-        {/* Job Search Field */}
         <div className="search-bar__field search-bar__field--job">
           <div className="search-bar__field-inner">
-            <div className="search-bar__icon">
-              <SearchIcon />
-            </div>
+            <div className="search-bar__icon"><SearchIcon /></div>
             <div className="search-bar__input-group">
               {showLabels && <span className="search-bar__label">WHAT</span>}
               <input
                 ref={jobInputRef}
                 type="text"
                 className="search-bar__input"
-                placeholder="Job title, specialization, or company"
+                placeholder="Job title, speciality, qualification, or hospital"
                 value={jobQuery}
-                onChange={handleJobChange}
+                onChange={(event) => {
+                  const val = event.target.value;
+                  setJobQuery(val);
+                  setActiveJobIndex(-1);
+                  requestJobSuggestions(val);
+                  onLiveSearch?.(val, locationQuery);
+                }}
                 onKeyDown={handleJobKeyDown}
-                onFocus={() => jobQuery.length >= 2 && setShowJobDropdown(true)}
+                onFocus={() => jobQuery.trim().length >= 1 && requestJobSuggestions(jobQuery)}
                 autoComplete="off"
-                aria-label="Search job title"
+                aria-label="Search jobs"
                 aria-expanded={showJobDropdown}
                 aria-autocomplete="list"
               />
             </div>
-            {isLoadingJobs && (
-              <div className="search-bar__spinner" aria-hidden="true" />
-            )}
+            {isLoadingJobs && <div className="search-bar__spinner" aria-hidden="true" />}
           </div>
-
-          {/* Job Suggestions Dropdown */}
           {showJobDropdown && jobSuggestions.length > 0 && (
-            <ul
-              ref={jobDropdownRef}
-              className="search-bar__dropdown"
-              role="listbox"
-            >
-              {jobSuggestions.map((suggestion, idx) => (
+            <ul ref={jobDropdownRef} className="search-bar__dropdown" role="listbox">
+              {jobSuggestions.map((suggestion, index) => (
                 <li
-                  key={suggestion + idx}
-                  className={`search-bar__dropdown-item ${idx === activeJobIndex ? "search-bar__dropdown-item--active" : ""}`}
+                  key={`${suggestion}-${index}`}
+                  className={`search-bar__dropdown-item ${index === activeJobIndex ? "search-bar__dropdown-item--active" : ""}`}
                   onClick={() => selectJobSuggestion(suggestion)}
-                  onMouseEnter={() => setActiveJobIndex(idx)}
+                  onMouseEnter={() => setActiveJobIndex(index)}
                   role="option"
-                  aria-selected={idx === activeJobIndex}
+                  aria-selected={index === activeJobIndex}
                 >
-                  <BriefcaseIcon />
-                  <span>{highlightMatch(suggestion, jobQuery)}</span>
+                  <BriefcaseIcon /><span>{highlightMatch(suggestion, jobQuery)}</span>
                 </li>
               ))}
             </ul>
@@ -445,12 +251,9 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
         <div className="search-bar__divider" aria-hidden="true" />
 
-        {/* Location Search Field */}
         <div className="search-bar__field search-bar__field--location">
           <div className="search-bar__field-inner">
-            <div className="search-bar__icon">
-              <LocationIcon />
-            </div>
+            <div className="search-bar__icon"><LocationIcon /></div>
             <div className="search-bar__input-group">
               {showLabels && <span className="search-bar__label">WHERE</span>}
               <input
@@ -459,55 +262,43 @@ const SearchBar: React.FC<SearchBarProps> = ({
                 className="search-bar__input"
                 placeholder="City or state"
                 value={locationQuery}
-                onChange={handleLocationChange}
+                onChange={(event) => {
+                  const val = event.target.value;
+                  setLocationQuery(val);
+                  setActiveLocationIndex(-1);
+                  requestLocationSuggestions(val);
+                  setShowLocationDropdown(true);
+                  onLiveSearch?.(jobQuery, val);
+                }}
                 onKeyDown={handleLocationKeyDown}
-                onFocus={() =>
-                  locationQuery.length >= 2 && setShowLocationDropdown(true)
-                }
+                onFocus={() => locationQuery.trim().length >= 1 && setShowLocationDropdown(true)}
                 autoComplete="off"
                 aria-label="Search location"
                 aria-expanded={showLocationDropdown}
                 aria-autocomplete="list"
               />
             </div>
-            {isLoadingLocations && (
-              <div className="search-bar__spinner" aria-hidden="true" />
-            )}
           </div>
-
-          {/* Location Suggestions Dropdown */}
           {showLocationDropdown && locationSuggestions.length > 0 && (
-            <ul
-              ref={locationDropdownRef}
-              className="search-bar__dropdown"
-              role="listbox"
-            >
-              {locationSuggestions.map((suggestion, idx) => (
+            <ul ref={locationDropdownRef} className="search-bar__dropdown" role="listbox">
+              {locationSuggestions.map((suggestion, index) => (
                 <li
-                  key={suggestion + idx}
-                  className={`search-bar__dropdown-item ${idx === activeLocationIndex ? "search-bar__dropdown-item--active" : ""}`}
+                  key={`${suggestion}-${index}`}
+                  className={`search-bar__dropdown-item ${index === activeLocationIndex ? "search-bar__dropdown-item--active" : ""}`}
                   onClick={() => selectLocationSuggestion(suggestion)}
-                  onMouseEnter={() => setActiveLocationIndex(idx)}
+                  onMouseEnter={() => setActiveLocationIndex(index)}
                   role="option"
-                  aria-selected={idx === activeLocationIndex}
+                  aria-selected={index === activeLocationIndex}
                 >
-                  <LocationIcon size={16} />
-                  <span>{highlightMatch(suggestion, locationQuery)}</span>
+                  <LocationIcon size={16} /><span>{highlightMatch(suggestion, locationQuery)}</span>
                 </li>
               ))}
             </ul>
           )}
         </div>
 
-        {/* Search Button */}
-        <button
-          className="search-bar__button"
-          onClick={handleSearch}
-          type="button"
-          aria-label="Search jobs"
-        >
-          <SearchIcon />
-          {!compact && <span>Search</span>}
+        <button className="search-bar__button" onClick={handleSearch} type="button" aria-label="Search jobs">
+          <SearchIcon />{!compact && <span>Search</span>}
         </button>
       </div>
     </div>

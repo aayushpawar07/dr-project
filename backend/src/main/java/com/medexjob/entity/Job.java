@@ -25,6 +25,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
     @Index(name = "idx_job_created_at", columnList = "created_at"),
     @Index(name = "idx_job_status_created", columnList = "status, created_at"),
     @Index(name = "idx_job_employer", columnList = "employer_id"),
+    @Index(name = "idx_job_department", columnList = "department"),
+    @Index(name = "idx_job_slug", columnList = "slug"),
+    @Index(name = "idx_job_source_vacancy", columnList = "source_vacancy_id"),
   }
 )
 @EntityListeners(AuditingEntityListener.class)
@@ -55,7 +58,7 @@ public class Job {
   private JobCategory category;
 
   @NotBlank
-  @Size(max = 100)
+  @Size(max = 200)
   @Column(name = "location", nullable = false)
   private String location;
 
@@ -74,6 +77,18 @@ public class Job {
 
   @Column(name = "speciality")
   private String speciality;
+
+  @Size(max = 220)
+  @Column(name = "department")
+  private String department;
+
+  @Size(max = 100)
+  @Column(name = "job_type")
+  private String jobType;
+
+  @Size(max = 320)
+  @Column(name = "slug")
+  private String slug;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "duty_type")
@@ -135,6 +150,12 @@ public class Job {
 
   @Column(name = "applications_count", nullable = false)
   private Integer applicationsCount = 0;
+
+  @Column(name = "source_recruitment_id")
+  private UUID sourceRecruitmentId;
+
+  @Column(name = "source_vacancy_id")
+  private UUID sourceVacancyId;
 
   @Column(name = "approved_at")
   private LocalDateTime approvedAt;
@@ -293,6 +314,30 @@ public class Job {
     this.speciality = speciality;
   }
 
+  public String getDepartment() {
+    return department;
+  }
+
+  public void setDepartment(String department) {
+    this.department = department;
+  }
+
+  public String getJobType() {
+    return jobType;
+  }
+
+  public void setJobType(String jobType) {
+    this.jobType = jobType;
+  }
+
+  public String getSlug() {
+    return slug;
+  }
+
+  public void setSlug(String slug) {
+    this.slug = slug;
+  }
+
   public DutyType getDutyType() {
     return dutyType;
   }
@@ -421,6 +466,22 @@ public class Job {
     this.applicationsCount = applicationsCount;
   }
 
+  public UUID getSourceRecruitmentId() {
+    return sourceRecruitmentId;
+  }
+
+  public void setSourceRecruitmentId(UUID sourceRecruitmentId) {
+    this.sourceRecruitmentId = sourceRecruitmentId;
+  }
+
+  public UUID getSourceVacancyId() {
+    return sourceVacancyId;
+  }
+
+  public void setSourceVacancyId(UUID sourceVacancyId) {
+    this.sourceVacancyId = sourceVacancyId;
+  }
+
   public LocalDateTime getApprovedAt() {
     return approvedAt;
   }
@@ -477,8 +538,18 @@ public class Job {
     MEDICAL_OFFICER,
     FACULTY,
     SPECIALIST,
+    DENTAL,
     AYUSH,
+    NURSING,
+    PARAMEDICAL,
     PARAMEDICAL_NURSING,
+    ALLIED_HEALTH,
+    PHARMACY,
+    PSYCHOLOGY_MENTAL_HEALTH,
+    NUTRITION_DIETETICS,
+    LIFE_SCIENCE_RESEARCH,
+    HOSPITAL_ADMINISTRATION,
+    PUBLIC_HEALTH,
   }
 
   public enum JobStatus {

@@ -41,7 +41,7 @@ import { Bookmark, BookmarkCheck } from "lucide-react";
 import { ResumeUploadSection } from "./ResumeUploadSection";
 
 interface JobDetailPageProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, entityId?: string) => void;
   showApplyDialog?: boolean;
 }
 
@@ -435,6 +435,16 @@ export function JobDetailPage({
                     <Building2 className="w-5 h-5" />
                     <span className="text-lg">{job.organization}</span>
                   </div>
+                  {job.sourceRecruitmentId && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-3"
+                      onClick={() => onNavigate("recruitment", job.sourceRecruitmentId)}
+                    >
+                      View Full Recruitment
+                    </Button>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-6 text-sm text-gray-500">

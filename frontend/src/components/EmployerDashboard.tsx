@@ -1,5 +1,10 @@
 // AI assisted development
-import { Plus, Briefcase, Users, Eye, CheckCircle, XCircle, Calendar, ArrowLeft, Edit, Trash2, AlertTriangle, FileText, Mail, Phone } from 'lucide-react';
+import { 
+  Plus, Briefcase, Users, Eye, CheckCircle, XCircle, Calendar, 
+  ArrowLeft, Edit, Trash2, AlertTriangle, FileText, Mail, Phone,
+  Award, BarChart3, Bell, UserCheck, UserPlus, RefreshCw, 
+  TrendingUp, Clock, Star, MessageSquare, ExternalLink
+} from 'lucide-react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -41,15 +46,13 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
   const [error, setError] = useState<string | null>(null);
   const [currentSubscription, setCurrentSubscription] = useState<SubscriptionResponse | null>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState('jobs');
 
   const totalViews = myJobs.reduce((sum, job) => sum + (job.views || 0), 0);
-  // Calculate total applications from both myApplications and job applications count
   const totalApplicationsFromList = myApplications.length;
   const totalApplicationsFromJobs = myJobs.reduce((sum, job) => sum + (job.applications || 0), 0);
-  // Use the maximum of both to ensure we show the correct count
   const totalApplications = Math.max(totalApplicationsFromList, totalApplicationsFromJobs);
 
-  // Debug logging
   useEffect(() => {
     if (myJobs.length > 0 || myApplications.length > 0) {
       console.log('📊 Application Count Debug:', {
@@ -63,18 +66,15 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
     }
   }, [myJobs, myApplications, totalApplicationsFromList, totalApplicationsFromJobs, totalApplications]);
 
-  // Fetch employer data and jobs on mount
   useEffect(() => {
     const fetchData = async () => {
       if (!user || !token) return;
 
       try {
-        // Fetch employer data
         let employerData;
         try {
           employerData = await fetchEmployer(user.id, token);
         } catch (err: any) {
-          // If employer not found, create one
           if (err.message?.includes('404')) {
             const { createEmployer } = await import('../api/employers');
             employerData = await createEmployer({}, token);
@@ -84,13 +84,11 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
         }
         setEmployer(employerData);
 
-        // If verification is pending, redirect to verification page
         if (employerData.verificationStatus === 'pending') {
           onNavigate('verification');
           return;
         }
 
-        // Fetch jobs directly by employer ID using the new endpoint
         const { fetchJobsByEmployer } = await import('../api/jobs');
         const jobsResponse = await fetchJobsByEmployer(employerData.id, {
           status: 'all',
@@ -102,21 +100,19 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
         console.log('Fetched employer jobs:', employerJobs.length, 'for employer:', employerData.id);
         setMyJobs(employerJobs);
 
-        // Fetch applications for employer's jobs
         if (employerJobs.length > 0) {
           try {
             const jobIds = employerJobs.map((job: any) => job.id);
             console.log('📋 Fetching applications for jobs:', jobIds);
             const allApplications: ApplicationResponse[] = [];
 
-            // Fetch applications for each job - use large size to get all applications
             for (const jobId of jobIds) {
               try {
                 console.log(`🔍 Fetching applications for job: ${jobId}`);
                 const appsResponse = await fetchApplications({
                   jobId,
                   page: 0,
-                  size: 1000  // Fetch all applications at once
+                  size: 1000
                 }, token);
                 console.log(`✅ Applications response for job ${jobId}:`, appsResponse);
 
@@ -124,7 +120,6 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                   console.log(`📝 Found ${appsResponse.content.length} applications for job ${jobId}`);
                   allApplications.push(...appsResponse.content);
                 } else if (Array.isArray(appsResponse)) {
-                  // Sometimes API returns array directly
                   console.log(`📝 Found ${appsResponse.length} applications (direct array) for job ${jobId}`);
                   allApplications.push(...appsResponse);
                 } else {
@@ -146,17 +141,14 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
           setMyApplications([]);
         }
 
-        // Fetch current subscription
         try {
           const subscription = await getCurrentSubscription(token);
           setCurrentSubscription(subscription);
         } catch (err) {
-          // Subscription not found or error - continue without it
           console.warn('Could not fetch subscription:', err);
           setCurrentSubscription(null);
         }
 
-        // Fetch notifications
         try {
           const notificationsData = await fetchNotifications({ page: 0, size: 10 }, token);
           setNotifications(notificationsData.content || []);
@@ -176,11 +168,9 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
     fetchData();
   }, [user, token, onNavigate]);
 
-  // Refresh data when component becomes visible (e.g., when user navigates back)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && user && token) {
-        // Refresh data when page becomes visible
         const fetchData = async () => {
           try {
             const employerData = await fetchEmployer(user.id, token);
@@ -195,7 +185,6 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
             const employerJobs = jobsResponse.content || [];
             setMyJobs(employerJobs);
 
-            // Refresh applications
             if (employerJobs.length > 0) {
               const jobIds = employerJobs.map((job: any) => job.id);
               const allApplications: ApplicationResponse[] = [];
@@ -204,7 +193,7 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                   const appsResponse = await fetchApplications({
                     jobId,
                     page: 0,
-                    size: 1000  // Fetch all applications
+                    size: 1000
                   }, token);
                   if (appsResponse && appsResponse.content && Array.isArray(appsResponse.content)) {
                     allApplications.push(...appsResponse.content);
@@ -219,7 +208,6 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
               setMyApplications(allApplications);
             }
 
-            // Refresh notifications
             try {
               const notificationsData = await fetchNotifications({ page: 0, size: 10 }, token);
               setNotifications(notificationsData.content || []);
@@ -239,7 +227,6 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
   }, [user, token]);
 
   const handleEditJob = (jobId: string) => {
-    // In a real app, this would open an edit modal or navigate to edit page
     alert(`Editing job ${jobId}`);
   };
 
@@ -250,64 +237,69 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
   };
 
   const handleViewApplications = (jobId: string) => {
-    // In a real app, this would navigate to applications page for this job
     alert(`Viewing applications for job ${jobId}`);
   };
 
-  // Show loading state
   if (loading) {
     return (
-      <div className="min-h-[calc(100vh-200px)] bg-gray-50 flex items-center justify-center">
+      <div className="min-h-[calc(100vh-200px)] bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+          <div className="relative">
+            <div className="w-20 h-20 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Briefcase className="w-8 h-8 text-blue-600 animate-pulse" />
+            </div>
+          </div>
+          <p className="mt-6 text-gray-700 font-semibold text-lg">Loading your dashboard...</p>
+          <p className="text-sm text-gray-400 mt-1">Please wait while we fetch your data</p>
         </div>
       </div>
     );
   }
 
-  // Show error state
   if (error) {
     return (
-      <div className="min-h-[calc(100vh-200px)] bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto px-4">
-          <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-red-600" />
-          <h1 className="text-2xl text-gray-900 mb-2">Error Loading Dashboard</h1>
+      <div className="min-h-[calc(100vh-200px)] bg-gradient-to-br from-red-50 via-white to-orange-50 flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto px-6">
+          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <AlertTriangle className="w-10 h-10 text-red-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-3">Error Loading Dashboard</h1>
           <p className="text-gray-600 mb-6">{error}</p>
-          <Button onClick={() => window.location.reload()} className="bg-blue-600 hover:bg-blue-700">
-            Retry
+          <Button onClick={() => window.location.reload()} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-300">
+            Try Again
           </Button>
         </div>
       </div>
     );
   }
 
-  // If employer data is not loaded yet, show loading
   if (!employer) {
     return (
-      <div className="min-h-[calc(100vh-200px)] bg-gray-50 flex items-center justify-center">
+      <div className="min-h-[calc(100vh-200px)] bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading employer data...</p>
+          <div className="w-20 h-20 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+          <p className="mt-6 text-gray-700 font-semibold">Loading employer data...</p>
         </div>
       </div>
     );
   }
 
-  // If employer is not verified, show verification required message
   if (employer?.verificationStatus === 'pending') {
     return (
-      <div className="min-h-[calc(100vh-200px)] bg-gray-50">
-        <div className="container mx-auto px-4 py-8">
+      <div className="min-h-[calc(100vh-200px)] bg-gradient-to-br from-yellow-50 via-white to-orange-50">
+        <div className="container mx-auto px-4 py-16">
           <div className="max-w-2xl mx-auto text-center">
-            <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-yellow-600" />
-            <h1 className="text-3xl text-gray-900 mb-2">Verification Required</h1>
-            <p className="text-gray-600 mb-6">
+            <div className="w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <AlertTriangle className="w-12 h-12 text-yellow-600" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">Verification Required</h1>
+            <p className="text-gray-600 mb-8 text-lg">
               Your employer account needs to be verified before you can access the dashboard and post jobs.
               Please complete the verification process.
             </p>
-            <Button onClick={() => onNavigate('verification')} className="bg-blue-600 hover:bg-blue-700">
-              Go to Verification
+            <Button onClick={() => onNavigate('verification')} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-3 text-lg">
+              Complete Verification
             </Button>
           </div>
         </div>
@@ -316,30 +308,64 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
   }
 
   return (
-    <div className="min-h-[calc(100vh-200px)] bg-gray-50 pb-8">
+    <div className="min-h-[calc(100vh-200px)] bg-gradient-to-br from-slate-50 via-white to-blue-50/40 pb-12">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
+        {/* Header Section */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-6">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => onNavigate('home')}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 transition-all duration-200 rounded-lg"
             >
               <ArrowLeft className="w-4 h-4" />
               Go Back
             </Button>
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Bell className="w-5 h-5 text-gray-600 cursor-pointer hover:text-gray-900 transition-colors" />
+                {notifications.filter((n: any) => !n.read).length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold shadow-lg">
+                    {notifications.filter((n: any) => !n.read).length}
+                  </span>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200"
+              >
+                Logout
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center justify-between">
+          
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
-              <h1 className="text-3xl text-gray-900 mb-2">{employer?.companyName || 'Employer Dashboard'}</h1>
-              <p className="text-gray-600">Manage your job postings and applications</p>
+              <div className="flex items-center gap-4 mb-1">
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200">
+                  <Briefcase className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900">{employer?.companyName || 'Employer Dashboard'}</h1>
+                  <div className="flex items-center gap-3 mt-0.5">
+                    <span className="text-gray-500 text-sm">Manage your job postings and applications</span>
+                    {employer?.verificationStatus === 'approved' && (
+                      <Badge className="bg-green-100 text-green-700 border-green-200 px-2 py-0.5">
+                        <CheckCircle className="w-3 h-3 mr-1" />
+                        Verified
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
             <Button
               className={currentSubscription && currentSubscription.status === 'active'
-                ? "bg-blue-600 hover:bg-blue-700"
-                : "bg-gray-600 hover:bg-gray-700 cursor-not-allowed"}
+                ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-200 hover:shadow-xl transition-all duration-300 px-6 py-2.5 rounded-xl"
+                : "bg-gradient-to-r from-gray-500 to-gray-600 text-white cursor-not-allowed px-6 py-2.5 rounded-xl"}
               disabled={!currentSubscription || currentSubscription.status !== 'active'}
               onClick={() => {
                 if (currentSubscription && currentSubscription.status === 'active') {
@@ -352,41 +378,46 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
               <Plus className="w-4 h-4 mr-2" />
               {currentSubscription && currentSubscription.status === 'active'
                 ? 'Post New Job'
-                : 'Post New Job (Subscription Required)'}
+                : 'Subscribe to Post Jobs'}
             </Button>
           </div>
         </div>
 
-        {/* Verification Status Alert */}
+        {/* Alerts */}
         {employer?.verificationStatus === 'approved' && (
-          <Alert className="mb-8 border-green-200 bg-green-50">
+          <Alert className="mb-6 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 shadow-sm rounded-xl">
             <CheckCircle className="w-4 h-4 text-green-600" />
-            <AlertDescription className="text-green-800">
-              Your account is verified! You can now post jobs and access all employer features.
+            <AlertDescription className="text-green-800 font-medium">
+              ✅ Your account is verified! You can now post jobs and access all employer features.
             </AlertDescription>
           </Alert>
         )}
 
-        {/* Subscription Alert */}
         {currentSubscription && currentSubscription.status === 'active' ? (
-          <Alert className="mb-8 border-green-200 bg-green-50">
-            <CheckCircle className="w-4 h-4 text-green-600" />
-            <AlertDescription className="text-green-800">
-              <strong>Active Subscription:</strong> {currentSubscription.plan.name} -
-              Posts used: {currentSubscription.jobPostsUsed} / {currentSubscription.jobPostsAllowed}
-              {currentSubscription.endDate && ` (Valid until ${new Date(currentSubscription.endDate).toLocaleDateString('en-IN')})`}
+          <Alert className="mb-6 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm rounded-xl">
+            <CheckCircle className="w-4 h-4 text-blue-600" />
+            <AlertDescription className="text-blue-800">
+              <span className="font-semibold">Active Subscription:</span> {currentSubscription.plan.name} —
+              <span className="ml-2">
+                <strong className="text-blue-900">{currentSubscription.jobPostsUsed}</strong> / <strong className="text-blue-900">{currentSubscription.jobPostsAllowed}</strong> posts used
+              </span>
+              {currentSubscription.endDate && (
+                <span className="ml-2 text-sm text-blue-600">
+                  📅 Valid until {new Date(currentSubscription.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </span>
+              )}
             </AlertDescription>
           </Alert>
         ) : (
-          <Alert className="mb-8 border-blue-200 bg-blue-50">
-            <AlertTriangle className="w-4 h-4 text-blue-600" />
-            <AlertDescription className="text-blue-800">
-              To start posting jobs, you need to subscribe to a plan. Choose a subscription plan that fits your needs.
+          <Alert className="mb-6 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 shadow-sm rounded-xl">
+            <AlertTriangle className="w-4 h-4 text-amber-600" />
+            <AlertDescription className="text-amber-800 flex items-center flex-wrap gap-3">
+              <span>⚠️ To start posting jobs, you need to subscribe to a plan.</span>
               <Button
                 variant="outline"
                 size="sm"
-                className="ml-4"
                 onClick={() => onNavigate('subscription')}
+                className="border-amber-300 text-amber-700 hover:bg-amber-100 hover:border-amber-400 transition-all duration-200 rounded-lg"
               >
                 View Plans
               </Button>
@@ -395,177 +426,270 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
         )}
 
         {/* Stats Cards */}
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <Card className="p-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+          <Card className="p-5 bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200 hover:shadow-xl transition-all duration-300 group rounded-2xl">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 mb-1">Active Jobs</p>
-                <p className="text-3xl text-gray-900">{myJobs.filter(j => j.status === 'active').length}</p>
+                <p className="text-sm font-semibold text-blue-600 mb-1">Active Jobs</p>
+                <p className="text-3xl font-bold text-gray-900">{myJobs.filter(j => j.status === 'active').length}</p>
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <Briefcase className="w-6 h-6 text-blue-600" />
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
+                <Briefcase className="w-6 h-6 text-white" />
               </div>
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-5 bg-gradient-to-br from-green-50 to-green-100/50 border-green-200 hover:shadow-xl transition-all duration-300 group rounded-2xl">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 mb-1">Total Applications</p>
-                <p className="text-3xl text-gray-900">{totalApplications}</p>
+                <p className="text-sm font-semibold text-green-600 mb-1">Total Applications</p>
+                <p className="text-3xl font-bold text-gray-900">{totalApplications}</p>
               </div>
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                <Users className="w-6 h-6 text-green-600" />
+              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
+                <Users className="w-6 h-6 text-white" />
               </div>
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-5 bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-200 hover:shadow-xl transition-all duration-300 group rounded-2xl">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 mb-1">Total Views</p>
-                <p className="text-3xl text-gray-900">{totalViews}</p>
+                <p className="text-sm font-semibold text-purple-600 mb-1">Total Views</p>
+                <p className="text-3xl font-bold text-gray-900">{totalViews}</p>
               </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                <Eye className="w-6 h-6 text-purple-600" />
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
+                <Eye className="w-6 h-6 text-white" />
               </div>
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-5 bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200 hover:shadow-xl transition-all duration-300 group rounded-2xl">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500 mb-1">Verification</p>
-                <p className="text-sm text-green-600">Verified</p>
+                <p className="text-sm font-semibold text-emerald-600 mb-1">Status</p>
+                <p className="text-sm font-bold text-emerald-700 flex items-center gap-1">
+                  <CheckCircle className="w-4 h-4" />
+                  Verified
+                </p>
               </div>
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-6 h-6 text-green-600" />
+              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
+                <Award className="w-6 h-6 text-white" />
               </div>
             </div>
           </Card>
         </div>
 
-        {/* Manage Applications Button */}
-        <div className="mb-8">
-          <Button 
-            className="bg-gray-900 hover:bg-gray-800 text-white"
+        {/* Quick Action Cards */}
+        <div className="grid md:grid-cols-2 gap-4 mb-8">
+          <Card 
+            className="p-5 bg-gradient-to-r from-purple-50 to-purple-100/50 border-2 border-purple-200 hover:border-purple-400 cursor-pointer transition-all duration-300 hover:shadow-xl group rounded-2xl"
             onClick={() => onNavigate('employer-manage-applications')}
           >
-            <Briefcase className="w-4 h-4 mr-2" />
-            Go to Manage Applications
-          </Button>
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-md group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
+                <UserCheck className="w-7 h-7 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-gray-900 mb-0.5">Manage Applications</h3>
+                <p className="text-gray-600 text-sm">Review and manage candidate applications</p>
+              </div>
+              <div className="w-8 h-8 bg-purple-200 rounded-full flex items-center justify-center group-hover:bg-purple-300 transition-all duration-300">
+                <ExternalLink className="w-4 h-4 text-purple-600" />
+              </div>
+            </div>
+          </Card>
+
+          <Card 
+            className="p-5 bg-gradient-to-r from-blue-50 to-blue-100/50 border-2 border-blue-200 hover:border-blue-400 cursor-pointer transition-all duration-300 hover:shadow-xl group rounded-2xl"
+            onClick={() => onNavigate('analytics')}
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-md group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
+                <BarChart3 className="w-7 h-7 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-gray-900 mb-0.5">View Analytics</h3>
+                <p className="text-gray-600 text-sm">Track performance and insights</p>
+              </div>
+              <div className="w-8 h-8 bg-blue-200 rounded-full flex items-center justify-center group-hover:bg-blue-300 transition-all duration-300">
+                <ExternalLink className="w-4 h-4 text-blue-600" />
+              </div>
+            </div>
+          </Card>
         </div>
 
-        {/* Manage Applications Card */}
-        <Card className="p-6 mb-8 border-2 border-purple-200 hover:border-purple-300 transition-colors cursor-pointer" onClick={() => onNavigate('employer-manage-applications')}>
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Briefcase className="w-8 h-8 text-purple-600" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-xl font-bold text-gray-900 mb-1">Manage Applications</h3>
-              <p className="text-gray-600">Review and manage job applications from candidates.</p>
-            </div>
-          </div>
-        </Card>
-
         {/* Main Content */}
-        <Tabs defaultValue="subscription" className="w-full">
-          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
-            <TabsList className="inline-flex w-max min-w-full sm:w-auto">
-              <TabsTrigger value="subscription" className="whitespace-nowrap">Subscription</TabsTrigger>
-              <TabsTrigger value="jobs" className="whitespace-nowrap">My Jobs</TabsTrigger>
-              <TabsTrigger value="applications" className="whitespace-nowrap">Applications</TabsTrigger>
-              <TabsTrigger value="notifications" className="whitespace-nowrap">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-1.5 mb-6 overflow-x-auto">
+            <TabsList className="inline-flex w-full md:w-auto gap-1">
+              <TabsTrigger value="jobs" className="flex items-center gap-2 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 data-[state=active]:shadow-sm rounded-lg px-4 py-2 transition-all duration-200">
+                <Briefcase className="w-4 h-4" />
+                My Jobs
+                <Badge variant="secondary" className="ml-1 bg-gray-100 text-gray-600">{myJobs.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="applications" className="flex items-center gap-2 data-[state=active]:bg-green-100 data-[state=active]:text-green-700 data-[state=active]:shadow-sm rounded-lg px-4 py-2 transition-all duration-200">
+                <Users className="w-4 h-4" />
+                Applications
+                <Badge variant="secondary" className="ml-1 bg-gray-100 text-gray-600">{myApplications.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="subscription" className="flex items-center gap-2 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700 data-[state=active]:shadow-sm rounded-lg px-4 py-2 transition-all duration-200">
+                <Award className="w-4 h-4" />
+                Subscription
+              </TabsTrigger>
+              <TabsTrigger value="notifications" className="flex items-center gap-2 data-[state=active]:bg-amber-100 data-[state=active]:text-amber-700 data-[state=active]:shadow-sm rounded-lg px-4 py-2 transition-all duration-200">
+                <Bell className="w-4 h-4" />
                 Notifications
                 {notifications.filter((n: any) => !n.read).length > 0 && (
-                  <Badge className="ml-2 bg-red-500 text-white">
+                  <Badge className="bg-red-500 text-white ml-1">
                     {notifications.filter((n: any) => !n.read).length}
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="analytics" className="whitespace-nowrap" onClick={() => onNavigate('analytics')}>Analytics</TabsTrigger>
-              <TabsTrigger value="verification" className="whitespace-nowrap">Verification</TabsTrigger>
+              <TabsTrigger value="verification" className="flex items-center gap-2 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-700 data-[state=active]:shadow-sm rounded-lg px-4 py-2 transition-all duration-200">
+                <CheckCircle className="w-4 h-4" />
+                Verification
+              </TabsTrigger>
             </TabsList>
           </div>
 
-          <TabsContent value="jobs" className="mt-6">
-            <Card>
+          {/* Jobs Tab */}
+          <TabsContent value="jobs" className="mt-0">
+            <Card className="border-0 shadow-lg rounded-2xl overflow-hidden">
               <div className="p-6">
-                <h3 className="text-lg text-gray-900 mb-4">Your Job Postings</h3>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Job Title</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Applications</TableHead>
-                      <TableHead>Views</TableHead>
-                      <TableHead>Posted Date</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {myJobs.length === 0 ? (
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">Your Job Postings</h3>
+                    <p className="text-sm text-gray-500 mt-1">Manage all your job listings in one place</p>
+                  </div>
+                  {currentSubscription && currentSubscription.status === 'active' && (
+                    <Button 
+                      onClick={() => onNavigate('employer-post-job')}
+                      className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all duration-300 rounded-xl"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      New Job
+                    </Button>
+                  )}
+                </div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader className="bg-gradient-to-r from-gray-50 to-gray-100/50">
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center text-gray-500 py-8">
-                          No jobs posted yet
-                        </TableCell>
+                        <TableHead className="font-semibold text-gray-700">Job Title</TableHead>
+                        <TableHead className="font-semibold text-gray-700">Category</TableHead>
+                        <TableHead className="font-semibold text-gray-700 text-center">Applications</TableHead>
+                        <TableHead className="font-semibold text-gray-700 text-center">Views</TableHead>
+                        <TableHead className="font-semibold text-gray-700">Posted Date</TableHead>
+                        <TableHead className="font-semibold text-gray-700">Status</TableHead>
+                        <TableHead className="font-semibold text-gray-700 text-center">Actions</TableHead>
                       </TableRow>
-                    ) : (
-                      myJobs.map((job) => {
-                        return (
-                          <TableRow key={job.id}>
+                    </TableHeader>
+                    <TableBody>
+                      {myJobs.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-16">
+                            <div className="flex flex-col items-center">
+                              <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
+                                <Briefcase className="w-10 h-10 text-gray-300" />
+                              </div>
+                              <p className="text-gray-500 font-semibold text-lg">No jobs posted yet</p>
+                              <p className="text-sm text-gray-400 mt-1">Post your first job to start receiving applications</p>
+                              {currentSubscription && currentSubscription.status === 'active' && (
+                                <Button 
+                                  onClick={() => onNavigate('employer-post-job')}
+                                  variant="outline" 
+                                  className="mt-4 border-blue-300 text-blue-600 hover:bg-blue-50 hover:border-blue-400 rounded-xl transition-all duration-200"
+                                >
+                                  <Plus className="w-4 h-4 mr-2" />
+                                  Post Your First Job
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        myJobs.map((job) => (
+                          <TableRow key={job.id} className="hover:bg-gray-50/70 transition-colors">
                             <TableCell>
                               <div>
-                                <p className="text-gray-900">{job.title}</p>
+                                <p className="font-semibold text-gray-900">{job.title}</p>
                                 <p className="text-sm text-gray-500">{job.location}</p>
                               </div>
                             </TableCell>
-                            <TableCell>{job.category || 'N/A'}</TableCell>
-                            <TableCell>{job.applications || 0}</TableCell>
-                            <TableCell>{job.views || 0}</TableCell>
-                            <TableCell>{job.postedDate ? new Date(job.postedDate).toLocaleDateString('en-IN') : 'N/A'}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="bg-gray-50 border-gray-200">
+                                {job.category || 'N/A'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <span className="font-semibold text-blue-600">{job.applications || 0}</span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <span className="font-semibold text-purple-600">{job.views || 0}</span>
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-600">
+                              {job.postedDate ? new Date(job.postedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
+                            </TableCell>
                             <TableCell>
                               <Badge className={
                                 job.status === 'active' ? 'bg-green-100 text-green-700 border-green-200' :
-                                  job.status === 'pending' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
-                                    'bg-gray-100 text-gray-700 border-gray-200'
+                                job.status === 'pending' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                                'bg-gray-100 text-gray-700 border-gray-200'
                               } variant="outline">
                                 {job.status}
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <div className="flex gap-2">
-                                <Button variant="outline" size="sm" disabled className="cursor-not-allowed">
-                                  <Edit className="w-4 h-4 mr-1" />
-                                  Edit (Subscription Required)
+                              <div className="flex items-center justify-center gap-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-9 w-9 p-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
+                                  onClick={() => handleViewApplications(job.id)}
+                                  title="View Applications"
+                                >
+                                  <Users className="w-4 h-4" />
                                 </Button>
-                                <Button variant="outline" size="sm" disabled className="cursor-not-allowed">
-                                  <Trash2 className="w-4 h-4 mr-1" />
-                                  Close (Subscription Required)
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-9 w-9 p-0 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200"
+                                  onClick={() => handleEditJob(job.id)}
+                                  title="Edit Job"
+                                  disabled
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-9 w-9 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                                  onClick={() => handleCloseJob(job.id)}
+                                  title="Close Job"
+                                  disabled
+                                >
+                                  <XCircle className="w-4 h-4" />
                                 </Button>
                               </div>
                             </TableCell>
                           </TableRow>
-                        );
-                      })
-                    )}
-                  </TableBody>
-                </Table>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
             </Card>
           </TabsContent>
 
-          <TabsContent value="applications" className="mt-6">
-            <Card>
+          {/* Applications Tab */}
+          <TabsContent value="applications" className="mt-0">
+            <Card className="border-0 shadow-lg rounded-2xl overflow-hidden">
               <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h3 className="text-lg text-gray-900">Job Applications</h3>
-                    <p className="text-sm text-gray-600 mt-1">
-                      View and manage applications for your posted jobs
-                    </p>
+                    <h3 className="text-xl font-bold text-gray-900">Job Applications</h3>
+                    <p className="text-sm text-gray-500 mt-1">Review and manage applications for your posted jobs</p>
                   </div>
                   <Button
                     variant="outline"
@@ -615,33 +739,63 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                         alert('Failed to refresh applications. Please check console for details.');
                       }
                     }}
+                    className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 rounded-xl transition-all duration-200"
                   >
-                    🔄 Refresh
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Refresh
                   </Button>
                 </div>
                 
                 {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                  <Card className="p-4 bg-blue-50 border-blue-200">
-                    <div className="text-sm text-blue-600 mb-1">Total Applications</div>
-                    <div className="text-2xl font-bold text-blue-900">{myApplications.length}</div>
-                  </Card>
-                  <Card className="p-4 bg-green-50 border-green-200">
-                    <div className="text-sm text-green-600 mb-1">New (Applied)</div>
-                    <div className="text-2xl font-bold text-green-900">
-                      {myApplications.filter((app: ApplicationResponse) => app.status === 'applied').length}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200 rounded-xl">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-blue-600 font-semibold mb-1">Total Applications</p>
+                        <p className="text-2xl font-bold text-blue-900">{myApplications.length}</p>
+                      </div>
+                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-sm">
+                        <Users className="w-5 h-5 text-white" />
+                      </div>
                     </div>
                   </Card>
-                  <Card className="p-4 bg-purple-50 border-purple-200">
-                    <div className="text-sm text-purple-600 mb-1">Shortlisted</div>
-                    <div className="text-2xl font-bold text-purple-900">
-                      {myApplications.filter((app: ApplicationResponse) => app.status === 'shortlisted').length}
+                  <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100/50 border-green-200 rounded-xl">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-green-600 font-semibold mb-1">New</p>
+                        <p className="text-2xl font-bold text-green-900">
+                          {myApplications.filter((app: ApplicationResponse) => app.status === 'applied').length}
+                        </p>
+                      </div>
+                      <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-sm">
+                        <UserPlus className="w-5 h-5 text-white" />
+                      </div>
                     </div>
                   </Card>
-                  <Card className="p-4 bg-orange-50 border-orange-200">
-                    <div className="text-sm text-orange-600 mb-1">Interviews</div>
-                    <div className="text-2xl font-bold text-orange-900">
-                      {myApplications.filter((app: ApplicationResponse) => app.status === 'interview').length}
+                  <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-200 rounded-xl">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-purple-600 font-semibold mb-1">Shortlisted</p>
+                        <p className="text-2xl font-bold text-purple-900">
+                          {myApplications.filter((app: ApplicationResponse) => app.status === 'shortlisted').length}
+                        </p>
+                      </div>
+                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-sm">
+                        <Star className="w-5 h-5 text-white" />
+                      </div>
+                    </div>
+                  </Card>
+                  <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100/50 border-orange-200 rounded-xl">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-orange-600 font-semibold mb-1">Interviews</p>
+                        <p className="text-2xl font-bold text-orange-900">
+                          {myApplications.filter((app: ApplicationResponse) => app.status === 'interview').length}
+                        </p>
+                      </div>
+                      <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-sm">
+                        <Calendar className="w-5 h-5 text-white" />
+                      </div>
                     </div>
                   </Card>
                 </div>
@@ -650,9 +804,12 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                 {loading ? (
                   <div className="text-center text-gray-500 py-8">Loading applications...</div>
                 ) : myApplications.length === 0 ? (
-                  <div className="text-center text-gray-500 py-8">
-                    <div>
-                      <p className="text-lg mb-2">No applications found</p>
+                  <div className="text-center py-16 bg-gray-50/50 rounded-2xl">
+                    <div className="flex flex-col items-center">
+                      <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
+                        <Users className="w-10 h-10 text-gray-300" />
+                      </div>
+                      <p className="text-xl font-semibold text-gray-600 mb-2">No applications found</p>
                       {myJobs.length > 0 && (
                         <p className="text-sm text-gray-400">
                           You have {myJobs.length} job{myJobs.length > 1 ? 's' : ''} posted.
@@ -668,7 +825,6 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {/* Group applications by job */}
                     {(() => {
                       const applicationsByJob = new Map<string, ApplicationResponse[]>();
                       myApplications.forEach((app: ApplicationResponse) => {
@@ -685,47 +841,46 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                         const newApps = apps.filter((app: ApplicationResponse) => app.status === 'applied').length;
                         
                         return (
-                          <Card key={jobId} className="border-l-4 border-l-blue-500">
-                            <div className="p-4">
-                              <div className="flex items-center justify-between mb-4">
+                          <Card key={jobId} className="border-l-4 border-l-blue-500 overflow-hidden rounded-xl">
+                            <div className="p-5">
+                              <div className="flex items-center justify-between mb-5 pb-3 border-b border-gray-100">
                                 <div>
-                                  <h4 className="text-lg font-semibold text-gray-900">{jobTitle}</h4>
-                                  <p className="text-sm text-gray-600">
-                                    {apps.length} application{apps.length !== 1 ? 's' : ''}
+                                  <h4 className="text-lg font-bold text-gray-900">{jobTitle}</h4>
+                                  <div className="flex items-center gap-3 mt-1">
+                                    <span className="text-sm text-gray-600">
+                                      {apps.length} application{apps.length !== 1 ? 's' : ''}
+                                    </span>
                                     {newApps > 0 && (
-                                      <Badge className="ml-2 bg-blue-500 text-white">
+                                      <Badge className="bg-blue-500 text-white animate-pulse">
                                         {newApps} new
                                       </Badge>
                                     )}
-                                  </p>
+                                  </div>
                                 </div>
                                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                                   {job?.status || 'N/A'}
                                 </Badge>
                               </div>
                               
-                              <div className="space-y-3">
+                              <div className="space-y-4">
                                 {apps.map((application: ApplicationResponse) => (
-                                  <div key={application.id} className="border-2 border-blue-200 rounded-lg p-4 bg-white hover:bg-blue-50 transition-colors shadow-sm">
-                                    <div className="flex items-start justify-between">
+                                  <div key={application.id} className="border-2 border-blue-100 rounded-xl p-5 bg-white hover:border-blue-300 hover:shadow-md transition-all duration-300">
+                                    <div className="flex flex-col md:flex-row md:items-start gap-4">
                                       <div className="flex-1">
-                                        {/* Candidate Name - Prominent */}
-                                        <div className="flex items-center gap-3 mb-3 pb-3 border-b">
-                                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                            <span className="text-blue-600 font-bold">
-                                              {application.candidateName?.charAt(0)?.toUpperCase() || 'A'}
-                                            </span>
+                                        <div className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-100">
+                                          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md flex-shrink-0">
+                                            {application.candidateName?.charAt(0)?.toUpperCase() || 'A'}
                                           </div>
                                           <div className="flex-1">
                                             <h5 className="font-bold text-lg text-gray-900">{application.candidateName || 'Unknown Candidate'}</h5>
-                                            <p className="text-xs text-gray-500">Candidate Application</p>
+                                            <p className="text-sm text-gray-500">Candidate</p>
                                           </div>
                                           <Badge className={
                                             application.status === 'shortlisted' ? 'bg-green-100 text-green-700 border-green-200' :
-                                              application.status === 'interview' ? 'bg-purple-100 text-purple-700 border-purple-200' :
-                                                application.status === 'rejected' ? 'bg-red-100 text-red-700 border-red-200' :
-                                                  application.status === 'selected' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-                                                    'bg-gray-100 text-gray-700 border-gray-200'
+                                            application.status === 'interview' ? 'bg-purple-100 text-purple-700 border-purple-200' :
+                                            application.status === 'rejected' ? 'bg-red-100 text-red-700 border-red-200' :
+                                            application.status === 'selected' ? 'bg-blue-100 text-blue-700 border-blue-200' :
+                                            'bg-gray-100 text-gray-700 border-gray-200'
                                           } variant="outline">
                                             {application.status}
                                           </Badge>
@@ -736,27 +891,26 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                                           )}
                                         </div>
                                         
-                                        {/* Contact Information */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                                          <div className="flex items-center gap-2 p-2 bg-gray-50 rounded">
-                                            <Mail className="w-4 h-4 text-blue-500" />
-                                            <div>
-                                              <span className="text-xs text-gray-600">Email</span>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                                          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                                            <Mail className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                                            <div className="min-w-0">
+                                              <p className="text-xs text-gray-500">Email</p>
                                               <a 
                                                 href={`mailto:${application.candidateEmail}`} 
-                                                className="block text-blue-600 hover:underline font-medium text-sm"
+                                                className="text-blue-600 hover:underline font-medium text-sm truncate block"
                                               >
                                                 {application.candidateEmail}
                                               </a>
                                             </div>
                                           </div>
-                                          <div className="flex items-center gap-2 p-2 bg-gray-50 rounded">
-                                            <Phone className="w-4 h-4 text-green-500" />
-                                            <div>
-                                              <span className="text-xs text-gray-600">Phone</span>
+                                          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+                                            <Phone className="w-4 h-4 text-green-500 flex-shrink-0" />
+                                            <div className="min-w-0">
+                                              <p className="text-xs text-gray-500">Phone</p>
                                               <a 
                                                 href={`tel:${application.candidatePhone}`} 
-                                                className="block text-green-600 hover:underline font-medium text-sm"
+                                                className="text-green-600 hover:underline font-medium text-sm truncate block"
                                               >
                                                 {application.candidatePhone || 'N/A'}
                                               </a>
@@ -764,36 +918,33 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                                           </div>
                                         </div>
                                         
-                                        {/* Additional Info */}
-                                        <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
+                                        <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
                                           <div>
-                                            <span className="font-medium">Applied:</span> {application.appliedDate ? new Date(application.appliedDate).toLocaleDateString('en-IN') : 'N/A'}
+                                            <span className="font-medium">Applied:</span> {application.appliedDate ? new Date(application.appliedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
                                           </div>
                                         </div>
                                         
-                                        {/* Notes */}
                                         {application.notes && (
-                                          <div className="mt-2 text-sm text-gray-700 bg-yellow-50 p-3 rounded border border-yellow-200">
+                                          <div className="mt-2 text-sm text-gray-700 bg-yellow-50 p-3 rounded-xl border border-yellow-200">
                                             <span className="font-medium text-yellow-800">Application Notes:</span>
                                             <p className="mt-1 text-gray-700">{application.notes}</p>
                                           </div>
                                         )}
                                         
-                                        {/* Resume */}
-                                        <div className="mt-3">
+                                        <div className="mt-4">
                                           {application.resumeUrl ? (
                                             <Button 
                                               variant="default" 
                                               size="sm"
                                               onClick={() => openFileInViewer(application.resumeUrl!)}
-                                              className="bg-green-600 hover:bg-green-700 text-white font-semibold shadow-md"
+                                              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-md hover:shadow-lg transition-all duration-300 rounded-xl"
                                             >
                                               <FileText className="w-4 h-4 mr-2" />
                                               View Resume
                                             </Button>
                                           ) : (
-                                            <div className="text-sm text-orange-700 bg-orange-100 border border-orange-300 p-2 rounded font-medium">
-                                              ⚠️ No resume uploaded by candidate
+                                            <div className="text-sm text-orange-700 bg-orange-100 border border-orange-300 p-2 rounded-xl font-medium inline-block">
+                                              ⚠️ No resume uploaded
                                             </div>
                                           )}
                                         </div>
@@ -813,65 +964,85 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
             </Card>
           </TabsContent>
 
-          <TabsContent value="subscription" className="mt-6">
-            <Card className="p-6">
-              <div className="text-center py-8">
-                <h3 className="text-lg text-gray-900 mb-4">Choose Your Subscription Plan</h3>
-                <p className="text-gray-600 mb-6">
+          {/* Subscription Tab */}
+          <TabsContent value="subscription" className="mt-0">
+            <Card className="border-0 shadow-lg rounded-2xl overflow-hidden">
+              <div className="p-12 text-center">
+                <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-purple-200">
+                  <Award className="w-12 h-12 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">Choose Your Subscription Plan</h3>
+                <p className="text-gray-600 max-w-md mx-auto mb-8">
                   Select a subscription plan to start posting jobs and access all employer features.
                 </p>
-                <Button onClick={() => onNavigate('subscription')}>
+                <Button onClick={() => onNavigate('subscription')} className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white shadow-lg shadow-purple-200 hover:shadow-xl transition-all duration-300 px-8 py-3 text-lg rounded-xl">
                   View Subscription Plans
                 </Button>
               </div>
             </Card>
           </TabsContent>
 
-          <TabsContent value="verification" className="mt-6">
-            <Card className="p-6">
-              <div className="text-center py-8">
-                <h3 className="text-lg text-gray-900 mb-4">Employer Verification</h3>
-                <p className="text-gray-600 mb-6">
-                  Complete your verification to access all features and build trust with candidates.
-                </p>
-                <Button onClick={() => onNavigate('verification')}>
-                  Go to Verification
-                </Button>
+          {/* Notifications Tab */}
+          <TabsContent value="notifications" className="mt-0">
+            <Card className="border-0 shadow-lg rounded-2xl overflow-hidden">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900">Recent Notifications</h3>
+                    <p className="text-sm text-gray-500 mt-1">Stay updated with the latest activities</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onNavigate('notifications')}
+                    className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 rounded-xl transition-all duration-200"
+                  >
+                    View All
+                  </Button>
+                </div>
+                <div className="space-y-3">
+                  {notifications.length === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Bell className="w-8 h-8 text-gray-300" />
+                      </div>
+                      <p className="text-gray-500">No notifications yet</p>
+                    </div>
+                  ) : (
+                    notifications.slice(0, 5).map((notification) => (
+                      <div key={notification.id} className="p-4 bg-gray-50 rounded-xl hover:bg-gray-100 hover:shadow-sm transition-all duration-200">
+                        <p className="text-sm text-gray-900 mb-1">{notification.message}</p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(notification.createdAt).toLocaleDateString('en-IN', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             </Card>
           </TabsContent>
 
-          <TabsContent value="notifications" className="mt-6">
-            <Card className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg text-gray-900">Recent Notifications</h3>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onNavigate('notifications')}
-                >
-                  View All
+          {/* Verification Tab */}
+          <TabsContent value="verification" className="mt-0">
+            <Card className="border-0 shadow-lg rounded-2xl overflow-hidden">
+              <div className="p-12 text-center">
+                <div className="w-24 h-24 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-200">
+                  <CheckCircle className="w-12 h-12 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">Employer Verification</h3>
+                <p className="text-gray-600 max-w-md mx-auto mb-8">
+                  Complete your verification to access all features and build trust with candidates.
+                </p>
+                <Button onClick={() => onNavigate('verification')} className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white shadow-lg shadow-emerald-200 hover:shadow-xl transition-all duration-300 px-8 py-3 text-lg rounded-xl">
+                  Go to Verification
                 </Button>
-              </div>
-              <div className="space-y-3">
-                {notifications.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-4">No notifications yet</p>
-                ) : (
-                  notifications.slice(0, 5).map((notification) => (
-                    <div key={notification.id} className="pb-3 border-b last:border-b-0">
-                      <p className="text-sm text-gray-900 mb-1">{notification.message}</p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(notification.createdAt).toLocaleDateString('en-IN', {
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </p>
-                    </div>
-                  ))
-                )}
               </div>
             </Card>
           </TabsContent>

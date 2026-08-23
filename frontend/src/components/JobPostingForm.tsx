@@ -100,13 +100,22 @@ export function JobPostingForm({
   const progress = (currentStep / totalSteps) * 100; // Calculate progress based on current step
 
   const jobCategories: JobCategory[] = [
+    "Medical Officer",
     "Junior Resident",
     "Senior Resident",
-    "Medical Officer",
-    "Faculty",
     "Specialist",
-    "Allied Health Professionals",
-    "Paramedical / Nursing",
+    "Faculty",
+    "Dental",
+    "AYUSH",
+    "Nursing",
+    "Paramedical",
+    "Allied Health",
+    "Pharmacy",
+    "Psychology & Mental Health",
+    "Nutrition & Dietetics",
+    "Life Science & Research",
+    "Hospital Administration",
+    "Public Health",
   ];
 
   const locations = [

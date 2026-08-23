@@ -342,8 +342,18 @@ public class AnalyticsController {
             case MEDICAL_OFFICER -> "Medical Officer";
             case FACULTY -> "Faculty";
             case SPECIALIST -> "Specialist";
+            case DENTAL -> "Dental";
             case AYUSH -> "AYUSH";
+            case NURSING -> "Nursing";
+            case PARAMEDICAL -> "Paramedical";
             case PARAMEDICAL_NURSING -> "Paramedical / Nursing";
+            case ALLIED_HEALTH -> "Allied Health";
+            case PHARMACY -> "Pharmacy";
+            case PSYCHOLOGY_MENTAL_HEALTH -> "Psychology & Mental Health";
+            case NUTRITION_DIETETICS -> "Nutrition & Dietetics";
+            case LIFE_SCIENCE_RESEARCH -> "Life Science & Research";
+            case HOSPITAL_ADMINISTRATION -> "Hospital Administration";
+            case PUBLIC_HEALTH -> "Public Health";
         };
     }
 }

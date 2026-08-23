@@ -1,5 +1,5 @@
 // AI assisted development
-import { BarChart, Briefcase, Users, Building2, Bell, Settings, Newspaper, DollarSign } from 'lucide-react';
+import { BarChart, Briefcase, Users, Building2, Bell, Settings, Newspaper, DollarSign, Sparkles } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
@@ -46,6 +46,12 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       description: 'View, create, edit, and delete job postings.',
       icon: <Briefcase className="w-8 h-8 text-blue-600" />,
       action: () => onNavigate('admin-jobs'),
+    },
+    {
+      title: 'AI Bulk Job Uploader',
+      description: 'Extract large recruitment PDFs into reviewable, searchable vacancy records.',
+      icon: <Sparkles className="w-8 h-8 text-blue-600" />,
+      action: () => onNavigate('admin-ai-bulk-upload'),
     },
     {
       title: 'Manage Admins',

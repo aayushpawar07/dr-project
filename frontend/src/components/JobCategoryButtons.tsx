@@ -1,11 +1,14 @@
 import React from "react";
 
 const categories = [
-  { label: "Junior Resident", icon: "🧑‍⚕️" },
-  { label: "Senior Resident", icon: "🧑‍⚕️" },
-  { label: "Medical Officer", icon: "🩺" },
-  { label: "Specialist", icon: "👨‍⚕️" },
+  { label: "Doctors", icon: "👨‍⚕️" },
+  { label: "Dental", icon: "🦷" },
+  { label: "AYUSH", icon: "🌿" },
   { label: "Nursing", icon: "👩‍⚕️" },
+  { label: "Paramedical", icon: "🧪" },
+  { label: "Allied Health", icon: "🦵" },
+  { label: "Pharmacy", icon: "💊" },
+  { label: "Hospital Administration", icon: "🏥" },
 ];
 
 interface JobCategoryButtonsProps {

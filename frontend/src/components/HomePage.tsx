@@ -96,6 +96,7 @@ function StatCard({
 
 export function HomePage({ onNavigate }: HomePageProps) {
   const [featuredJobs, setFeaturedJobs] = useState<any[]>([]);
+  const [allJobs, setAllJobs] = useState<any[]>([]);
   const [governmentJobs, setGovernmentJobs] = useState<any[]>([]);
   const [privateJobs, setPrivateJobs] = useState<any[]>([]);
   const [newsUpdates, setNewsUpdates] = useState<PulseUpdate[]>([]);
@@ -104,12 +105,17 @@ export function HomePage({ onNavigate }: HomePageProps) {
     // Load featured, latest, government, private jobs, news, and job options
     (async () => {
       try {
-        const [feat, latest, gov, priv, meta, news] = await Promise.all([
+        const [feat, latest, all, gov, priv, meta, news] = await Promise.all([
           fetchJobs({ featured: true, size: 6, status: "active" }).then(
             (r) => r.content ?? [],
           ),
           fetchJobs({
             size: 6,
+            sort: "createdAt,desc",
+            status: "active",
+          }).then((r) => r.content ?? []),
+          fetchJobs({
+            size: 10,
             sort: "createdAt,desc",
             status: "active",
           }).then((r) => r.content ?? []),
@@ -148,6 +154,9 @@ export function HomePage({ onNavigate }: HomePageProps) {
         const combinedJobs = Array.from(jobMap.values()).slice(0, 6);
         setFeaturedJobs(combinedJobs);
 
+        // All Jobs section â€” latest 10 jobs
+        setAllJobs(Array.isArray(all) ? all.slice(0, 10) : []);
+
         // Filter government jobs - ensure only government sector jobs are included
         const filteredGovJobs = Array.isArray(gov)
           ? gov
@@ -173,6 +182,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
       } catch (e) {
         // Set empty arrays on error, no mock data fallback
         setFeaturedJobs([]);
+        setAllJobs([]);
         setGovernmentJobs([]);
         setPrivateJobs([]);
         setNewsUpdates([]);
@@ -280,11 +290,11 @@ export function HomePage({ onNavigate }: HomePageProps) {
           </div>
 
           {featuredJobs.length > 0 ? (
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-3 gap-6">
               {featuredJobs.map((job, index) => (
                 <div
                   key={job.id}
-                  className="animate-fade-in-up"
+                  className="animate-fade-in-up h-full flex flex-col"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <JobCard
@@ -311,110 +321,121 @@ export function HomePage({ onNavigate }: HomePageProps) {
         </div>
       </section>
 
-      {/* Government & Private Jobs Split with Hover Effects */}
-      <section className="py-16 bg-gray-100 relative overflow-hidden">
-        {/* Decorative Elements */}
-        <div className="absolute top-0 left-0 w-64 h-64 bg-blue-100 rounded-full blur-3xl opacity-20"></div>
-        <div className="absolute bottom-0 right-0 w-64 h-64 bg-green-100 rounded-full blur-3xl opacity-20"></div>
-
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Government Jobs Column */}
-            <div className="space-y-4">
-              {/* Government Jobs Header */}
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <h2 className="text-2xl text-gray-900 flex items-center">
-                    <span className="w-2 h-8 bg-blue-600 rounded-full mr-3"></span>
-                    Government Jobs
-                  </h2>
-                  <p className="text-sm text-gray-600 ml-5 mt-1">
-                    Official government vacancies
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-300"
-                  onClick={() => onNavigate("govt-jobs")}
-                >
-                  View All
-                </Button>
+      {/* All Jobs Section â€” 2-column with rotating accent colors */}
+      {allJobs.length > 0 && (
+        <section className="py-16 bg-white relative">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-3xl text-gray-900 mb-2">All Jobs</h2>
+                <p className="text-gray-600">Browse every open position across healthcare</p>
               </div>
-
-              {/* Government Job Cards */}
-              {governmentJobs.length > 0 ? (
-                governmentJobs.map((job, index) => (
-                  <div
-                    key={job.id}
-                    className="animate-fade-in-right transform hover:scale-[1.02] transition-transform duration-300"
-                    style={{ animationDelay: `${index * 0.1}s` }}
-                  >
-                    <JobCard
-                      job={job}
-                      onViewDetails={(jobId) => onNavigate("job-detail", jobId)}
-                    />
-                  </div>
-                ))
-              ) : (
-                <Card className="p-8 text-center">
-                  <Landmark className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-600 text-sm">
-                    No government jobs available at the moment
-                  </p>
-                </Card>
-              )}
+              <Button
+                variant="outline"
+                onClick={() => onNavigate("jobs")}
+                className="group hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all duration-300"
+              >
+                View All
+                <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+              </Button>
             </div>
 
-            {/* Private Jobs Column */}
-            <div className="space-y-4">
-              {/* Private Jobs Header */}
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <h2 className="text-2xl text-gray-900 flex items-center">
-                    <span className="w-2 h-8 bg-green-600 rounded-full mr-3"></span>
-                    Private Jobs
-                  </h2>
-                  <p className="text-sm text-gray-600 ml-5 mt-1">
-                    Top hospitals & healthcare providers
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-all duration-300"
-                  onClick={() => onNavigate("private-jobs")}
+            {/* 2-column grid */}
+            <div className="grid md:grid-cols-3 gap-6">
+              {allJobs.map((job, index) => (
+                <div
+                  key={job.id}
+                  className="animate-fade-in-up h-full flex flex-col"
+                  style={{ animationDelay: `${index * 0.08}s` }}
                 >
-                  View All
-                </Button>
-              </div>
-
-              {/* Private Job Cards */}
-              {privateJobs.length > 0 ? (
-                privateJobs.map((job, index) => (
-                  <div
-                    key={job.id}
-                    className="animate-fade-in-left transform hover:scale-[1.02] transition-transform duration-300"
-                    style={{ animationDelay: `${index * 0.1}s` }}
-                  >
-                    <JobCard
-                      job={job}
-                      onViewDetails={(jobId) => onNavigate("job-detail", jobId)}
-                    />
-                  </div>
-                ))
-              ) : (
-                <Card className="p-8 text-center">
-                  <BriefcaseIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-600 text-sm">
-                    No private jobs available at the moment
-                  </p>
-                </Card>
-              )}
+                  <JobCard
+                    job={job}
+                    onViewDetails={(jobId) => onNavigate("job-detail", jobId)}
+                  />
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
+
+      {/* Government Jobs Section */}
+      {governmentJobs.length > 0 && (
+        <section className="py-16 bg-gray-50 relative">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-3xl text-gray-900 mb-2 flex items-center">
+                  <span className="w-1.5 h-8 bg-blue-600 rounded-full mr-3 inline-block"></span>
+                  Government Jobs
+                </h2>
+                <p className="text-gray-600 ml-5">Official government vacancies</p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => onNavigate("govt-jobs")}
+                className="group border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-300"
+              >
+                View All
+                <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </div>
+            <div className="grid md:grid-cols-3 gap-6">
+              {governmentJobs.map((job, index) => (
+                <div
+                  key={job.id}
+                  className="animate-fade-in-up h-full flex flex-col"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <JobCard
+                    job={job}
+                    onViewDetails={(jobId) => onNavigate("job-detail", jobId)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Private Jobs Section */}
+      {privateJobs.length > 0 && (
+        <section className="py-16 bg-white relative">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-3xl text-gray-900 mb-2 flex items-center">
+                  <span className="w-1.5 h-8 bg-green-600 rounded-full mr-3 inline-block"></span>
+                  Private Jobs
+                </h2>
+                <p className="text-gray-600 ml-5">Top hospitals &amp; healthcare providers</p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => onNavigate("private-jobs")}
+                className="group border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-all duration-300"
+              >
+                View All
+                <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </div>
+            <div className="grid md:grid-cols-3 gap-6">
+              {privateJobs.map((job, index) => (
+                <div
+                  key={job.id}
+                  className="animate-fade-in-up h-full flex flex-col"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
+                  <JobCard
+                    job={job}
+                    onViewDetails={(jobId) => onNavigate("job-detail", jobId)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ================= PREMIUM EDITORIAL NEWS SECTION ================= */}
       {newsUpdates.length > 0 && (

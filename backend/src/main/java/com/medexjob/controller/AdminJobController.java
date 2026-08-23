@@ -6,9 +6,14 @@ import com.medexjob.entity.User;
 import com.medexjob.repository.EmployerRepository;
 import com.medexjob.repository.JobRepository;
 import com.medexjob.repository.UserRepository;
+import com.medexjob.service.JobSearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -44,6 +49,9 @@ public class AdminJobController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private JobSearchService jobSearchService;
+
     /**
      * Get all jobs for admin (including all statuses: DRAFT, PENDING, ACTIVE, CLOSED)
      */
@@ -51,85 +59,63 @@ public class AdminJobController {
     public ResponseEntity<Map<String, Object>> getAllJobs(
             @RequestParam(value = "search", required = false) String search,
             @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "sector", required = false) String sector,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size,
             @RequestParam(value = "sort", defaultValue = "createdAt,desc") String sort) {
         
         try {
-            logger.info("Admin fetching all jobs - search: {}, status: {}", search, status);
-            
-            List<Job> allJobs = new ArrayList<>();
-            
-            // Filter by status if provided
-            if (status != null && !status.equalsIgnoreCase("all")) {
-                Job.JobStatus jobStatus = parseStatus(status);
-                if (jobStatus != null) {
-                    allJobs = jobRepository.findAll().stream()
-                        .filter(j -> j.getStatus() == jobStatus && !j.isDeleted())
-                        .collect(Collectors.toList());
+            logger.info("Admin fetching all jobs - search: {}, status: {}, sector: {}", search, status, sector);
+
+            int safePage = Math.max(page, 0);
+            int safeSize = Math.min(Math.max(size, 1), 100);
+
+            Job.JobStatus statusFilter = null;
+            if (status != null && !status.isBlank() && !status.equalsIgnoreCase("all")) {
+                try {
+                    statusFilter = Job.JobStatus.valueOf(status.trim().toUpperCase(Locale.ROOT));
+                } catch (IllegalArgumentException ex) {
+                    return ResponseEntity.badRequest().body(Map.of("error", "Invalid status filter."));
                 }
-            } else {
-                // Get all non-deleted jobs
-                allJobs = jobRepository.findAll().stream()
-                    .filter(j -> !j.isDeleted())
-                    .collect(Collectors.toList());
             }
-            
-            // Apply search filter if provided
-            if (search != null && !search.isBlank()) {
-                String searchLower = search.toLowerCase();
-                allJobs = allJobs.stream()
-                    .filter(j -> 
-                        j.getTitle().toLowerCase().contains(searchLower) ||
-                        (j.getEmployer() != null && j.getEmployer().getCompanyName() != null && 
-                         j.getEmployer().getCompanyName().toLowerCase().contains(searchLower)) ||
-                        (j.getLocation() != null && j.getLocation().toLowerCase().contains(searchLower)))
-                    .collect(Collectors.toList());
-            }
-            
-            // Sort jobs
-            String[] sortParts = sort.split(",");
-            boolean ascending = sortParts.length > 1 && sortParts[1].equalsIgnoreCase("asc");
-            String sortField = sortParts[0];
-            
-            allJobs.sort((a, b) -> {
-                int comparison;
-                switch (sortField) {
-                    case "title":
-                        comparison = a.getTitle().compareToIgnoreCase(b.getTitle());
-                        break;
-                    case "status":
-                        comparison = a.getStatus().name().compareTo(b.getStatus().name());
-                        break;
-                    case "location":
-                        String locA = a.getLocation() != null ? a.getLocation() : "";
-                        String locB = b.getLocation() != null ? b.getLocation() : "";
-                        comparison = locA.compareToIgnoreCase(locB);
-                        break;
-                    case "createdAt":
-                    default:
-                        comparison = a.getCreatedAt().compareTo(b.getCreatedAt());
-                        break;
+
+            Job.JobSector sectorFilter = null;
+            if (sector != null && !sector.isBlank() && !sector.equalsIgnoreCase("all")) {
+                sectorFilter = parseSectorFilter(sector);
+                if (sectorFilter == null) {
+                    return ResponseEntity.badRequest().body(Map.of("error", "Invalid sector. Use government, private, or all."));
                 }
-                return ascending ? comparison : -comparison;
-            });
-            
-            // Paginate
-            int totalElements = allJobs.size();
-            int totalPages = (int) Math.ceil((double) totalElements / size);
-            int start = page * size;
-            int end = Math.min(start + size, totalElements);
-            List<Job> paginatedJobs = start < totalElements ? allJobs.subList(start, end) : new ArrayList<>();
-            
+            }
+
+            String[] sortParts = sort == null ? new String[0] : sort.split(",");
+            String requestedField = sortParts.length > 0 ? sortParts[0] : "createdAt";
+            String sortField = Set.of("createdAt", "title", "status", "location", "lastDate").contains(requestedField)
+                    ? requestedField : "createdAt";
+            Sort.Direction direction = sortParts.length > 1 && sortParts[1].equalsIgnoreCase("asc")
+                    ? Sort.Direction.ASC : Sort.Direction.DESC;
+            Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by(direction, sortField));
+
+            Page<Job> result = jobSearchService.searchJobsAdvanced(
+                    search,
+                    null,
+                    sectorFilter,
+                    null,
+                    null,
+                    null,
+                    null,
+                    statusFilter,
+                    null,
+                    pageable
+            );
+
             Map<String, Object> response = new HashMap<>();
-            response.put("content", paginatedJobs.stream().map(this::toResponse).collect(Collectors.toList()));
-            response.put("page", page);
-            response.put("size", size);
-            response.put("totalElements", totalElements);
-            response.put("totalPages", totalPages);
-            
+            response.put("content", result.getContent().stream().map(this::toResponse).collect(Collectors.toList()));
+            response.put("page", result.getNumber());
+            response.put("size", result.getSize());
+            response.put("totalElements", result.getTotalElements());
+            response.put("totalPages", result.getTotalPages());
             return ResponseEntity.ok(response);
-            
+
         } catch (Exception e) {
             logger.error("Error fetching admin jobs: {}", e.getMessage(), e);
             return ResponseEntity.status(500).body(Map.of("error", "Failed to fetch jobs: " + e.getMessage()));
@@ -638,6 +624,16 @@ public class AdminJobController {
         }
     }
 
+    private Job.JobSector parseSectorFilter(String sector) {
+        if (sector == null || sector.isBlank() || sector.equalsIgnoreCase("all")) return null;
+        try {
+            return Job.JobSector.valueOf(sector.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            logger.warn("Unknown sector filter value: '{}'", sector);
+            return null;
+        }
+    }
+
     private Employer.CompanyType parseCompanyType(String type) {
         if (type == null) return Employer.CompanyType.HOSPITAL;
         try {
@@ -654,16 +650,36 @@ public class AdminJobController {
             return Job.JobCategory.JUNIOR_RESIDENT;
         } else if (lowerLabel.equals("senior resident") || lowerLabel.equals("senior_resident")) {
             return Job.JobCategory.SENIOR_RESIDENT;
-        } else if (lowerLabel.equals("medical officer") || lowerLabel.equals("medical_officer")) {
+        } else if (lowerLabel.equals("medical officer") || lowerLabel.equals("medical_officer") || lowerLabel.equals("doctor") || lowerLabel.equals("doctors")) {
             return Job.JobCategory.MEDICAL_OFFICER;
-        } else if (lowerLabel.equals("faculty")) {
+        } else if (lowerLabel.equals("faculty") || lowerLabel.equals("professor")) {
             return Job.JobCategory.FACULTY;
-        } else if (lowerLabel.equals("specialist")) {
+        } else if (lowerLabel.equals("specialist") || lowerLabel.equals("consultant")) {
             return Job.JobCategory.SPECIALIST;
-        } else if (lowerLabel.equals("ayush")) {
+        } else if (lowerLabel.equals("dental") || lowerLabel.equals("bds") || lowerLabel.equals("mds")) {
+            return Job.JobCategory.DENTAL;
+        } else if (lowerLabel.equals("ayush") || lowerLabel.equals("ayurveda") || lowerLabel.equals("homoeopathy") || lowerLabel.equals("unani") || lowerLabel.equals("bams") || lowerLabel.equals("bhms")) {
             return Job.JobCategory.AYUSH;
-        } else if (lowerLabel.equals("paramedical / nursing") || lowerLabel.equals("paramedical_nursing") || lowerLabel.equals("paramedical")) {
+        } else if (lowerLabel.equals("nursing") || lowerLabel.equals("nurse") || lowerLabel.equals("staff nurse") || lowerLabel.equals("gnm") || lowerLabel.equals("anm")) {
+            return Job.JobCategory.NURSING;
+        } else if (lowerLabel.equals("paramedical") || lowerLabel.equals("lab technician") || lowerLabel.equals("radiographer")) {
+            return Job.JobCategory.PARAMEDICAL;
+        } else if (lowerLabel.equals("paramedical / nursing") || lowerLabel.equals("paramedical_nursing")) {
             return Job.JobCategory.PARAMEDICAL_NURSING;
+        } else if (lowerLabel.equals("allied health") || lowerLabel.equals("allied health professionals") || lowerLabel.equals("physiotherapy") || lowerLabel.equals("bpt")) {
+            return Job.JobCategory.ALLIED_HEALTH;
+        } else if (lowerLabel.equals("pharmacy") || lowerLabel.equals("pharmacist") || lowerLabel.equals("b.pharm") || lowerLabel.equals("d.pharm")) {
+            return Job.JobCategory.PHARMACY;
+        } else if (lowerLabel.equals("psychology & mental health") || lowerLabel.equals("psychology")) {
+            return Job.JobCategory.PSYCHOLOGY_MENTAL_HEALTH;
+        } else if (lowerLabel.equals("nutrition & dietetics") || lowerLabel.equals("dietetics") || lowerLabel.equals("nutritionist")) {
+            return Job.JobCategory.NUTRITION_DIETETICS;
+        } else if (lowerLabel.equals("life science & research") || lowerLabel.equals("research")) {
+            return Job.JobCategory.LIFE_SCIENCE_RESEARCH;
+        } else if (lowerLabel.equals("hospital administration") || lowerLabel.equals("administration") || lowerLabel.equals("mha")) {
+            return Job.JobCategory.HOSPITAL_ADMINISTRATION;
+        } else if (lowerLabel.equals("public health") || lowerLabel.equals("mph")) {
+            return Job.JobCategory.PUBLIC_HEALTH;
         }
         return Job.JobCategory.MEDICAL_OFFICER;
     }
@@ -728,6 +744,8 @@ public class AdminJobController {
         m.put("featured", Boolean.TRUE.equals(j.getIsFeatured()));
         m.put("views", j.getViews());
         m.put("applications", j.getApplicationsCount());
+        m.put("sourceRecruitmentId", j.getSourceRecruitmentId() != null ? j.getSourceRecruitmentId().toString() : null);
+        m.put("sourceVacancyId", j.getSourceVacancyId() != null ? j.getSourceVacancyId().toString() : null);
         m.put("deleted", j.isDeleted());
         
         return m;
@@ -741,8 +759,18 @@ public class AdminJobController {
             case MEDICAL_OFFICER: return "Medical Officer";
             case FACULTY: return "Faculty";
             case SPECIALIST: return "Specialist";
+            case DENTAL: return "Dental";
             case AYUSH: return "AYUSH";
+            case NURSING: return "Nursing";
+            case PARAMEDICAL: return "Paramedical";
             case PARAMEDICAL_NURSING: return "Paramedical / Nursing";
+            case ALLIED_HEALTH: return "Allied Health";
+            case PHARMACY: return "Pharmacy";
+            case PSYCHOLOGY_MENTAL_HEALTH: return "Psychology & Mental Health";
+            case NUTRITION_DIETETICS: return "Nutrition & Dietetics";
+            case LIFE_SCIENCE_RESEARCH: return "Life Science & Research";
+            case HOSPITAL_ADMINISTRATION: return "Hospital Administration";
+            case PUBLIC_HEALTH: return "Public Health";
             default: return "";
         }
     }

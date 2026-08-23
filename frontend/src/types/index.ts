@@ -8,8 +8,19 @@ export type JobCategory =
   | 'Medical Officer' 
   | 'Faculty' 
   | 'Specialist' 
+  | 'Dental'
+  | 'AYUSH'
+  | 'Nursing'
+  | 'Paramedical'
+  | 'Paramedical / Nursing'
+  | 'Allied Health'
   | 'Allied Health Professionals' 
-  | 'Paramedical / Nursing';
+  | 'Pharmacy'
+  | 'Psychology & Mental Health'
+  | 'Nutrition & Dietetics'
+  | 'Life Science & Research'
+  | 'Hospital Administration'
+  | 'Public Health';
 
 export type ApplicationStatus = 'applied' | 'shortlisted' | 'interview' | 'rejected' | 'selected';
 
@@ -54,9 +65,10 @@ export interface Job {
   applyLink?: string;
   employerId?: string;
   status: 'active' | 'closed' | 'pending';
-  featured: boolean;
-  views: number;
-  applications: number;
+  slug?: string;
+  speciality?: string;
+  department?: string;
+  sourceRecruitmentId?: string;
 }
 
 export interface Application {

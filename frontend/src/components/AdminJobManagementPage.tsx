@@ -91,6 +91,7 @@ export function AdminJobManagementPage({
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [searchTerm, setSearchTerm] = useState(""); // State for search input
   const [filterStatus, setFilterStatus] = useState<string>("all"); // 'all', 'active', 'pending', 'draft', 'closed'
+  const [filterSector, setFilterSector] = useState<"all" | JobSector>("all");
   const [appLoading, setAppLoading] = useState(false);
   const [interviewDate, setInterviewDate] = useState("");
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
@@ -105,6 +106,7 @@ export function AdminJobManagementPage({
         sort: "createdAt,desc",
       };
       if (filterStatus !== "all") params.status = filterStatus;
+      if (filterSector !== "all") params.sector = filterSector;
       // Use admin API to fetch all jobs including drafts/pending
       const data = await fetchAdminJobs(params);
       const allJobs: Job[] = (data?.content || []).map((job: any) => ({
@@ -141,7 +143,7 @@ export function AdminJobManagementPage({
 
   useEffect(() => {
     loadJobs();
-  }, [filterStatus, searchTerm]); // Re-fetch when filters or search term change
+  }, [filterStatus, filterSector, searchTerm]); // Re-fetch when filters or search term change
 
   const handleCreateNewJob = () => {
     onNavigate("admin-post-job");
@@ -398,6 +400,16 @@ export function AdminJobManagementPage({
                   <SelectItem value="closed">Closed</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={filterSector} onValueChange={(value) => setFilterSector(value as "all" | JobSector)}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Job Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Jobs</SelectItem>
+                  <SelectItem value="government">Government Jobs</SelectItem>
+                  <SelectItem value="private">Private Jobs</SelectItem>
+                </SelectContent>
+              </Select>
               <div className="flex flex-col gap-2">
                 <Button
                   onClick={handleCreateNewJob}
@@ -443,7 +455,7 @@ export function AdminJobManagementPage({
                 <Eye className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg text-gray-900 mb-2">No jobs found</h3>
                 <p className="text-gray-600 mb-4">
-                  {searchTerm || filterStatus !== "all"
+                  {searchTerm || filterStatus !== "all" || filterSector !== "all"
                     ? "Try adjusting your search or filters."
                     : "Start by creating a new job posting."}
                 </p>

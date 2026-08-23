@@ -25,16 +25,16 @@ public class FileUploadService {
     private static final Logger logger = LoggerFactory.getLogger(FileUploadService.class);
 
     // FTP Configuration from Hostinger
-    @Value("${ftp.host:82.180.143.101}")
+    @Value("${ftp.host:}")
     private String ftpHost;
 
     @Value("${ftp.port:21}")
     private int ftpPort;
 
-    @Value("${ftp.username:u284488379}")
+    @Value("${ftp.username:}")
     private String ftpUsername;
 
-    @Value("${ftp.password:Shivam@3650}")
+    @Value("${ftp.password:}")
     private String ftpPassword;
 
     @Value("${ftp.remote-dir:public_html/uploads}")
@@ -46,7 +46,7 @@ public class FileUploadService {
     @Value("${file.upload-dir:uploads}")
     private String localUploadDir;
     
-    @Value("${file.use-ftp:true}")
+    @Value("${file.use-ftp:false}")
     private boolean useFtp;
 
     @jakarta.annotation.PostConstruct
@@ -56,7 +56,6 @@ public class FileUploadService {
         logger.info("  FTP Enabled: {}", useFtp);
         logger.info("  FTP Host: {}", ftpHost);
         logger.info("  FTP Port: {}", ftpPort);
-        logger.info("  FTP Username: {}", ftpUsername);
         logger.info("  FTP Remote Dir: {}", ftpRemoteDir);
         logger.info("  Base URL: {}", baseUrl);
         logger.info("  Local Upload Dir: {}", localUploadDir);

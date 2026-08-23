@@ -5,9 +5,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -125,6 +127,18 @@ public interface JobRepository extends JpaRepository<Job, UUID>, JpaSpecificatio
     // Find jobs with most applications
     @Query("SELECT j FROM Job j WHERE j.status = :status ORDER BY j.applicationsCount DESC")
     Page<Job> findJobsWithMostApplications(@Param("status") Job.JobStatus status, Pageable pageable);
+
+    // Find all active jobs that have passed their expiration date
+    @Query("SELECT j FROM Job j WHERE j.status = :status AND j.deletedAt IS NULL AND j.lastDate < :today")
+    List<Job> findExpiredActiveJobs(@Param("status") Job.JobStatus status, @Param("today") LocalDate today);
+
+    // Auto-close expired jobs in batch
+    @Modifying
+    @Transactional
+    @Query("UPDATE Job j SET j.status = :closedStatus, j.updatedAt = CURRENT_TIMESTAMP WHERE j.status = :activeStatus AND j.deletedAt IS NULL AND j.lastDate < :today")
+    int closeExpiredActiveJobs(@Param("closedStatus") Job.JobStatus closedStatus,
+                               @Param("activeStatus") Job.JobStatus activeStatus,
+                               @Param("today") LocalDate today);
 
     // Candidate-facing filter metadata. Keep it aligned with public listings so
     // draft/deleted records and the opposite sector never leak into filter options.

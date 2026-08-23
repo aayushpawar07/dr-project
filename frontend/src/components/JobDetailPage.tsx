@@ -15,6 +15,11 @@ import {
   Upload,
   Shield,
   BriefcaseIcon,
+  Share2,
+  Copy,
+  Check,
+  MessageCircle,
+  Send,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -72,9 +77,64 @@ export function JobDetailPage({
   const [saving, setSaving] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
   const [userApplication, setUserApplication] = useState<any>(null);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const locationText =
     job?.location || [job?.city, job?.state].filter(Boolean).join(", ");
   const { jobId } = useParams<{ jobId: string }>();
+
+  const getShareUrl = () => {
+    return `${window.location.origin}/job/${job?.slug || job?.id || jobId}`;
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(getShareUrl());
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    } catch (err) {
+      console.error("Failed to copy link", err);
+    }
+  };
+
+  const handleNativeShare = async () => {
+    if (!job) return;
+    const shareUrl = getShareUrl();
+    const shareData = {
+      title: `${job.title} | MedExJob`,
+      text: `Check out this medical job opening: ${job.title} at ${job.organization || 'MedExJob'}`,
+      url: shareUrl,
+    };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {}
+    }
+    setShowShareDialog(true);
+  };
+
+  const shareToWhatsApp = () => {
+    const text = encodeURIComponent(`*${job?.title}*\n${job?.organization ? job.organization + '\n' : ''}Apply here: ${getShareUrl()}`);
+    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+  };
+
+  const shareToLinkedIn = () => {
+    const url = encodeURIComponent(getShareUrl());
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank');
+  };
+
+  const shareToTwitter = () => {
+    const text = encodeURIComponent(`Check out this job opportunity: ${job?.title} at ${job?.organization || 'MedExJob'}`);
+    const url = encodeURIComponent(getShareUrl());
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+  };
+
+  const shareToEmail = () => {
+    const subject = encodeURIComponent(`Job Opportunity: ${job?.title}`);
+    const body = encodeURIComponent(`Hi,\n\nI thought you might be interested in this job opening:\n\n${job?.title}\n${job?.organization || ''}\nLocation: ${locationText || ''}\n\nView details & apply: ${getShareUrl()}`);
+    window.open(`mailto:?subject=${subject}&body=${body}`);
+  };
 
   // Debug: Track dialog state changes
   useEffect(() => {
@@ -427,6 +487,15 @@ export function JobDetailPage({
                       Featured
                     </Badge>
                   )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="ml-auto text-xs flex items-center gap-1 text-gray-600 hover:text-blue-600 hover:bg-blue-50 border-gray-300"
+                    onClick={handleNativeShare}
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    Share
+                  </Button>
                 </div>
 
                 <div>
@@ -1473,20 +1542,16 @@ export function JobDetailPage({
                   </>
                 )}
 
-                {/* Show "Login to Save" only when user is NOT logged in */}
-                {!isAuthenticated && (
-                  <>
-                    <Separator />
-                    <Button
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => onNavigate("login")}
-                    >
-                      <Bookmark className="w-4 h-4 mr-2" />
-                      Login to Save
-                    </Button>
-                  </>
-                )}
+                {/* Share Job button for all users (candidates, employers, admins, guests) */}
+                <Separator />
+                <Button
+                  variant="outline"
+                  className="w-full text-blue-600 border-blue-200 hover:bg-blue-50"
+                  onClick={handleNativeShare}
+                >
+                  <Share2 className="w-4 h-4 mr-2 text-blue-600" />
+                  Share Job
+                </Button>
               </div>
             </Card>
 
@@ -1584,6 +1649,89 @@ export function JobDetailPage({
               )}
           </div>
         </div>
+
+        {/* Share Dialog */}
+        <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+          <DialogContent className="sm:max-w-[440px]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-xl font-bold text-gray-900">
+                <Share2 className="w-5 h-5 text-blue-600" />
+                Share this Job
+              </DialogTitle>
+              <DialogDescription>
+                Share this opportunity with colleagues, candidates, or on social platforms.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 pt-2">
+              {/* Direct Copy Input */}
+              <div className="flex items-center space-x-2">
+                <Input
+                  readOnly
+                  value={getShareUrl()}
+                  className="flex-1 bg-gray-50 text-sm text-gray-700 select-all"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleCopyLink}
+                  className={copiedLink ? "bg-green-600 hover:bg-green-700 text-white" : "bg-blue-600 hover:bg-blue-700 text-white"}
+                >
+                  {copiedLink ? (
+                    <>
+                      <Check className="w-4 h-4 mr-1" />
+                      Copied
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 mr-1" />
+                      Copy Link
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Social Channels */}
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <Button
+                  variant="outline"
+                  onClick={shareToWhatsApp}
+                  className="flex items-center justify-center gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50 h-11"
+                >
+                  <MessageCircle className="w-4 h-4 text-emerald-600" />
+                  WhatsApp
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={shareToLinkedIn}
+                  className="flex items-center justify-center gap-2 border-blue-300 text-blue-700 hover:bg-blue-50 h-11"
+                >
+                  <Briefcase className="w-4 h-4 text-blue-600" />
+                  LinkedIn
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={shareToTwitter}
+                  className="flex items-center justify-center gap-2 border-slate-300 text-slate-700 hover:bg-slate-50 h-11"
+                >
+                  <Send className="w-4 h-4 text-slate-600" />
+                  Twitter / X
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={shareToEmail}
+                  className="flex items-center justify-center gap-2 border-purple-300 text-purple-700 hover:bg-purple-50 h-11"
+                >
+                  <Mail className="w-4 h-4 text-purple-600" />
+                  Email
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

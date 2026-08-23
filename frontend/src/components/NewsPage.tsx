@@ -4,7 +4,7 @@ import { Badge } from './ui/badge';
 import { Card } from './ui/card';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
-import { Search, Calendar, Newspaper, Filter, RefreshCw, Landmark, Briefcase, GraduationCap, Timer, Sparkles, ChevronRight } from 'lucide-react';
+import { Search, Calendar, Newspaper, Filter, RefreshCw, Landmark, Briefcase, GraduationCap, Timer, Sparkles, ChevronRight, Share2, Check } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 interface NewsPageProps {
@@ -69,6 +69,32 @@ export function NewsPage({ onNavigate }: NewsPageProps) {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
+  const [copiedNewsId, setCopiedNewsId] = useState<string | null>(null);
+
+  const handleShareNews = async (e: React.MouseEvent, update: PulseUpdate) => {
+    e.stopPropagation();
+    const shareUrl = `${window.location.origin}/news/${update.id}`;
+    const shareData = {
+      title: `${update.title} | MedExJob News`,
+      text: `${update.title} - Read the full update on MedExJob`,
+      url: shareUrl,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {}
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopiedNewsId(update.id);
+      setTimeout(() => setCopiedNewsId(null), 2500);
+    } catch (err) {
+      console.error('Failed to copy news link', err);
+    }
+  };
 
   useEffect(() => {
     loadUpdates();
@@ -291,9 +317,28 @@ export function NewsPage({ onNavigate }: NewsPageProps) {
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2 text-xs md:text-sm text-slate-600 bg-white/80 border border-white/60 rounded-full px-3 py-1.5 shadow-sm shrink-0">
-                        <Calendar className="w-4 h-4 text-gray-500" />
-                        Updated {formatDate(update.date)}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-2 text-xs md:text-sm text-slate-600 bg-white/80 border border-white/60 rounded-full px-3 py-1.5 shadow-sm">
+                          <Calendar className="w-4 h-4 text-gray-500" />
+                          Updated {formatDate(update.date)}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title={copiedNewsId === update.id ? 'Link Copied!' : 'Share News'}
+                          className={`h-8 w-8 rounded-full border bg-white/80 transition-all ${
+                            copiedNewsId === update.id
+                              ? 'text-green-600 bg-green-50 border-green-200 shadow-sm'
+                              : 'text-gray-500 hover:text-blue-600 hover:bg-white border-white/60 shadow-sm'
+                          }`}
+                          onClick={(e) => handleShareNews(e, update)}
+                        >
+                          {copiedNewsId === update.id ? (
+                            <Check className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <Share2 className="w-4 h-4" />
+                          )}
+                        </Button>
                       </div>
                     </div>
 
@@ -314,21 +359,40 @@ export function NewsPage({ onNavigate }: NewsPageProps) {
                           <span className="text-xs text-gray-500 font-medium">
                             {update.fullStory ? 'Tap to read full story' : 'View on news page'}
                           </span>
-                          <Button 
-                            variant="ghost" 
-                            className={`h-9 px-4 font-semibold gap-2 group-hover:gap-3 transition-all ${meta.accent}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (update.fullStory) {
-                                onNavigate(`news/${update.id}`);
-                              } else {
-                                onNavigate('news');
-                              }
-                            }}
-                          >
-                            {update.fullStory ? 'View Full Story' : 'View Story'}
-                            <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title={copiedNewsId === update.id ? 'Link Copied!' : 'Share News'}
+                              className={`h-8 w-8 p-0 rounded-full transition-colors ${
+                                copiedNewsId === update.id
+                                  ? 'text-green-600 bg-green-50'
+                                  : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                              }`}
+                              onClick={(e) => handleShareNews(e, update)}
+                            >
+                              {copiedNewsId === update.id ? (
+                                <Check className="w-4 h-4 text-green-600" />
+                              ) : (
+                                <Share2 className="w-4 h-4" />
+                              )}
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              className={`h-9 px-4 font-semibold gap-2 group-hover:gap-3 transition-all ${meta.accent}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (update.fullStory) {
+                                  onNavigate(`news/${update.id}`);
+                                } else {
+                                  onNavigate('news');
+                                }
+                              }}
+                            >
+                              {update.fullStory ? 'View Full Story' : 'View Story'}
+                              <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>

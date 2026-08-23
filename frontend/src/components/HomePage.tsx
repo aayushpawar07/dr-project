@@ -13,6 +13,8 @@ import {
   AlarmClock,
   Sparkles,
   Newspaper,
+  Share2,
+  Check,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -100,31 +102,60 @@ export function HomePage({ onNavigate }: HomePageProps) {
   const [governmentJobs, setGovernmentJobs] = useState<any[]>([]);
   const [privateJobs, setPrivateJobs] = useState<any[]>([]);
   const [newsUpdates, setNewsUpdates] = useState<PulseUpdate[]>([]);
+  const [copiedNewsId, setCopiedNewsId] = useState<string | null>(null);
+
+  const handleShareNews = async (e: React.MouseEvent, update: PulseUpdate) => {
+    e.stopPropagation();
+    const shareUrl = `${window.location.origin}/news/${update.id}`;
+    const shareData = {
+      title: `${update.title} | MedExJob News`,
+      text: `${update.title} - Read the full update on MedExJob`,
+      url: shareUrl,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {}
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopiedNewsId(update.id);
+      setTimeout(() => setCopiedNewsId(null), 2500);
+    } catch (err) {
+      console.error("Failed to copy news link", err);
+    }
+  };
 
   useEffect(() => {
     // Load featured, latest, government, private jobs, news, and job options
     (async () => {
       try {
         const [feat, latest, all, gov, priv, meta, news] = await Promise.all([
-          fetchJobs({ featured: true, size: 6, status: "active" }).then(
+          fetchJobs({ featured: true, size: 6, status: "active", openOnly: true }).then(
             (r) => r.content ?? [],
           ),
           fetchJobs({
             size: 6,
             sort: "createdAt,desc",
             status: "active",
+            openOnly: true,
           }).then((r) => r.content ?? []),
           fetchJobs({
             size: 10,
             sort: "createdAt,desc",
             status: "active",
+            openOnly: true,
           }).then((r) => r.content ?? []),
           fetchJobs({
             sector: "government",
             size: 10,
             status: "active",
+            openOnly: true,
           }).then((r) => r.content ?? []),
-          fetchJobs({ sector: "private", size: 10, status: "active" }).then(
+          fetchJobs({ sector: "private", size: 10, status: "active", openOnly: true }).then(
             (r) => r.content ?? [],
           ),
           fetchJobsMeta(),
@@ -566,19 +597,38 @@ export function HomePage({ onNavigate }: HomePageProps) {
                           {/* Header */}
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1 min-w-0 space-y-2">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <span
-                                  className="!border-0 shadow-md hover:shadow-lg transition-all duration-200 px-4 py-1.5 text-xs font-bold uppercase tracking-wide flex items-center gap-1.5 rounded-md inline-flex text-white"
-                                  style={{ background: badgeBg }}
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span
+                                    className="!border-0 shadow-md hover:shadow-lg transition-all duration-200 px-4 py-1.5 text-xs font-bold uppercase tracking-wide flex items-center gap-1.5 rounded-md inline-flex text-white"
+                                    style={{ background: badgeBg }}
+                                  >
+                                    <Icon className="w-3.5 h-3.5" />
+                                    {badgeText}
+                                  </span>
+                                  {isBreaking && (
+                                    <Badge className="bg-red-600 text-white border-0 px-3 py-1 text-xs font-semibold">
+                                      BREAKING
+                                    </Badge>
+                                  )}
+                                </div>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  title={copiedNewsId === update.id ? "Link Copied!" : "Share News"}
+                                  className={`h-8 w-8 rounded-full border shrink-0 transition-all ${
+                                    copiedNewsId === update.id
+                                      ? "text-green-600 bg-green-50 border-green-200 shadow-sm"
+                                      : "text-gray-400 hover:text-blue-600 hover:bg-blue-50 border-gray-200 shadow-sm"
+                                  }`}
+                                  onClick={(e) => handleShareNews(e, update)}
                                 >
-                                  <Icon className="w-3.5 h-3.5" />
-                                  {badgeText}
-                                </span>
-                                {isBreaking && (
-                                  <Badge className="bg-red-600 text-white border-0 px-3 py-1 text-xs font-semibold">
-                                    BREAKING
-                                  </Badge>
-                                )}
+                                  {copiedNewsId === update.id ? (
+                                    <Check className="w-4 h-4 text-green-600" />
+                                  ) : (
+                                    <Share2 className="w-4 h-4" />
+                                  )}
+                                </Button>
                               </div>
                               <div className="flex items-center gap-3">
                                 <h3
@@ -617,22 +667,41 @@ export function HomePage({ onNavigate }: HomePageProps) {
                             <span className="text-xs text-gray-500">
                               Tap to read full story
                             </span>
-                            <Button
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (update.fullStory) {
-                                  onNavigate(`news/${update.id}`);
-                                } else {
-                                  onNavigate("news");
-                                }
-                              }}
-                              className="inline-flex min-w-[140px] items-center justify-center gap-2 text-white shadow-lg hover:shadow-xl transition-all"
-                              style={{ background: buttonBg }}
-                            >
-                              View Full Story
-                              <ChevronRight className="w-4 h-4" />
-                            </Button>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                title={copiedNewsId === update.id ? "Link Copied!" : "Share News"}
+                                className={`h-8 w-8 p-0 rounded-full transition-colors ${
+                                  copiedNewsId === update.id
+                                    ? "text-green-600 bg-green-50"
+                                    : "text-gray-400 hover:text-blue-600 hover:bg-blue-50"
+                                }`}
+                                onClick={(e) => handleShareNews(e, update)}
+                              >
+                                {copiedNewsId === update.id ? (
+                                  <Check className="w-4 h-4 text-green-600" />
+                                ) : (
+                                  <Share2 className="w-4 h-4" />
+                                )}
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (update.fullStory) {
+                                    onNavigate(`news/${update.id}`);
+                                  } else {
+                                    onNavigate("news");
+                                  }
+                                }}
+                                className="inline-flex min-w-[140px] items-center justify-center gap-2 text-white shadow-lg hover:shadow-xl transition-all"
+                                style={{ background: buttonBg }}
+                              >
+                                View Full Story
+                                <ChevronRight className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </Card>

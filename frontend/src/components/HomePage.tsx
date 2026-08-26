@@ -23,7 +23,9 @@ import { JobCard } from "./JobCard";
 import SearchBar from "./SearchBar";
 import { fetchJobs, fetchJobsMeta } from "../api/jobs";
 import { fetchHomepageNews, PulseUpdate } from "../api/news";
+import { fetchAnalyticsOverview } from "../api/analytics";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+
 
 interface HomePageProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -103,6 +105,8 @@ export function HomePage({ onNavigate }: HomePageProps) {
   const [privateJobs, setPrivateJobs] = useState<any[]>([]);
   const [newsUpdates, setNewsUpdates] = useState<PulseUpdate[]>([]);
   const [copiedNewsId, setCopiedNewsId] = useState<string | null>(null);
+  // Dynamic stats from analytics API
+  const [stats, setStats] = useState({ totalJobs: 0, totalEmployers: 0, totalUsers: 0, totalApplications: 0 });
 
   const handleShareNews = async (e: React.MouseEvent, update: PulseUpdate) => {
     e.stopPropagation();
@@ -133,7 +137,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
     // Load featured, latest, government, private jobs, news, and job options
     (async () => {
       try {
-        const [feat, latest, all, gov, priv, meta, news] = await Promise.all([
+        const [feat, latest, all, gov, priv, meta, news, overview] = await Promise.all([
           fetchJobs({ featured: true, size: 6, status: "active" }).then(
             (r) => r.content ?? [],
           ),
@@ -157,7 +161,18 @@ export function HomePage({ onNavigate }: HomePageProps) {
           ),
           fetchJobsMeta(),
           fetchHomepageNews(),
+          fetchAnalyticsOverview().catch(() => null),
         ]);
+
+        // Update analytics stats (fall back to 0 if unavailable)
+        if (overview) {
+          setStats({
+            totalJobs: overview.totalJobs ?? 0,
+            totalEmployers: overview.totalEmployers ?? 0,
+            totalUsers: overview.totalUsers ?? 0,
+            totalApplications: overview.totalApplications ?? 0,
+          });
+        }
 
         // Combine featured and latest jobs, removing duplicates, limit to 6
         const featuredArray = Array.isArray(feat) ? feat : [];
@@ -278,21 +293,21 @@ export function HomePage({ onNavigate }: HomePageProps) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <StatCard
               icon={BriefcaseIcon}
-              end={5000}
+              end={stats.totalJobs}
               label="Active Jobs"
               suffix="+"
             />
             <StatCard
               icon={Building2}
-              end={2000}
+              end={stats.totalEmployers}
               label="Hospitals"
               suffix="+"
             />
-            <StatCard icon={Users} end={50000} label="Candidates" suffix="+" />
+            <StatCard icon={Users} end={stats.totalUsers} label="Candidates" suffix="+" />
             <StatCard
               icon={UserCheck}
-              end={10000}
-              label="Placements"
+              end={stats.totalApplications}
+              label="Applications"
               suffix="+"
             />
           </div>

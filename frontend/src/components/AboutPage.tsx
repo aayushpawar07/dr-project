@@ -1,6 +1,8 @@
-  import { Shield, TrendingUp, Users, CheckCircle, Award, Target, Heart, Zap, MapPin } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Shield, TrendingUp, Users, CheckCircle, Award, Target, Heart, Zap, MapPin } from 'lucide-react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
+import { fetchAnalyticsOverview, fetchJobsByCategory } from '../api/analytics';
 
 interface AboutPageProps {
   onNavigate: (page: string) => void;
@@ -46,23 +48,52 @@ export function AboutPage({ onNavigate }: AboutPageProps) {
     }
   ];
 
-  const stats = [
-    { label: 'Active Jobs', value: '5000+' },
-    { label: 'Registered Hospitals', value: '2000+' },
-    { label: 'Medical Professionals', value: '50K+' },
-    { label: 'Successful Placements', value: '10K+' }
-  ];
+  // Dynamic stats loaded from the analytics API
+  const [stats, setStats] = useState([
+    { label: 'Active Jobs', value: '...' },
+    { label: 'Registered Hospitals', value: '...' },
+    { label: 'Medical Professionals', value: '...' },
+    { label: 'Total Applications', value: '...' }
+  ]);
 
-  const categories = [
-    { name: 'Junior Resident', count: 450 },
-    { name: 'Senior Resident', count: 380 },
-    { name: 'Medical Officer', count: 520 },
-    { name: 'Faculty', count: 150 },
-    { name: 'Specialist', count: 290 },
-    { name: 'Allied Health Professionals', count: 180 },
-    { name: 'Paramedical', count: 620 },
-    { name: 'Nursing', count: 850 }
-  ];
+  // Dynamic categories loaded from the analytics API
+  const [categories, setCategories] = useState<{ name: string; count: number }[]>([]);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [loadingCats, setLoadingCats] = useState(true);
+
+  useEffect(() => {
+    // Fetch overview stats
+    fetchAnalyticsOverview()
+      .then((overview: any) => {
+        setStats([
+          { label: 'Active Jobs', value: (overview.totalJobs ?? 0).toLocaleString() + '+' },
+          { label: 'Registered Hospitals', value: (overview.totalEmployers ?? 0).toLocaleString() + '+' },
+          { label: 'Medical Professionals', value: (overview.totalUsers ?? 0).toLocaleString() + '+' },
+          { label: 'Total Applications', value: (overview.totalApplications ?? 0).toLocaleString() + '+' }
+        ]);
+      })
+      .catch(() => {
+        // On error keep the loading placeholder replaced with N/A
+        setStats([
+          { label: 'Active Jobs', value: 'N/A' },
+          { label: 'Registered Hospitals', value: 'N/A' },
+          { label: 'Medical Professionals', value: 'N/A' },
+          { label: 'Total Applications', value: 'N/A' }
+        ]);
+      })
+      .finally(() => setLoadingStats(false));
+
+    // Fetch job categories with counts
+    fetchJobsByCategory()
+      .then((cats: any[]) => {
+        const mapped = Array.isArray(cats)
+          ? cats.map((c: any) => ({ name: c.name, count: Number(c.count ?? c.value ?? 0) }))
+          : [];
+        setCategories(mapped);
+      })
+      .catch(() => setCategories([]))
+      .finally(() => setLoadingCats(false));
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -91,7 +122,9 @@ export function AboutPage({ onNavigate }: AboutPageProps) {
                 className="p-6 text-center hover:shadow-xl transition-all duration-300 hover:-translate-y-2 cursor-pointer animate-fade-in-up"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <div className="text-4xl text-blue-600 mb-2">{stat.value}</div>
+                <div className="text-4xl text-blue-600 mb-2">
+                  {loadingStats ? '...' : stat.value}
+                </div>
                 <div className="text-gray-600">{stat.label}</div>
               </Card>
             ))}
@@ -168,23 +201,29 @@ export function AboutPage({ onNavigate }: AboutPageProps) {
           <div className="max-w-4xl mx-auto">
             <Card className="p-8 md:p-12 hover:shadow-2xl transition-shadow duration-300">
               <h2 className="text-3xl text-gray-900 mb-8 text-center">Job Categories We Cover</h2>
-              <div className="grid md:grid-cols-2 gap-4">
-                {categories.map((category, index) => (
-                  <div 
-                    key={index}
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors duration-300 cursor-pointer group animate-fade-in-right"
-                    style={{ animationDelay: `${index * 0.05}s` }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <CheckCircle className="w-5 h-5 text-blue-600 group-hover:scale-110 transition-transform" />
-                      <span className="text-gray-900">{category.name}</span>
+              {loadingCats ? (
+                <p className="text-center text-gray-500">Loading categories...</p>
+              ) : categories.length === 0 ? (
+                <p className="text-center text-gray-500">No categories available yet.</p>
+              ) : (
+                <div className="grid md:grid-cols-2 gap-4">
+                  {categories.map((category, index) => (
+                    <div 
+                      key={index}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors duration-300 cursor-pointer group animate-fade-in-right"
+                      style={{ animationDelay: `${index * 0.05}s` }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <CheckCircle className="w-5 h-5 text-blue-600 group-hover:scale-110 transition-transform" />
+                        <span className="text-gray-900">{category.name}</span>
+                      </div>
+                      <span className="text-sm text-gray-500 bg-white px-3 py-1 rounded-full group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                        {category.count}+ jobs
+                      </span>
                     </div>
-                    <span className="text-sm text-gray-500 bg-white px-3 py-1 rounded-full group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                      {category.count}+ jobs
-                    </span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </Card>
           </div>
         </div>

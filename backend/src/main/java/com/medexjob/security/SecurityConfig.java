@@ -125,6 +125,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/analytics/**").permitAll()
                         .requestMatchers("/api/actuator/**").permitAll()
                         .requestMatchers("/api/health").permitAll()
+                        .requestMatchers("/share/**").permitAll() // Public job share pages for social media crawlers
                         .requestMatchers("/uploads/**").permitAll() // Allow public access to uploaded files
                         .requestMatchers("/api/uploads/**").permitAll() // Allow public access to uploaded files via API path
                         .anyRequest().authenticated())

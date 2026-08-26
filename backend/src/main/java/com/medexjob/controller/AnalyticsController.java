@@ -2,15 +2,18 @@ package com.medexjob.controller;
 
 import com.medexjob.entity.Application;
 import com.medexjob.entity.Job;
+import com.medexjob.entity.VisitorLog;
 import com.medexjob.repository.ApplicationRepository;
 import com.medexjob.repository.EmployerRepository;
 import com.medexjob.repository.JobRepository;
 import com.medexjob.repository.UserRepository;
+import com.medexjob.repository.VisitorLogRepository;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,17 +28,91 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/analytics")
 public class AnalyticsController {
 
+    private static final Logger logger = LoggerFactory.getLogger(AnalyticsController.class);
+
     private final JobRepository jobRepository;
     private final UserRepository userRepository;
     private final EmployerRepository employerRepository;
     private final ApplicationRepository applicationRepository;
+    private final VisitorLogRepository visitorLogRepository;
 
-    public AnalyticsController(JobRepository jobRepository, UserRepository userRepository, 
-                               EmployerRepository employerRepository, ApplicationRepository applicationRepository) {
+    public AnalyticsController(JobRepository jobRepository, UserRepository userRepository,
+                               EmployerRepository employerRepository, ApplicationRepository applicationRepository,
+                               VisitorLogRepository visitorLogRepository) {
         this.jobRepository = jobRepository;
         this.userRepository = userRepository;
         this.employerRepository = employerRepository;
         this.applicationRepository = applicationRepository;
+        this.visitorLogRepository = visitorLogRepository;
+    }
+
+    /**
+     * Track a visitor. Called by the frontend on each route change.
+     * Uses a browser-generated visitorToken (stored in localStorage) to identify unique visitors.
+     * Upserts one row per (visitorToken, visitDate) — deduplicated per day.
+     */
+    @PostMapping("/track-visitor")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> trackVisitor(
+            @RequestBody Map<String, String> body,
+            HttpServletRequest request) {
+        try {
+            String visitorToken = body.get("visitorToken");
+            if (visitorToken == null || visitorToken.isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "visitorToken is required"));
+            }
+            // Limit token length for safety
+            if (visitorToken.length() > 64) {
+                visitorToken = visitorToken.substring(0, 64);
+            }
+
+            LocalDate today = LocalDate.now();
+            LocalDateTime now = LocalDateTime.now();
+
+            // Upsert: find existing log for this token+date or create new one
+            Optional<VisitorLog> existing = visitorLogRepository.findByVisitorTokenAndVisitDate(visitorToken, today);
+            if (existing.isPresent()) {
+                VisitorLog log = existing.get();
+                log.setVisitCount(log.getVisitCount() + 1);
+                log.setLastSeen(now);
+                visitorLogRepository.save(log);
+            } else {
+                VisitorLog log = new VisitorLog();
+                log.setVisitorToken(visitorToken);
+                log.setVisitDate(today);
+                log.setVisitCount(1);
+                log.setFirstSeen(now);
+                log.setLastSeen(now);
+                // Best-effort IP extraction
+                String ip = request.getHeader("X-Forwarded-For");
+                if (ip == null || ip.isBlank()) ip = request.getRemoteAddr();
+                if (ip != null && ip.length() > 64) ip = ip.substring(0, 64);
+                log.setIpAddress(ip);
+                String ua = request.getHeader("User-Agent");
+                if (ua != null && ua.length() > 512) ua = ua.substring(0, 512);
+                log.setUserAgent(ua);
+                visitorLogRepository.save(log);
+            }
+
+            return ResponseEntity.ok(Map.of("status", "tracked"));
+        } catch (Exception e) {
+            logger.error("Error tracking visitor: {}", e.getMessage(), e);
+            // Never fail the frontend for a tracking call
+            return ResponseEntity.ok(Map.of("status", "error", "message", e.getMessage()));
+        }
+    }
+
+    /**
+     * Returns total unique visitors (all time) and today's unique visitors.
+     */
+    @GetMapping("/visitors")
+    public ResponseEntity<Map<String, Object>> visitors() {
+        long totalVisitors = visitorLogRepository.countDistinctVisitors();
+        long todayVisitors = visitorLogRepository.countDistinctVisitorsByDate(LocalDate.now());
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("totalVisitors", totalVisitors);
+        resp.put("todayVisitors", todayVisitors);
+        return ResponseEntity.ok(resp);
     }
 
     @GetMapping("/overview")
@@ -142,6 +219,10 @@ public class AnalyticsController {
         double employersGrowth = employersLastMonth > 0 ? ((employersThisMonth - employersLastMonth) * 100.0 / employersLastMonth) : (employersThisMonth > 0 ? 100.0 : 0.0);
         employersGrowth = Math.round(employersGrowth * 10.0) / 10.0;
         
+        // Visitor counts
+        long totalVisitors = visitorLogRepository.countDistinctVisitors();
+        long todayVisitors = visitorLogRepository.countDistinctVisitorsByDate(LocalDate.now());
+
         Map<String, Object> resp = new HashMap<>();
         resp.put("totalJobs", totalJobs);
         resp.put("totalApplications", totalApplications);
@@ -154,6 +235,8 @@ public class AnalyticsController {
         resp.put("appsGrowth", appsGrowth);
         resp.put("usersGrowth", usersGrowth);
         resp.put("employersGrowth", employersGrowth);
+        resp.put("totalVisitors", totalVisitors);
+        resp.put("todayVisitors", todayVisitors);
         return ResponseEntity.ok(resp);
     }
 

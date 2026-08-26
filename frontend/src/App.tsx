@@ -15,6 +15,7 @@ import {
   uploadJobDocument,
   uploadJobImage,
 } from "./api/jobs";
+import { trackVisitor } from "./api/analytics";
 
 import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
@@ -77,6 +78,11 @@ function AppContent() {
   useEffect(() => {
     setCurrentPage(location.pathname.substring(1) || "home");
   }, [location]);
+
+  // Track visitor on each route change (fire-and-forget)
+  useEffect(() => {
+    trackVisitor();
+  }, [location.pathname]);
 
   // Scroll to top on route change
   useEffect(() => {

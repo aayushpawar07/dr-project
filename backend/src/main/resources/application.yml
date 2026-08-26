@@ -25,6 +25,7 @@ spring:
     port: 587
     username: shivamsuryawanshi51@gmail.com
     password: dtyihmrrunpqdydw
+    from: shivamsuryawanshi51@gmail.com   # Sender address (can be overridden with SPRING_MAIL_FROM env var)
     properties:
       mail:
         smtp:

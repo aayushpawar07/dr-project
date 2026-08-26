@@ -136,22 +136,18 @@ public class AuthService {
 
         userRepository.save(user);
 
-        // Send OTP email - try to send, but don't fail if email service is down
-        // OTP is already saved in database, so user can still use it
+        // Send OTP email — if sending fails, propagate the error to the caller.
+        // The OTP is saved in the database, but we must inform the user that the email
+        // could not be delivered so they know to retry.
         try {
             emailService.sendOtpEmail(email, otp);
-            System.out.println("✅ OTP email sent successfully to: " + email);
         } catch (Exception e) {
-            // Log error but don't throw - OTP is already saved in database
-            System.err.println("❌ WARNING: Failed to send OTP email, but OTP is saved in database");
-            System.err.println("Error: " + e.getMessage());
-            e.printStackTrace();
-            // For development/testing: print OTP to console and logs
-            System.out.println("═══════════════════════════════════════════════════════");
-            System.out.println("📧 OTP for " + email + ": " + otp);
-            System.out.println("⏰ OTP expires in 10 minutes");
-            System.out.println("═══════════════════════════════════════════════════════");
-            // Don't throw exception - allow user to proceed with OTP from database
+            // Clear the OTP from the database so the failed attempt cannot be exploited
+            user.setOtp(null);
+            user.setOtpExpires(null);
+            userRepository.save(user);
+            throw new AuthException("Failed to send OTP email. Please check your email address and try again. " +
+                    "If the problem persists, contact support. (" + e.getMessage() + ")");
         }
     }
 

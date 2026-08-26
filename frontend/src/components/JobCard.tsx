@@ -24,7 +24,9 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const shareUrl = `${window.location.origin}/job/${job.slug || job.id}`;
+    // Use backend share endpoint for social media OG metadata.
+    // Human browsers are redirected by the backend to the SPA job page.
+    const shareUrl = `${window.location.origin.replace(/:\d+$/, '')}/share/job/${job.id}`;
     const shareData = {
       title: `${job.title} | MedExJob`,
       text: `Check out this medical job opening: ${job.title} at ${job.organization || 'MedExJob'}`,
@@ -48,6 +50,7 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
       console.error('Failed to copy link', err);
     }
   };
+
 
   return (
     <Card className="relative cursor-pointer overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 md:p-6 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-md group h-full flex flex-col">

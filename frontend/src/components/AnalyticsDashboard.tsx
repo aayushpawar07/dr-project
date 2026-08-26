@@ -7,7 +7,7 @@ import { Badge } from './ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
-import { fetchAnalyticsOverview, fetchJobsByCategory, fetchJobsByLocation, fetchTopJobs, fetchRecentActivity, fetchUserTrends } from '../api/analytics';
+import { fetchAnalyticsOverview, fetchJobsByCategory, fetchJobsByLocation, fetchTopJobs, fetchRecentActivity, fetchUserTrends, fetchVisitorStats } from '../api/analytics';
 
 interface AnalyticsDashboardProps {
   userRole: 'admin' | 'employer';
@@ -32,6 +32,8 @@ export function AnalyticsDashboard({ userRole, userId }: AnalyticsDashboardProps
     appsGrowth?: number;
     usersGrowth?: number;
     employersGrowth?: number;
+    totalVisitors?: number;
+    todayVisitors?: number;
   } | null>(null);
   const [categoryData, setCategoryData] = useState<any[]>([]);
   const [locationData, setLocationData] = useState<any[]>([]);
@@ -39,6 +41,7 @@ export function AnalyticsDashboard({ userRole, userId }: AnalyticsDashboardProps
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [userTrends, setUserTrends] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [visitorStats, setVisitorStats] = useState<{ totalVisitors: number; todayVisitors: number }>({ totalVisitors: 0, todayVisitors: 0 });
 
   const isAdmin = userRole === 'admin';
 
@@ -46,13 +49,14 @@ export function AnalyticsDashboard({ userRole, userId }: AnalyticsDashboardProps
     (async () => {
       setLoading(true);
       try {
-        const [ov, cats, locs, tops, activity, trends] = await Promise.all([
+        const [ov, cats, locs, tops, activity, trends, visitors] = await Promise.all([
           fetchAnalyticsOverview(),
           fetchJobsByCategory(),
           fetchJobsByLocation(),
           fetchTopJobs(),
           fetchRecentActivity(),
           fetchUserTrends(),
+          fetchVisitorStats().catch(() => ({ totalVisitors: 0, todayVisitors: 0 })),
         ]);
         setOverview(ov);
         setCategoryData(Array.isArray(cats) ? cats : []);
@@ -60,6 +64,12 @@ export function AnalyticsDashboard({ userRole, userId }: AnalyticsDashboardProps
         setTopJobs(Array.isArray(tops) ? tops : []);
         setRecentActivity(Array.isArray(activity) ? activity : []);
         setUserTrends(Array.isArray(trends) ? trends : []);
+        // Prefer visitor counts from /overview if available (already fetched), else use /visitors
+        if (ov?.totalVisitors !== undefined) {
+          setVisitorStats({ totalVisitors: ov.totalVisitors ?? 0, todayVisitors: ov.todayVisitors ?? 0 });
+        } else {
+          setVisitorStats(visitors);
+        }
       } catch (e) {
         setOverview({ totalJobs: 0, totalApplications: 0, totalUsers: 0, totalEmployers: 0, totalViews: 0, conversionRate: 0, avgResponseDays: 0, jobsGrowth: 0, appsGrowth: 0, usersGrowth: 0, employersGrowth: 0 });
         setCategoryData([]);
@@ -199,6 +209,38 @@ export function AnalyticsDashboard({ userRole, userId }: AnalyticsDashboardProps
                   </div>
                   <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
                     <Briefcase className="w-6 h-6 text-orange-600" />
+                  </div>
+                </div>
+              </Card>
+
+              {/* Total Visitors */}
+              <Card className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Total Visitors</p>
+                    <p className="text-3xl text-gray-900">{visitorStats.totalVisitors.toLocaleString()}</p>
+                    <div className="flex items-center mt-1">
+                      <span className="text-xs text-gray-500">All-time unique visitors</span>
+                    </div>
+                  </div>
+                  <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
+                    <Eye className="w-6 h-6 text-teal-600" />
+                  </div>
+                </div>
+              </Card>
+
+              {/* Today's Visitors */}
+              <Card className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Today's Visitors</p>
+                    <p className="text-3xl text-gray-900">{visitorStats.todayVisitors.toLocaleString()}</p>
+                    <div className="flex items-center mt-1">
+                      <span className="text-xs text-gray-500">Unique visitors today</span>
+                    </div>
+                  </div>
+                  <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
+                    <Calendar className="w-6 h-6 text-indigo-600" />
                   </div>
                 </div>
               </Card>

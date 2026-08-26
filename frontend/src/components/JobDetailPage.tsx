@@ -85,8 +85,12 @@ export function JobDetailPage({
   const { jobId } = useParams<{ jobId: string }>();
 
   const getShareUrl = () => {
-    return `${window.location.origin}/job/${job?.slug || job?.id || jobId}`;
+    const jobIdentifier = job?.id || jobId;
+    // Use the backend share endpoint so social crawlers receive OG meta tags.
+    // The endpoint immediately redirects human browsers back to the SPA.
+    return `${window.location.origin.replace(/:\d+$/, '')}/share/job/${jobIdentifier}`;
   };
+
 
   const handleCopyLink = async () => {
     try {

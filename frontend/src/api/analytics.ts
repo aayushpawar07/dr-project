@@ -35,3 +35,34 @@ export async function fetchUserTrends() {
   if (!res.ok) throw new Error('Failed to load user trends');
   return res.json();
 }
+
+/**
+ * Tracks a visitor page-view server-side using a stable per-browser token stored in localStorage.
+ * Fires-and-forgets — never throws to avoid blocking the UI.
+ */
+export async function trackVisitor(): Promise<void> {
+  try {
+    // Get or create a stable unique token for this browser
+    let visitorToken = localStorage.getItem('_mej_vtk');
+    if (!visitorToken) {
+      visitorToken = crypto.randomUUID();
+      localStorage.setItem('_mej_vtk', visitorToken);
+    }
+    await fetch(`${API_BASE}/analytics/track-visitor`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visitorToken }),
+    });
+  } catch {
+    // Silently ignore — tracking is non-critical
+  }
+}
+
+/**
+ * Returns total and today's unique visitor counts.
+ */
+export async function fetchVisitorStats(): Promise<{ totalVisitors: number; todayVisitors: number }> {
+  const res = await fetch(`${API_BASE}/analytics/visitors`);
+  if (!res.ok) throw new Error('Failed to load visitor stats');
+  return res.json();
+}

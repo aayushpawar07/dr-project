@@ -1,0 +1,27 @@
+html, body, #root { width: 100%; max-width: 100%; overflow-x: hidden; }
+img, video, canvas, svg { max-width: 100%; }
+img, video { height: auto; }
+button, input, select, textarea { max-width: 100%; }
+
+@media (max-width: 1024px) {
+  .container { width: 100%; max-width: 100%; }
+  table { min-width: 720px; }
+  [class*="overflow-x-auto"] { -webkit-overflow-scrolling: touch; }
+}
+
+@media (max-width: 767px) {
+  body { min-width: 320px; }
+  header .container { padding-left: 12px; padding-right: 12px; }
+  footer .container { padding-left: 16px; padding-right: 16px; }
+  main { min-width: 0; }
+  table { min-width: 680px; }
+  input, select, textarea, button { font-size: 16px; }
+  .grid { min-width: 0; }
+  .flex { min-width: 0; }
+  [class*="max-w-"] { max-width: 100%; }
+}
+
+@media (max-width: 480px) {
+  footer .container { padding-left: 14px; padding-right: 14px; }
+  footer [class*="grid"] { grid-template-columns: 1fr !important; }
+}

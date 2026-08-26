@@ -2,7 +2,6 @@
 name: CD - Deploy to VPS
 
 on:
-  # Auto deploy after CI success on main branch
   workflow_run:
     workflows: ["Full CI Pipeline"]
     types:
@@ -10,7 +9,6 @@ on:
     branches:
       - main
 
-  # Manual trigger for deployment
   workflow_dispatch:
     inputs:
       environment:
@@ -38,23 +36,20 @@ env:
   SERVICE_NAME: medexjob-backend
 
 jobs:
-  # Pre-deployment checks
   pre-deploy:
     name: Pre-Deployment Checks
     runs-on: ubuntu-latest
-    # Only run if CI was successful or manual trigger
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     outputs:
       should_deploy: ${{ steps.check.outputs.should_deploy }}
-    
+
     steps:
       - name: Check deployment conditions
         id: check
         run: |
-          echo "should_deploy=true" >> $GITHUB_OUTPUT
-          echo "✅ Pre-deployment checks passed"
+          echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+          echo "Pre-deployment checks passed"
 
-  # Deploy Backend
   deploy-backend:
     name: Deploy Backend
     runs-on: ubuntu-latest
@@ -63,7 +58,12 @@ jobs:
     environment:
       name: ${{ github.event.inputs.environment || 'production' }}
       url: https://medexjob.com/api
-    
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -72,6 +72,7 @@ jobs:
         run: mkdir -p ./artifacts/backend
 
       - name: Download backend artifact
+        if: ${{ github.event_name == 'workflow_run' }}
         uses: actions/download-artifact@v4
         with:
           name: backend-jar
@@ -82,17 +83,19 @@ jobs:
 
       - name: Verify artifact exists
         id: verify
+        shell: bash
         run: |
-          if [ -f ./artifacts/backend/*.jar ]; then
-            echo "✅ Backend JAR found"
-            echo "jar_exists=true" >> $GITHUB_OUTPUT
+          set -euo pipefail
+          if compgen -G './artifacts/backend/*.jar' > /dev/null; then
+            echo "Backend JAR found"
+            echo "jar_exists=true" >> "$GITHUB_OUTPUT"
             ls -lh ./artifacts/backend/
           else
-            echo "⚠️ No JAR artifact found, building fresh..."
-            echo "jar_exists=false" >> $GITHUB_OUTPUT
+            echo "No backend artifact found. Building from source."
+            echo "jar_exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Set up JDK 17 (if build needed)
+      - name: Set up JDK 17
         if: steps.verify.outputs.jar_exists == 'false'
         uses: actions/setup-java@v4
         with:
@@ -100,84 +103,158 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Build Backend (if no artifact)
+      - name: Build Backend
         if: steps.verify.outputs.jar_exists == 'false'
         working-directory: backend
         run: |
+          set -euo pipefail
           mvn clean package -DskipTests
           mkdir -p ../artifacts/backend
           cp target/*.jar ../artifacts/backend/
 
-      - name: Setup SSH Key
+      - name: Validate and connect to VPS
+        id: ssh_setup
+        shell: bash
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H -p ${{ secrets.VPS_PORT || 22 }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+          set -euo pipefail
+
+          for name in VPS_HOST VPS_PORT VPS_USER VPS_SSH_KEY; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Required GitHub secret $name is missing or empty."
+              exit 1
+            fi
+          done
+
+          if ! [[ "$VPS_PORT" =~ ^[0-9]+$ ]] || [ "$VPS_PORT" -lt 1 ] || [ "$VPS_PORT" -gt 65535 ]; then
+            echo "::error::VPS_PORT must be a valid TCP port."
+            exit 1
+          fi
+
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+          printf '%s\n' "$VPS_SSH_KEY" | tr -d '\r' > "$HOME/.ssh/deploy_key"
+          chmod 600 "$HOME/.ssh/deploy_key"
+
+          if ! ssh-keygen -y -f "$HOME/.ssh/deploy_key" > /dev/null 2>&1; then
+            echo "::error::VPS_SSH_KEY is not a valid unencrypted private SSH key."
+            exit 1
+          fi
+
+          echo "Checking SSH network reachability to configured VPS port..."
+          if ! timeout 15 bash -c "cat < /dev/null > /dev/tcp/${VPS_HOST}/${VPS_PORT}" 2>/dev/null; then
+            echo "::error::GitHub runner cannot reach VPS_HOST on VPS_PORT. Check VPS_HOST/VPS_PORT, VPS firewall/security group, SSH service, and any source-IP allowlist."
+            exit 1
+          fi
+
+          echo "Checking SSH authentication..."
+          if ! ssh -T \
+            -i "$HOME/.ssh/deploy_key" \
+            -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=15 \
+            -o ConnectionAttempts=1 \
+            -o ServerAliveInterval=10 \
+            -o ServerAliveCountMax=2 \
+            -o StrictHostKeyChecking=accept-new \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            "$VPS_USER@$VPS_HOST" 'echo SSH connection verified'; then
+            echo "::error::VPS is reachable, but SSH authentication failed. Check VPS_USER, VPS_SSH_KEY, and authorized_keys on the server."
+            exit 1
+          fi
+
+          echo "ssh_ready=true" >> "$GITHUB_OUTPUT"
 
       - name: Create backup on server
+        id: backup
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_PORT || 22 }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-            # Create backup directory
-            sudo mkdir -p ${{ env.BACKEND_PATH }}/backups
-            
-            # Backup current JAR if exists
-            if [ -f ${{ env.BACKEND_PATH }}/target/medexjob-backend-1.0.0.jar ]; then
+          set -euo pipefail
+          ssh -T \
+            -i "$HOME/.ssh/deploy_key" \
+            -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=15 \
+            -o StrictHostKeyChecking=accept-new \
+            "$VPS_USER@$VPS_HOST" << 'EOF'
+            set -e
+            sudo mkdir -p /opt/medexjob/backend/backups
+
+            if [ -f /opt/medexjob/backend/target/medexjob-backend-1.0.0.jar ]; then
               BACKUP_NAME="medexjob-backend-$(date +%Y%m%d-%H%M%S).jar"
-              sudo cp ${{ env.BACKEND_PATH }}/target/medexjob-backend-1.0.0.jar ${{ env.BACKEND_PATH }}/backups/$BACKUP_NAME
-              echo "✅ Backup created: $BACKUP_NAME"
-              
-              # Keep only last 5 backups
-              cd ${{ env.BACKEND_PATH }}/backups
-              ls -t | tail -n +6 | xargs -r sudo rm --
+              sudo cp /opt/medexjob/backend/target/medexjob-backend-1.0.0.jar /opt/medexjob/backend/backups/$BACKUP_NAME
+              echo "Backup created: $BACKUP_NAME"
+              cd /opt/medexjob/backend/backups
+              ls -t *.jar 2>/dev/null | tail -n +6 | xargs -r sudo rm --
+            else
+              echo "No existing backend JAR found; nothing to back up."
             fi
           EOF
 
       - name: Deploy Backend JAR
         run: |
-          # Upload JAR to server
-          scp -i ~/.ssh/deploy_key -P ${{ secrets.VPS_PORT || 22 }} \
-            ./artifacts/backend/*.jar \
-            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/medexjob-backend-1.0.0.jar
-          
-          # Move to target location and restart service
-          ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_PORT || 22 }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-            sudo mkdir -p ${{ env.BACKEND_PATH }}/target
-            sudo mv /tmp/medexjob-backend-1.0.0.jar ${{ env.BACKEND_PATH }}/target/
-            sudo chown root:root ${{ env.BACKEND_PATH }}/target/medexjob-backend-1.0.0.jar
-            sudo chmod 755 ${{ env.BACKEND_PATH }}/target/medexjob-backend-1.0.0.jar
-            
-            echo "🔄 Restarting backend service..."
-            sudo systemctl restart ${{ env.SERVICE_NAME }}
+          set -euo pipefail
+          JAR_PATH=$(find ./artifacts/backend -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' ! -name '*-javadoc.jar' | head -1)
+          if [ -z "$JAR_PATH" ]; then
+            echo "::error::No deployable backend JAR found."
+            exit 1
+          fi
+
+          scp \
+            -i "$HOME/.ssh/deploy_key" \
+            -P "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=15 \
+            -o StrictHostKeyChecking=accept-new \
+            "$JAR_PATH" \
+            "$VPS_USER@$VPS_HOST:/tmp/medexjob-backend-1.0.0.jar"
+
+          ssh -T \
+            -i "$HOME/.ssh/deploy_key" \
+            -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=15 \
+            -o StrictHostKeyChecking=accept-new \
+            "$VPS_USER@$VPS_HOST" << 'EOF'
+            set -e
+            sudo mkdir -p /opt/medexjob/backend/target
+            sudo mv /tmp/medexjob-backend-1.0.0.jar /opt/medexjob/backend/target/medexjob-backend-1.0.0.jar
+            sudo chown root:root /opt/medexjob/backend/target/medexjob-backend-1.0.0.jar
+            sudo chmod 755 /opt/medexjob/backend/target/medexjob-backend-1.0.0.jar
+            sudo systemctl restart medexjob-backend
             sleep 5
+            sudo systemctl is-active --quiet medexjob-backend
+            echo "Backend service restarted successfully."
           EOF
 
-      - name: Health Check
-        run: |
-          echo "✅ Backend deployed! Skipping health check - service verified manually."
-          echo "Deployment successful!"
+      - name: Backend deployment result
+        run: echo "Backend deployment completed successfully."
 
-      - name: Rollback on failure
-        if: failure()
+      - name: Rollback backend on deployment failure
+        if: ${{ failure() && steps.ssh_setup.outputs.ssh_ready == 'true' && steps.backup.outcome == 'success' }}
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_PORT || 22 }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-            echo "🔙 Rolling back to previous version..."
-            LATEST_BACKUP=$(ls -t ${{ env.BACKEND_PATH }}/backups/*.jar 2>/dev/null | head -1)
-            
+          ssh -T \
+            -i "$HOME/.ssh/deploy_key" \
+            -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=15 \
+            -o StrictHostKeyChecking=accept-new \
+            "$VPS_USER@$VPS_HOST" << 'EOF'
+            set -e
+            echo "Rolling back backend to previous version..."
+            LATEST_BACKUP=$(ls -t /opt/medexjob/backend/backups/*.jar 2>/dev/null | head -1 || true)
             if [ -n "$LATEST_BACKUP" ]; then
-              sudo cp "$LATEST_BACKUP" ${{ env.BACKEND_PATH }}/target/medexjob-backend-1.0.0.jar
-              sudo systemctl restart ${{ env.SERVICE_NAME }}
-              echo "✅ Rollback completed"
+              sudo cp "$LATEST_BACKUP" /opt/medexjob/backend/target/medexjob-backend-1.0.0.jar
+              sudo systemctl restart medexjob-backend
+              sudo systemctl is-active --quiet medexjob-backend
+              echo "Rollback completed."
             else
-              echo "⚠️ No backup found for rollback"
+              echo "No backend backup is available for rollback."
             fi
           EOF
 
       - name: Cleanup SSH
         if: always()
-        run: rm -f ~/.ssh/deploy_key
+        run: rm -f "$HOME/.ssh/deploy_key" "$HOME/.ssh/known_hosts"
 
-  # Deploy Frontend
   deploy-frontend:
     name: Deploy Frontend
     runs-on: ubuntu-latest
@@ -186,7 +263,12 @@ jobs:
     environment:
       name: ${{ github.event.inputs.environment || 'production' }}
       url: https://medexjob.com
-    
+    env:
+      VPS_HOST: ${{ secrets.VPS_HOST }}
+      VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
+      VPS_USER: ${{ secrets.VPS_USER }}
+      VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -195,6 +277,7 @@ jobs:
         run: mkdir -p ./artifacts/frontend
 
       - name: Download frontend artifact
+        if: ${{ github.event_name == 'workflow_run' }}
         uses: actions/download-artifact@v4
         with:
           name: frontend-build
@@ -206,123 +289,172 @@ jobs:
       - name: Verify artifact exists
         id: verify
         run: |
-          if [ -d ./artifacts/frontend ] && [ "$(ls -A ./artifacts/frontend)" ]; then
-            echo "✅ Frontend build found"
-            echo "build_exists=true" >> $GITHUB_OUTPUT
-            ls -lh ./artifacts/frontend/
+          set -euo pipefail
+          if [ -d ./artifacts/frontend ] && [ -n "$(ls -A ./artifacts/frontend 2>/dev/null)" ]; then
+            echo "Frontend build found"
+            echo "build_exists=true" >> "$GITHUB_OUTPUT"
           else
-            echo "⚠️ No frontend build found, building fresh..."
-            echo "build_exists=false" >> $GITHUB_OUTPUT
+            echo "No frontend artifact found. Building from source."
+            echo "build_exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Set up Node.js (if build needed)
+      - name: Set up Node.js
         if: steps.verify.outputs.build_exists == 'false'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: frontend/package.json
+          cache-dependency-path: frontend/package-lock.json
 
-      - name: Build Frontend (if no artifact)
+      - name: Build Frontend
         if: steps.verify.outputs.build_exists == 'false'
         working-directory: frontend
         run: |
+          set -euo pipefail
           npm ci
           npm run build
           mkdir -p ../artifacts/frontend
-          cp -r dist/* ../artifacts/frontend/
+          cp -r dist/. ../artifacts/frontend/
 
-      - name: Setup SSH Key
+      - name: Validate and connect to VPS
+        id: ssh_setup
+        shell: bash
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H -p ${{ secrets.VPS_PORT || 22 }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+          set -euo pipefail
+
+          for name in VPS_HOST VPS_PORT VPS_USER VPS_SSH_KEY; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Required GitHub secret $name is missing or empty."
+              exit 1
+            fi
+          done
+
+          if ! [[ "$VPS_PORT" =~ ^[0-9]+$ ]] || [ "$VPS_PORT" -lt 1 ] || [ "$VPS_PORT" -gt 65535 ]; then
+            echo "::error::VPS_PORT must be a valid TCP port."
+            exit 1
+          fi
+
+          mkdir -p "$HOME/.ssh"
+          chmod 700 "$HOME/.ssh"
+          printf '%s\n' "$VPS_SSH_KEY" | tr -d '\r' > "$HOME/.ssh/deploy_key"
+          chmod 600 "$HOME/.ssh/deploy_key"
+
+          if ! ssh-keygen -y -f "$HOME/.ssh/deploy_key" > /dev/null 2>&1; then
+            echo "::error::VPS_SSH_KEY is not a valid unencrypted private SSH key."
+            exit 1
+          fi
+
+          echo "Checking SSH network reachability to configured VPS port..."
+          if ! timeout 15 bash -c "cat < /dev/null > /dev/tcp/${VPS_HOST}/${VPS_PORT}" 2>/dev/null; then
+            echo "::error::GitHub runner cannot reach VPS_HOST on VPS_PORT. Check VPS_HOST/VPS_PORT, VPS firewall/security group, SSH service, and any source-IP allowlist."
+            exit 1
+          fi
+
+          echo "Checking SSH authentication..."
+          if ! ssh -T \
+            -i "$HOME/.ssh/deploy_key" \
+            -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=15 \
+            -o ConnectionAttempts=1 \
+            -o ServerAliveInterval=10 \
+            -o ServerAliveCountMax=2 \
+            -o StrictHostKeyChecking=accept-new \
+            -o UserKnownHostsFile="$HOME/.ssh/known_hosts" \
+            "$VPS_USER@$VPS_HOST" 'echo SSH connection verified'; then
+            echo "::error::VPS is reachable, but SSH authentication failed. Check VPS_USER, VPS_SSH_KEY, and authorized_keys on the server."
+            exit 1
+          fi
+
+          echo "ssh_ready=true" >> "$GITHUB_OUTPUT"
 
       - name: Create backup on server
         run: |
-          ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_PORT || 22 }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-            # Create backup directory
+          set -euo pipefail
+          ssh -T \
+            -i "$HOME/.ssh/deploy_key" \
+            -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=15 \
+            -o StrictHostKeyChecking=accept-new \
+            "$VPS_USER@$VPS_HOST" << 'EOF'
+            set -e
             sudo mkdir -p /var/www/backups
-            
-            # Backup current frontend if exists
-            if [ -d "${{ env.FRONTEND_PATH }}" ] && [ "$(ls -A ${{ env.FRONTEND_PATH }})" ]; then
+            if [ -d /var/www/medexjob ] && [ -n "$(ls -A /var/www/medexjob 2>/dev/null)" ]; then
               BACKUP_NAME="frontend-$(date +%Y%m%d-%H%M%S)"
-              sudo tar -czf /var/www/backups/$BACKUP_NAME.tar.gz -C ${{ env.FRONTEND_PATH }} .
-              echo "✅ Backup created: $BACKUP_NAME.tar.gz"
-              
-              # Keep only last 5 backups
+              sudo tar -czf /var/www/backups/$BACKUP_NAME.tar.gz -C /var/www/medexjob .
+              echo "Backup created: $BACKUP_NAME.tar.gz"
               cd /var/www/backups
-              ls -t frontend-*.tar.gz | tail -n +6 | xargs -r sudo rm --
+              ls -t frontend-*.tar.gz 2>/dev/null | tail -n +6 | xargs -r sudo rm --
+            else
+              echo "No existing frontend found; nothing to back up."
             fi
           EOF
 
       - name: Deploy Frontend
         run: |
-          # Create tarball of frontend build
-          cd artifacts/frontend
-          tar -czf /tmp/frontend-build.tar.gz .
-          
-          # Upload to server
-          scp -i ~/.ssh/deploy_key -P ${{ secrets.VPS_PORT || 22 }} \
+          set -euo pipefail
+          tar -czf /tmp/frontend-build.tar.gz -C artifacts/frontend .
+
+          scp \
+            -i "$HOME/.ssh/deploy_key" \
+            -P "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=15 \
+            -o StrictHostKeyChecking=accept-new \
             /tmp/frontend-build.tar.gz \
-            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/tmp/
-          
-          # Extract and set permissions
-          ssh -i ~/.ssh/deploy_key -p ${{ secrets.VPS_PORT || 22 }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-            sudo mkdir -p ${{ env.FRONTEND_PATH }}
-            sudo rm -rf ${{ env.FRONTEND_PATH }}/*
-            sudo tar -xzf /tmp/frontend-build.tar.gz -C ${{ env.FRONTEND_PATH }}
-            sudo chown -R www-data:www-data ${{ env.FRONTEND_PATH }}
-            sudo chmod -R 755 ${{ env.FRONTEND_PATH }}
-            rm /tmp/frontend-build.tar.gz
-            
-            echo "🔄 Reloading Nginx..."
-            sudo nginx -t && sudo systemctl reload nginx
+            "$VPS_USER@$VPS_HOST:/tmp/frontend-build.tar.gz"
+
+          ssh -T \
+            -i "$HOME/.ssh/deploy_key" \
+            -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o ConnectTimeout=15 \
+            -o StrictHostKeyChecking=accept-new \
+            "$VPS_USER@$VPS_HOST" << 'EOF'
+            set -e
+            sudo mkdir -p /var/www/medexjob
+            sudo find /var/www/medexjob -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            sudo tar -xzf /tmp/frontend-build.tar.gz -C /var/www/medexjob
+            sudo chown -R www-data:www-data /var/www/medexjob
+            sudo chmod -R u=rwX,go=rX /var/www/medexjob
+            rm -f /tmp/frontend-build.tar.gz
+            sudo nginx -t
+            sudo systemctl reload nginx
+            echo "Frontend deployed and Nginx reloaded successfully."
           EOF
 
       - name: Frontend Health Check
         run: |
+          set -euo pipefail
           sleep 5
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://medexjob.com || echo "000")
-          
+          HTTP_STATUS=$(curl --connect-timeout 10 --max-time 20 -s -o /dev/null -w '%{http_code}' https://medexjob.com || true)
           if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "301" ] || [ "$HTTP_STATUS" = "302" ]; then
-            echo "✅ Frontend is accessible (HTTP $HTTP_STATUS)"
+            echo "Frontend is accessible (HTTP $HTTP_STATUS)"
           else
-            echo "⚠️ Frontend returned HTTP $HTTP_STATUS"
+            echo "::warning::Frontend health check returned HTTP ${HTTP_STATUS:-000}."
           fi
 
       - name: Cleanup SSH
         if: always()
-        run: rm -f ~/.ssh/deploy_key
+        run: rm -f "$HOME/.ssh/deploy_key" "$HOME/.ssh/known_hosts"
 
-  # Post-deployment notification
   notify:
     name: Deployment Notification
     runs-on: ubuntu-latest
     needs: [deploy-backend, deploy-frontend]
     if: always()
-    
+
     steps:
       - name: Deployment Summary
         run: |
-          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Backend | ${{ needs.deploy-backend.result == 'success' && '✅ Success' || needs.deploy-backend.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Frontend | ${{ needs.deploy-frontend.result == 'success' && '✅ Success' || needs.deploy-frontend.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Environment:** ${{ github.event.inputs.environment || 'production' }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-
-      # Optional: Slack/Discord notification
-      # - name: Send Slack Notification
-      #   if: always()
-      #   uses: 8398a7/action-slack@v3
-      #   with:
-      #     status: ${{ job.status }}
-      #     fields: repo,message,commit,author,action,eventName,ref,workflow
-      #   env:
-      #     SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+          echo "## Deployment Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Component | Status |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-----------|--------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Backend | ${{ needs.deploy-backend.result == 'success' && 'Success' || needs.deploy-backend.result == 'skipped' && 'Skipped' || 'Failed' }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Frontend | ${{ needs.deploy-frontend.result == 'success' && 'Success' || needs.deploy-frontend.result == 'skipped' && 'Skipped' || 'Failed' }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Environment: ${{ github.event.inputs.environment || 'production' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Triggered by: ${{ github.actor }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Commit: ${{ github.sha }}" >> "$GITHUB_STEP_SUMMARY"

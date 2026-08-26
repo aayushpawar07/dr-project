@@ -1,7 +1,9 @@
 package com.medexjob.controller;
 
 import com.medexjob.entity.Job;
+import com.medexjob.entity.NewsUpdate;
 import com.medexjob.repository.JobRepository;
+import com.medexjob.repository.NewsUpdateRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,15 +14,13 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Optional;
 
 /**
- * Serves server-side HTML with OpenGraph / Twitter Card meta tags for job share URLs.
+ * Serves server-side HTML with OpenGraph / Twitter Card meta tags for job and news share URLs.
  *
  * Social media crawlers (WhatsApp, Facebook, LinkedIn, Twitter/X) do NOT execute
  * JavaScript, so the React SPA cannot inject OG tags dynamically. Instead, we serve
- * a thin server-rendered HTML page at /share/job/{id} that:
- *  1. Contains all OG + Twitter meta tags with real job data.
- *  2. Immediately redirects human browsers to the actual React job detail page.
- *
- * The frontend's share buttons must point to /share/job/{id} (this endpoint).
+ * thin server-rendered HTML pages at /share/job/{id} and /share/news/{id} that:
+ *  1. Contain all OG + Twitter meta tags with real title, description and image data.
+ *  2. Immediately redirect human browsers to the actual React detail page.
  */
 @RestController
 @RequestMapping("/share")
@@ -29,16 +29,18 @@ public class JobShareController {
     private static final Logger logger = LoggerFactory.getLogger(JobShareController.class);
 
     private final JobRepository jobRepository;
+    private final NewsUpdateRepository newsUpdateRepository;
 
     /** Base URL for absolute links in OG tags. Defaults to https://medexjob.com in prod. */
     @Value("${file.base-url:http://localhost:8081}")
     private String baseUrl;
 
-    /** Default OG image used when a job has no image. */
+    /** Default OG image used when a item has no image. */
     private static final String DEFAULT_IMAGE = "https://medexjob.com/og-default.png";
 
-    public JobShareController(JobRepository jobRepository) {
+    public JobShareController(JobRepository jobRepository, NewsUpdateRepository newsUpdateRepository) {
         this.jobRepository = jobRepository;
+        this.newsUpdateRepository = newsUpdateRepository;
     }
 
     /**
@@ -82,6 +84,53 @@ public class JobShareController {
             logger.error("Error serving share page for job {}: {}", id, e.getMessage(), e);
             return fallbackRedirect(id);
         }
+    }
+
+    /**
+     * GET /share/news/{id}
+     * Returns server-rendered HTML with dynamic OpenGraph and Twitter Card meta tags for news.
+     * Human browsers are immediately redirected to the React news page.
+     */
+    @GetMapping(value = "/news/{id}", produces = MediaType.TEXT_HTML_VALUE)
+    public ResponseEntity<String> shareNews(@PathVariable("id") String id) {
+        try {
+            Optional<NewsUpdate> optNews = newsUpdateRepository.findById(
+                    java.util.UUID.fromString(id));
+
+            if (optNews.isEmpty()) {
+                return fallbackNewsRedirect(id);
+            }
+
+            NewsUpdate news = optNews.get();
+
+            String title   = escapeHtml(news.getTitle() != null ? news.getTitle() : "Medical Job News on MedExJob");
+            String desc    = escapeHtml(news.getFullStory() != null && !news.getFullStory().isBlank()
+                                ? (news.getFullStory().length() > 160 ? news.getFullStory().substring(0, 160) + "…" : news.getFullStory())
+                                : title + " - Read full medical news update on MedExJob.com.");
+            String image   = (news.getImageUrl() != null && !news.getImageUrl().isBlank())
+                                ? escapeHtml(news.getImageUrl().startsWith("http") ? news.getImageUrl() : baseUrl + (news.getImageUrl().startsWith("/") ? news.getImageUrl() : "/" + news.getImageUrl()))
+                                : DEFAULT_IMAGE;
+            String pageUrl = baseUrl + "/news/" + id;
+
+            String html = buildHtml(title + " | MedExJob News", desc, image, pageUrl, title);
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(html);
+
+        } catch (Exception e) {
+            logger.error("Error serving share page for news {}: {}", id, e.getMessage(), e);
+            return fallbackNewsRedirect(id);
+        }
+    }
+
+    private ResponseEntity<String> fallbackNewsRedirect(String id) {
+        String redirectUrl = baseUrl + "/news/" + id;
+        String html = "<html><head><meta http-equiv='refresh' content='0;url=" +
+                escapeHtml(redirectUrl) + "'></head><body></body></html>";
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_HTML)
+                .body(html);
     }
 
     // ────────────────────────────────────────────────────────────────────────────

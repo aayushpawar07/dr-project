@@ -73,10 +73,11 @@ export function NewsPage({ onNavigate }: NewsPageProps) {
 
   const handleShareNews = async (e: React.MouseEvent, update: PulseUpdate) => {
     e.stopPropagation();
-    const shareUrl = `${window.location.origin}/news/${update.id}`;
+    const shareUrl = `${window.location.origin.replace(/:\d+$/, '')}/share/news/${update.id}`;
+    const shareText = `📰 *${update.title}*\n\nRead full update on MedExJob.com:\n${shareUrl}`;
     const shareData = {
       title: `${update.title} | MedExJob News`,
-      text: `${update.title} - Read the full update on MedExJob`,
+      text: `📰 ${update.title} - Read full update on MedExJob`,
       url: shareUrl,
     };
 
@@ -88,7 +89,7 @@ export function NewsPage({ onNavigate }: NewsPageProps) {
     }
 
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(shareText);
       setCopiedNewsId(update.id);
       setTimeout(() => setCopiedNewsId(null), 2500);
     } catch (err) {

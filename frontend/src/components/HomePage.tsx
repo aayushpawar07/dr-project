@@ -236,7 +236,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section with Better Visible Background */}
-      <section className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 text-white py-16 md:py-24 overflow-visible">
+      <section className="relative z-20 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 text-white py-16 md:py-24 overflow-visible">
         {/* Background Image with Better Visibility */}
         <div className="absolute inset-0">
           <ImageWithFallback
@@ -275,7 +275,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
 
             {/* Job Search Bar */}
             <div
-              className="animate-fade-in-up max-w-4xl mx-auto"
+              className="animate-fade-in-up max-w-4xl mx-auto relative z-30"
               style={{ animationDelay: "0.4s" }}
             >
               <SearchBar showLabels={true} />
@@ -285,7 +285,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
       </section>
 
       {/* Animated Stats Section */}
-      <section className="py-16 bg-white border-b relative overflow-hidden">
+      <section className="py-16 bg-white border-b relative z-10 overflow-visible">
         {/* Decorative background */}
         <div className="absolute inset-0 bg-gradient-to-b from-blue-50/50 to-transparent pointer-events-none"></div>
 

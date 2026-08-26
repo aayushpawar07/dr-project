@@ -5,6 +5,8 @@
   max-width: 920px;
   margin: 0 auto;
   padding: 0 16px;
+  position: relative;
+  z-index: 50;
 }
 
 .search-bar--compact {
@@ -17,6 +19,8 @@
   align-items: center;
   background: #ffffff;
   border-radius: 60px;
+  position: relative;
+  z-index: 50;
   box-shadow: 
     0 4px 6px -1px rgba(0, 0, 0, 0.1),
     0 2px 4px -1px rgba(0, 0, 0, 0.06),
@@ -36,6 +40,7 @@
 .search-bar__field {
   flex: 1;
   position: relative;
+  z-index: 50;
   min-width: 0;
 }
 
@@ -185,14 +190,16 @@
   top: calc(100% + 8px);
   left: 0;
   right: 0;
-  background: #ffffff;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border: 1px solid #e5e7eb;
   border-radius: 16px;
   box-shadow: 
-    0 20px 25px -5px rgba(0, 0, 0, 0.1),
-    0 8px 10px -6px rgba(0, 0, 0, 0.1),
+    0 20px 30px -5px rgba(0, 0, 0, 0.2),
+    0 10px 15px -5px rgba(0, 0, 0, 0.1),
     0 0 0 1px rgba(0, 0, 0, 0.05);
   padding: 8px 0;
-  z-index: 1000;
+  z-index: 9999;
   max-height: 340px;
   overflow-y: auto;
   list-style: none;
@@ -238,15 +245,18 @@
   transition: background 0.15s ease;
   color: #374151;
   font-size: 14px;
+  background-color: #ffffff;
 }
 
 .search-bar__dropdown-item:hover,
 .search-bar__dropdown-item--active {
   background: #f3f4f6;
+  background-color: #f3f4f6;
 }
 
 .search-bar__dropdown-item--active {
   background: #eff6ff;
+  background-color: #eff6ff;
 }
 
 .search-bar__dropdown-item svg {
@@ -317,11 +327,12 @@
   }
 
   .search-bar__dropdown {
-    position: fixed;
-    left: 12px;
-    right: 12px;
-    top: auto;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
     border-radius: 16px;
+    z-index: 9999;
   }
 }
 

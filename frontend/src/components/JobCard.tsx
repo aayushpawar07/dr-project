@@ -52,6 +52,13 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
   };
 
 
+  const organizationName =
+    job.organization ||
+    (job as any).companyName ||
+    (job as any).employer?.companyName ||
+    (job as any).employerName ||
+    '';
+
   return (
     <Card className="relative cursor-pointer overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 md:p-6 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-md group h-full flex flex-col">
       <div className="flex flex-col h-full justify-between gap-3 flex-1">
@@ -126,15 +133,15 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
             >
               {job.title}
             </h3>
-            {job.organization && (
-              <div className="flex items-center gap-1.5 mt-1 text-sm text-gray-500">
-                <Building2 className="w-4 h-4 shrink-0" />
-                <span className="truncate">{job.organization}</span>
+            {organizationName && (
+              <div className="flex items-center gap-1.5 mt-1 text-sm text-gray-600">
+                <Building2 className="w-4 h-4 shrink-0 text-blue-600" />
+                <span className="font-medium text-gray-700 truncate">{organizationName}</span>
               </div>
             )}
           </div>
 
-          {/* Meta pills: Location, Posts, Apply by */}
+          {/* Meta pills: Location, Posts */}
           <div className="flex flex-wrap gap-2 text-sm">
             {locationText && (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-blue-700">
@@ -146,12 +153,6 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
               <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-purple-700">
                 <Briefcase className="w-3.5 h-3.5" />
                 {job.numberOfPosts} Post{job.numberOfPosts > 1 ? 's' : ''}
-              </span>
-            )}
-            {job.lastDate && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-orange-700">
-                <Calendar className="w-3.5 h-3.5" />
-                Apply by {new Date(job.lastDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
               </span>
             )}
           </div>
@@ -185,19 +186,28 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
 
         {/* Footer pinned to bottom */}
         <div className="flex items-center justify-between border-t border-gray-100 pt-3 mt-auto">
-          <div className="flex items-center gap-3 text-xs text-gray-400">
-            <span>{job.views ?? 0} views</span>
-            <span>{job.applications ?? 0} applications</span>
-            {daysLeft > 0 && daysLeft <= 7 && (
-              <Badge variant="destructive" className="text-[11px] px-1.5 py-0.5">
-                {daysLeft}d left
-              </Badge>
+          <div className="flex flex-col gap-1 text-xs text-gray-500">
+            {job.lastDate && (
+              <div className="flex items-center gap-1 text-orange-700 font-medium">
+                <Calendar className="w-3.5 h-3.5 text-orange-600" />
+                <span>Apply by {new Date(job.lastDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+              </div>
             )}
+            <div className="flex items-center gap-2 text-gray-400">
+              <span>{job.views ?? 0} views</span>
+              <span>•</span>
+              <span>{job.applications ?? 0} applications</span>
+              {daysLeft > 0 && daysLeft <= 7 && (
+                <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                  {daysLeft}d left
+                </Badge>
+              )}
+            </div>
           </div>
           <Button
             size="sm"
             onClick={() => onViewDetails(job.slug || job.id)}
-            className="inline-flex items-center gap-1.5 rounded-full text-white text-sm font-semibold px-5 py-2 shadow hover:shadow-md transition-all"
+            className="inline-flex items-center gap-1.5 rounded-full text-white text-sm font-semibold px-5 py-2 shadow hover:shadow-md transition-all shrink-0"
             style={{ background: 'linear-gradient(to right, #2563eb, #1d4ed8)' }}
           >
             View Details

@@ -230,14 +230,167 @@ export function JobPostingForm({
     }
   };
 
+  const [pastedText, setPastedText] = useState("");
+  const [showPasteBox, setShowPasteBox] = useState(false);
+
+  const parsePastedJobText = (text: string) => {
+    if (!text.trim()) return;
+
+    let title = formData.title;
+    let organization = formData.organization;
+    let location = formData.location;
+    let qualification = formData.qualification;
+    let experience = formData.experience;
+    let salary = formData.salary;
+    let numberOfPosts = formData.numberOfPosts;
+    let sector: JobSector = formData.sector;
+    let category: JobCategory = formData.category;
+
+    // Detect Sector
+    if (/govt|government|sms|aiims|pgimer|jipmer|public|railway|esic/i.test(text)) {
+      sector = "government";
+    } else if (/private|hospital|clinic|trust|pvt/i.test(text)) {
+      sector = "private";
+    }
+
+    // Detect Category & Title
+    if (/junior resident/i.test(text)) {
+      category = "Junior Resident";
+      if (!title) title = "Junior Resident";
+    } else if (/senior resident/i.test(text)) {
+      category = "Senior Resident";
+      if (!title) title = "Senior Resident";
+    } else if (/medical officer/i.test(text)) {
+      category = "Medical Officer";
+      if (!title) title = "Medical Officer";
+    } else if (/nursing/i.test(text)) {
+      category = "Nursing";
+      if (!title) title = "Staff Nurse / Nursing Officer";
+    } else if (/specialist/i.test(text)) {
+      category = "Specialist";
+      if (!title) title = "Specialist Consultant";
+    } else if (/faculty|professor/i.test(text)) {
+      category = "Faculty";
+      if (!title) title = "Assistant / Associate Professor";
+    }
+
+    // Detect Title if not caught by category
+    const titleMatch = text.match(/(?:title|post|role|position|recruitment for|hiring)\s*:\s*([^\n\r.]+)/i);
+    if (titleMatch && titleMatch[1]) {
+      title = titleMatch[1].trim();
+    } else if (!title) {
+      const firstLine = text.trim().split("\n")[0];
+      if (firstLine && firstLine.length < 80) {
+        title = firstLine.trim();
+      }
+    }
+
+    // Detect Organization
+    const orgMatch = text.match(/(?:hospital|organization|organisation|institute|college|employer|company)\s*:\s*([^\n\r.]+)/i) ||
+                     text.match(/([A-Z0-9\s&,.-]+(?:Medical College|Hospital|Institute|AIIMS|SMS|PGIMER|Health|Clinic))/i);
+    if (orgMatch && orgMatch[1]) {
+      organization = orgMatch[1].trim();
+    } else if (!organization) {
+      if (/sms|sawai man singh/i.test(text)) organization = "SMS Medical College & Hospital, Jaipur";
+      else if (/aiims/i.test(text)) organization = "AIIMS";
+    }
+
+    // Detect Location
+    const locMatch = text.match(/(?:location|city|place|station)\s*:\s*([^\n\r.]+)/i) ||
+                     text.match(/(Jaipur|Delhi|New Delhi|Mumbai|Bangalore|Chennai|Kolkata|Hyderabad|Pune|Lucknow|Chandigarh|Bhopal|Indore|Ahmedabad)/i);
+    if (locMatch && locMatch[1]) {
+      location = locMatch[1].trim();
+    }
+
+    // Detect Qualification
+    const qualMatch = text.match(/(?:qualification|eligibility|education)\s*:\s*([^\n\r.]+)/i) ||
+                      text.match(/(MBBS|MD|MS|DNB|BSc Nursing|GNM|BPharm|MPharm|BDS|MDS|BHMS|BAMS)/i);
+    if (qualMatch && qualMatch[1]) {
+      qualification = qualMatch[1].trim();
+    }
+
+    // Detect Posts
+    const postMatch = text.match(/(?:posts|vacancies|no\. of posts|number of posts)\s*:\s*(\d+)/i) ||
+                      text.match(/(\d+)\s*(?:posts|vacancies|positions)/i);
+    if (postMatch && postMatch[1]) {
+      numberOfPosts = parseInt(postMatch[1], 10) || 1;
+    }
+
+    // Detect Salary
+    const salMatch = text.match(/(?:salary|pay|remuneration|stipend)\s*:\s*([^\n\r.]+)/i) ||
+                     text.match(/(₹\s*[\d,]+|Rs\.?\s*[\d,]+|[\d.]+\s*LPA)/i);
+    if (salMatch && salMatch[1]) {
+      salary = salMatch[1].trim();
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      title: title || prev.title,
+      organization: organization || prev.organization,
+      location: location || prev.location,
+      sector,
+      category,
+      qualification: qualification || prev.qualification,
+      experience: experience || prev.experience,
+      salary: salary || prev.salary,
+      numberOfPosts: numberOfPosts || prev.numberOfPosts,
+      description: prev.description || text.trim(),
+    }));
+
+    setShowPasteBox(false);
+  };
+
   const renderStep1 = () => (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl text-gray-900 mb-2">Basic Job Information</h2>
-        <p className="text-gray-600">
-          Let's start with the essential details about your job posting.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-2xl text-gray-900 mb-1">Basic Job Information</h2>
+          <p className="text-gray-600 text-sm">
+            Let's start with the essential details about your job posting.
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="text-xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+          onClick={() => setShowPasteBox(!showPasteBox)}
+        >
+          📋 {showPasteBox ? "Hide Fast Auto-Fill" : "Fast Auto-Fill from AI / Raw Text"}
+        </Button>
       </div>
+
+      {showPasteBox && (
+        <Card className="p-4 bg-blue-50/60 border-blue-200 space-y-3">
+          <Label className="text-blue-900 font-semibold text-sm">
+            Paste AI / Raw Job Notice Text Below:
+          </Label>
+          <Textarea
+            rows={4}
+            placeholder="Paste raw notification text or AI summary (e.g. SMS Medical College Jaipur Junior Resident MBBS 15 Posts...)"
+            value={pastedText}
+            onChange={(e) => setPastedText(e.target.value)}
+            className="bg-white text-sm"
+          />
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setShowPasteBox(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => parsePastedJobText(pastedText)}
+            >
+              ✨ Auto-Fill Form Fields
+            </Button>
+          </div>
+        </Card>
+      )}
 
       <div className="grid md:grid-cols-2 gap-6">
         <div className="md:col-span-2">
@@ -255,7 +408,7 @@ export function JobPostingForm({
           <Label htmlFor="organization">Organization/Hospital Name *</Label>
           <Input
             id="organization"
-            placeholder="e.g., Apollo Hospitals"
+            placeholder="e.g., SMS Medical College Jaipur / Apollo Hospitals"
             value={formData.organization}
             onChange={(e) => handleInputChange("organization", e.target.value)}
             className="mt-1"

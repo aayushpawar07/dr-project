@@ -518,10 +518,20 @@ export function JobDetailPage({
 
                 <div>
                   <h1 className="text-3xl text-gray-900 mb-2">{job.title}</h1>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Building2 className="w-5 h-5" />
-                    <span className="text-lg">{job.organization}</span>
-                  </div>
+                  {(() => {
+                    const orgName =
+                      job.organization ||
+                      (job as any).companyName ||
+                      (job as any).employer?.companyName ||
+                      (job as any).employerName ||
+                      '';
+                    return orgName ? (
+                      <div className="flex items-center gap-2 text-gray-700">
+                        <Building2 className="w-5 h-5 text-blue-600 shrink-0" />
+                        <span className="text-lg font-medium">{orgName}</span>
+                      </div>
+                    ) : null;
+                  })()}
                   {job.sourceRecruitmentId && (
                     <Button
                       variant="outline"

@@ -4,6 +4,7 @@ import "./index.css";
 import "./styles/responsive.css";
 import "./styles/dashboard-polish.css";
 import "./styles/medex-brand-overrides.css";
+import "./utils/dashboardNavigation";
 import { AuthProvider } from "./contexts/AuthContext.tsx";
 
 createRoot(document.getElementById("root")!).render(

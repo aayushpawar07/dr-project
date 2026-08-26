@@ -60,7 +60,7 @@ public class JobShareController {
 
             // Sanitize / build values
             String title   = escapeHtml(job.getTitle() != null ? job.getTitle() : "Medical Job on MedExJob");
-            String org     = escapeHtml(job.getOrganization() != null ? job.getOrganization() : "");
+            String org     = escapeHtml((job.getEmployer() != null && job.getEmployer().getCompanyName() != null) ? job.getEmployer().getCompanyName() : "");
             String loc     = escapeHtml(job.getLocation() != null ? job.getLocation() : "India");
             String desc    = buildDescription(job, org, loc);
             String image   = buildImageUrl(job);

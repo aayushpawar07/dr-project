@@ -1,1051 +1,953 @@
 // AI assisted development
-import { 
-  Plus, Briefcase, Users, Eye, CheckCircle, XCircle, Calendar, 
-  ArrowLeft, Edit, Trash2, AlertTriangle, FileText, Mail, Phone,
-  Award, BarChart3, Bell, UserCheck, UserPlus, RefreshCw, 
-  TrendingUp, Clock, Star, MessageSquare, ExternalLink
-} from 'lucide-react';
-import { Card } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from './ui/table';
-import { useState, useEffect } from 'react';
+  AlertTriangle,
+  ArrowLeft,
+  Award,
+  BarChart3,
+  Bell,
+  Briefcase,
+  Building2,
+  Calendar,
+  CheckCircle,
+  ChevronRight,
+  CreditCard,
+  Edit,
+  Eye,
+  FileText,
+  LayoutDashboard,
+  LogOut,
+  Mail,
+  MapPin,
+  Menu,
+  Phone,
+  Plus,
+  RefreshCw,
+  ShieldCheck,
+  Star,
+  UserCheck,
+  UserPlus,
+  Users,
+  X,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchEmployer } from '../api/employers';
-import { EmployerResponse } from '../api/employers';
-import { Alert, AlertDescription } from './ui/alert';
-import { fetchJobs } from '../api/jobs';
+import { fetchEmployer, EmployerResponse } from '../api/employers';
 import { fetchApplications, ApplicationResponse } from '../api/applications';
 import { getCurrentSubscription, SubscriptionResponse } from '../api/subscriptions';
 import { fetchNotifications } from '../api/notifications';
 import { openFileInViewer } from '../utils/fileUtils';
+import './styles/../styles/employer-dashboard.css';
 
 interface EmployerDashboardProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, entityId?: string) => void;
+}
+
+type DashboardSection = 'jobs' | 'applications' | 'subscription' | 'notifications' | 'verification';
+type JobFilter = 'all' | 'active' | 'pending' | 'draft' | 'closed';
+
+function formatDate(value?: string) {
+  if (!value) return 'N/A';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'N/A';
+  return date.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function getInitials(value?: string) {
+  if (!value) return 'ME';
+  const parts = value.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'ME';
+  return parts.slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('');
+}
+
+function getJobStatusClass(status?: string) {
+  switch ((status || '').toLowerCase()) {
+    case 'active':
+      return 'dashboard-status dashboard-status--active';
+    case 'pending':
+      return 'dashboard-status dashboard-status--pending';
+    case 'draft':
+      return 'dashboard-status dashboard-status--draft';
+    case 'closed':
+      return 'dashboard-status dashboard-status--closed';
+    default:
+      return 'dashboard-status';
+  }
+}
+
+function getApplicationStatusClass(status?: string) {
+  switch ((status || '').toLowerCase()) {
+    case 'shortlisted':
+      return 'dashboard-status dashboard-status--active';
+    case 'interview':
+      return 'dashboard-status dashboard-status--interview';
+    case 'selected':
+    case 'hired':
+      return 'dashboard-status dashboard-status--selected';
+    case 'rejected':
+      return 'dashboard-status dashboard-status--rejected';
+    case 'applied':
+    case 'pending':
+      return 'dashboard-status dashboard-status--pending';
+    default:
+      return 'dashboard-status';
+  }
 }
 
 export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
   const { user, token, logout } = useAuth();
-
-  const handleLogout = () => {
-    logout();
-    onNavigate('logout');
-  };
   const [myJobs, setMyJobs] = useState<any[]>([]);
   const [myApplications, setMyApplications] = useState<ApplicationResponse[]>([]);
   const [employer, setEmployer] = useState<EmployerResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentSubscription, setCurrentSubscription] = useState<SubscriptionResponse | null>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState('jobs');
+  const [activeSection, setActiveSection] = useState<DashboardSection>('jobs');
+  const [jobFilter, setJobFilter] = useState<JobFilter>('all');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  const totalViews = myJobs.reduce((sum, job) => sum + (job.views || 0), 0);
-  const totalApplicationsFromList = myApplications.length;
-  const totalApplicationsFromJobs = myJobs.reduce((sum, job) => sum + (job.applications || 0), 0);
-  const totalApplications = Math.max(totalApplicationsFromList, totalApplicationsFromJobs);
+  const fetchApplicationsForJobs = async (jobs: any[], authToken: string) => {
+    if (jobs.length === 0) return [];
 
-  useEffect(() => {
-    if (myJobs.length > 0 || myApplications.length > 0) {
-      console.log('📊 Application Count Debug:', {
-        applicationsFromList: totalApplicationsFromList,
-        applicationsFromJobs: totalApplicationsFromJobs,
-        totalApplications,
-        jobsCount: myJobs.length,
-        applicationsCount: myApplications.length,
-        jobs: myJobs.map(j => ({ id: j.id, title: j.title, applications: j.applications }))
-      });
+    const allApplications: ApplicationResponse[] = [];
+    for (const job of jobs) {
+      try {
+        const appsResponse = await fetchApplications(
+          {
+            jobId: job.id,
+            page: 0,
+            size: 1000,
+          },
+          authToken,
+        );
+
+        if (appsResponse?.content && Array.isArray(appsResponse.content)) {
+          allApplications.push(...appsResponse.content);
+        } else if (Array.isArray(appsResponse)) {
+          allApplications.push(...appsResponse);
+        }
+      } catch (applicationError) {
+        console.error(`Failed to fetch applications for job ${job.id}:`, applicationError);
+      }
     }
-  }, [myJobs, myApplications, totalApplicationsFromList, totalApplicationsFromJobs, totalApplications]);
+    return allApplications;
+  };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!user || !token) return;
+  const loadDashboardData = async (showLoader = false) => {
+    if (!user || !token) return;
+    if (showLoader) setLoading(true);
+
+    try {
+      setError(null);
+      let employerData: EmployerResponse;
 
       try {
-        let employerData;
-        try {
-          employerData = await fetchEmployer(user.id, token);
-        } catch (err: any) {
-          if (err.message?.includes('404')) {
-            const { createEmployer } = await import('../api/employers');
-            employerData = await createEmployer({}, token);
-          } else {
-            throw err;
-          }
-        }
-        setEmployer(employerData);
-
-        if (employerData.verificationStatus === 'pending') {
-          onNavigate('verification');
-          return;
-        }
-
-        const { fetchJobsByEmployer } = await import('../api/jobs');
-        const jobsResponse = await fetchJobsByEmployer(employerData.id, {
-          status: 'all',
-          page: 0,
-          size: 1000
-        });
-        const employerJobs = jobsResponse.content || [];
-
-        console.log('Fetched employer jobs:', employerJobs.length, 'for employer:', employerData.id);
-        setMyJobs(employerJobs);
-
-        if (employerJobs.length > 0) {
-          try {
-            const jobIds = employerJobs.map((job: any) => job.id);
-            console.log('📋 Fetching applications for jobs:', jobIds);
-            const allApplications: ApplicationResponse[] = [];
-
-            for (const jobId of jobIds) {
-              try {
-                console.log(`🔍 Fetching applications for job: ${jobId}`);
-                const appsResponse = await fetchApplications({
-                  jobId,
-                  page: 0,
-                  size: 1000
-                }, token);
-                console.log(`✅ Applications response for job ${jobId}:`, appsResponse);
-
-                if (appsResponse && appsResponse.content && Array.isArray(appsResponse.content)) {
-                  console.log(`📝 Found ${appsResponse.content.length} applications for job ${jobId}`);
-                  allApplications.push(...appsResponse.content);
-                } else if (Array.isArray(appsResponse)) {
-                  console.log(`📝 Found ${appsResponse.length} applications (direct array) for job ${jobId}`);
-                  allApplications.push(...appsResponse);
-                } else {
-                  console.warn(`⚠️ No applications found for job ${jobId}, response:`, appsResponse);
-                }
-              } catch (err) {
-                console.error(`❌ Failed to fetch applications for job ${jobId}:`, err);
-              }
-            }
-
-            console.log(`📊 Total applications fetched: ${allApplications.length}`);
-            setMyApplications(allApplications);
-          } catch (error) {
-            console.error('❌ Failed to fetch applications:', error);
-            setMyApplications([]);
-          }
+        employerData = await fetchEmployer(user.id, token);
+      } catch (employerError: any) {
+        if (employerError?.message?.includes('404')) {
+          const { createEmployer } = await import('../api/employers');
+          employerData = await createEmployer({}, token);
         } else {
-          console.log('⚠️ No jobs found, setting applications to empty');
-          setMyApplications([]);
+          throw employerError;
         }
-
-        try {
-          const subscription = await getCurrentSubscription(token);
-          setCurrentSubscription(subscription);
-        } catch (err) {
-          console.warn('Could not fetch subscription:', err);
-          setCurrentSubscription(null);
-        }
-
-        try {
-          const notificationsData = await fetchNotifications({ page: 0, size: 10 }, token);
-          setNotifications(notificationsData.content || []);
-          console.log('✅ Notifications fetched:', notificationsData.content?.length || 0);
-        } catch (error) {
-          console.error('Error fetching notifications:', error);
-          setNotifications([]);
-        }
-      } catch (error: any) {
-        console.error('Failed to fetch employer data:', error);
-        setError(error?.message || 'Failed to load dashboard data. Please try again.');
-      } finally {
-        setLoading(false);
       }
-    };
 
-    fetchData();
-  }, [user, token, onNavigate]);
+      setEmployer(employerData);
+
+      if (employerData.verificationStatus === 'pending') {
+        onNavigate('verification');
+        return;
+      }
+
+      const { fetchJobsByEmployer } = await import('../api/jobs');
+      const jobsResponse = await fetchJobsByEmployer(employerData.id, {
+        status: 'all',
+        page: 0,
+        size: 1000,
+      });
+      const employerJobs = jobsResponse.content || [];
+      setMyJobs(employerJobs);
+
+      const applications = await fetchApplicationsForJobs(employerJobs, token);
+      setMyApplications(applications);
+
+      try {
+        const subscription = await getCurrentSubscription(token);
+        setCurrentSubscription(subscription);
+      } catch (subscriptionError) {
+        console.warn('Could not fetch subscription:', subscriptionError);
+        setCurrentSubscription(null);
+      }
+
+      try {
+        const notificationsData = await fetchNotifications({ page: 0, size: 10 }, token);
+        setNotifications(notificationsData.content || []);
+      } catch (notificationError) {
+        console.error('Error fetching notifications:', notificationError);
+        setNotifications([]);
+      }
+    } catch (dashboardError: any) {
+      console.error('Failed to fetch employer data:', dashboardError);
+      setError(dashboardError?.message || 'Failed to load dashboard data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDashboardData(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, token]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && user && token) {
-        const fetchData = async () => {
-          try {
-            const employerData = await fetchEmployer(user.id, token);
-            setEmployer(employerData);
-
-            const { fetchJobsByEmployer } = await import('../api/jobs');
-            const jobsResponse = await fetchJobsByEmployer(employerData.id, {
-              status: 'all',
-              page: 0,
-              size: 1000
-            });
-            const employerJobs = jobsResponse.content || [];
-            setMyJobs(employerJobs);
-
-            if (employerJobs.length > 0) {
-              const jobIds = employerJobs.map((job: any) => job.id);
-              const allApplications: ApplicationResponse[] = [];
-              for (const jobId of jobIds) {
-                try {
-                  const appsResponse = await fetchApplications({
-                    jobId,
-                    page: 0,
-                    size: 1000
-                  }, token);
-                  if (appsResponse && appsResponse.content && Array.isArray(appsResponse.content)) {
-                    allApplications.push(...appsResponse.content);
-                  } else if (Array.isArray(appsResponse)) {
-                    allApplications.push(...appsResponse);
-                  }
-                } catch (err) {
-                  console.error(`Failed to fetch applications for job ${jobId}:`, err);
-                }
-              }
-              console.log(`🔄 Refreshed applications: ${allApplications.length} total`);
-              setMyApplications(allApplications);
-            }
-
-            try {
-              const notificationsData = await fetchNotifications({ page: 0, size: 10 }, token);
-              setNotifications(notificationsData.content || []);
-            } catch (error) {
-              console.error('Error refreshing notifications:', error);
-            }
-          } catch (error) {
-            console.error('Failed to refresh data:', error);
-          }
-        };
-        fetchData();
+        loadDashboardData(false);
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, token]);
 
-  const handleEditJob = (jobId: string) => {
-    onNavigate('edit-job', jobId);
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileNavOpen]);
+
+  const totalApplicationsFromList = myApplications.length;
+  const totalApplicationsFromJobs = myJobs.reduce((sum, job) => sum + (Number(job.applications) || 0), 0);
+  const totalApplications = Math.max(totalApplicationsFromList, totalApplicationsFromJobs);
+  const activeJobs = myJobs.filter((job) => job.status === 'active').length;
+  const shortlistedCount = myApplications.filter((application) => application.status === 'shortlisted').length;
+  const interviewCount = myApplications.filter((application) => application.status === 'interview').length;
+  const filledPositionsCount = myApplications.filter(
+    (application) => application.status === 'selected' || application.status === 'hired',
+  ).length;
+  const unreadNotifications = notifications.filter((notification: any) => !notification.read).length;
+
+  const jobsClosingSoon = useMemo(() => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const sevenDaysFromNow = new Date(now);
+    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+
+    return myJobs.filter((job) => {
+      if (job.status !== 'active' || !job.lastDate) return false;
+      const lastDate = new Date(job.lastDate);
+      if (Number.isNaN(lastDate.getTime())) return false;
+      lastDate.setHours(0, 0, 0, 0);
+      return lastDate >= now && lastDate <= sevenDaysFromNow;
+    }).length;
+  }, [myJobs]);
+
+  const totalViews = myJobs.reduce((sum, job) => sum + (Number(job.views) || 0), 0);
+
+  const filteredJobs = useMemo(() => {
+    if (jobFilter === 'all') return myJobs;
+    return myJobs.filter((job) => job.status === jobFilter);
+  }, [jobFilter, myJobs]);
+
+  const applicationsByJob = useMemo(() => {
+    const grouped = new Map<string, ApplicationResponse[]>();
+    myApplications.forEach((application) => {
+      const jobId = application.jobId || 'unknown';
+      if (!grouped.has(jobId)) grouped.set(jobId, []);
+      grouped.get(jobId)!.push(application);
+    });
+    return Array.from(grouped.entries());
+  }, [myApplications]);
+
+  const handleLogout = () => {
+    logout();
+    onNavigate('logout');
   };
 
-  const handleCloseJob = (jobId: string) => {
-    setMyJobs(prev => prev.map(job =>
-      job.id === jobId ? { ...job, status: 'closed' as const } : job
-    ));
+  const handlePostJob = () => {
+    setMobileNavOpen(false);
+    if (currentSubscription?.status === 'active') {
+      onNavigate('employer-post-job');
+    } else {
+      onNavigate('subscription');
+    }
   };
 
-  const handleViewApplications = (jobId: string) => {
-    alert(`Viewing applications for job ${jobId}`);
+  const openSection = (section: DashboardSection) => {
+    setActiveSection(section);
+    setMobileNavOpen(false);
+  };
+
+  const handleRefreshApplications = async () => {
+    if (!user || !token || !employer || refreshing) return;
+    setRefreshing(true);
+    try {
+      const { fetchJobsByEmployer } = await import('../api/jobs');
+      const jobsResponse = await fetchJobsByEmployer(employer.id, {
+        status: 'all',
+        page: 0,
+        size: 1000,
+      });
+      const employerJobs = jobsResponse.content || [];
+      setMyJobs(employerJobs);
+      const applications = await fetchApplicationsForJobs(employerJobs, token);
+      setMyApplications(applications);
+    } catch (refreshError) {
+      console.error('Failed to refresh applications:', refreshError);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   if (loading) {
     return (
-      <div className="min-h-[calc(100vh-200px)] bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="relative">
-            <div className="w-20 h-20 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Briefcase className="w-8 h-8 text-blue-600 animate-pulse" />
-            </div>
-          </div>
-          <p className="mt-6 text-gray-700 font-semibold text-lg">Loading your dashboard...</p>
-          <p className="text-sm text-gray-400 mt-1">Please wait while we fetch your data</p>
-        </div>
+      <div className="employer-state employer-state--loading">
+        <div className="employer-loader" aria-hidden="true" />
+        <h2>Loading your dashboard</h2>
+        <p>Fetching your jobs, applications and account details.</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-[calc(100vh-200px)] bg-gradient-to-br from-red-50 via-white to-orange-50 flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto px-6">
-          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <AlertTriangle className="w-10 h-10 text-red-600" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-3">Error Loading Dashboard</h1>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <Button onClick={() => window.location.reload()} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-300">
-            Try Again
-          </Button>
+      <div className="employer-state employer-state--error">
+        <div className="employer-state__icon employer-state__icon--error">
+          <AlertTriangle size={30} />
         </div>
+        <h2>Unable to load dashboard</h2>
+        <p>{error}</p>
+        <button className="dashboard-primary-button" onClick={() => loadDashboardData(true)}>
+          Try Again
+        </button>
       </div>
     );
   }
 
   if (!employer) {
     return (
-      <div className="min-h-[calc(100vh-200px)] bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-20 h-20 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
-          <p className="mt-6 text-gray-700 font-semibold">Loading employer data...</p>
-        </div>
+      <div className="employer-state employer-state--loading">
+        <div className="employer-loader" aria-hidden="true" />
+        <h2>Loading employer profile</h2>
       </div>
     );
   }
 
-  if (employer?.verificationStatus === 'pending') {
+  if (employer.verificationStatus === 'pending') {
     return (
-      <div className="min-h-[calc(100vh-200px)] bg-gradient-to-br from-yellow-50 via-white to-orange-50">
-        <div className="container mx-auto px-4 py-16">
-          <div className="max-w-2xl mx-auto text-center">
-            <div className="w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <AlertTriangle className="w-12 h-12 text-yellow-600" />
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Verification Required</h1>
-            <p className="text-gray-600 mb-8 text-lg">
-              Your employer account needs to be verified before you can access the dashboard and post jobs.
-              Please complete the verification process.
-            </p>
-            <Button onClick={() => onNavigate('verification')} className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-3 text-lg">
-              Complete Verification
-            </Button>
-          </div>
+      <div className="employer-state employer-state--verification">
+        <div className="employer-state__icon employer-state__icon--warning">
+          <ShieldCheck size={30} />
         </div>
+        <h2>Employer verification required</h2>
+        <p>Complete verification to access job posting and employer tools.</p>
+        <button className="dashboard-primary-button" onClick={() => onNavigate('verification')}>
+          Complete Verification
+        </button>
       </div>
     );
   }
+
+  const navItems = [
+    {
+      label: 'Dashboard',
+      icon: LayoutDashboard,
+      active: activeSection === 'jobs',
+      action: () => openSection('jobs'),
+    },
+    {
+      label: 'Post a Job',
+      icon: Plus,
+      action: handlePostJob,
+    },
+    {
+      label: 'My Jobs',
+      icon: Briefcase,
+      badge: myJobs.length,
+      action: () => openSection('jobs'),
+    },
+    {
+      label: 'Applications',
+      icon: Users,
+      badge: totalApplications,
+      active: activeSection === 'applications',
+      action: () => openSection('applications'),
+    },
+    {
+      label: 'Shortlisted',
+      icon: Star,
+      badge: shortlistedCount,
+      action: () => openSection('applications'),
+    },
+    {
+      label: 'Interviews',
+      icon: Calendar,
+      badge: interviewCount,
+      action: () => openSection('applications'),
+    },
+  ];
+
+  const intelligenceNavItems = [
+    {
+      label: 'Analytics',
+      icon: BarChart3,
+      action: () => {
+        setMobileNavOpen(false);
+        onNavigate('analytics');
+      },
+    },
+  ];
+
+  const managementNavItems = [
+    {
+      label: 'Company Profile',
+      icon: Building2,
+      action: () => {
+        setMobileNavOpen(false);
+        onNavigate('profile');
+      },
+    },
+    {
+      label: 'Verification',
+      icon: ShieldCheck,
+      active: activeSection === 'verification',
+      action: () => openSection('verification'),
+    },
+    {
+      label: 'Plans & Billing',
+      icon: CreditCard,
+      active: activeSection === 'subscription',
+      action: () => openSection('subscription'),
+    },
+    {
+      label: 'Notifications',
+      icon: Bell,
+      badge: unreadNotifications,
+      active: activeSection === 'notifications',
+      action: () => openSection('notifications'),
+    },
+  ];
+
+  const renderNavGroup = (items: typeof navItems) =>
+    items.map((item) => {
+      const Icon = item.icon;
+      return (
+        <button
+          key={item.label}
+          className={`employer-nav-item${item.active ? ' employer-nav-item--active' : ''}`}
+          onClick={item.action}
+          type="button"
+        >
+          <span className="employer-nav-item__label">
+            <Icon size={17} />
+            <span>{item.label}</span>
+          </span>
+          {typeof item.badge === 'number' && item.badge > 0 && (
+            <span className="employer-nav-item__badge">{item.badge > 99 ? '99+' : item.badge}</span>
+          )}
+        </button>
+      );
+    });
+
+  const sidebarContent = (
+    <>
+      <div className="employer-sidebar__brand">
+        <div className="employer-sidebar__brand-mark">{getInitials(employer.companyName)}</div>
+        <div>
+          <strong>{employer.companyName || 'Employer'}</strong>
+          <span>{employer.companyType || 'Employer'} account</span>
+        </div>
+      </div>
+
+      <div className="employer-sidebar__scroll">
+        <p className="employer-sidebar__section-title">Main</p>
+        <nav className="employer-sidebar__nav">{renderNavGroup(navItems)}</nav>
+
+        <p className="employer-sidebar__section-title">Intelligence</p>
+        <nav className="employer-sidebar__nav">{renderNavGroup(intelligenceNavItems as typeof navItems)}</nav>
+
+        <p className="employer-sidebar__section-title">Management</p>
+        <nav className="employer-sidebar__nav">{renderNavGroup(managementNavItems as typeof navItems)}</nav>
+      </div>
+
+      <div className="employer-sidebar__profile">
+        <div className="employer-avatar">{getInitials(employer.userName || employer.companyName)}</div>
+        <div className="employer-sidebar__profile-copy">
+          <strong>{employer.userName || employer.companyName}</strong>
+          <span>{employer.userEmail}</span>
+        </div>
+        <button type="button" className="icon-button" onClick={handleLogout} aria-label="Logout" title="Logout">
+          <LogOut size={17} />
+        </button>
+      </div>
+    </>
+  );
+
+  const metricCards = [
+    {
+      label: 'Active Jobs',
+      value: activeJobs,
+      helper: `${myJobs.length} total job${myJobs.length === 1 ? '' : 's'}`,
+      icon: Briefcase,
+      tone: 'teal',
+    },
+    {
+      label: 'Total Applications',
+      value: totalApplications,
+      helper: `${totalViews} total job view${totalViews === 1 ? '' : 's'}`,
+      icon: Users,
+      tone: 'blue',
+    },
+    {
+      label: 'Shortlisted',
+      value: shortlistedCount,
+      helper: `${myApplications.length} applications loaded`,
+      icon: Star,
+      tone: 'purple',
+    },
+    {
+      label: 'Interviews',
+      value: interviewCount,
+      helper: 'Based on application status',
+      icon: Calendar,
+      tone: 'indigo',
+    },
+    {
+      label: 'Positions Filled',
+      value: filledPositionsCount,
+      helper: 'Selected candidates',
+      icon: UserCheck,
+      tone: 'green',
+    },
+    {
+      label: 'Jobs Closing Soon',
+      value: jobsClosingSoon,
+      helper: 'Within the next 7 days',
+      icon: AlertTriangle,
+      tone: jobsClosingSoon > 0 ? 'amber' : 'slate',
+    },
+  ];
+
+  const jobFilters: Array<{ value: JobFilter; label: string }> = [
+    { value: 'all', label: 'All' },
+    { value: 'active', label: 'Active' },
+    { value: 'pending', label: 'Pending' },
+    { value: 'draft', label: 'Draft' },
+    { value: 'closed', label: 'Closed' },
+  ];
 
   return (
-    <div className="min-h-[calc(100vh-200px)] bg-gradient-to-br from-slate-50 via-white to-blue-50/40 pb-12">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header Section */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onNavigate('home')}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 transition-all duration-200 rounded-lg"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Go Back
-            </Button>
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <Bell className="w-5 h-5 text-gray-600 cursor-pointer hover:text-gray-900 transition-colors" />
-                {notifications.filter((n: any) => !n.read).length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-bold shadow-lg">
-                    {notifications.filter((n: any) => !n.read).length}
-                  </span>
-                )}
+    <div className="employer-dashboard">
+      <div className="employer-dashboard__mobile-bar">
+        <button
+          type="button"
+          className="icon-button"
+          onClick={() => setMobileNavOpen(true)}
+          aria-label="Open employer navigation"
+        >
+          <Menu size={20} />
+        </button>
+        <strong>Employer Dashboard</strong>
+        <button
+          type="button"
+          className="icon-button icon-button--notification"
+          onClick={() => openSection('notifications')}
+          aria-label="Notifications"
+        >
+          <Bell size={19} />
+          {unreadNotifications > 0 && <span>{unreadNotifications > 9 ? '9+' : unreadNotifications}</span>}
+        </button>
+      </div>
+
+      {mobileNavOpen && (
+        <div className="employer-mobile-nav" role="dialog" aria-modal="true" aria-label="Employer navigation">
+          <button
+            className="employer-mobile-nav__backdrop"
+            onClick={() => setMobileNavOpen(false)}
+            aria-label="Close employer navigation"
+          />
+          <aside className="employer-mobile-nav__panel">
+            <div className="employer-mobile-nav__close-row">
+              <span>Menu</span>
+              <button className="icon-button" onClick={() => setMobileNavOpen(false)} aria-label="Close menu">
+                <X size={20} />
+              </button>
+            </div>
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+
+      <div className="employer-dashboard__shell">
+        <aside className="employer-sidebar">{sidebarContent}</aside>
+
+        <main className="employer-main">
+          <div className="dashboard-page-header">
+            <div className="dashboard-page-header__title">
+              <button type="button" className="dashboard-back-link" onClick={() => onNavigate('home')}>
+                <ArrowLeft size={16} />
+                <span>Back</span>
+              </button>
+              <div>
+                <h1>Dashboard</h1>
+                <p>Welcome back, {employer.userName || employer.companyName}.</p>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLogout}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 hover:border-red-300 transition-all duration-200"
+            </div>
+            <div className="dashboard-page-header__actions">
+              <button
+                type="button"
+                className="icon-button icon-button--notification dashboard-desktop-notification"
+                onClick={() => openSection('notifications')}
+                aria-label="Notifications"
               >
+                <Bell size={19} />
+                {unreadNotifications > 0 && <span>{unreadNotifications > 9 ? '9+' : unreadNotifications}</span>}
+              </button>
+              <button type="button" className="dashboard-outline-button" onClick={handleLogout}>
+                <LogOut size={16} />
                 Logout
-              </Button>
+              </button>
             </div>
           </div>
-          
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-4 mb-1">
-                <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200">
-                  <Briefcase className="w-7 h-7 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900">{employer?.companyName || 'Employer Dashboard'}</h1>
-                  <div className="flex items-center gap-3 mt-0.5">
-                    <span className="text-gray-500 text-sm">Manage your job postings and applications</span>
-                    {employer?.verificationStatus === 'approved' && (
-                      <Badge className="bg-green-100 text-green-700 border-green-200 px-2 py-0.5">
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Verified
-                      </Badge>
-                    )}
-                  </div>
-                </div>
+
+          <section className="employer-verification-card">
+            <div className="employer-verification-card__content">
+              <div className="employer-verification-card__status">
+                <ShieldCheck size={18} />
+                <span>Verified Employer</span>
+              </div>
+              <div className="employer-verification-card__identity">
+                <strong>{employer.companyName}</strong>
+                <span>{employer.companyType}</span>
+                {employer.city && <span>{employer.city}{employer.state ? `, ${employer.state}` : ''}</span>}
+                <span className="employer-verification-card__email">{employer.userEmail}</span>
+              </div>
+              <div className="employer-verification-card__buttons">
+                <button className="dashboard-outline-button" type="button" onClick={() => onNavigate('profile')}>
+                  <Edit size={15} />
+                  Company Profile
+                </button>
+                <button className="dashboard-outline-button" type="button" onClick={() => onNavigate('analytics')}>
+                  <BarChart3 size={15} />
+                  View Analytics
+                </button>
               </div>
             </div>
-            <Button
-              className={currentSubscription && currentSubscription.status === 'active'
-                ? "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg shadow-blue-200 hover:shadow-xl transition-all duration-300 px-6 py-2.5 rounded-xl"
-                : "bg-gradient-to-r from-gray-500 to-gray-600 text-white cursor-not-allowed px-6 py-2.5 rounded-xl"}
-              disabled={!currentSubscription || currentSubscription.status !== 'active'}
-              onClick={() => {
-                if (currentSubscription && currentSubscription.status === 'active') {
-                  onNavigate('employer-post-job');
-                } else {
-                  onNavigate('subscription');
-                }
-              }}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              {currentSubscription && currentSubscription.status === 'active'
-                ? 'Post New Job'
-                : 'Subscribe to Post Jobs'}
-            </Button>
-          </div>
-        </div>
+            <div className="employer-verification-card__plan">
+              <span className={`plan-dot${currentSubscription?.status === 'active' ? ' plan-dot--active' : ''}`} />
+              <div>
+                <small>Plan</small>
+                <strong>{currentSubscription?.status === 'active' ? currentSubscription.plan.name : 'No active subscription'}</strong>
+              </div>
+              <ChevronRight size={18} />
+            </div>
+          </section>
 
-        {/* Alerts */}
-        {employer?.verificationStatus === 'approved' && (
-          <Alert className="mb-6 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 shadow-sm rounded-xl">
-            <CheckCircle className="w-4 h-4 text-green-600" />
-            <AlertDescription className="text-green-800 font-medium">
-              ✅ Your account is verified! You can now post jobs and access all employer features.
-            </AlertDescription>
-          </Alert>
-        )}
+          <section className="dashboard-metrics" aria-label="Employer statistics">
+            {metricCards.map((metric) => {
+              const Icon = metric.icon;
+              return (
+                <article className={`dashboard-metric dashboard-metric--${metric.tone}`} key={metric.label}>
+                  <div className="dashboard-metric__top">
+                    <div className="dashboard-metric__icon"><Icon size={20} /></div>
+                    <span>{metric.label}</span>
+                  </div>
+                  <strong>{metric.value}</strong>
+                  <small>{metric.helper}</small>
+                </article>
+              );
+            })}
+          </section>
 
-        {currentSubscription && currentSubscription.status === 'active' ? (
-          <Alert className="mb-6 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-sm rounded-xl">
-            <CheckCircle className="w-4 h-4 text-blue-600" />
-            <AlertDescription className="text-blue-800">
-              <span className="font-semibold">Active Subscription:</span> {currentSubscription.plan.name} —
-              <span className="ml-2">
-                <strong className="text-blue-900">{currentSubscription.jobPostsUsed}</strong> / <strong className="text-blue-900">{currentSubscription.jobPostsAllowed}</strong> posts used
+          <section className="dashboard-post-cta">
+            <button className="dashboard-primary-button" type="button" onClick={handlePostJob}>
+              <Plus size={18} />
+              {currentSubscription?.status === 'active' ? 'Post a New Job' : 'Choose a Plan to Post Jobs'}
+            </button>
+            <div className="dashboard-post-cta__hint">
+              <CheckCircle size={17} />
+              <span>
+                {currentSubscription?.status === 'active'
+                  ? `${currentSubscription.jobPostsUsed} of ${currentSubscription.jobPostsAllowed} job posts used`
+                  : 'An active subscription is required before posting a job'}
               </span>
-              {currentSubscription.endDate && (
-                <span className="ml-2 text-sm text-blue-600">
-                  📅 Valid until {new Date(currentSubscription.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                </span>
-              )}
-            </AlertDescription>
-          </Alert>
-        ) : (
-          <Alert className="mb-6 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 shadow-sm rounded-xl">
-            <AlertTriangle className="w-4 h-4 text-amber-600" />
-            <AlertDescription className="text-amber-800 flex items-center flex-wrap gap-3">
-              <span>⚠️ To start posting jobs, you need to subscribe to a plan.</span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onNavigate('subscription')}
-                className="border-amber-300 text-amber-700 hover:bg-amber-100 hover:border-amber-400 transition-all duration-200 rounded-lg"
-              >
-                View Plans
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
-          <Card className="p-5 bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200 hover:shadow-xl transition-all duration-300 group rounded-2xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-blue-600 mb-1">Active Jobs</p>
-                <p className="text-3xl font-bold text-gray-900">{myJobs.filter(j => j.status === 'active').length}</p>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
-                <Briefcase className="w-6 h-6 text-white" />
-              </div>
             </div>
-          </Card>
+          </section>
 
-          <Card className="p-5 bg-gradient-to-br from-green-50 to-green-100/50 border-green-200 hover:shadow-xl transition-all duration-300 group rounded-2xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-green-600 mb-1">Total Applications</p>
-                <p className="text-3xl font-bold text-gray-900">{totalApplications}</p>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
-                <Users className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-5 bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-200 hover:shadow-xl transition-all duration-300 group rounded-2xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-purple-600 mb-1">Total Views</p>
-                <p className="text-3xl font-bold text-gray-900">{totalViews}</p>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
-                <Eye className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-5 bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-emerald-200 hover:shadow-xl transition-all duration-300 group rounded-2xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-emerald-600 mb-1">Status</p>
-                <p className="text-sm font-bold text-emerald-700 flex items-center gap-1">
-                  <CheckCircle className="w-4 h-4" />
-                  Verified
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
-                <Award className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Quick Action Cards */}
-        <div className="grid md:grid-cols-2 gap-4 mb-8">
-          <Card 
-            className="p-5 bg-gradient-to-r from-purple-50 to-purple-100/50 border-2 border-purple-200 hover:border-purple-400 cursor-pointer transition-all duration-300 hover:shadow-xl group rounded-2xl"
-            onClick={() => onNavigate('employer-manage-applications')}
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-md group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
-                <UserCheck className="w-7 h-7 text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 mb-0.5">Manage Applications</h3>
-                <p className="text-gray-600 text-sm">Review and manage candidate applications</p>
-              </div>
-              <div className="w-8 h-8 bg-purple-200 rounded-full flex items-center justify-center group-hover:bg-purple-300 transition-all duration-300">
-                <ExternalLink className="w-4 h-4 text-purple-600" />
-              </div>
-            </div>
-          </Card>
-
-          <Card 
-            className="p-5 bg-gradient-to-r from-blue-50 to-blue-100/50 border-2 border-blue-200 hover:border-blue-400 cursor-pointer transition-all duration-300 hover:shadow-xl group rounded-2xl"
-            onClick={() => onNavigate('analytics')}
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-md group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
-                <BarChart3 className="w-7 h-7 text-white" />
-              </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 mb-0.5">View Analytics</h3>
-                <p className="text-gray-600 text-sm">Track performance and insights</p>
-              </div>
-              <div className="w-8 h-8 bg-blue-200 rounded-full flex items-center justify-center group-hover:bg-blue-300 transition-all duration-300">
-                <ExternalLink className="w-4 h-4 text-blue-600" />
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-1.5 mb-6 overflow-x-auto">
-            <TabsList className="inline-flex w-full md:w-auto gap-1">
-              <TabsTrigger value="jobs" className="flex items-center gap-2 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 data-[state=active]:shadow-sm rounded-lg px-4 py-2 transition-all duration-200">
-                <Briefcase className="w-4 h-4" />
-                My Jobs
-                <Badge variant="secondary" className="ml-1 bg-gray-100 text-gray-600">{myJobs.length}</Badge>
-              </TabsTrigger>
-              <TabsTrigger value="applications" className="flex items-center gap-2 data-[state=active]:bg-green-100 data-[state=active]:text-green-700 data-[state=active]:shadow-sm rounded-lg px-4 py-2 transition-all duration-200">
-                <Users className="w-4 h-4" />
-                Applications
-                <Badge variant="secondary" className="ml-1 bg-gray-100 text-gray-600">{myApplications.length}</Badge>
-              </TabsTrigger>
-              <TabsTrigger value="subscription" className="flex items-center gap-2 data-[state=active]:bg-purple-100 data-[state=active]:text-purple-700 data-[state=active]:shadow-sm rounded-lg px-4 py-2 transition-all duration-200">
-                <Award className="w-4 h-4" />
-                Subscription
-              </TabsTrigger>
-              <TabsTrigger value="notifications" className="flex items-center gap-2 data-[state=active]:bg-amber-100 data-[state=active]:text-amber-700 data-[state=active]:shadow-sm rounded-lg px-4 py-2 transition-all duration-200">
-                <Bell className="w-4 h-4" />
-                Notifications
-                {notifications.filter((n: any) => !n.read).length > 0 && (
-                  <Badge className="bg-red-500 text-white ml-1">
-                    {notifications.filter((n: any) => !n.read).length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="verification" className="flex items-center gap-2 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-700 data-[state=active]:shadow-sm rounded-lg px-4 py-2 transition-all duration-200">
-                <CheckCircle className="w-4 h-4" />
-                Verification
-              </TabsTrigger>
-            </TabsList>
+          <div className="dashboard-section-switcher" role="tablist" aria-label="Employer dashboard sections">
+            <button className={activeSection === 'jobs' ? 'is-active' : ''} onClick={() => openSection('jobs')} type="button">
+              <Briefcase size={16} /> My Jobs
+            </button>
+            <button className={activeSection === 'applications' ? 'is-active' : ''} onClick={() => openSection('applications')} type="button">
+              <Users size={16} /> Applications
+            </button>
+            <button className={activeSection === 'subscription' ? 'is-active' : ''} onClick={() => openSection('subscription')} type="button">
+              <Award size={16} /> Plans
+            </button>
+            <button className={activeSection === 'notifications' ? 'is-active' : ''} onClick={() => openSection('notifications')} type="button">
+              <Bell size={16} /> Notifications
+              {unreadNotifications > 0 && <span className="section-count">{unreadNotifications}</span>}
+            </button>
           </div>
 
-          {/* Jobs Tab */}
-          <TabsContent value="jobs" className="mt-0">
-            <Card className="border-0 shadow-lg rounded-2xl overflow-hidden">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900">Your Job Postings</h3>
-                    <p className="text-sm text-gray-500 mt-1">Manage all your job listings in one place</p>
+          {activeSection === 'jobs' && (
+            <section className="dashboard-panel">
+              <div className="dashboard-panel__heading">
+                <div>
+                  <div className="dashboard-panel__title-row">
+                    <Briefcase size={19} />
+                    <h2>My Jobs</h2>
                   </div>
-                  {currentSubscription && currentSubscription.status === 'active' && (
-                    <Button 
-                      onClick={() => onNavigate('employer-post-job')}
-                      className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-md hover:shadow-lg transition-all duration-300 rounded-xl"
+                  <p>Manage your current and previous job postings.</p>
+                </div>
+                <button className="dashboard-primary-button dashboard-primary-button--small" type="button" onClick={handlePostJob}>
+                  <Plus size={16} /> New Job
+                </button>
+              </div>
+
+              <div className="job-filter-tabs" role="tablist" aria-label="Filter jobs by status">
+                {jobFilters.map((filter) => {
+                  const count = filter.value === 'all'
+                    ? myJobs.length
+                    : myJobs.filter((job) => job.status === filter.value).length;
+                  return (
+                    <button
+                      key={filter.value}
+                      type="button"
+                      className={jobFilter === filter.value ? 'is-active' : ''}
+                      onClick={() => setJobFilter(filter.value)}
                     >
-                      <Plus className="w-4 h-4 mr-2" />
-                      New Job
-                    </Button>
-                  )}
-                </div>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader className="bg-gradient-to-r from-gray-50 to-gray-100/50">
-                      <TableRow>
-                        <TableHead className="font-semibold text-gray-700">Job Title</TableHead>
-                        <TableHead className="font-semibold text-gray-700">Category</TableHead>
-                        <TableHead className="font-semibold text-gray-700 text-center">Applications</TableHead>
-                        <TableHead className="font-semibold text-gray-700 text-center">Views</TableHead>
-                        <TableHead className="font-semibold text-gray-700">Posted Date</TableHead>
-                        <TableHead className="font-semibold text-gray-700">Status</TableHead>
-                        <TableHead className="font-semibold text-gray-700 text-center">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {myJobs.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={7} className="text-center py-16">
-                            <div className="flex flex-col items-center">
-                              <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
-                                <Briefcase className="w-10 h-10 text-gray-300" />
-                              </div>
-                              <p className="text-gray-500 font-semibold text-lg">No jobs posted yet</p>
-                              <p className="text-sm text-gray-400 mt-1">Post your first job to start receiving applications</p>
-                              {currentSubscription && currentSubscription.status === 'active' && (
-                                <Button 
-                                  onClick={() => onNavigate('employer-post-job')}
-                                  variant="outline" 
-                                  className="mt-4 border-blue-300 text-blue-600 hover:bg-blue-50 hover:border-blue-400 rounded-xl transition-all duration-200"
-                                >
-                                  <Plus className="w-4 h-4 mr-2" />
-                                  Post Your First Job
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        myJobs.map((job) => (
-                          <TableRow key={job.id} className="hover:bg-gray-50/70 transition-colors">
-                            <TableCell>
-                              <div>
-                                <p className="font-semibold text-gray-900">{job.title}</p>
-                                <p className="text-sm text-gray-500">{job.location}</p>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="bg-gray-50 border-gray-200">
-                                {job.category || 'N/A'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <span className="font-semibold text-blue-600">{job.applications || 0}</span>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              <span className="font-semibold text-purple-600">{job.views || 0}</span>
-                            </TableCell>
-                            <TableCell className="text-sm text-gray-600">
-                              {job.postedDate ? new Date(job.postedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
-                            </TableCell>
-                            <TableCell>
-                              <Badge className={
-                                job.status === 'active' ? 'bg-green-100 text-green-700 border-green-200' :
-                                job.status === 'pending' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
-                                'bg-gray-100 text-gray-700 border-gray-200'
-                              } variant="outline">
-                                {job.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center justify-center gap-1">
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-9 w-9 p-0 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200"
-                                  onClick={() => handleViewApplications(job.id)}
-                                  title="View Applications"
-                                >
-                                  <Users className="w-4 h-4" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-9 w-9 p-0 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all duration-200"
-                                  onClick={() => handleEditJob(job.id)}
-                                  title="Edit Job"
-                                >
-                                  <Edit className="w-4 h-4 text-amber-600" />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-9 w-9 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-                                  onClick={() => handleCloseJob(job.id)}
-                                  title="Close Job"
-                                  disabled
-                                >
-                                  <XCircle className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+                      {filter.label}
+                      <span>{count}</span>
+                    </button>
+                  );
+                })}
               </div>
-            </Card>
-          </TabsContent>
 
-          {/* Applications Tab */}
-          <TabsContent value="applications" className="mt-0">
-            <Card className="border-0 shadow-lg rounded-2xl overflow-hidden">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900">Job Applications</h3>
-                    <p className="text-sm text-gray-500 mt-1">Review and manage applications for your posted jobs</p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={async () => {
-                      if (!user || !token || !employer) return;
-                      try {
-                        console.log('🔄 Manually refreshing applications...');
-                        const { fetchJobsByEmployer } = await import('../api/jobs');
-                        const jobsResponse = await fetchJobsByEmployer(employer.id, {
-                          status: 'all',
-                          page: 0,
-                          size: 1000
-                        });
-                        const employerJobs = jobsResponse.content || [];
-
-                        if (employerJobs.length > 0) {
-                          const jobIds = employerJobs.map((job: any) => job.id);
-                          const allApplications: ApplicationResponse[] = [];
-
-                          for (const jobId of jobIds) {
-                            try {
-                              const appsResponse = await fetchApplications({
-                                jobId,
-                                page: 0,
-                                size: 1000
-                              }, token);
-
-                              if (appsResponse && appsResponse.content && Array.isArray(appsResponse.content)) {
-                                allApplications.push(...appsResponse.content);
-                              } else if (Array.isArray(appsResponse)) {
-                                allApplications.push(...appsResponse);
-                              }
-                            } catch (err) {
-                              console.error(`Failed to fetch applications for job ${jobId}:`, err);
-                            }
-                          }
-
-                          console.log(`✅ Refreshed: ${allApplications.length} applications`);
-                          setMyApplications(allApplications);
-                          alert(`Applications refreshed! Found ${allApplications.length} applications.`);
-                        } else {
-                          setMyApplications([]);
-                        }
-                      } catch (error) {
-                        console.error('Failed to refresh applications:', error);
-                        alert('Failed to refresh applications. Please check console for details.');
-                      }
-                    }}
-                    className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 rounded-xl transition-all duration-200"
-                  >
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Refresh
-                  </Button>
+              {filteredJobs.length === 0 ? (
+                <div className="dashboard-empty-state">
+                  <div className="dashboard-empty-state__icon"><Briefcase size={26} /></div>
+                  <h3>No {jobFilter === 'all' ? '' : `${jobFilter} `}jobs found</h3>
+                  <p>Your job postings will appear here as soon as they are available.</p>
+                  <button className="dashboard-primary-button dashboard-primary-button--small" onClick={handlePostJob} type="button">
+                    <Plus size={16} /> Post a Job
+                  </button>
                 </div>
-                
-                {/* Summary Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200 rounded-xl">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-blue-600 font-semibold mb-1">Total Applications</p>
-                        <p className="text-2xl font-bold text-blue-900">{myApplications.length}</p>
+              ) : (
+                <div className="dashboard-job-list">
+                  {filteredJobs.map((job) => (
+                    <article className="dashboard-job-card" key={job.id}>
+                      <div className="dashboard-job-card__main">
+                        <div className="dashboard-job-card__title-row">
+                          <div>
+                            <h3>{job.title}</h3>
+                            <div className="dashboard-job-card__meta">
+                              {job.location && <span><MapPin size={14} />{job.location}</span>}
+                              {job.numberOfPosts != null && <span><Users size={14} />{job.numberOfPosts} post{Number(job.numberOfPosts) === 1 ? '' : 's'}</span>}
+                              {job.category && <span><Building2 size={14} />{job.category}</span>}
+                            </div>
+                          </div>
+                          <span className={getJobStatusClass(job.status)}>{job.status || 'N/A'}</span>
+                        </div>
+
+                        <div className="dashboard-job-card__details">
+                          <span><Calendar size={14} />Posted: {formatDate(job.postedDate || job.createdAt)}</span>
+                          <span><Calendar size={14} />Last date: {formatDate(job.lastDate)}</span>
+                          <span><Users size={14} />{Number(job.applications) || 0} applications</span>
+                          <span><Eye size={14} />{Number(job.views) || 0} views</span>
+                        </div>
                       </div>
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-sm">
-                        <Users className="w-5 h-5 text-white" />
+
+                      <div className="dashboard-job-card__actions">
+                        <button type="button" onClick={() => openSection('applications')} title="View applications">
+                          <Users size={16} /> <span>Applications</span>
+                        </button>
+                        <button type="button" onClick={() => onNavigate('edit-job', job.id)} title="Edit job">
+                          <Edit size={16} /> <span>Edit</span>
+                        </button>
                       </div>
-                    </div>
-                  </Card>
-                  <Card className="p-4 bg-gradient-to-br from-green-50 to-green-100/50 border-green-200 rounded-xl">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-green-600 font-semibold mb-1">New</p>
-                        <p className="text-2xl font-bold text-green-900">
-                          {myApplications.filter((app: ApplicationResponse) => app.status === 'applied').length}
-                        </p>
-                      </div>
-                      <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-sm">
-                        <UserPlus className="w-5 h-5 text-white" />
-                      </div>
-                    </div>
-                  </Card>
-                  <Card className="p-4 bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-200 rounded-xl">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-purple-600 font-semibold mb-1">Shortlisted</p>
-                        <p className="text-2xl font-bold text-purple-900">
-                          {myApplications.filter((app: ApplicationResponse) => app.status === 'shortlisted').length}
-                        </p>
-                      </div>
-                      <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-sm">
-                        <Star className="w-5 h-5 text-white" />
-                      </div>
-                    </div>
-                  </Card>
-                  <Card className="p-4 bg-gradient-to-br from-orange-50 to-orange-100/50 border-orange-200 rounded-xl">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-orange-600 font-semibold mb-1">Interviews</p>
-                        <p className="text-2xl font-bold text-orange-900">
-                          {myApplications.filter((app: ApplicationResponse) => app.status === 'interview').length}
-                        </p>
-                      </div>
-                      <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-sm">
-                        <Calendar className="w-5 h-5 text-white" />
-                      </div>
-                    </div>
-                  </Card>
+                    </article>
+                  ))}
                 </div>
+              )}
+            </section>
+          )}
 
-                {/* Applications Grouped by Job */}
-                {loading ? (
-                  <div className="text-center text-gray-500 py-8">Loading applications...</div>
-                ) : myApplications.length === 0 ? (
-                  <div className="text-center py-16 bg-gray-50/50 rounded-2xl">
-                    <div className="flex flex-col items-center">
-                      <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
-                        <Users className="w-10 h-10 text-gray-300" />
-                      </div>
-                      <p className="text-xl font-semibold text-gray-600 mb-2">No applications found</p>
-                      {myJobs.length > 0 && (
-                        <p className="text-sm text-gray-400">
-                          You have {myJobs.length} job{myJobs.length > 1 ? 's' : ''} posted.
-                          Applications will appear here when candidates apply.
-                        </p>
-                      )}
-                      {myJobs.length === 0 && (
-                        <p className="text-sm text-gray-400">
-                          Post a job to start receiving applications.
-                        </p>
-                      )}
-                    </div>
+          {activeSection === 'applications' && (
+            <section className="dashboard-panel">
+              <div className="dashboard-panel__heading">
+                <div>
+                  <div className="dashboard-panel__title-row">
+                    <Users size={19} />
+                    <h2>Applications</h2>
                   </div>
-                ) : (
-                  <div className="space-y-6">
-                    {(() => {
-                      const applicationsByJob = new Map<string, ApplicationResponse[]>();
-                      myApplications.forEach((app: ApplicationResponse) => {
-                        const jobId = app.jobId || 'unknown';
-                        if (!applicationsByJob.has(jobId)) {
-                          applicationsByJob.set(jobId, []);
-                        }
-                        applicationsByJob.get(jobId)!.push(app);
-                      });
+                  <p>Review applications received for your jobs.</p>
+                </div>
+                <button
+                  className="dashboard-outline-button"
+                  type="button"
+                  onClick={handleRefreshApplications}
+                  disabled={refreshing}
+                >
+                  <RefreshCw size={16} className={refreshing ? 'spin-icon' : ''} />
+                  {refreshing ? 'Refreshing' : 'Refresh'}
+                </button>
+              </div>
 
-                      return Array.from(applicationsByJob.entries()).map(([jobId, apps]) => {
-                        const job = myJobs.find((j: any) => j.id === jobId);
-                        const jobTitle = job?.title || apps[0]?.jobTitle || 'Unknown Job';
-                        const newApps = apps.filter((app: ApplicationResponse) => app.status === 'applied').length;
-                        
-                        return (
-                          <Card key={jobId} className="border-l-4 border-l-blue-500 overflow-hidden rounded-xl">
-                            <div className="p-5">
-                              <div className="flex items-center justify-between mb-5 pb-3 border-b border-gray-100">
-                                <div>
-                                  <h4 className="text-lg font-bold text-gray-900">{jobTitle}</h4>
-                                  <div className="flex items-center gap-3 mt-1">
-                                    <span className="text-sm text-gray-600">
-                                      {apps.length} application{apps.length !== 1 ? 's' : ''}
-                                    </span>
-                                    {newApps > 0 && (
-                                      <Badge className="bg-blue-500 text-white animate-pulse">
-                                        {newApps} new
-                                      </Badge>
-                                    )}
-                                  </div>
+              <div className="application-summary-grid">
+                <article><Users size={18} /><span>Total</span><strong>{myApplications.length}</strong></article>
+                <article><UserPlus size={18} /><span>New</span><strong>{myApplications.filter((app) => app.status === 'applied').length}</strong></article>
+                <article><Star size={18} /><span>Shortlisted</span><strong>{shortlistedCount}</strong></article>
+                <article><Calendar size={18} /><span>Interviews</span><strong>{interviewCount}</strong></article>
+              </div>
+
+              {applicationsByJob.length === 0 ? (
+                <div className="dashboard-empty-state">
+                  <div className="dashboard-empty-state__icon"><Users size={26} /></div>
+                  <h3>No applications yet</h3>
+                  <p>Candidate applications will appear here when they apply to your jobs.</p>
+                </div>
+              ) : (
+                <div className="application-job-groups">
+                  {applicationsByJob.map(([jobId, applications]) => {
+                    const job = myJobs.find((item) => item.id === jobId);
+                    const jobTitle = job?.title || applications[0]?.jobTitle || 'Job';
+                    return (
+                      <section className="application-job-group" key={jobId}>
+                        <div className="application-job-group__header">
+                          <div>
+                            <h3>{jobTitle}</h3>
+                            <p>{applications.length} application{applications.length === 1 ? '' : 's'}</p>
+                          </div>
+                          {job?.status && <span className={getJobStatusClass(job.status)}>{job.status}</span>}
+                        </div>
+
+                        <div className="candidate-grid">
+                          {applications.map((application) => (
+                            <article className="candidate-card" key={application.id}>
+                              <div className="candidate-card__top">
+                                <div className="candidate-avatar">{getInitials(application.candidateName)}</div>
+                                <div className="candidate-card__identity">
+                                  <h4>{application.candidateName || 'Candidate'}</h4>
+                                  <span className={getApplicationStatusClass(application.status)}>{application.status}</span>
                                 </div>
-                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                                  {job?.status || 'N/A'}
-                                </Badge>
                               </div>
-                              
-                              <div className="space-y-4">
-                                {apps.map((application: ApplicationResponse) => (
-                                  <div key={application.id} className="border-2 border-blue-100 rounded-xl p-5 bg-white hover:border-blue-300 hover:shadow-md transition-all duration-300">
-                                    <div className="flex flex-col md:flex-row md:items-start gap-4">
-                                      <div className="flex-1">
-                                        <div className="flex items-center gap-3 mb-4 pb-3 border-b border-gray-100">
-                                          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md flex-shrink-0">
-                                            {application.candidateName?.charAt(0)?.toUpperCase() || 'A'}
-                                          </div>
-                                          <div className="flex-1">
-                                            <h5 className="font-bold text-lg text-gray-900">{application.candidateName || 'Unknown Candidate'}</h5>
-                                            <p className="text-sm text-gray-500">Candidate</p>
-                                          </div>
-                                          <Badge className={
-                                            application.status === 'shortlisted' ? 'bg-green-100 text-green-700 border-green-200' :
-                                            application.status === 'interview' ? 'bg-purple-100 text-purple-700 border-purple-200' :
-                                            application.status === 'rejected' ? 'bg-red-100 text-red-700 border-red-200' :
-                                            application.status === 'selected' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-                                            'bg-gray-100 text-gray-700 border-gray-200'
-                                          } variant="outline">
-                                            {application.status}
-                                          </Badge>
-                                          {application.status === 'applied' && (
-                                            <Badge className="bg-blue-500 text-white animate-pulse">
-                                              New
-                                            </Badge>
-                                          )}
-                                        </div>
-                                        
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                                          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                                            <Mail className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                                            <div className="min-w-0">
-                                              <p className="text-xs text-gray-500">Email</p>
-                                              <a 
-                                                href={`mailto:${application.candidateEmail}`} 
-                                                className="text-blue-600 hover:underline font-medium text-sm truncate block"
-                                              >
-                                                {application.candidateEmail}
-                                              </a>
-                                            </div>
-                                          </div>
-                                          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-                                            <Phone className="w-4 h-4 text-green-500 flex-shrink-0" />
-                                            <div className="min-w-0">
-                                              <p className="text-xs text-gray-500">Phone</p>
-                                              <a 
-                                                href={`tel:${application.candidatePhone}`} 
-                                                className="text-green-600 hover:underline font-medium text-sm truncate block"
-                                              >
-                                                {application.candidatePhone || 'N/A'}
-                                              </a>
-                                            </div>
-                                          </div>
-                                        </div>
-                                        
-                                        <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
-                                          <div>
-                                            <span className="font-medium">Applied:</span> {application.appliedDate ? new Date(application.appliedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
-                                          </div>
-                                        </div>
-                                        
-                                        {application.notes && (
-                                          <div className="mt-2 text-sm text-gray-700 bg-yellow-50 p-3 rounded-xl border border-yellow-200">
-                                            <span className="font-medium text-yellow-800">Application Notes:</span>
-                                            <p className="mt-1 text-gray-700">{application.notes}</p>
-                                          </div>
-                                        )}
-                                        
-                                        <div className="mt-4">
-                                          {application.resumeUrl ? (
-                                            <Button 
-                                              variant="default" 
-                                              size="sm"
-                                              onClick={() => openFileInViewer(application.resumeUrl!)}
-                                              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-md hover:shadow-lg transition-all duration-300 rounded-xl"
-                                            >
-                                              <FileText className="w-4 h-4 mr-2" />
-                                              View Resume
-                                            </Button>
-                                          ) : (
-                                            <div className="text-sm text-orange-700 bg-orange-100 border border-orange-300 p-2 rounded-xl font-medium inline-block">
-                                              ⚠️ No resume uploaded
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
+
+                              <div className="candidate-card__contact">
+                                <a href={`mailto:${application.candidateEmail}`}><Mail size={14} />{application.candidateEmail}</a>
+                                {application.candidatePhone && <a href={`tel:${application.candidatePhone}`}><Phone size={14} />{application.candidatePhone}</a>}
+                                <span><Calendar size={14} />Applied {formatDate(application.appliedDate)}</span>
                               </div>
-                            </div>
-                          </Card>
-                        );
-                      });
-                    })()}
+
+                              {application.notes && <p className="candidate-card__notes">{application.notes}</p>}
+
+                              <div className="candidate-card__actions">
+                                {application.resumeUrl ? (
+                                  <button type="button" onClick={() => openFileInViewer(application.resumeUrl!)}>
+                                    <FileText size={15} /> View Resume
+                                  </button>
+                                ) : (
+                                  <span className="candidate-card__no-resume">No resume uploaded</span>
+                                )}
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      </section>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="dashboard-panel__footer-action">
+                <button className="dashboard-outline-button" type="button" onClick={() => onNavigate('employer-manage-applications')}>
+                  Open Application Management <ChevronRight size={16} />
+                </button>
+              </div>
+            </section>
+          )}
+
+          {activeSection === 'subscription' && (
+            <section className="dashboard-panel dashboard-panel--centered">
+              <div className="dashboard-feature-icon dashboard-feature-icon--purple"><Award size={28} /></div>
+              {currentSubscription?.status === 'active' ? (
+                <>
+                  <h2>{currentSubscription.plan.name}</h2>
+                  <p>Your subscription is active. Job-posting usage is shown below.</p>
+                  <div className="subscription-usage">
+                    <span>Job posts used</span>
+                    <strong>{currentSubscription.jobPostsUsed} / {currentSubscription.jobPostsAllowed}</strong>
                   </div>
-                )}
-              </div>
-            </Card>
-          </TabsContent>
+                  {currentSubscription.endDate && <small>Valid until {formatDate(currentSubscription.endDate)}</small>}
+                </>
+              ) : (
+                <>
+                  <h2>Choose a subscription plan</h2>
+                  <p>An active plan is required to post jobs and use employer posting features.</p>
+                </>
+              )}
+              <button className="dashboard-primary-button" type="button" onClick={() => onNavigate('subscription')}>
+                View Plans
+              </button>
+            </section>
+          )}
 
-          {/* Subscription Tab */}
-          <TabsContent value="subscription" className="mt-0">
-            <Card className="border-0 shadow-lg rounded-2xl overflow-hidden">
-              <div className="p-12 text-center">
-                <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-purple-200">
-                  <Award className="w-12 h-12 text-white" />
+          {activeSection === 'notifications' && (
+            <section className="dashboard-panel">
+              <div className="dashboard-panel__heading">
+                <div>
+                  <div className="dashboard-panel__title-row"><Bell size={19} /><h2>Notifications</h2></div>
+                  <p>Your latest employer account activity.</p>
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">Choose Your Subscription Plan</h3>
-                <p className="text-gray-600 max-w-md mx-auto mb-8">
-                  Select a subscription plan to start posting jobs and access all employer features.
-                </p>
-                <Button onClick={() => onNavigate('subscription')} className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white shadow-lg shadow-purple-200 hover:shadow-xl transition-all duration-300 px-8 py-3 text-lg rounded-xl">
-                  View Subscription Plans
-                </Button>
+                <button className="dashboard-outline-button" type="button" onClick={() => onNavigate('notifications')}>View All</button>
               </div>
-            </Card>
-          </TabsContent>
 
-          {/* Notifications Tab */}
-          <TabsContent value="notifications" className="mt-0">
-            <Card className="border-0 shadow-lg rounded-2xl overflow-hidden">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900">Recent Notifications</h3>
-                    <p className="text-sm text-gray-500 mt-1">Stay updated with the latest activities</p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onNavigate('notifications')}
-                    className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 rounded-xl transition-all duration-200"
-                  >
-                    View All
-                  </Button>
+              {notifications.length === 0 ? (
+                <div className="dashboard-empty-state">
+                  <div className="dashboard-empty-state__icon"><Bell size={26} /></div>
+                  <h3>No notifications</h3>
+                  <p>New account and job activity will appear here.</p>
                 </div>
-                <div className="space-y-3">
-                  {notifications.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Bell className="w-8 h-8 text-gray-300" />
+              ) : (
+                <div className="notification-list">
+                  {notifications.slice(0, 8).map((notification: any) => (
+                    <article className={`notification-item${notification.read ? '' : ' notification-item--unread'}`} key={notification.id}>
+                      <div className="notification-item__dot" />
+                      <div>
+                        <p>{notification.message}</p>
+                        <span>{formatDate(notification.createdAt)}</span>
                       </div>
-                      <p className="text-gray-500">No notifications yet</p>
-                    </div>
-                  ) : (
-                    notifications.slice(0, 5).map((notification) => (
-                      <div key={notification.id} className="p-4 bg-gray-50 rounded-xl hover:bg-gray-100 hover:shadow-sm transition-all duration-200">
-                        <p className="text-sm text-gray-900 mb-1">{notification.message}</p>
-                        <p className="text-xs text-gray-500">
-                          {new Date(notification.createdAt).toLocaleDateString('en-IN', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </p>
-                      </div>
-                    ))
-                  )}
+                    </article>
+                  ))}
                 </div>
-              </div>
-            </Card>
-          </TabsContent>
+              )}
+            </section>
+          )}
 
-          {/* Verification Tab */}
-          <TabsContent value="verification" className="mt-0">
-            <Card className="border-0 shadow-lg rounded-2xl overflow-hidden">
-              <div className="p-12 text-center">
-                <div className="w-24 h-24 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-200">
-                  <CheckCircle className="w-12 h-12 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">Employer Verification</h3>
-                <p className="text-gray-600 max-w-md mx-auto mb-8">
-                  Complete your verification to access all features and build trust with candidates.
-                </p>
-                <Button onClick={() => onNavigate('verification')} className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white shadow-lg shadow-emerald-200 hover:shadow-xl transition-all duration-300 px-8 py-3 text-lg rounded-xl">
-                  Go to Verification
-                </Button>
-              </div>
-            </Card>
-          </TabsContent>
-        </Tabs>
+          {activeSection === 'verification' && (
+            <section className="dashboard-panel dashboard-panel--centered">
+              <div className="dashboard-feature-icon dashboard-feature-icon--green"><ShieldCheck size={28} /></div>
+              <h2>Employer Verification</h2>
+              <p>
+                Your current verification status is <strong>{employer.verificationStatus}</strong>.
+                Verification helps candidates identify trusted employers.
+              </p>
+              {employer.verifiedAt && <small>Verified on {formatDate(employer.verifiedAt)}</small>}
+              <button className="dashboard-primary-button" type="button" onClick={() => onNavigate('verification')}>
+                View Verification
+              </button>
+            </section>
+          )}
+        </main>
       </div>
     </div>
   );

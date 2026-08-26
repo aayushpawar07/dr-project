@@ -183,7 +183,15 @@ function AppContent() {
             element={<NewsDetailPage onNavigate={handleNavigate} />}
           />
           <Route
+            path="/share/news/:newsId"
+            element={<NewsDetailPage onNavigate={handleNavigate} />}
+          />
+          <Route
             path="/job/:jobId"
+            element={<JobDetailPage onNavigate={handleNavigate} />}
+          />
+          <Route
+            path="/share/job/:jobId"
             element={<JobDetailPage onNavigate={handleNavigate} />}
           />
           <Route

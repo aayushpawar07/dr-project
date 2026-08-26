@@ -1,27 +1,20 @@
 // AI assisted development
 import {
-  AlertCircle,
   ArrowLeft,
   Bell,
   Bookmark,
   Briefcase,
   Building2,
   Calendar,
-  CheckCircle2,
   ChevronRight,
-  Clock3,
-  FileText,
   Heart,
   LayoutDashboard,
   LogOut,
   MapPin,
   Menu,
   Search,
-  ShieldCheck,
-  Sparkles,
   Star,
   User,
-  Users,
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -31,22 +24,12 @@ import { fetchApplications, ApplicationResponse } from '../api/applications';
 import { fetchJobs } from '../api/jobs';
 import { getSavedJobs, saveJob, unsaveJob } from '../api/savedJobs';
 import { fetchNotifications } from '../api/notifications';
-import { fetchJobAlerts, JobAlertResponse, updateJobAlert } from '../api/jobAlerts';
-import { openFileInViewer } from '../utils/fileUtils';
 
 interface CandidateDashboardProps {
   onNavigate: (page: string, jobId?: string) => void;
 }
 
-type CandidateSection =
-  | 'overview'
-  | 'saved'
-  | 'applications'
-  | 'alerts'
-  | 'recommended'
-  | 'closing'
-  | 'notifications';
-
+type CandidateSection = 'overview' | 'saved' | 'applications' | 'recommended' | 'notifications';
 type ApplicationStatusFilter = 'all' | ApplicationResponse['status'];
 
 function formatDate(value?: string) {
@@ -88,16 +71,6 @@ function getStatusClass(status?: string) {
   }
 }
 
-function getDaysRemaining(lastDate?: string) {
-  if (!lastDate) return null;
-  const end = new Date(lastDate);
-  if (Number.isNaN(end.getTime())) return null;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  end.setHours(0, 0, 0, 0);
-  return Math.ceil((end.getTime() - today.getTime()) / 86400000);
-}
-
 export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
   const { user, logout, token } = useAuth();
   const location = useLocation();
@@ -105,9 +78,7 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
   const [savedJobs, setSavedJobs] = useState<any[]>([]);
   const [applications, setApplications] = useState<ApplicationResponse[]>([]);
   const [recommendedJobs, setRecommendedJobs] = useState<any[]>([]);
-  const [activeJobs, setActiveJobs] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
-  const [jobAlerts, setJobAlerts] = useState<JobAlertResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<CandidateSection>('overview');
@@ -139,14 +110,14 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
         return [] as any[];
       });
 
-    const activeJobsPromise = fetchJobs({ status: 'active', openOnly: true, page: 0, size: 100, sort: 'createdAt,desc' })
-      .then((data) => (Array.isArray(data?.content) ? data.content : []))
-      .catch((error) => {
-        console.error('Failed to fetch active jobs:', error);
-        return [] as any[];
-      });
-
-    const featuredPromise = fetchJobs({ featured: true, status: 'active', openOnly: true, page: 0, size: 8, sort: 'createdAt,desc' })
+    const featuredPromise = fetchJobs({
+      featured: true,
+      status: 'active',
+      openOnly: true,
+      page: 0,
+      size: 8,
+      sort: 'createdAt,desc',
+    })
       .then((data) => (Array.isArray(data?.content) ? data.content : []))
       .catch((error) => {
         console.error('Failed to fetch featured jobs:', error);
@@ -160,29 +131,17 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
         return [] as any[];
       });
 
-    const alertPromise = fetchJobAlerts({ page: 0, size: 100 }, token)
-      .then((data) => (Array.isArray(data?.content) ? data.content : []))
-      .catch((error) => {
-        console.error('Failed to fetch job alerts:', error);
-        return [] as JobAlertResponse[];
-      });
-
-    const [fetchedApplications, fetchedSavedJobs, fetchedActiveJobs, fetchedFeaturedJobs, fetchedNotifications, fetchedAlerts] =
-      await Promise.all([
-        applicationPromise,
-        savedPromise,
-        activeJobsPromise,
-        featuredPromise,
-        notificationPromise,
-        alertPromise,
-      ]);
+    const [fetchedApplications, fetchedSavedJobs, fetchedFeaturedJobs, fetchedNotifications] = await Promise.all([
+      applicationPromise,
+      savedPromise,
+      featuredPromise,
+      notificationPromise,
+    ]);
 
     setApplications(fetchedApplications);
     setSavedJobs(fetchedSavedJobs);
-    setActiveJobs(fetchedActiveJobs);
-    setRecommendedJobs(fetchedFeaturedJobs.length > 0 ? fetchedFeaturedJobs : fetchedActiveJobs.slice(0, 8));
+    setRecommendedJobs(fetchedFeaturedJobs);
     setNotifications(fetchedNotifications);
-    setJobAlerts(fetchedAlerts);
     setLoading(false);
   }, [token, user]);
 
@@ -205,17 +164,6 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
     };
   }, [mobileNavOpen]);
 
-  const closingSoonJobs = useMemo(
-    () =>
-      activeJobs
-        .filter((job) => {
-          const days = getDaysRemaining(job.lastDate);
-          return days !== null && days >= 0 && days <= 7;
-        })
-        .sort((a, b) => (getDaysRemaining(a.lastDate) ?? 999) - (getDaysRemaining(b.lastDate) ?? 999)),
-    [activeJobs],
-  );
-
   const filteredApplications = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     return applications.filter((application) => {
@@ -233,16 +181,7 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
   const interviewCount = applications.filter((application) => application.status === 'interview' || application.interviewDate).length;
   const shortlistedCount = applications.filter((application) => application.status === 'shortlisted').length;
   const selectedCount = applications.filter((application) => application.status === 'selected' || application.status === 'hired').length;
-  const rejectedCount = applications.filter((application) => application.status === 'rejected').length;
-  const underReviewCount = applications.filter((application) => application.status === 'applied' || application.status === 'pending').length;
-  const activeAlertCount = jobAlerts.filter((alert) => alert.active).length;
   const unreadNotifications = notifications.filter((notification: any) => !notification.read).length;
-  const hasResume = applications.some((application) => Boolean(application.resumeUrl));
-
-  const profileCompletion = useMemo(() => {
-    const checks = [Boolean(user?.name), Boolean(user?.email), user?.role === 'candidate', hasResume];
-    return Math.round((checks.filter(Boolean).length / checks.length) * 100);
-  }, [hasResume, user]);
 
   const handleLogout = () => {
     logout();
@@ -280,37 +219,20 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
     }
   };
 
-  const handleToggleAlert = async (alert: JobAlertResponse) => {
-    if (!token) return;
-    try {
-      const updated = await updateJobAlert(alert.id, { active: !alert.active }, token);
-      setJobAlerts((previous) => previous.map((item) => (item.id === alert.id ? updated : item)));
-    } catch (error) {
-      console.error('Failed to update job alert:', error);
-    }
-  };
-
-  const latestResumeUrl = useMemo(
-    () => applications.find((application) => application.resumeUrl)?.resumeUrl,
-    [applications],
-  );
-
   const stats = [
-    { label: 'Saved Jobs', value: savedJobs.length, icon: Bookmark, tone: 'rose', action: () => openSection('saved') },
-    { label: 'Applications', value: applications.length, icon: Briefcase, tone: 'teal', action: () => openSection('applications') },
-    { label: 'Active Alerts', value: activeAlertCount, icon: Bell, tone: 'amber', action: () => openSection('alerts') },
-    { label: 'Recommended', value: recommendedJobs.length, icon: Star, tone: 'blue', action: () => openSection('recommended') },
-    { label: 'Closing Soon', value: closingSoonJobs.length, icon: Clock3, tone: 'orange', action: () => openSection('closing') },
+    { label: 'Saved Jobs', value: savedJobs.length, icon: Bookmark, tone: 'blue', action: () => openSection('saved') },
+    { label: 'Applications', value: applications.length, icon: Briefcase, tone: 'navy', action: () => openSection('applications') },
     { label: 'Interviews', value: interviewCount, icon: Calendar, tone: 'purple', action: () => openSection('applications') },
+    { label: 'Shortlisted', value: shortlistedCount, icon: Star, tone: 'green', action: () => openSection('applications') },
+    { label: 'Selected', value: selectedCount, icon: User, tone: 'sky', action: () => openSection('applications') },
+    { label: 'Unread Alerts', value: unreadNotifications, icon: Bell, tone: 'amber', action: () => openSection('notifications') },
   ];
 
-  const renderJobCard = (job: any, mode: 'recommended' | 'closing' | 'saved' = 'recommended') => {
-    const daysRemaining = getDaysRemaining(job.lastDate);
+  const renderJobCard = (job: any, mode: 'recommended' | 'saved' = 'recommended') => {
     const isSaved = savedJobs.some((saved) => saved.id === job.id);
-    const isVerified = Boolean(job.isVerified || job.verified || job.employerVerified);
 
     return (
-      <article className={`candidate-job-card${mode === 'closing' ? ' candidate-job-card--urgent' : ''}`} key={job.id}>
+      <article className="candidate-job-card" key={job.id}>
         <div className="candidate-job-card__head">
           <div>
             <div className="candidate-job-card__org">
@@ -320,23 +242,17 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
             </div>
             <h3 onClick={() => onNavigate('job-detail', job.id)}>{job.title || 'Untitled Job'}</h3>
           </div>
-          {mode === 'closing' && daysRemaining !== null && (
-            <span className={`closing-pill${daysRemaining <= 2 ? ' closing-pill--danger' : ''}`}>
-              {daysRemaining === 0 ? 'Closes today' : `${daysRemaining} day${daysRemaining === 1 ? '' : 's'} left`}
-            </span>
-          )}
         </div>
 
         <div className="candidate-job-card__meta">
           {job.location && <span><MapPin size={14} />{job.location}</span>}
           {job.salary && <span>{job.salary}</span>}
-          {job.lastDate && mode !== 'closing' && <span><Clock3 size={14} />Closes {formatDate(job.lastDate)}</span>}
+          {job.lastDate && <span>Last date {formatDate(job.lastDate)}</span>}
         </div>
 
         <div className="candidate-job-card__footer">
           <div className="candidate-job-card__signals">
-            {isVerified && <span className="verified-signal"><ShieldCheck size={14} />Verified</span>}
-            {job.featured && <span className="featured-signal"><Sparkles size={14} />Featured</span>}
+            {job.featured && <span className="featured-signal"><Star size={14} />Featured</span>}
           </div>
           <div className="candidate-job-card__actions">
             {mode === 'saved' ? (
@@ -365,34 +281,18 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
         { label: 'Find Jobs', icon: Search, action: () => { setMobileNavOpen(false); onNavigate('jobs'); } },
         { label: 'Saved Jobs', icon: Bookmark, badge: savedJobs.length, active: activeSection === 'saved', action: () => openSection('saved') },
         { label: 'My Applications', icon: Briefcase, badge: applications.length, active: activeSection === 'applications', action: () => openSection('applications') },
-        { label: 'Job Alerts', icon: Bell, badge: activeAlertCount, active: activeSection === 'alerts', action: () => openSection('alerts') },
       ],
     },
     {
-      label: 'Intelligence',
+      label: 'Jobs',
       items: [
-        { label: 'Recommended Jobs', icon: Star, badge: recommendedJobs.length, active: activeSection === 'recommended', action: () => openSection('recommended') },
-        { label: 'Closing Soon', icon: Clock3, badge: closingSoonJobs.length, active: activeSection === 'closing', action: () => openSection('closing') },
-      ],
-    },
-    {
-      label: 'Profile',
-      items: [
-        { label: 'My Profile', icon: User, action: () => { setMobileNavOpen(false); onNavigate('profile'); } },
-        {
-          label: 'My Resume',
-          icon: FileText,
-          action: () => {
-            setMobileNavOpen(false);
-            if (latestResumeUrl) openFileInViewer(latestResumeUrl);
-            else onNavigate('profile');
-          },
-        },
+        { label: 'Recommended', icon: Star, badge: recommendedJobs.length, active: activeSection === 'recommended', action: () => openSection('recommended') },
       ],
     },
     {
       label: 'Account',
       items: [
+        { label: 'My Profile', icon: User, action: () => { setMobileNavOpen(false); onNavigate('profile'); } },
         { label: 'Notifications', icon: Bell, badge: unreadNotifications, active: activeSection === 'notifications', action: () => openSection('notifications') },
       ],
     },
@@ -448,7 +348,7 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
       <div className="candidate-dashboard-state">
         <div className="candidate-dashboard-loader" />
         <h2>Loading your dashboard</h2>
-        <p>Fetching your applications, saved jobs and alerts.</p>
+        <p>Fetching your applications, saved jobs and notifications.</p>
       </div>
     );
   }
@@ -502,29 +402,12 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
             <>
               <section className="candidate-greeting-card">
                 <div>
-                  <span className="candidate-eyebrow">Career dashboard</span>
-                  <h2>Find the right healthcare opportunity for your next move.</h2>
-                  <p>Your dashboard is built from your current applications, saved jobs, alerts and available jobs.</p>
+                  <span className="candidate-eyebrow">MedExJob Dashboard</span>
+                  <h2>Manage your job search from one place.</h2>
+                  <p>Your dashboard uses your current applications, saved jobs, featured jobs and notifications.</p>
                 </div>
                 <button type="button" className="candidate-primary-button" onClick={() => onNavigate('jobs')}>
                   <Search size={17} /> Find Jobs
-                </button>
-              </section>
-
-              <section className="candidate-profile-card">
-                <div className="candidate-profile-card__title">
-                  <div className="candidate-user-avatar candidate-user-avatar--large">{getInitials(user?.name)}</div>
-                  <div>
-                    <strong>Profile readiness</strong>
-                    <span>Based on your account details and resume activity</span>
-                  </div>
-                </div>
-                <div className="candidate-profile-card__progress">
-                  <div><span>Profile readiness</span><strong>{profileCompletion}%</strong></div>
-                  <div className="candidate-progress"><span style={{ width: `${profileCompletion}%` }} /></div>
-                </div>
-                <button type="button" className="candidate-outline-button" onClick={() => onNavigate('profile')}>
-                  <User size={16} /> View Profile
                 </button>
               </section>
 
@@ -541,30 +424,13 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
                 })}
               </section>
 
-              <section className="candidate-discovery-banner">
-                <div>
-                  <span className="candidate-discovery-banner__icon"><Sparkles size={22} /></span>
-                  <div>
-                    <strong>Job Discovery</strong>
-                    <p>
-                      {recommendedJobs.length > 0
-                        ? `${recommendedJobs.length} currently featured or recommended job${recommendedJobs.length === 1 ? '' : 's'} are available.`
-                        : 'Browse the latest available healthcare jobs.'}
-                    </p>
-                  </div>
-                </div>
-                <button type="button" className="candidate-outline-button" onClick={() => openSection('recommended')}>
-                  View Jobs <ChevronRight size={16} />
-                </button>
-              </section>
-
               <section className="candidate-dashboard-section">
                 <div className="candidate-section-heading">
-                  <div><Star size={20} /><h2>Recommended For You</h2></div>
+                  <div><Star size={20} /><h2>Recommended Jobs</h2></div>
                   <button type="button" onClick={() => openSection('recommended')}>See All <ChevronRight size={15} /></button>
                 </div>
                 {recommendedJobs.length === 0 ? (
-                  <div className="candidate-empty"><Star size={28} /><h3>No recommendations yet</h3><p>New recommendations will appear when matching jobs are available.</p></div>
+                  <div className="candidate-empty"><Star size={28} /><h3>No recommended jobs available</h3><p>Featured jobs from the portal will appear here when available.</p></div>
                 ) : (
                   <div className="candidate-job-scroll">{recommendedJobs.slice(0, 5).map((job) => renderJobCard(job, 'recommended'))}</div>
                 )}
@@ -572,56 +438,23 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
 
               <section className="candidate-dashboard-section">
                 <div className="candidate-section-heading">
-                  <div><Clock3 size={20} /><h2>Closing Soon</h2></div>
-                  <button type="button" onClick={() => openSection('closing')}>View All <ChevronRight size={15} /></button>
+                  <div><Briefcase size={20} /><h2>Recent Applications</h2></div>
+                  <button type="button" onClick={() => openSection('applications')}>View All</button>
                 </div>
-                {closingSoonJobs.length === 0 ? (
-                  <div className="candidate-empty candidate-empty--compact"><Clock3 size={26} /><h3>No jobs closing in the next 7 days</h3></div>
+                {applications.length === 0 ? (
+                  <div className="candidate-empty candidate-empty--compact"><Briefcase size={26} /><h3>No applications yet</h3><p>Applications submitted from MedExJob will appear here.</p></div>
                 ) : (
-                  <div className="candidate-job-scroll">{closingSoonJobs.slice(0, 5).map((job) => renderJobCard(job, 'closing'))}</div>
-                )}
-              </section>
-
-              <section className="candidate-dashboard-section">
-                <div className="candidate-section-heading">
-                  <div><Briefcase size={20} /><h2>Application Tracker</h2></div>
-                  <button type="button" onClick={() => openSection('applications')}>{applications.length} Applied</button>
-                </div>
-                <div className="candidate-tracker">
-                  <div><span className="candidate-tracker__icon candidate-tracker__icon--done"><Bookmark size={15} /></span><strong>Saved</strong><em>{savedJobs.length}</em></div>
-                  <ChevronRight size={16} />
-                  <div><span className="candidate-tracker__icon candidate-tracker__icon--done"><CheckCircle2 size={15} /></span><strong>Applied</strong><em>{applications.length}</em></div>
-                  <ChevronRight size={16} />
-                  <div><span className="candidate-tracker__icon candidate-tracker__icon--active">{underReviewCount}</span><strong>Under Review</strong><em>{underReviewCount}</em></div>
-                  <ChevronRight size={16} />
-                  <div><span className="candidate-tracker__icon">{shortlistedCount}</span><strong>Shortlisted</strong><em>{shortlistedCount}</em></div>
-                  <ChevronRight size={16} />
-                  <div><span className="candidate-tracker__icon">{interviewCount}</span><strong>Interview</strong><em>{interviewCount}</em></div>
-                  <ChevronRight size={16} />
-                  <div><span className="candidate-tracker__icon candidate-tracker__icon--selected">{selectedCount}</span><strong>Selected</strong><em>{selectedCount}</em></div>
-                  <ChevronRight size={16} />
-                  <div><span className="candidate-tracker__icon candidate-tracker__icon--rejected">{rejectedCount}</span><strong>Rejected</strong><em>{rejectedCount}</em></div>
-                </div>
-              </section>
-
-              <section className="candidate-dashboard-section">
-                <div className="candidate-section-heading">
-                  <div><Bell size={20} /><h2>Your Job Alerts</h2></div>
-                  <button type="button" onClick={() => openSection('alerts')}>Manage Alerts</button>
-                </div>
-                {jobAlerts.length === 0 ? (
-                  <div className="candidate-empty candidate-empty--compact"><Bell size={26} /><h3>No job alerts created</h3><p>Your alerts will appear here once they are available.</p></div>
-                ) : (
-                  <div className="candidate-alert-list">
-                    {jobAlerts.slice(0, 3).map((alert) => (
-                      <article className="candidate-alert-row" key={alert.id}>
-                        <div>
-                          <Bell size={18} />
-                          <div><strong>{alert.name}</strong><span>{alert.frequency} · {alert.matches} match{alert.matches === 1 ? '' : 'es'}</span></div>
+                  <div className="candidate-application-list candidate-application-list--preview">
+                    {applications.slice(0, 4).map((application) => (
+                      <article key={application.id}>
+                        <div className="candidate-application-list__head">
+                          <div>
+                            <span className={getStatusClass(application.status)}>{normalizeStatus(application.status)}</span>
+                            <h3 onClick={() => onNavigate('job-detail', application.jobId)}>{application.jobTitle}</h3>
+                            <p>{application.jobOrganization}</p>
+                          </div>
+                          <small>Applied {formatDate(application.appliedDate)}</small>
                         </div>
-                        <button type="button" className={`candidate-toggle${alert.active ? ' is-on' : ''}`} onClick={() => handleToggleAlert(alert)} aria-label={`${alert.active ? 'Pause' : 'Activate'} ${alert.name}`}>
-                          <span />
-                        </button>
                       </article>
                     ))}
                   </div>
@@ -666,26 +499,13 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
           {activeSection === 'recommended' && (
             <section className="candidate-content-panel">
               <div className="candidate-content-panel__header">
-                <div><Star size={21} /><div><h2>Recommended Jobs</h2><p>Current featured and recommended jobs available to you.</p></div></div>
+                <div><Star size={21} /><div><h2>Recommended Jobs</h2><p>Current featured jobs available on MedExJob.</p></div></div>
                 <button type="button" className="candidate-outline-button" onClick={() => onNavigate('jobs')}>Browse All Jobs</button>
               </div>
               {recommendedJobs.length === 0 ? (
                 <div className="candidate-empty"><Star size={30} /><h3>No recommendations available</h3></div>
               ) : (
                 <div className="candidate-grid-list">{recommendedJobs.map((job) => renderJobCard(job, 'recommended'))}</div>
-              )}
-            </section>
-          )}
-
-          {activeSection === 'closing' && (
-            <section className="candidate-content-panel">
-              <div className="candidate-content-panel__header">
-                <div><Clock3 size={21} /><div><h2>Closing Soon</h2><p>Active jobs closing within the next 7 days.</p></div></div>
-              </div>
-              {closingSoonJobs.length === 0 ? (
-                <div className="candidate-empty"><Clock3 size={30} /><h3>No urgent deadlines right now</h3></div>
-              ) : (
-                <div className="candidate-grid-list">{closingSoonJobs.map((job) => renderJobCard(job, 'closing'))}</div>
               )}
             </section>
           )}
@@ -736,38 +556,8 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
                       </div>
 
                       <div className="candidate-application-list__actions">
-                        {application.resumeUrl && <button type="button" className="candidate-outline-button" onClick={() => openFileInViewer(application.resumeUrl!)}><FileText size={15} />View Resume</button>}
                         <button type="button" className="candidate-primary-button candidate-primary-button--small" onClick={() => onNavigate('job-detail', application.jobId)}>View Job</button>
                       </div>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </section>
-          )}
-
-          {activeSection === 'alerts' && (
-            <section className="candidate-content-panel">
-              <div className="candidate-content-panel__header">
-                <div><Bell size={21} /><div><h2>Job Alerts</h2><p>Alerts configured for your account.</p></div></div>
-              </div>
-              {jobAlerts.length === 0 ? (
-                <div className="candidate-empty"><Bell size={30} /><h3>No job alerts found</h3><p>Job alerts created for your account will appear here.</p></div>
-              ) : (
-                <div className="candidate-alert-list candidate-alert-list--full">
-                  {jobAlerts.map((alert) => (
-                    <article className="candidate-alert-row" key={alert.id}>
-                      <div>
-                        <Bell size={19} />
-                        <div>
-                          <strong>{alert.name}</strong>
-                          <span>
-                            {[...alert.keywords, ...alert.locations, ...alert.categories, ...alert.sectors].filter(Boolean).join(' · ') || 'No criteria specified'}
-                          </span>
-                          <small>{alert.frequency} · {alert.matches} current match{alert.matches === 1 ? '' : 'es'}</small>
-                        </div>
-                      </div>
-                      <button type="button" className={`candidate-toggle${alert.active ? ' is-on' : ''}`} onClick={() => handleToggleAlert(alert)} aria-label={`${alert.active ? 'Pause' : 'Activate'} ${alert.name}`}><span /></button>
                     </article>
                   ))}
                 </div>
@@ -800,7 +590,7 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
 
       <nav className="candidate-bottom-nav" aria-label="Candidate mobile navigation">
         <button type="button" className={activeSection === 'overview' ? 'is-active' : ''} onClick={() => openSection('overview')}><LayoutDashboard size={20} /><span>Home</span></button>
-        <button type="button" onClick={() => onNavigate('jobs')}><Search size={20} /><span>Search</span></button>
+        <button type="button" onClick={() => onNavigate('jobs')}><Search size={20} /><span>Jobs</span></button>
         <button type="button" className={activeSection === 'saved' ? 'is-active' : ''} onClick={() => openSection('saved')}><Bookmark size={20} /><span>Saved</span>{savedJobs.length > 0 && <em>{savedJobs.length > 9 ? '9+' : savedJobs.length}</em>}</button>
         <button type="button" className={activeSection === 'applications' ? 'is-active' : ''} onClick={() => openSection('applications')}><Briefcase size={20} /><span>Apps</span>{applications.length > 0 && <em>{applications.length > 9 ? '9+' : applications.length}</em>}</button>
         <button type="button" onClick={() => onNavigate('profile')}><User size={20} /><span>Profile</span></button>

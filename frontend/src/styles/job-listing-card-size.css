@@ -1,10 +1,25 @@
-/* Keep All Jobs result cards visually aligned with homepage job cards. */
+/*
+ * One canonical job-card size across Home, All Jobs, Government Jobs,
+ * Private Jobs and other places that render <JobCard />.
+ */
+:root {
+  --medex-job-card-width: 390px;
+}
+
+.medex-job-card {
+  width: 100%;
+  max-width: var(--medex-job-card-width);
+  min-height: 100%;
+  margin-inline: auto;
+}
+
+/* Public job listing grids use the same card width as homepage cards. */
 .min-h-screen.bg-gray-50
   > .container.mx-auto.px-3.sm\:px-4.py-5.sm\:py-8
   > .grid.md\:grid-cols-4
   > .md\:col-span-3.min-w-0
   > .grid.grid-cols-1.lg\:grid-cols-2.xl\:grid-cols-3 {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 360px)) !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--medex-job-card-width)), var(--medex-job-card-width))) !important;
   justify-content: start;
   align-items: stretch;
 }
@@ -16,11 +31,26 @@
   > .grid.grid-cols-1.lg\:grid-cols-2.xl\:grid-cols-3
   > div {
   width: 100% !important;
-  max-width: 360px !important;
+  max-width: var(--medex-job-card-width) !important;
   justify-self: stretch !important;
 }
 
+/* Homepage and other three-column job grids inherit the same max card width. */
+.container .grid.md\:grid-cols-3 > div:has(> .medex-job-card) {
+  width: 100%;
+  max-width: var(--medex-job-card-width);
+  justify-self: center;
+}
+
 @media (max-width: 767px) {
+  :root {
+    --medex-job-card-width: 100%;
+  }
+
+  .medex-job-card {
+    max-width: none;
+  }
+
   .min-h-screen.bg-gray-50
     > .container.mx-auto.px-3.sm\:px-4.py-5.sm\:py-8
     > .grid.md\:grid-cols-4
@@ -34,7 +64,8 @@
     > .grid.md\:grid-cols-4
     > .md\:col-span-3.min-w-0
     > .grid.grid-cols-1.lg\:grid-cols-2.xl\:grid-cols-3
-    > div {
+    > div,
+  .container .grid.md\:grid-cols-3 > div:has(> .medex-job-card) {
     max-width: none !important;
   }
 }

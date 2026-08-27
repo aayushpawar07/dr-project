@@ -66,7 +66,7 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
   };
 
   return (
-    <Card className="relative cursor-pointer overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 md:p-6 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-md group h-full flex flex-col">
+    <Card className="medex-job-card relative cursor-pointer overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 md:p-6 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-md group h-full flex flex-col">
       <div className="flex flex-col h-full justify-between gap-3 flex-1">
         <div className="flex flex-col gap-3">
           <div className="flex items-start justify-between gap-2">

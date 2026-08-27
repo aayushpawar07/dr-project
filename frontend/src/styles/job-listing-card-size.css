@@ -7,7 +7,7 @@
  */
 :root {
   --medex-public-job-card-width: 475px;
-  --medex-public-job-card-gap: 18px;
+  --medex-public-job-card-gap: 20px;
 }
 
 /* Shared card proportion: consistent minimum visual height, content may grow. */

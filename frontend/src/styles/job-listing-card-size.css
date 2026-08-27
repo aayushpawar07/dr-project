@@ -1,0 +1,40 @@
+/* Keep All Jobs result cards visually aligned with homepage job cards. */
+.min-h-screen.bg-gray-50
+  > .container.mx-auto.px-3.sm\:px-4.py-5.sm\:py-8
+  > .grid.md\:grid-cols-4
+  > .md\:col-span-3.min-w-0
+  > .grid.grid-cols-1.lg\:grid-cols-2.xl\:grid-cols-3 {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 360px)) !important;
+  justify-content: start;
+  align-items: stretch;
+}
+
+.min-h-screen.bg-gray-50
+  > .container.mx-auto.px-3.sm\:px-4.py-5.sm\:py-8
+  > .grid.md\:grid-cols-4
+  > .md\:col-span-3.min-w-0
+  > .grid.grid-cols-1.lg\:grid-cols-2.xl\:grid-cols-3
+  > div {
+  width: 100% !important;
+  max-width: 360px !important;
+  justify-self: stretch !important;
+}
+
+@media (max-width: 767px) {
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-3.sm\:px-4.py-5.sm\:py-8
+    > .grid.md\:grid-cols-4
+    > .md\:col-span-3.min-w-0
+    > .grid.grid-cols-1.lg\:grid-cols-2.xl\:grid-cols-3 {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-3.sm\:px-4.py-5.sm\:py-8
+    > .grid.md\:grid-cols-4
+    > .md\:col-span-3.min-w-0
+    > .grid.grid-cols-1.lg\:grid-cols-2.xl\:grid-cols-3
+    > div {
+    max-width: none !important;
+  }
+}

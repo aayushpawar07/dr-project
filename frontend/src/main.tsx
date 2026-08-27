@@ -6,6 +6,7 @@ import "./styles/dashboard-polish.css";
 import "./styles/medex-brand-overrides.css";
 import "./styles/dashboard-navigation.css";
 import "./styles/dashboard-fixed-layout.css";
+import "./styles/job-listing-card-size.css";
 import "./utils/dashboardNavigation";
 import { AuthProvider } from "./contexts/AuthContext.tsx";
 

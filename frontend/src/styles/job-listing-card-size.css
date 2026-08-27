@@ -6,8 +6,8 @@
  * on wide screens, while filtered listing pages use two cards when space allows.
  */
 :root {
-  --medex-public-job-card-width: 380px;
-  --medex-public-job-card-gap: 20px;
+  --medex-public-job-card-width: 440px;
+  --medex-public-job-card-gap: 24px;
 }
 
 /* Shared card proportion: consistent minimum visual height, content may grow. */

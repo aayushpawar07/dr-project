@@ -1,12 +1,84 @@
-/* Keep All Jobs result cards visually aligned with homepage job cards. */
+/*
+ * Public job-card sizing
+ *
+ * Keep job cards visually consistent without changing the JobCard data/content
+ * or affecting unrelated homepage grids. The homepage gets three balanced cards
+ * on wide screens, while filtered listing pages use two cards when space allows.
+ */
+:root {
+  --medex-public-job-card-width: 380px;
+  --medex-public-job-card-gap: 20px;
+}
+
+/* Shared card proportion: consistent minimum visual height, content may grow. */
+.medex-job-card {
+  width: 100%;
+  min-width: 0;
+  min-height: 350px;
+}
+
+/*
+ * HOME PAGE JOB SECTIONS ONLY
+ * Latest Jobs, All Jobs, Government Jobs and Private Jobs all use gap-6.
+ * The later "Why Choose" grid uses gap-8, so it is intentionally untouched.
+ */
+.min-h-screen.bg-gray-50
+  > section
+  .container.mx-auto.px-4
+  > .grid.md\:grid-cols-3.gap-6 {
+  grid-template-columns: repeat(3, minmax(0, var(--medex-public-job-card-width))) !important;
+  gap: var(--medex-public-job-card-gap) !important;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.min-h-screen.bg-gray-50
+  > section
+  .container.mx-auto.px-4
+  > .grid.md\:grid-cols-3.gap-6
+  > div {
+  width: 100%;
+  max-width: var(--medex-public-job-card-width);
+  min-width: 0;
+  justify-self: center;
+}
+
+.min-h-screen.bg-gray-50
+  > section
+  .container.mx-auto.px-4
+  > .grid.md\:grid-cols-3.gap-6
+  > div
+  > .medex-job-card {
+  height: 100%;
+}
+
+/*
+ * ALL JOBS / GOVERNMENT JOBS / PRIVATE JOBS RESULT GRID ONLY
+ * Keep the filter sidebar intact and size only actual job-card wrappers.
+ */
 .min-h-screen.bg-gray-50
   > .container.mx-auto.px-3.sm\:px-4.py-5.sm\:py-8
   > .grid.md\:grid-cols-4
   > .md\:col-span-3.min-w-0
   > .grid.grid-cols-1.lg\:grid-cols-2.xl\:grid-cols-3 {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 360px)) !important;
+  grid-template-columns: repeat(2, minmax(0, var(--medex-public-job-card-width))) !important;
+  gap: var(--medex-public-job-card-gap) !important;
   justify-content: start;
   align-items: stretch;
+}
+
+/* Target only the real job wrapper, not loading / empty-state blocks. */
+.min-h-screen.bg-gray-50
+  > .container.mx-auto.px-3.sm\:px-4.py-5.sm\:py-8
+  > .grid.md\:grid-cols-4
+  > .md\:col-span-3.min-w-0
+  > .grid.grid-cols-1.lg\:grid-cols-2.xl\:grid-cols-3
+  > .h-full.justify-self-center {
+  width: 100% !important;
+  max-width: var(--medex-public-job-card-width) !important;
+  min-width: 0;
+  justify-self: start !important;
+  display: flex;
 }
 
 .min-h-screen.bg-gray-50
@@ -14,27 +86,64 @@
   > .grid.md\:grid-cols-4
   > .md\:col-span-3.min-w-0
   > .grid.grid-cols-1.lg\:grid-cols-2.xl\:grid-cols-3
-  > div {
-  width: 100% !important;
-  max-width: 360px !important;
-  justify-self: stretch !important;
+  > .h-full.justify-self-center
+  > .medex-job-card {
+  height: 100%;
 }
 
+/* Medium laptop / tablet: preserve comfortable card width instead of squeezing. */
+@media (min-width: 768px) and (max-width: 1279px) {
+  .min-h-screen.bg-gray-50
+    > section
+    .container.mx-auto.px-4
+    > .grid.md\:grid-cols-3.gap-6 {
+    grid-template-columns: repeat(2, minmax(0, var(--medex-public-job-card-width))) !important;
+  }
+}
+
+/* The filtered result area is narrower because of the sidebar. */
+@media (min-width: 768px) and (max-width: 1149px) {
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-3.sm\:px-4.py-5.sm\:py-8
+    > .grid.md\:grid-cols-4
+    > .md\:col-span-3.min-w-0
+    > .grid.grid-cols-1.lg\:grid-cols-2.xl\:grid-cols-3 {
+    grid-template-columns: minmax(0, var(--medex-public-job-card-width)) !important;
+  }
+}
+
+/* Phones: use the available width; never create horizontal overflow. */
 @media (max-width: 767px) {
+  .medex-job-card {
+    min-height: 0;
+  }
+
+  .min-h-screen.bg-gray-50
+    > section
+    .container.mx-auto.px-4
+    > .grid.md\:grid-cols-3.gap-6,
   .min-h-screen.bg-gray-50
     > .container.mx-auto.px-3.sm\:px-4.py-5.sm\:py-8
     > .grid.md\:grid-cols-4
     > .md\:col-span-3.min-w-0
     > .grid.grid-cols-1.lg\:grid-cols-2.xl\:grid-cols-3 {
     grid-template-columns: minmax(0, 1fr) !important;
+    gap: 16px !important;
   }
 
+  .min-h-screen.bg-gray-50
+    > section
+    .container.mx-auto.px-4
+    > .grid.md\:grid-cols-3.gap-6
+    > div,
   .min-h-screen.bg-gray-50
     > .container.mx-auto.px-3.sm\:px-4.py-5.sm\:py-8
     > .grid.md\:grid-cols-4
     > .md\:col-span-3.min-w-0
     > .grid.grid-cols-1.lg\:grid-cols-2.xl\:grid-cols-3
-    > div {
+    > .h-full.justify-self-center {
+    width: 100% !important;
     max-width: none !important;
+    justify-self: stretch !important;
   }
 }

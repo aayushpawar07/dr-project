@@ -1,0 +1,293 @@
+/*
+ * Job detail responsive corrections.
+ * Scoped to the JobDetailPage layout so public job cards/homepage sizing is untouched.
+ */
+
+@media (max-width: 768px) {
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6 {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 16px !important;
+  }
+
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8 {
+    padding-top: 16px !important;
+    padding-bottom: 24px !important;
+  }
+
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6
+    > .md\:col-span-2.space-y-6 {
+    min-width: 0;
+    width: 100%;
+  }
+
+  /* Job header card */
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6
+    > .md\:col-span-2.space-y-6
+    > :first-child {
+    padding: 16px !important;
+    overflow: hidden;
+  }
+
+  /* Badge/category/action row: wrap instead of squeezing labels vertically. */
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6
+    > .md\:col-span-2.space-y-6
+    > :first-child
+    > .space-y-4
+    > .flex.items-start.gap-3 {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-width: 0;
+  }
+
+  /* Never split Government/Private or button text one character per line. */
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6
+    > .md\:col-span-2.space-y-6
+    > :first-child
+    > .space-y-4
+    > .flex.items-start.gap-3
+    > span:first-child,
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6
+    > .md\:col-span-2.space-y-6
+    > :first-child
+    button {
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+  }
+
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6
+    > .md\:col-span-2.space-y-6
+    > :first-child
+    > .space-y-4
+    > .flex.items-start.gap-3
+    > span:first-child {
+    width: auto !important;
+    min-width: max-content;
+    max-width: 100%;
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  /* Edit / Share actions get their own full row on phones. */
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6
+    > .md\:col-span-2.space-y-6
+    > :first-child
+    > .space-y-4
+    > .flex.items-start.gap-3
+    > .ml-auto.flex.items-center.gap-2 {
+    width: 100% !important;
+    margin-left: 0 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6
+    > .md\:col-span-2.space-y-6
+    > :first-child
+    > .space-y-4
+    > .flex.items-start.gap-3
+    > .ml-auto.flex.items-center.gap-2
+    > button {
+    flex: 1 1 120px !important;
+    min-width: 0 !important;
+    max-width: 100%;
+    justify-content: center;
+    white-space: nowrap;
+  }
+
+  /* Job title and organization */
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6
+    > .md\:col-span-2.space-y-6
+    > :first-child
+    h1 {
+    font-size: clamp(1.45rem, 7vw, 1.8rem) !important;
+    line-height: 1.22 !important;
+    overflow-wrap: break-word !important;
+    word-break: normal !important;
+  }
+
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6
+    > .md\:col-span-2.space-y-6
+    > :first-child
+    .text-lg.font-medium {
+    font-size: 0.95rem !important;
+    line-height: 1.4 !important;
+    overflow-wrap: break-word !important;
+    word-break: normal !important;
+  }
+
+  /* Views/applications/posted metrics wrap naturally. */
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6
+    > .md\:col-span-2.space-y-6
+    > :first-child
+    .flex.items-center.gap-6.text-sm.text-gray-500 {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px 16px !important;
+  }
+
+  /* Main content cards get phone-friendly padding. */
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6
+    > .md\:col-span-2.space-y-6
+    > :not(:first-child),
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6
+    > .md\:col-span-1.space-y-6
+    > * {
+    min-width: 0;
+  }
+
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6
+    > .md\:col-span-2.space-y-6
+    > .p-6,
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6
+    > .md\:col-span-1.space-y-6
+    > .p-6 {
+    padding: 16px !important;
+  }
+
+  /* Long dynamic detail values should wrap by words, not by individual letters. */
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6
+    p,
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6
+    span {
+    word-break: normal !important;
+  }
+
+  /* Embedded government PDFs should not dominate the entire phone viewport. */
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    object,
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    iframe {
+    max-width: 100% !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6
+    > .md\:col-span-2.space-y-6,
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6
+    > .md\:col-span-1.space-y-6 {
+    gap: 14px !important;
+  }
+
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6
+    > .md\:col-span-2.space-y-6
+    > :first-child
+    > .space-y-4
+    > .flex.items-start.gap-3
+    > .ml-auto.flex.items-center.gap-2
+    > button {
+    min-height: 40px !important;
+    font-size: 0.8rem !important;
+  }
+
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6
+    > .md\:col-span-2.space-y-6
+    > :first-child
+    [class*="badge"],
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6
+    > .md\:col-span-2.space-y-6
+    > :first-child
+    [class*="inline-flex"] {
+    font-size: 0.75rem;
+  }
+
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    object,
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    iframe {
+    height: 380px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8 {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6
+    > .md\:col-span-2.space-y-6
+    > :first-child {
+    padding: 14px !important;
+  }
+
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    > .grid.md\:grid-cols-3.gap-6
+    > .md\:col-span-2.space-y-6
+    > :first-child
+    > .space-y-4
+    > .flex.items-start.gap-3
+    > .ml-auto.flex.items-center.gap-2
+    > button {
+    flex-basis: 100% !important;
+  }
+
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    object,
+  .min-h-screen.bg-gray-50
+    > .container.mx-auto.px-4.py-8
+    iframe {
+    height: 320px !important;
+  }
+}

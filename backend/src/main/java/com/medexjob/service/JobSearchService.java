@@ -9,6 +9,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Locale;
+import java.util.Set;
+
 /**
  * Centralised dynamic job-search service. Structured filters are intentionally
  * applied in the same query as free-text search so sector/category constraints
@@ -16,6 +19,10 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 public class JobSearchService {
+
+    private static final Set<String> GLOBAL_LOCATION_TERMS = Set.of(
+            "anywhere", "any location", "all locations", "any"
+    );
 
     private final JobRepository jobRepository;
 
@@ -38,7 +45,7 @@ public class JobSearchService {
     ) {
         Specification<Job> spec = JobSpecifications.buildSearchSpec(
                 sanitizeInput(searchQuery),
-                sanitizeInput(location),
+                sanitizeLocation(location),
                 sector,
                 category,
                 experienceLevel,
@@ -72,7 +79,7 @@ public class JobSearchService {
     ) {
         Specification<Job> spec = JobSpecifications.buildSearchSpec(
                 sanitizeInput(searchQuery),
-                sanitizeInput(location),
+                sanitizeLocation(location),
                 sector,
                 category,
                 experienceLevel,
@@ -105,6 +112,13 @@ public class JobSearchService {
                 .where(JobSpecifications.companyNameContains(companyName))
                 .and(JobSpecifications.hasStatus(status));
         return jobRepository.findAll(spec, pageable);
+    }
+
+    private String sanitizeLocation(String input) {
+        String value = sanitizeInput(input);
+        if (value == null) return null;
+        String normalized = value.toLowerCase(Locale.ROOT).replaceAll("\\s+", " ");
+        return GLOBAL_LOCATION_TERMS.contains(normalized) ? null : value;
     }
 
     private String sanitizeInput(String input) {

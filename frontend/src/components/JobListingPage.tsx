@@ -20,12 +20,60 @@ const GLOBAL_LOCATION_TERMS = new Set([
   "any",
 ]);
 
+const TITLE_SEARCH_STOPWORDS = new Set([
+  "a",
+  "an",
+  "and",
+  "at",
+  "for",
+  "in",
+  "of",
+  "on",
+  "the",
+  "to",
+  "with",
+  "job",
+  "jobs",
+  "vacancy",
+  "vacancies",
+  "post",
+  "posts",
+]);
+
 function normalizeLocation(value?: string) {
   return (value || "").trim().toLowerCase().replace(/\s+/g, " ");
 }
 
 function isGlobalLocation(value?: string) {
   return GLOBAL_LOCATION_TERMS.has(normalizeLocation(value));
+}
+
+function getTitleSearchTokens(value: string) {
+  const tokens = value
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .map((token) => token.trim())
+    .filter(Boolean);
+
+  if (tokens.length <= 1) return [...new Set(tokens)];
+
+  const meaningful = tokens.filter((token) => !TITLE_SEARCH_STOPWORDS.has(token));
+  return [...new Set(meaningful.length > 0 ? meaningful : tokens)].slice(0, 12);
+}
+
+function matchesWhatTitle(job: any, keyword: string) {
+  const trimmedKeyword = keyword.trim();
+  if (!trimmedKeyword) return true;
+
+  const title = String(job?.title || "").toLowerCase();
+  if (!title) return false;
+
+  const tokens = getTitleSearchTokens(trimmedKeyword);
+  return tokens.length > 0 && tokens.every((token) => title.includes(token));
+}
+
+function filterByWhatTitle(content: any[], keyword: string) {
+  return keyword.trim() ? content.filter((job) => matchesWhatTitle(job, keyword)) : content;
 }
 
 export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
@@ -68,7 +116,6 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
     setLocationQuery(locationParam);
     setFilters((prev) => ({
       ...prev,
-      // "Anywhere" is a display/search intent, never a literal database location.
       locations: locationParam && !isGlobalLocation(locationParam) ? [locationParam] : [],
       categories: categoryParam ? [categoryParam] : prev.categories,
     }));
@@ -122,7 +169,6 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
         const keyword = selectedJobOption.trim();
         const params: any = { status: "active", size: 50 };
 
-        // WHAT always remains the primary search constraint.
         if (keyword) params.search = keyword;
         if (sector) params.sector = sector;
         if (filters.categories[0]) params.category = filters.categories[0];
@@ -135,27 +181,30 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
         if (filters.state) params.state = filters.state;
         if (filters.city) params.city = filters.city;
 
-        let res = await fetchJobs(params);
-        let content = Array.isArray(res?.content) ? res.content : [];
-        let totalCount = res?.totalElements || 0;
+        const initialResponse = await fetchJobs(params);
+        const initialContent = Array.isArray(initialResponse?.content) ? initialResponse.content : [];
 
-        // If WHERE is a real typed value but produces no results, retry the SAME
-        // WHAT search across every location. Never remove the keyword here.
+        // The backend may return broad relevance matches. The WHAT box is a job
+        // title search, so every meaningful WHAT term must exist in the real title.
+        let content = filterByWhatTitle(initialContent, keyword);
+
+        // If the requested location has no title-matching result, keep WHAT exactly
+        // as entered and retry only without WHERE. This makes "Anywhere" and unknown
+        // locations location-agnostic without ever showing unrelated job titles.
         if (content.length === 0 && activeLocation) {
           const fallbackParams: any = { ...params };
           delete fallbackParams.location;
 
           const fallback = await fetchJobs(fallbackParams);
           const fallbackContent = Array.isArray(fallback?.content) ? fallback.content : [];
+          const titleMatchedFallback = filterByWhatTitle(fallbackContent, keyword);
 
-          if (fallbackContent.length > 0) {
-            res = fallback;
-            content = fallbackContent;
-            totalCount = fallback?.totalElements || fallbackContent.length;
+          if (titleMatchedFallback.length > 0) {
+            content = titleMatchedFallback;
             setShowingFallback(true);
             setFallbackReason(
               keyword
-                ? `No “${keyword}” jobs are currently listed in “${activeLocation}”. Showing matching “${keyword}” jobs from all available locations.`
+                ? `No “${keyword}” jobs are currently listed in “${activeLocation}”. Showing matching “${keyword}” job titles from all available locations.`
                 : `No jobs are currently listed in “${activeLocation}”. Showing available jobs from all locations.`
             );
           }
@@ -165,13 +214,14 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
           ...job,
           sector: job.sector?.toLowerCase() || "private",
         }));
+        const visibleCount = normalizedJobs.length;
 
         setJobs(normalizedJobs);
-        setTotal(totalCount);
+        setTotal(visibleCount);
 
         if (keyword) {
           setHasSearched(true);
-          trackSearch(keyword, locationQuery || activeLocation, totalCount);
+          trackSearch(keyword, locationQuery || activeLocation, visibleCount);
         }
       } catch (error) {
         console.error("Error fetching jobs:", error);
@@ -190,21 +240,21 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
   const getCountLabel = () => {
     if (loading) return "Searching...";
 
-    const count = total > 0 ? total : jobs.length;
+    const count = total;
     const jobWord = count === 1 ? "job" : "jobs";
     const keyword = selectedJobOption.trim();
     const requestedLocation = locationQuery.trim() || filters.locations[0]?.trim() || "";
     const acrossAllLocations = showingFallback || isGlobalLocation(requestedLocation) || !requestedLocation;
 
     if (keyword && count > 0 && acrossAllLocations) {
-      return `Found ${count} ${jobWord} for “${keyword}” across all locations`;
+      return `Found ${count} ${jobWord} matching “${keyword}” across all locations`;
     }
     if (keyword && count > 0 && requestedLocation) {
-      return `Found ${count} ${jobWord} for “${keyword}” in “${requestedLocation}”`;
+      return `Found ${count} ${jobWord} matching “${keyword}” in “${requestedLocation}”`;
     }
     if (count > 0 && acrossAllLocations) return `Showing ${count} ${jobWord} across all locations`;
     if (count > 0) return `Showing ${count} ${jobWord}`;
-    if (keyword) return `No jobs found for “${keyword}”`;
+    if (keyword) return `No job titles found matching “${keyword}”`;
     return "No jobs available";
   };
 
@@ -233,8 +283,6 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
       else params.delete("search");
 
       if (locationVal !== undefined && locationVal.trim()) {
-        // Keep the typed value in the URL/UI, including "Anywhere". The API layer
-        // decides whether it is an actual location constraint.
         params.set("location", locationVal.trim());
       } else if (locationVal !== undefined) {
         params.delete("location");
@@ -298,8 +346,6 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
               )}
             </div>
 
-            {/* Keep listing cards close to the homepage card width instead of
-                stretching two oversized cards across the entire results column. */}
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 items-stretch">
               {loading ? (
                 <div className="lg:col-span-2 xl:col-span-3 text-center py-14 sm:py-16">
@@ -319,11 +365,11 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
                 <div className="lg:col-span-2 xl:col-span-3 text-center py-12 sm:py-16 bg-white rounded-lg shadow-sm border px-4">
                   <Search className="w-14 h-14 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
-                    {hasSearched && keyword ? "No matching jobs found" : "No active jobs available"}
+                    {hasSearched && keyword ? "No matching job titles found" : "No active jobs available"}
                   </h3>
                   <p className="text-gray-500 mb-6 max-w-md mx-auto text-sm sm:text-base">
                     {hasSearched && keyword
-                      ? `There are currently no active jobs matching “${keyword}” with the selected filters.`
+                      ? `There are currently no active job titles matching “${keyword}” with the selected filters.`
                       : "There are currently no active jobs matching the selected portal filters."}
                   </p>
                   <Button variant="outline" onClick={handleClearSearch}>Clear Search & Filters</Button>

@@ -18,10 +18,11 @@ import java.util.Set;
 /**
  * JPA Specifications for candidate-facing job search.
  *
- * Search terms are tokenised so a query such as "Assistant Professor Emergency
- * Medicine" can match across title, speciality, qualification, organisation and
- * description while every structured filter (including Government/Private) is
- * still enforced.
+ * Free-text search deliberately behaves like a relevance search rather than a
+ * strict SQL filter. A multi-word query can match any meaningful token across
+ * title, employer, speciality, department, qualification, description,
+ * requirements, location and job type. Exact title phrases and title-token
+ * matches are ranked first, while structured filters remain mandatory.
  */
 public final class JobSpecifications {
 
@@ -132,44 +133,56 @@ public final class JobSpecifications {
             }
 
             List<String> tokens = tokenize(searchQuery);
-            Predicate firstTokenTitleMatch = null;
-            for (String token : tokens) {
-                Predicate titleMatch = like(cb, root.get("title"), token);
-                Predicate companyMatch = like(cb, employerJoin.get("companyName"), token);
-                Predicate descriptionMatch = like(cb, root.get("description"), token);
-                Predicate specialityMatch = like(cb, root.get("speciality"), token);
-                Predicate departmentMatch = like(cb, root.get("department"), token);
-                Predicate qualificationMatch = like(cb, root.get("qualification"), token);
-                Predicate requirementsMatch = like(cb, root.get("requirements"), token);
-                Predicate benefitsMatch = like(cb, root.get("benefits"), token);
-                Predicate locationMatch = like(cb, root.get("location"), token);
-                Predicate experienceMatch = like(cb, root.get("experience"), token);
-                Predicate jobTypeMatch = like(cb, root.get("jobType"), token);
+            if (!tokens.isEmpty()) {
+                List<Predicate> allSearchMatches = new ArrayList<>();
+                List<Predicate> titleTokenMatches = new ArrayList<>();
 
-                List<Predicate> tokenPredicates = new ArrayList<>(List.of(
-                        titleMatch, companyMatch, descriptionMatch, specialityMatch, departmentMatch,
-                        qualificationMatch, requirementsMatch, benefitsMatch, locationMatch,
-                        experienceMatch, jobTypeMatch
-                ));
-                if (token.equals("government") || token.equals("govt") || token.equals("public")) {
-                    tokenPredicates.add(cb.equal(root.get("sector"), Job.JobSector.GOVERNMENT));
-                } else if (token.equals("private") || token.equals("corporate")) {
-                    tokenPredicates.add(cb.equal(root.get("sector"), Job.JobSector.PRIVATE));
+                // Phrase matches receive the strongest relevance rank, but are not
+                // required. This prevents a query such as "Senior Medical Officer"
+                // from hiding useful "Medical Officer" jobs just because "Senior"
+                // is absent from the stored record.
+                Predicate exactTitlePhrase = like(cb, root.get("title"), searchQuery);
+                allSearchMatches.add(exactTitlePhrase);
+                allSearchMatches.add(like(cb, employerJoin.get("companyName"), searchQuery));
+                allSearchMatches.add(like(cb, root.get("speciality"), searchQuery));
+                allSearchMatches.add(like(cb, root.get("department"), searchQuery));
+                allSearchMatches.add(like(cb, root.get("qualification"), searchQuery));
+                allSearchMatches.add(like(cb, root.get("location"), searchQuery));
+
+                for (String token : tokens) {
+                    Predicate titleMatch = like(cb, root.get("title"), token);
+                    titleTokenMatches.add(titleMatch);
+
+                    allSearchMatches.add(titleMatch);
+                    allSearchMatches.add(like(cb, employerJoin.get("companyName"), token));
+                    allSearchMatches.add(like(cb, root.get("description"), token));
+                    allSearchMatches.add(like(cb, root.get("speciality"), token));
+                    allSearchMatches.add(like(cb, root.get("department"), token));
+                    allSearchMatches.add(like(cb, root.get("qualification"), token));
+                    allSearchMatches.add(like(cb, root.get("requirements"), token));
+                    allSearchMatches.add(like(cb, root.get("benefits"), token));
+                    allSearchMatches.add(like(cb, root.get("location"), token));
+                    allSearchMatches.add(like(cb, root.get("experience"), token));
+                    allSearchMatches.add(like(cb, root.get("jobType"), token));
+
+                    if (token.equals("government") || token.equals("govt") || token.equals("public")) {
+                        allSearchMatches.add(cb.equal(root.get("sector"), Job.JobSector.GOVERNMENT));
+                    } else if (token.equals("private") || token.equals("corporate")) {
+                        allSearchMatches.add(cb.equal(root.get("sector"), Job.JobSector.PRIVATE));
+                    }
                 }
 
-                predicates.add(cb.or(tokenPredicates.toArray(new Predicate[0])));
+                // Elasticsearch-style broad relevance semantics: at least one
+                // meaningful term must match somewhere, rather than requiring every
+                // token to be present.
+                predicates.add(cb.or(allSearchMatches.toArray(new Predicate[0])));
 
-                if (firstTokenTitleMatch == null) {
-                    firstTokenTitleMatch = titleMatch;
-                }
-            }
-
-            // Apply a stable relevance hint without dropping caller-supplied filters.
-            if (!tokens.isEmpty() && firstTokenTitleMatch != null) {
-                Expression<Integer> titleOrder = cb.<Integer>selectCase()
-                        .when(firstTokenTitleMatch, 1)
-                        .otherwise(2);
-                query.orderBy(cb.asc(titleOrder), cb.desc(root.get("createdAt")));
+                Predicate anyTitleTokenMatch = cb.or(titleTokenMatches.toArray(new Predicate[0]));
+                Expression<Integer> relevanceOrder = cb.<Integer>selectCase()
+                        .when(exactTitlePhrase, 1)
+                        .when(anyTitleTokenMatch, 2)
+                        .otherwise(3);
+                query.orderBy(cb.asc(relevanceOrder), cb.desc(root.get("createdAt")));
             }
 
             query.distinct(true);
@@ -196,7 +209,8 @@ public final class JobSpecifications {
                 .distinct()
                 .toList();
 
-        // If user typed a single keyword/letter (e.g. "a", "c", "in"), keep it so live keyword matching works
+        // If a user typed a single keyword/letter, keep it so live search remains
+        // responsive even for short medical abbreviations.
         if (rawTokens.size() == 1) {
             return rawTokens;
         }

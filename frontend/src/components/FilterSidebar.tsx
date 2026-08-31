@@ -100,6 +100,24 @@ function getValidJobStates(states: string[]) {
   return Array.from(uniqueStates.values()).sort((a, b) => a.localeCompare(b));
 }
 
+function getValidJobCities(cities: string[]) {
+  const uniqueCities = new Map<string, string>();
+
+  cities.forEach((city) => {
+    const trimmedCity = city?.trim();
+    const normalized = trimmedCity?.toLowerCase();
+    if (!normalized) return;
+
+    // City metadata remains dynamic from available jobs, but state/UT names
+    // are excluded so they cannot accidentally appear in the City dropdown.
+    if (!STATE_NAME_BY_NORMALIZED.has(normalized)) {
+      uniqueCities.set(normalized, trimmedCity);
+    }
+  });
+
+  return Array.from(uniqueCities.values()).sort((a, b) => a.localeCompare(b));
+}
+
 export function FilterSidebar({
   onFilterChange,
   categories,
@@ -113,6 +131,7 @@ export function FilterSidebar({
 }: FilterSidebarProps) {
   const [filters, setFilters] = useState<FilterOptions>(emptyFilters());
   const validStates = getValidJobStates(states);
+  const validCities = getValidJobCities(cities);
 
   const emit = (next: FilterOptions) => {
     setFilters(next);
@@ -134,11 +153,11 @@ export function FilterSidebar({
   };
 
   const citiesForState = filters.state
-    ? cities.filter((city) => {
+    ? validCities.filter((city) => {
         const match = locations.find((loc) => loc.toLowerCase().includes(city.toLowerCase()) && loc.toLowerCase().includes(filters.state!.toLowerCase()));
-        return Boolean(match) || !filters.state;
+        return Boolean(match);
       })
-    : cities;
+    : validCities;
 
   return (
     <Card className="p-6 sticky top-20">

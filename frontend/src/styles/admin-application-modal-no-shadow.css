@@ -1,0 +1,11 @@
+.medex-application-details-dialog,
+.medex-application-status-dialog {
+  box-shadow: none !important;
+}
+
+@media (max-width: 640px) {
+  .medex-application-details-dialog,
+  .medex-application-status-dialog {
+    box-shadow: none !important;
+  }
+}

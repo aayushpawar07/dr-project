@@ -1,0 +1,25 @@
+.medex-application-modal-overlay,
+.medex-application-status-overlay {
+  background: rgba(15, 23, 42, 0.16) !important;
+  backdrop-filter: none !important;
+}
+
+.medex-application-details-dialog,
+.medex-application-status-dialog {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+@media (max-width: 640px) {
+  .medex-application-modal-overlay,
+  .medex-application-status-overlay {
+    background: rgba(15, 23, 42, 0.14) !important;
+    backdrop-filter: none !important;
+  }
+
+  .medex-application-details-dialog,
+  .medex-application-status-dialog {
+    box-shadow: none !important;
+    filter: none !important;
+  }
+}

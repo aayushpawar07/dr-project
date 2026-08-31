@@ -3,6 +3,23 @@
  * Scoped to the JobDetailPage layout so public job cards/homepage sizing is untouched.
  */
 
+/*
+ * Preserve AI/admin pasted formatting in the Job Description card.
+ * The description is plain text, so keeping whitespace makes headings,
+ * blank lines and bullet lines readable without rendering unsafe HTML.
+ */
+.min-h-screen.bg-gray-50
+  > .container.mx-auto.px-4.py-8
+  > .grid.md\:grid-cols-3.gap-6
+  > .md\:col-span-2.space-y-6
+  > .p-6:nth-child(3)
+  > p.text-gray-700.leading-relaxed {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  line-height: 1.75;
+}
+
 @media (max-width: 768px) {
   .min-h-screen.bg-gray-50
     > .container.mx-auto.px-4.py-8

@@ -2,16 +2,18 @@
   width: 100%;
   display: grid !important;
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  gap: 16px !important;
-  margin: 0 !important;
+  gap: 18px !important;
+  margin: 24px 0 0 !important;
   padding: 0 !important;
+  align-items: stretch;
 }
 
 .medex-description-summary-grid-detached .medex-summary-card {
   min-height: 100%;
-  padding: 18px !important;
+  padding: 20px !important;
   border-radius: 14px !important;
   background: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
 }
 
 .medex-description-summary-grid-detached .medex-summary-heading {
@@ -19,9 +21,9 @@
 }
 
 .medex-description-summary-grid-detached .medex-summary-icon {
-  width: 34px !important;
-  height: 34px !important;
-  padding: 7px !important;
+  width: 36px !important;
+  height: 36px !important;
+  padding: 8px !important;
   border-radius: 10px !important;
 }
 
@@ -37,8 +39,8 @@
 
 .medex-description-summary-grid-detached .medex-summary-item {
   gap: 9px !important;
-  font-size: 0.88rem !important;
-  line-height: 1.55 !important;
+  font-size: 0.9rem !important;
+  line-height: 1.58 !important;
 }
 
 .medex-description-summary-grid-detached .medex-summary-item-icon {
@@ -62,8 +64,24 @@
   background: #fffaf0 !important;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
+  .medex-description-summary-grid-detached {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .medex-description-summary-grid-detached .medex-summary-notes {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 700px) {
   .medex-description-summary-grid-detached {
     grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    margin-top: 18px !important;
+  }
+
+  .medex-description-summary-grid-detached .medex-summary-notes {
+    grid-column: auto;
   }
 }

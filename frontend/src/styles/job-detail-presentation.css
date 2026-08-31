@@ -1,63 +1,320 @@
 .medex-description-card {
   border: 1px solid #e5e7eb;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
 }
 
-.medex-job-description {
+.medex-description-title {
+  margin-bottom: 4px !important;
+}
+
+.medex-description-intro {
+  margin: 0 0 18px;
+  color: #6b7280;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.medex-description-shell {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  color: #374151;
-  font-size: 0.95rem;
-  line-height: 1.7;
+  gap: 18px;
 }
 
-.medex-description-heading {
-  margin-top: 14px;
-  margin-bottom: 2px;
-  padding-bottom: 8px;
+.medex-description-tabs {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 10px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.medex-description-tab {
+  appearance: none;
+  flex: 0 0 auto;
+  min-height: 38px;
+  padding: 8px 13px;
+  border: 1px solid #dbe1ea;
+  border-radius: 8px;
+  background: #fff;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease,
+    box-shadow 150ms ease, transform 150ms ease;
+}
+
+.medex-description-tab:hover {
+  border-color: #93c5fd;
+  color: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.medex-description-tab[aria-selected="true"] {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #fff;
+  box-shadow: 0 5px 14px rgba(37, 99, 235, 0.2);
+}
+
+.medex-description-panels {
+  min-width: 0;
+}
+
+.medex-description-panel {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+  animation: medex-panel-in 160ms ease-out;
+}
+
+.medex-description-panel[hidden] {
+  display: none !important;
+}
+
+.medex-description-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+
+.medex-description-panel-header h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 1rem;
+  font-weight: 750;
+}
+
+.medex-description-panel-header span {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.medex-description-panel[data-section="eligibility"] {
+  border-color: #bbf7d0;
+  background: linear-gradient(180deg, #f0fdf4 0%, #fff 48%);
+}
+
+.medex-description-panel[data-section="eligibility"] .medex-description-panel-header {
+  background: #ecfdf5;
+  border-color: #bbf7d0;
+}
+
+.medex-description-panel[data-section="application"],
+.medex-description-panel[data-section="selection"] {
+  border-color: #bfdbfe;
+}
+
+.medex-description-panel[data-section="application"] .medex-description-panel-header,
+.medex-description-panel[data-section="selection"] .medex-description-panel-header {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.medex-description-panel[data-section="documents"] {
+  border-color: #dbeafe;
+}
+
+.medex-description-panel[data-section="notes"] {
+  border-color: #fde68a;
+  background: linear-gradient(180deg, #fffbeb 0%, #fff 52%);
+}
+
+.medex-description-panel[data-section="notes"] .medex-description-panel-header {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.medex-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  color: #374151;
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+.medex-description-subheading {
+  margin: 8px 0 0;
+  padding-bottom: 7px;
   border-bottom: 1px solid #e5e7eb;
   color: #111827;
-  font-size: 1.05rem;
-  font-weight: 700;
-}
-
-.medex-description-heading:first-child {
-  margin-top: 0;
+  font-size: 0.94rem;
+  font-weight: 750;
 }
 
 .medex-description-line {
   margin: 0;
+  color: #475569;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
-.medex-description-line strong {
-  color: #111827;
-  font-weight: 650;
-}
-
-.medex-description-list {
-  margin: 0;
-  padding-left: 1.25rem;
-  display: grid;
-  gap: 7px;
-  list-style: disc;
-}
-
-.medex-description-list li::marker {
-  color: #16a34a;
-}
-
 .medex-description-link {
   color: #2563eb;
-  font-weight: 600;
+  font-weight: 650;
   text-decoration: underline;
+  text-decoration-thickness: 1px;
   text-underline-offset: 3px;
 }
 
+.medex-description-link:hover {
+  color: #1d4ed8;
+}
+
+.medex-description-list {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.medex-description-list li {
+  position: relative;
+  padding-left: 20px;
+  color: #475569;
+}
+
+.medex-description-list li::before {
+  content: "";
+  position: absolute;
+  top: 0.64em;
+  left: 2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #16a34a;
+  box-shadow: 0 0 0 3px #dcfce7;
+}
+
+.medex-section-notes .medex-description-list li::before {
+  background: #d97706;
+  box-shadow: 0 0 0 3px #fef3c7;
+}
+
+.medex-kv-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.medex-kv-row {
+  display: grid;
+  grid-template-columns: minmax(105px, 0.8fr) minmax(0, 1.35fr);
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.medex-kv-label {
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.medex-kv-value {
+  min-width: 0;
+  color: #111827;
+  font-size: 0.82rem;
+  font-weight: 550;
+  overflow-wrap: anywhere;
+}
+
+.medex-description-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.medex-summary-card {
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid #e5e7eb;
+  border-radius: 11px;
+  background: #fff;
+}
+
+.medex-summary-card h4 {
+  margin: 0 0 11px;
+  color: #1e3a8a;
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
+.medex-summary-card ul {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.medex-summary-card li {
+  position: relative;
+  padding-left: 14px;
+  color: #475569;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.medex-summary-card li::before {
+  content: "";
+  position: absolute;
+  top: 0.56em;
+  left: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: #3b82f6;
+}
+
+.medex-summary-card strong {
+  color: #111827;
+  font-weight: 700;
+}
+
+.medex-summary-documents {
+  background: #f8fafc;
+  border-color: #dbeafe;
+}
+
+.medex-summary-documents li::before {
+  background: #0ea5e9;
+}
+
+.medex-summary-notes {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.medex-summary-notes h4 {
+  color: #92400e;
+}
+
+.medex-summary-notes li::before {
+  background: #d97706;
+}
+
 .medex-government-links {
-  padding: 22px;
+  padding: 20px;
   border: 1px solid #bfdbfe;
   border-radius: 12px;
   background: linear-gradient(135deg, #eff6ff 0%, #ffffff 72%);
@@ -69,13 +326,13 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 15px;
 }
 
 .medex-government-links-eyebrow {
   margin-bottom: 4px;
   color: #2563eb;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -84,14 +341,14 @@
 .medex-government-links h2 {
   margin: 0 0 4px;
   color: #111827;
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 750;
 }
 
 .medex-government-links p {
   margin: 0;
   color: #6b7280;
-  font-size: 0.86rem;
+  font-size: 0.84rem;
 }
 
 .medex-government-links-grid {
@@ -108,15 +365,15 @@
   padding: 14px 15px;
   border: 1px solid #dbeafe;
   border-radius: 10px;
-  background: #ffffff;
+  background: #fff;
   text-decoration: none;
   transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
 }
 
 .medex-official-link:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   border-color: #93c5fd;
-  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.11);
+  box-shadow: 0 9px 20px rgba(37, 99, 235, 0.12);
 }
 
 .medex-official-link-icon {
@@ -127,7 +384,7 @@
   place-items: center;
   border-radius: 10px;
   background: #eff6ff;
-  font-size: 1.15rem;
+  font-size: 1.1rem;
 }
 
 .medex-official-pdf .medex-official-link-icon {
@@ -144,12 +401,12 @@
 
 .medex-official-link-copy strong {
   color: #111827;
-  font-size: 0.93rem;
+  font-size: 0.9rem;
 }
 
 .medex-official-link-copy small {
   color: #6b7280;
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   line-height: 1.35;
 }
 
@@ -160,26 +417,90 @@
   font-weight: 700;
 }
 
-/* The dedicated official-link panel replaces the oversized duplicate PDF card. */
 .medex-official-docs-original {
   display: none !important;
 }
 
+@keyframes medex-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 900px) {
+  .medex-description-summary-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .medex-summary-notes {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 640px) {
+  .medex-description-intro {
+    margin-bottom: 14px;
+    font-size: 0.84rem;
+  }
+
+  .medex-description-tabs {
+    margin-right: -4px;
+    padding-bottom: 9px;
+  }
+
+  .medex-description-tab {
+    min-height: 36px;
+    padding: 7px 11px;
+    font-size: 0.78rem;
+  }
+
+  .medex-description-panel-header {
+    padding: 12px 13px;
+  }
+
+  .medex-section-body {
+    padding: 13px;
+    font-size: 0.88rem;
+  }
+
+  .medex-kv-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .medex-kv-row {
+    grid-template-columns: 110px minmax(0, 1fr);
+    padding: 9px 10px;
+  }
+
+  .medex-description-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .medex-summary-notes {
+    grid-column: auto;
+  }
+
   .medex-government-links {
-    padding: 16px;
+    padding: 15px;
   }
 
   .medex-government-links-grid {
     grid-template-columns: 1fr;
   }
+}
 
-  .medex-job-description {
-    font-size: 0.9rem;
-    line-height: 1.65;
+@media (max-width: 400px) {
+  .medex-kv-row {
+    grid-template-columns: 1fr;
+    gap: 3px;
   }
 
-  .medex-description-heading {
-    font-size: 1rem;
+  .medex-description-panel-header span {
+    display: none;
   }
 }

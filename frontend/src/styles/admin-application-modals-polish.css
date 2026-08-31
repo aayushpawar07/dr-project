@@ -1,0 +1,389 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap');
+
+.medex-application-modal-overlay {
+  background: rgba(15, 23, 42, 0.58) !important;
+  backdrop-filter: blur(5px) !important;
+}
+
+.medex-application-details-dialog,
+.medex-application-status-dialog {
+  font-family: "DM Sans", "Segoe UI", Arial, sans-serif !important;
+  border: 1px solid #e5e7eb !important;
+  background: #ffffff !important;
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.24) !important;
+  overflow: hidden !important;
+}
+
+.medex-application-details-dialog {
+  width: min(92vw, 780px) !important;
+  max-width: 780px !important;
+  max-height: 88vh !important;
+  padding: 0 !important;
+  border-radius: 22px !important;
+}
+
+.medex-application-status-dialog {
+  width: min(92vw, 520px) !important;
+  max-width: 520px !important;
+  max-height: 88vh !important;
+  padding: 0 !important;
+  border-radius: 20px !important;
+}
+
+.medex-application-details-dialog > *,
+.medex-application-status-dialog > * {
+  min-width: 0;
+}
+
+.medex-application-modal-header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 4 !important;
+  gap: 0 !important;
+  padding: 22px 24px 18px !important;
+  border-bottom: 1px solid #e8edf4 !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
+  text-align: left !important;
+}
+
+.medex-application-modal-title {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+  padding-right: 48px !important;
+  color: #0f172a !important;
+  font-family: "Manrope", "Segoe UI", Arial, sans-serif !important;
+  font-size: 1.36rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.025em !important;
+  line-height: 1.22 !important;
+}
+
+.medex-application-modal-eyebrow {
+  color: #2563eb !important;
+  font-family: "DM Sans", "Segoe UI", Arial, sans-serif !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.085em !important;
+  line-height: 1.2 !important;
+  text-transform: uppercase !important;
+}
+
+.medex-application-modal-candidate {
+  color: #0f172a !important;
+  font-size: 1.35rem !important;
+  font-weight: 800 !important;
+  line-height: 1.25 !important;
+}
+
+.medex-application-modal-close {
+  position: absolute !important;
+  top: 18px !important;
+  right: 20px !important;
+  display: grid !important;
+  width: 38px !important;
+  height: 38px !important;
+  place-items: center !important;
+  padding: 0 !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 999px !important;
+  background: #ffffff !important;
+  color: #475569 !important;
+  opacity: 1 !important;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.06) !important;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease, transform 150ms ease !important;
+}
+
+.medex-application-modal-close:hover {
+  border-color: #cbd5e1 !important;
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  transform: scale(1.04) !important;
+}
+
+.medex-application-modal-close > .sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.medex-application-modal-close svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.medex-application-modal-body {
+  display: grid !important;
+  gap: 16px !important;
+  max-height: calc(88vh - 95px) !important;
+  padding: 20px 24px 24px !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #cbd5e1 transparent !important;
+}
+
+.medex-application-modal-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.medex-application-modal-body::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: #cbd5e1;
+  background-clip: padding-box;
+}
+
+.medex-application-modal-section {
+  margin: 0 !important;
+  padding: 18px !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.035) !important;
+}
+
+.medex-application-modal-section[data-section="candidate-information"] {
+  border-color: #dbeafe !important;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%) !important;
+}
+
+.medex-application-modal-section[data-section="job-information"] {
+  background: #fbfcfe !important;
+}
+
+.medex-application-modal-section[data-section="resume"] {
+  border-color: #d1fae5 !important;
+  background: linear-gradient(180deg, #f5fff8 0%, #ecfdf3 100%) !important;
+}
+
+.medex-application-modal-section[data-section="application-notes"] {
+  border-color: #fde68a !important;
+  background: #fffbeb !important;
+}
+
+.medex-application-modal-section-title {
+  margin: 0 0 14px !important;
+  color: #0f172a !important;
+  font-family: "Manrope", "Segoe UI", Arial, sans-serif !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+}
+
+.medex-application-modal-section label {
+  display: block !important;
+  margin-bottom: 5px !important;
+  color: #64748b !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em !important;
+  line-height: 1.3 !important;
+  text-transform: uppercase !important;
+}
+
+.medex-application-modal-section p {
+  margin-top: 0 !important;
+  color: #0f172a !important;
+  font-size: 0.93rem !important;
+  font-weight: 500 !important;
+  line-height: 1.5 !important;
+}
+
+.medex-application-modal-section a {
+  color: #2563eb !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+}
+
+.medex-application-modal-section a:hover {
+  text-decoration: underline !important;
+  text-underline-offset: 3px !important;
+}
+
+.medex-application-modal-section button {
+  min-height: 44px !important;
+  border-radius: 11px !important;
+  font-family: "Manrope", "Segoe UI", Arial, sans-serif !important;
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+}
+
+.medex-status-modal-title {
+  padding-right: 46px !important;
+}
+
+.medex-status-modal-subtitle {
+  margin: 7px 48px 0 0 !important;
+  color: #64748b !important;
+  font-size: 0.86rem !important;
+  font-weight: 400 !important;
+  line-height: 1.45 !important;
+}
+
+.medex-application-status-dialog > div:not([data-slot="dialog-header"]) {
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+}
+
+.medex-status-field-label {
+  display: block !important;
+  margin-bottom: 8px !important;
+  color: #111827 !important;
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+}
+
+.medex-status-field {
+  width: 100% !important;
+  min-height: 48px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  font-family: "DM Sans", "Segoe UI", Arial, sans-serif !important;
+  font-size: 0.94rem !important;
+  outline: none !important;
+  transition: border-color 150ms ease, box-shadow 150ms ease !important;
+}
+
+textarea.medex-status-field {
+  min-height: 112px !important;
+  padding: 12px 14px !important;
+  line-height: 1.55 !important;
+  resize: vertical !important;
+}
+
+.medex-status-field:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.11) !important;
+}
+
+.medex-status-action-row {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  margin-top: 20px !important;
+  padding-bottom: 24px !important;
+}
+
+.medex-status-primary-action,
+.medex-status-secondary-action {
+  min-height: 44px !important;
+  padding: 0 18px !important;
+  border-radius: 11px !important;
+  font-family: "Manrope", "Segoe UI", Arial, sans-serif !important;
+  font-size: 0.86rem !important;
+  font-weight: 700 !important;
+}
+
+.medex-status-primary-action {
+  border-color: #0f172a !important;
+  background: #0f172a !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.16) !important;
+}
+
+.medex-status-primary-action:hover {
+  background: #1e293b !important;
+}
+
+.medex-status-secondary-action {
+  border: 1px solid #d1d5db !important;
+  background: #ffffff !important;
+  color: #334155 !important;
+  box-shadow: none !important;
+}
+
+.medex-status-secondary-action:hover {
+  background: #f8fafc !important;
+}
+
+@media (min-width: 700px) {
+  .medex-application-modal-section .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    column-gap: 22px !important;
+    row-gap: 18px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .medex-application-modal-overlay {
+    background: rgba(15, 23, 42, 0.5) !important;
+    backdrop-filter: blur(3px) !important;
+  }
+
+  .medex-application-details-dialog,
+  .medex-application-status-dialog {
+    top: auto !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    max-width: none !important;
+    max-height: 92dvh !important;
+    margin: 0 !important;
+    transform: none !important;
+    border-right: 0 !important;
+    border-bottom: 0 !important;
+    border-left: 0 !important;
+    border-radius: 22px 22px 0 0 !important;
+  }
+
+  .medex-application-modal-header {
+    padding: 18px 18px 15px !important;
+  }
+
+  .medex-application-modal-title,
+  .medex-application-modal-candidate {
+    font-size: 1.15rem !important;
+  }
+
+  .medex-application-modal-close {
+    top: 14px !important;
+    right: 14px !important;
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .medex-application-modal-body {
+    max-height: calc(92dvh - 82px) !important;
+    padding: 15px 16px 22px !important;
+  }
+
+  .medex-application-modal-section {
+    padding: 15px !important;
+    border-radius: 14px !important;
+  }
+
+  .medex-application-status-dialog > div:not([data-slot="dialog-header"]) {
+    padding-left: 18px !important;
+    padding-right: 18px !important;
+  }
+
+  .medex-status-action-row {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 9px !important;
+    padding-bottom: 18px !important;
+  }
+
+  .medex-status-primary-action,
+  .medex-status-secondary-action {
+    width: 100% !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .medex-application-modal-close,
+  .medex-status-field {
+    transition: none !important;
+  }
+}

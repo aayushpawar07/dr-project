@@ -1,0 +1,378 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap');
+
+.medex-description-card,
+.medex-description-summary-grid-detached,
+.medex-government-links {
+  --medex-heading-font: "Manrope", "Segoe UI", Arial, sans-serif;
+  --medex-body-font: "DM Sans", "Segoe UI", Arial, sans-serif;
+  --medex-ink: #0f172a;
+  --medex-muted: #64748b;
+  --medex-blue: #2563eb;
+  --medex-blue-soft: #eff6ff;
+  font-family: var(--medex-body-font) !important;
+}
+
+.medex-description-title,
+.medex-description-tab,
+.medex-description-panel-header h3,
+.medex-description-subheading h4,
+.medex-summary-heading h4,
+.medex-government-links h2,
+.medex-official-link-copy strong {
+  font-family: var(--medex-heading-font) !important;
+}
+
+.medex-description-card {
+  border-color: #dbe3ef !important;
+  border-radius: 18px !important;
+  background:
+    radial-gradient(circle at top right, rgba(59, 130, 246, 0.06), transparent 32%),
+    #ffffff !important;
+  box-shadow: 0 18px 46px rgba(15, 23, 42, 0.07) !important;
+}
+
+.medex-description-title {
+  color: var(--medex-ink) !important;
+  font-size: 1.45rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.035em !important;
+}
+
+.medex-description-intro {
+  position: relative;
+  overflow: hidden;
+  border-color: #cfe0ff !important;
+  background: linear-gradient(135deg, #f8fbff 0%, #eef5ff 58%, #f8fbff 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.medex-description-intro::after {
+  content: "";
+  position: absolute;
+  width: 130px;
+  height: 130px;
+  right: -58px;
+  top: -72px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.07);
+}
+
+.medex-description-intro strong {
+  font-family: var(--medex-heading-font) !important;
+  color: #10234a !important;
+  font-weight: 750 !important;
+}
+
+.medex-intro-icon {
+  position: relative;
+  z-index: 1;
+  background: linear-gradient(145deg, #dbeafe, #ffffff) !important;
+  box-shadow: 0 6px 15px rgba(37, 99, 235, 0.12);
+}
+
+.medex-description-tabs {
+  position: sticky;
+  top: 72px;
+  z-index: 12;
+  margin-inline: -2px;
+  padding: 10px 4px 12px !important;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid #e7edf5 !important;
+}
+
+.medex-description-tab {
+  position: relative;
+  border: 1px solid #dce4ef !important;
+  background: #ffffff !important;
+  color: #41516a !important;
+  box-shadow: 0 2px 7px rgba(15, 23, 42, 0.035);
+}
+
+.medex-description-tab:hover {
+  border-color: #a9c7ff !important;
+  background: #f8fbff !important;
+  color: #1d4ed8 !important;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.08);
+}
+
+.medex-description-tab[aria-selected="true"] {
+  border-color: transparent !important;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.22) !important;
+}
+
+.medex-description-tab:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.2) !important;
+  outline-offset: 2px;
+}
+
+.medex-description-panel {
+  border-color: #dfe7f1 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.045);
+}
+
+.medex-description-panel-header {
+  min-height: 78px;
+  background: linear-gradient(180deg, #fbfdff 0%, #f6f9fd 100%) !important;
+  border-bottom-color: #e4ebf4 !important;
+}
+
+.medex-description-panel[data-section="eligibility"] .medex-description-panel-header {
+  background: linear-gradient(180deg, #f0fdf4 0%, #f7fff9 100%) !important;
+}
+
+.medex-description-panel[data-section="application"] .medex-description-panel-header,
+.medex-description-panel[data-section="selection"] .medex-description-panel-header {
+  background: linear-gradient(180deg, #eff6ff 0%, #f8fbff 100%) !important;
+}
+
+.medex-description-panel[data-section="documents"] .medex-description-panel-header {
+  background: linear-gradient(180deg, #f0f9ff 0%, #f8fcff 100%) !important;
+}
+
+.medex-description-panel[data-section="notes"] .medex-description-panel-header {
+  background: linear-gradient(180deg, #fffbeb 0%, #fffef8 100%) !important;
+}
+
+.medex-description-panel[data-section="contact"] .medex-description-panel-header {
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%) !important;
+}
+
+.medex-panel-icon {
+  border: 1px solid rgba(37, 99, 235, 0.12);
+  background: linear-gradient(145deg, #ffffff 0%, #eaf2ff 100%) !important;
+  color: #2563eb !important;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.1);
+}
+
+.medex-description-panel[data-section="eligibility"] .medex-panel-icon {
+  color: #16a34a !important;
+  background: linear-gradient(145deg, #ffffff, #dcfce7) !important;
+  border-color: #bbf7d0;
+}
+
+.medex-description-panel[data-section="notes"] .medex-panel-icon {
+  color: #d97706 !important;
+  background: linear-gradient(145deg, #ffffff, #fef3c7) !important;
+  border-color: #fde68a;
+}
+
+.medex-description-panel-header h3 {
+  color: #12213f !important;
+  font-size: 1.08rem !important;
+  font-weight: 750 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.medex-panel-title-group p {
+  color: #718096 !important;
+  font-size: 0.82rem !important;
+}
+
+.medex-section-body {
+  background: #ffffff;
+}
+
+.medex-kv-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px !important;
+}
+
+.medex-kv-row {
+  min-height: 78px;
+  align-items: center;
+  border: 1px solid #e3eaf3 !important;
+  background: linear-gradient(180deg, #ffffff, #fbfcfe) !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.035);
+  transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.medex-kv-row:hover {
+  transform: translateY(-2px);
+  border-color: #bfd3f6 !important;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.07);
+}
+
+.medex-kv-icon {
+  background: #f1f6ff !important;
+  color: #2f6eea !important;
+}
+
+.medex-kv-label {
+  color: #78869b !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.035em !important;
+  text-transform: uppercase !important;
+}
+
+.medex-kv-value {
+  color: #14213a !important;
+  font-size: 0.91rem !important;
+  font-weight: 600 !important;
+}
+
+.medex-description-subheading {
+  border-bottom: 1px solid #e8edf4 !important;
+}
+
+.medex-description-subheading h4 {
+  color: #18263f !important;
+  font-size: 0.98rem !important;
+  font-weight: 750 !important;
+}
+
+.medex-description-line,
+.medex-description-list-item {
+  border: 1px solid transparent;
+  transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
+}
+
+.medex-description-line:hover,
+.medex-description-list-item:hover {
+  border-color: #e3eaf3;
+  background: #f8fafc !important;
+  transform: translateX(2px);
+}
+
+.medex-list-icon,
+.medex-line-icon {
+  color: #2f6eea !important;
+}
+
+.medex-section-eligibility .medex-list-icon {
+  color: #16a34a !important;
+}
+
+.medex-section-notes .medex-list-icon {
+  color: #d97706 !important;
+}
+
+.medex-section-documents .medex-list-icon {
+  color: #0284c7 !important;
+}
+
+.medex-description-line p,
+.medex-list-copy {
+  color: #4b5e78 !important;
+  font-size: 0.93rem !important;
+  line-height: 1.7 !important;
+}
+
+.medex-description-link {
+  color: #1d4ed8 !important;
+  font-weight: 650 !important;
+  text-decoration-color: rgba(37, 99, 235, 0.35) !important;
+}
+
+.medex-description-summary-grid-detached {
+  gap: 18px !important;
+}
+
+.medex-description-summary-grid-detached .medex-summary-card {
+  position: relative;
+  overflow: hidden;
+  border-width: 1px !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.055);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.medex-description-summary-grid-detached .medex-summary-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 34px rgba(15, 23, 42, 0.09);
+}
+
+.medex-description-summary-grid-detached .medex-summary-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: #3b82f6;
+}
+
+.medex-description-summary-grid-detached .medex-summary-documents::before {
+  background: #0ea5e9;
+}
+
+.medex-description-summary-grid-detached .medex-summary-notes::before {
+  background: #f59e0b;
+}
+
+.medex-summary-heading h4 {
+  font-size: 1.04rem !important;
+  font-weight: 750 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.medex-summary-item {
+  color: #52637a !important;
+  font-size: 0.88rem !important;
+  line-height: 1.6 !important;
+}
+
+.medex-official-link {
+  border-radius: 14px !important;
+  box-shadow: 0 5px 15px rgba(15, 23, 42, 0.045);
+}
+
+.medex-official-link:hover {
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.12) !important;
+}
+
+@media (max-width: 900px) {
+  .medex-description-tabs {
+    top: 64px;
+  }
+
+  .medex-kv-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .medex-description-card {
+    border-radius: 14px !important;
+  }
+
+  .medex-description-title {
+    font-size: 1.25rem !important;
+  }
+
+  .medex-description-tabs {
+    top: 58px;
+    gap: 7px !important;
+  }
+
+  .medex-description-tab {
+    min-height: 38px !important;
+    border-radius: 10px !important;
+  }
+
+  .medex-description-panel-header {
+    min-height: auto;
+  }
+
+  .medex-kv-row {
+    min-height: 68px;
+  }
+
+  .medex-description-line p,
+  .medex-list-copy {
+    font-size: 0.88rem !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .medex-description-tab,
+  .medex-kv-row,
+  .medex-description-line,
+  .medex-description-list-item,
+  .medex-summary-card,
+  .medex-official-link {
+    transition: none !important;
+  }
+}

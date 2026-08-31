@@ -11,6 +11,7 @@ import "./styles/device-responsive.css";
 import "./styles/job-detail-responsive.css";
 import "./styles/homepage-mobile-stats.css";
 import "./utils/dashboardNavigation";
+import "./utils/jobDetailPresentation";
 import { AuthProvider } from "./contexts/AuthContext.tsx";
 
 createRoot(document.getElementById("root")!).render(

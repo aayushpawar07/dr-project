@@ -1,25 +1,37 @@
 import "../styles/job-detail-summary-layout.css";
 
-function moveSummaryCardsOutsideDescription() {
+function moveSummaryCardsToFullWidthRow() {
   const descriptionCard = document.querySelector<HTMLElement>(".medex-description-card");
   if (!descriptionCard) return;
 
-  const summaryGrid = descriptionCard.querySelector<HTMLElement>(".medex-description-summary-grid");
+  const summaryGrid = document.querySelector<HTMLElement>(".medex-description-summary-grid");
   if (!summaryGrid) return;
 
   const mainColumn = descriptionCard.parentElement;
-  if (!mainColumn) return;
+  const detailGrid = mainColumn?.parentElement;
+  const pageContainer = detailGrid?.parentElement;
 
-  if (summaryGrid.dataset.medexDetached === "true") return;
+  if (!mainColumn || !detailGrid || !pageContainer) return;
+
+  // The page uses a 2/3 main column + 1/3 sidebar layout. The summary cards
+  // should sit below that entire grid so they can use the full container width.
+  if (
+    summaryGrid.dataset.medexLayout === "full-width" &&
+    summaryGrid.parentElement === pageContainer &&
+    summaryGrid.previousElementSibling === detailGrid
+  ) {
+    return;
+  }
 
   summaryGrid.dataset.medexDetached = "true";
+  summaryGrid.dataset.medexLayout = "full-width";
   summaryGrid.classList.add("medex-description-summary-grid-detached");
   summaryGrid.setAttribute("aria-label", "Job summary highlights");
 
-  if (descriptionCard.nextSibling) {
-    mainColumn.insertBefore(summaryGrid, descriptionCard.nextSibling);
+  if (detailGrid.nextSibling) {
+    pageContainer.insertBefore(summaryGrid, detailGrid.nextSibling);
   } else {
-    mainColumn.append(summaryGrid);
+    pageContainer.append(summaryGrid);
   }
 }
 
@@ -30,7 +42,7 @@ function scheduleSummaryLayout() {
 
   requestAnimationFrame(() => {
     scheduled = false;
-    moveSummaryCardsOutsideDescription();
+    moveSummaryCardsToFullWidthRow();
   });
 }
 

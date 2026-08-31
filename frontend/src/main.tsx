@@ -9,6 +9,7 @@ import "./styles/dashboard-fixed-layout.css";
 import "./styles/job-listing-card-size.css";
 import "./styles/device-responsive.css";
 import "./styles/job-detail-responsive.css";
+import "./styles/homepage-mobile-stats.css";
 import "./utils/dashboardNavigation";
 import { AuthProvider } from "./contexts/AuthContext.tsx";
 

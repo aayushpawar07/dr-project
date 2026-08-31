@@ -41,6 +41,65 @@ const emptyFilters = (): FilterOptions => ({
   city: '',
 });
 
+const INDIAN_STATES_AND_UTS = [
+  'Andaman and Nicobar Islands',
+  'Andhra Pradesh',
+  'Arunachal Pradesh',
+  'Assam',
+  'Bihar',
+  'Chandigarh',
+  'Chhattisgarh',
+  'Dadra and Nagar Haveli and Daman and Diu',
+  'Delhi',
+  'Goa',
+  'Gujarat',
+  'Haryana',
+  'Himachal Pradesh',
+  'Jammu and Kashmir',
+  'Jharkhand',
+  'Karnataka',
+  'Kerala',
+  'Ladakh',
+  'Lakshadweep',
+  'Madhya Pradesh',
+  'Maharashtra',
+  'Manipur',
+  'Meghalaya',
+  'Mizoram',
+  'Nagaland',
+  'Odisha',
+  'Puducherry',
+  'Punjab',
+  'Rajasthan',
+  'Sikkim',
+  'Tamil Nadu',
+  'Telangana',
+  'Tripura',
+  'Uttar Pradesh',
+  'Uttarakhand',
+  'West Bengal',
+] as const;
+
+const STATE_NAME_BY_NORMALIZED = new Map(
+  INDIAN_STATES_AND_UTS.map((state) => [state.toLowerCase(), state]),
+);
+
+function getValidJobStates(states: string[]) {
+  const uniqueStates = new Map<string, string>();
+
+  states.forEach((state) => {
+    const normalized = state?.trim().toLowerCase();
+    if (!normalized) return;
+
+    const canonicalState = STATE_NAME_BY_NORMALIZED.get(normalized);
+    if (canonicalState) {
+      uniqueStates.set(normalized, canonicalState);
+    }
+  });
+
+  return Array.from(uniqueStates.values()).sort((a, b) => a.localeCompare(b));
+}
+
 export function FilterSidebar({
   onFilterChange,
   categories,
@@ -53,6 +112,7 @@ export function FilterSidebar({
   cities = [],
 }: FilterSidebarProps) {
   const [filters, setFilters] = useState<FilterOptions>(emptyFilters());
+  const validStates = getValidJobStates(states);
 
   const emit = (next: FilterOptions) => {
     setFilters(next);
@@ -92,7 +152,7 @@ export function FilterSidebar({
 
         <Separator />
 
-        <SelectBlock label="State" value={filters.state || ''} options={states} onChange={(state) => emit({ ...filters, state, city: '' })} />
+        <SelectBlock label="State" value={filters.state || ''} options={validStates} onChange={(state) => emit({ ...filters, state, city: '' })} />
         <SelectBlock label="City" value={filters.city || ''} options={citiesForState} onChange={(city) => emit({ ...filters, city })} />
         <SelectBlock label="Speciality" value={filters.speciality || ''} options={specialities} onChange={(speciality) => emit({ ...filters, speciality })} />
         <SelectBlock label="Department" value={filters.department || ''} options={departments} onChange={(department) => emit({ ...filters, department })} />

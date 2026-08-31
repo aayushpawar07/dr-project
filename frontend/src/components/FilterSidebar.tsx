@@ -41,6 +41,65 @@ const emptyFilters = (): FilterOptions => ({
   city: '',
 });
 
+const INDIAN_STATES_AND_UTS = [
+  'Andaman and Nicobar Islands',
+  'Andhra Pradesh',
+  'Arunachal Pradesh',
+  'Assam',
+  'Bihar',
+  'Chandigarh',
+  'Chhattisgarh',
+  'Dadra and Nagar Haveli and Daman and Diu',
+  'Delhi',
+  'Goa',
+  'Gujarat',
+  'Haryana',
+  'Himachal Pradesh',
+  'Jammu and Kashmir',
+  'Jharkhand',
+  'Karnataka',
+  'Kerala',
+  'Ladakh',
+  'Lakshadweep',
+  'Madhya Pradesh',
+  'Maharashtra',
+  'Manipur',
+  'Meghalaya',
+  'Mizoram',
+  'Nagaland',
+  'Odisha',
+  'Puducherry',
+  'Punjab',
+  'Rajasthan',
+  'Sikkim',
+  'Tamil Nadu',
+  'Telangana',
+  'Tripura',
+  'Uttar Pradesh',
+  'Uttarakhand',
+  'West Bengal',
+] as const;
+
+const STATE_NAME_BY_NORMALIZED = new Map(
+  INDIAN_STATES_AND_UTS.map((state) => [state.toLowerCase(), state]),
+);
+
+function getValidJobStates(states: string[]) {
+  const uniqueStates = new Map<string, string>();
+
+  states.forEach((state) => {
+    const normalized = state?.trim().toLowerCase();
+    if (!normalized) return;
+
+    const canonicalState = STATE_NAME_BY_NORMALIZED.get(normalized);
+    if (canonicalState) {
+      uniqueStates.set(normalized, canonicalState);
+    }
+  });
+
+  return Array.from(uniqueStates.values()).sort((a, b) => a.localeCompare(b));
+}
+
 export function FilterSidebar({
   onFilterChange,
   categories,
@@ -53,6 +112,7 @@ export function FilterSidebar({
   cities = [],
 }: FilterSidebarProps) {
   const [filters, setFilters] = useState<FilterOptions>(emptyFilters());
+  const validStates = getValidJobStates(states);
 
   const emit = (next: FilterOptions) => {
     setFilters(next);
@@ -81,8 +141,8 @@ export function FilterSidebar({
     : cities;
 
   return (
-    <Card className="p-6 sticky top-20">
-      <div className="space-y-6">
+    <Card className="p-4 md:p-6 md:sticky md:top-20">
+      <div className="space-y-4 md:space-y-6">
         <div className="flex items-center justify-between">
           <h3 className="text-lg">Filters</h3>
           <Button variant="ghost" size="sm" onClick={() => emit(emptyFilters())}>
@@ -92,26 +152,28 @@ export function FilterSidebar({
 
         <Separator />
 
-        <SelectBlock label="State" value={filters.state || ''} options={states} onChange={(state) => emit({ ...filters, state, city: '' })} />
-        <SelectBlock label="City" value={filters.city || ''} options={citiesForState} onChange={(city) => emit({ ...filters, city })} />
-        <SelectBlock label="Speciality" value={filters.speciality || ''} options={specialities} onChange={(speciality) => emit({ ...filters, speciality })} />
-        <SelectBlock label="Department" value={filters.department || ''} options={departments} onChange={(department) => emit({ ...filters, department })} />
-        <SelectBlock label="Job Type" value={filters.jobType || ''} options={jobTypes} onChange={(jobType) => emit({ ...filters, jobType })} />
-        <SelectBlock label="Qualification" value={filters.qualification || ''} options={qualifications} onChange={(qualification) => emit({ ...filters, qualification })} />
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-1 md:gap-6">
+          <SelectBlock label="State" value={filters.state || ''} options={validStates} onChange={(state) => emit({ ...filters, state, city: '' })} />
+          <SelectBlock label="City" value={filters.city || ''} options={citiesForState} onChange={(city) => emit({ ...filters, city })} />
+          <SelectBlock label="Speciality" value={filters.speciality || ''} options={specialities} onChange={(speciality) => emit({ ...filters, speciality })} />
+          <SelectBlock label="Department" value={filters.department || ''} options={departments} onChange={(department) => emit({ ...filters, department })} />
+          <SelectBlock label="Job Type" value={filters.jobType || ''} options={jobTypes} onChange={(jobType) => emit({ ...filters, jobType })} />
+          <SelectBlock label="Qualification" value={filters.qualification || ''} options={qualifications} onChange={(qualification) => emit({ ...filters, qualification })} />
+        </div>
 
         <Separator />
 
         <div>
           <Label className="mb-3 block">Job Category</Label>
-          <div className="space-y-2 max-h-48 overflow-y-auto">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-2 max-h-48 overflow-y-auto md:grid-cols-1">
             {categories.map((category) => (
-              <div key={category} className="flex items-center space-x-2">
+              <div key={category} className="flex min-w-0 items-center space-x-2">
                 <Checkbox
                   id={category}
                   checked={filters.categories.includes(category)}
                   onCheckedChange={(checked) => handleCategoryChange(category, !!checked)}
                 />
-                <label htmlFor={category} className="text-sm cursor-pointer">{category}</label>
+                <label htmlFor={category} className="min-w-0 cursor-pointer truncate text-sm" title={category}>{category}</label>
               </div>
             ))}
           </div>
@@ -121,15 +183,15 @@ export function FilterSidebar({
 
         <div>
           <Label className="mb-3 block">Location</Label>
-          <div className="space-y-2 max-h-48 overflow-y-auto">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-2 max-h-48 overflow-y-auto md:grid-cols-1">
             {locations.map((location) => (
-              <div key={location} className="flex items-center space-x-2">
+              <div key={location} className="flex min-w-0 items-center space-x-2">
                 <Checkbox
                   id={location}
                   checked={filters.locations.includes(location)}
                   onCheckedChange={(checked) => handleLocationChange(location, !!checked)}
                 />
-                <label htmlFor={location} className="text-sm cursor-pointer">{location}</label>
+                <label htmlFor={location} className="min-w-0 cursor-pointer truncate text-sm" title={location}>{location}</label>
               </div>
             ))}
           </div>
@@ -155,9 +217,9 @@ export function FilterSidebar({
 function SelectBlock({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (value: string) => void }) {
   if (!options.length) return null;
   return (
-    <div>
-      <Label className="mb-2 block">{label}</Label>
-      <select className="w-full h-10 border rounded-md px-3 bg-white text-sm" value={value} onChange={(e) => onChange(e.target.value)}>
+    <div className="min-w-0">
+      <Label className="mb-2 block truncate">{label}</Label>
+      <select className="h-10 w-full min-w-0 rounded-md border bg-white px-2 text-sm md:px-3" value={value} onChange={(e) => onChange(e.target.value)}>
         <option value="">All {label}s</option>
         {options.map((option) => <option key={option} value={option}>{option}</option>)}
       </select>

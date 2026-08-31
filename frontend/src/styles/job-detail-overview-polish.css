@@ -1,0 +1,229 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap');
+
+.medex-job-hero-card,
+.medex-job-facts-card,
+.medex-about-organization-card {
+  font-family: "DM Sans", "Segoe UI", Arial, sans-serif !important;
+  border: 1px solid #e4e9f1 !important;
+  border-radius: 18px !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.medex-job-hero-card {
+  position: relative !important;
+  overflow: hidden !important;
+  padding: 26px !important;
+}
+
+.medex-job-hero-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #2563eb 0%, #0ea5e9 48%, #22c55e 100%);
+}
+
+.medex-job-hero-title {
+  margin: 4px 0 8px !important;
+  color: #0f172a !important;
+  font-family: "Manrope", "Segoe UI", Arial, sans-serif !important;
+  font-size: clamp(1.7rem, 2.2vw, 2.25rem) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.035em !important;
+  line-height: 1.16 !important;
+}
+
+.medex-job-organization-line {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin: 0 0 15px !important;
+  color: #334155 !important;
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+}
+
+.medex-job-organization-icon {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  flex: 0 0 28px;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.medex-job-organization-icon svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.medex-job-hero-meta {
+  gap: 18px !important;
+  color: #64748b !important;
+  font-size: 0.88rem !important;
+  font-weight: 500 !important;
+}
+
+.medex-job-hero-meta svg {
+  color: #64748b !important;
+}
+
+.medex-job-hero-action {
+  min-height: 40px !important;
+  padding: 0 14px !important;
+  border-radius: 10px !important;
+  border-color: #d8dee8 !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  font-family: "DM Sans", "Segoe UI", Arial, sans-serif !important;
+  font-size: 0.86rem !important;
+  font-weight: 650 !important;
+  box-shadow: none !important;
+}
+
+.medex-job-hero-action:hover {
+  border-color: #b9c4d3 !important;
+  background: #f8fafc !important;
+}
+
+.medex-job-facts-card {
+  padding: 24px !important;
+}
+
+.medex-job-facts-title {
+  margin: 0 0 18px !important;
+  color: #0f172a !important;
+  font-family: "Manrope", "Segoe UI", Arial, sans-serif !important;
+  font-size: 1.18rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.medex-job-facts-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+.medex-job-fact {
+  display: grid !important;
+  grid-template-columns: 42px minmax(0, 1fr) !important;
+  align-items: start !important;
+  gap: 12px !important;
+  min-width: 0 !important;
+  padding: 14px !important;
+  border: 1px solid #e7ebf1 !important;
+  border-radius: 12px !important;
+  background: #fbfcfe !important;
+  transition: border-color 150ms ease, background 150ms ease !important;
+}
+
+.medex-job-fact:hover {
+  border-color: #cbd8eb !important;
+  background: #f8fbff !important;
+}
+
+.medex-job-fact-icon {
+  width: 38px !important;
+  height: 38px !important;
+  padding: 9px !important;
+  border-radius: 10px !important;
+  background: #eff6ff !important;
+  color: #2563eb !important;
+}
+
+.medex-job-fact[data-fact*="salary"] .medex-job-fact-icon {
+  background: #f0fdf4 !important;
+  color: #16a34a !important;
+}
+
+.medex-job-fact[data-fact*="last-date"] .medex-job-fact-icon,
+.medex-job-fact[data-fact*="date"] .medex-job-fact-icon {
+  background: #fff7ed !important;
+  color: #ea580c !important;
+}
+
+.medex-job-fact[data-fact*="qualification"] .medex-job-fact-icon {
+  background: #f5f3ff !important;
+  color: #7c3aed !important;
+}
+
+.medex-job-fact-copy {
+  min-width: 0 !important;
+}
+
+.medex-job-fact-label {
+  margin: 0 0 4px !important;
+  color: #64748b !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.025em !important;
+  line-height: 1.3 !important;
+  text-transform: uppercase !important;
+}
+
+.medex-job-fact-value {
+  margin: 0 !important;
+  color: #0f172a !important;
+  font-size: 0.94rem !important;
+  font-weight: 600 !important;
+  line-height: 1.5 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.medex-about-organization-card {
+  padding: 22px !important;
+}
+
+.medex-about-organization-card h3 {
+  color: #0f172a !important;
+  font-family: "Manrope", "Segoe UI", Arial, sans-serif !important;
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+}
+
+.medex-about-organization-name {
+  color: #0f172a !important;
+  font-weight: 650 !important;
+}
+
+@media (max-width: 768px) {
+  .medex-job-hero-card,
+  .medex-job-facts-card {
+    border-radius: 14px !important;
+  }
+
+  .medex-job-hero-card {
+    padding: 20px !important;
+  }
+
+  .medex-job-facts-card {
+    padding: 18px !important;
+  }
+
+  .medex-job-facts-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .medex-job-fact {
+    grid-template-columns: 38px minmax(0, 1fr) !important;
+    padding: 12px !important;
+  }
+
+  .medex-job-fact-icon {
+    width: 34px !important;
+    height: 34px !important;
+    padding: 8px !important;
+  }
+}

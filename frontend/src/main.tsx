@@ -16,6 +16,7 @@ import "./styles/homepage-mobile-stats.css";
 import "./utils/dashboardNavigation";
 import "./utils/jobDetailPresentation";
 import "./utils/jobDetailSummaryLayout";
+import "./utils/adminApplicationsPresentation";
 import { AuthProvider } from "./contexts/AuthContext.tsx";
 
 createRoot(document.getElementById("root")!).render(

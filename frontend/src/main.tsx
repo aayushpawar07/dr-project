@@ -17,6 +17,7 @@ import "./utils/dashboardNavigation";
 import "./utils/jobDetailPresentation";
 import "./utils/jobDetailSummaryLayout";
 import "./utils/adminApplicationsPresentation";
+import "./utils/adminApplicationModalPresentation";
 import { AuthProvider } from "./contexts/AuthContext.tsx";
 
 createRoot(document.getElementById("root")!).render(

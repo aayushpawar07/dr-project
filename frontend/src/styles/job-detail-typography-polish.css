@@ -1,0 +1,352 @@
+.medex-description-card,
+.medex-description-shell,
+.medex-description-panel,
+.medex-description-summary-grid,
+.medex-government-links {
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-feature-settings: "kern" 1, "liga" 1;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Counts made the navigation feel noisy. Keep the sections clean and label-led. */
+.medex-tab-count,
+.medex-panel-count {
+  display: none !important;
+}
+
+.medex-description-title {
+  margin-bottom: 10px !important;
+  color: #0f172a !important;
+  font-size: 1.35rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em;
+  line-height: 1.25 !important;
+}
+
+.medex-description-intro {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+  margin: 0 0 20px !important;
+  padding: 14px 16px !important;
+  border: 1px solid #dbeafe !important;
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, #f8fbff 0%, #f1f7ff 100%) !important;
+}
+
+.medex-description-intro strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #0f172a;
+  font-size: 0.96rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+}
+
+.medex-description-intro p {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.88rem;
+  font-weight: 400;
+  line-height: 1.55;
+}
+
+.medex-intro-icon {
+  width: 38px !important;
+  height: 38px !important;
+  padding: 9px !important;
+  border-radius: 10px !important;
+  background: #dbeafe !important;
+  color: #2563eb !important;
+}
+
+.medex-description-tabs {
+  gap: 9px !important;
+  padding: 3px 0 12px !important;
+}
+
+.medex-description-tab {
+  min-height: 42px !important;
+  gap: 8px !important;
+  padding: 9px 14px !important;
+  border-radius: 11px !important;
+  color: #334155 !important;
+  font-size: 0.86rem !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.005em;
+  line-height: 1 !important;
+}
+
+.medex-description-tab:hover {
+  color: #1d4ed8 !important;
+}
+
+.medex-description-tab[aria-selected="true"] {
+  color: #ffffff !important;
+  font-weight: 650 !important;
+}
+
+.medex-tab-label {
+  white-space: nowrap;
+}
+
+.medex-tab-icon {
+  width: 17px !important;
+  height: 17px !important;
+}
+
+.medex-description-panel-header {
+  align-items: flex-start !important;
+  padding: 16px 18px !important;
+}
+
+.medex-panel-title-group {
+  align-items: flex-start !important;
+  gap: 12px !important;
+}
+
+.medex-panel-icon {
+  width: 40px !important;
+  height: 40px !important;
+  padding: 9px !important;
+  border-radius: 11px !important;
+}
+
+.medex-panel-title-group h3 {
+  margin: 1px 0 0 !important;
+  color: #0f172a !important;
+  font-size: 1.02rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.015em;
+  line-height: 1.35 !important;
+}
+
+.medex-panel-title-group p {
+  margin: 4px 0 0 !important;
+  color: #64748b !important;
+  font-size: 0.82rem !important;
+  font-weight: 400 !important;
+  line-height: 1.45 !important;
+}
+
+.medex-section-body {
+  gap: 14px !important;
+  padding: 18px !important;
+  color: #334155 !important;
+  font-size: 0.92rem !important;
+  font-weight: 400 !important;
+  line-height: 1.65 !important;
+}
+
+.medex-description-subheading {
+  gap: 9px !important;
+  margin-top: 7px !important;
+  padding: 8px 0 9px !important;
+}
+
+.medex-description-subheading h4 {
+  color: #0f172a !important;
+  font-size: 0.93rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em;
+  line-height: 1.4 !important;
+}
+
+.medex-subheading-icon {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+.medex-kv-grid {
+  gap: 10px !important;
+}
+
+.medex-kv-row {
+  gap: 11px !important;
+  padding: 12px !important;
+  border-radius: 11px !important;
+}
+
+.medex-kv-icon {
+  width: 36px !important;
+  height: 36px !important;
+  padding: 8px !important;
+  border-radius: 9px !important;
+}
+
+.medex-kv-copy {
+  gap: 4px !important;
+}
+
+.medex-kv-label {
+  color: #64748b !important;
+  font-size: 0.73rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em !important;
+  line-height: 1.35 !important;
+  text-transform: none !important;
+}
+
+.medex-kv-value {
+  color: #0f172a !important;
+  font-size: 0.86rem !important;
+  font-weight: 550 !important;
+  letter-spacing: -0.005em;
+  line-height: 1.5 !important;
+}
+
+.medex-description-line {
+  gap: 10px !important;
+  padding: 10px 11px !important;
+  border-radius: 9px !important;
+}
+
+.medex-description-line p,
+.medex-list-copy {
+  color: #475569 !important;
+  font-size: 0.9rem !important;
+  font-weight: 400 !important;
+  line-height: 1.62 !important;
+}
+
+.medex-description-list {
+  gap: 9px !important;
+}
+
+.medex-description-list-item {
+  gap: 10px !important;
+  padding: 10px 11px !important;
+  border-radius: 9px !important;
+}
+
+.medex-list-icon,
+.medex-line-icon {
+  width: 17px !important;
+  height: 17px !important;
+  margin-top: 2px !important;
+}
+
+.medex-description-link {
+  font-weight: 600 !important;
+}
+
+.medex-description-summary-grid {
+  gap: 14px !important;
+  margin-top: 6px !important;
+}
+
+.medex-summary-card {
+  padding: 16px !important;
+  border-radius: 12px !important;
+}
+
+.medex-summary-heading {
+  gap: 9px !important;
+  margin-bottom: 13px !important;
+}
+
+.medex-summary-icon {
+  width: 30px !important;
+  height: 30px !important;
+  padding: 6px !important;
+}
+
+.medex-summary-heading h4 {
+  color: #1e3a8a !important;
+  font-size: 0.94rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em;
+  line-height: 1.35 !important;
+}
+
+.medex-summary-list {
+  gap: 9px !important;
+}
+
+.medex-summary-item {
+  gap: 8px !important;
+  color: #475569 !important;
+  font-size: 0.82rem !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+}
+
+.medex-summary-item strong {
+  color: #0f172a !important;
+  font-weight: 650 !important;
+}
+
+.medex-summary-item-icon {
+  width: 15px !important;
+  height: 15px !important;
+  margin-top: 2px !important;
+}
+
+.medex-government-links h2 {
+  color: #0f172a !important;
+  font-size: 1.08rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.015em;
+}
+
+.medex-government-links p,
+.medex-official-link-copy small {
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+}
+
+.medex-official-link-copy strong {
+  color: #0f172a !important;
+  font-size: 0.9rem !important;
+  font-weight: 650 !important;
+}
+
+@media (max-width: 640px) {
+  .medex-description-title {
+    font-size: 1.2rem !important;
+  }
+
+  .medex-description-intro {
+    padding: 12px 13px !important;
+  }
+
+  .medex-description-intro strong {
+    font-size: 0.91rem;
+  }
+
+  .medex-description-intro p {
+    font-size: 0.82rem;
+  }
+
+  .medex-description-tab {
+    min-height: 40px !important;
+    padding: 8px 12px !important;
+    font-size: 0.82rem !important;
+  }
+
+  .medex-description-panel-header {
+    padding: 14px !important;
+  }
+
+  .medex-panel-icon {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  .medex-section-body {
+    padding: 14px !important;
+    font-size: 0.88rem !important;
+  }
+
+  .medex-kv-value,
+  .medex-description-line p,
+  .medex-list-copy {
+    font-size: 0.86rem !important;
+  }
+
+  .medex-summary-item {
+    font-size: 0.8rem !important;
+  }
+}

@@ -1,53 +1,144 @@
-const SECTION_TITLES = [
-  "job details",
-  "about the role",
-  "eligibility",
-  "eligibility criteria",
-  "key responsibilities",
-  "responsibilities",
-  "benefits",
-  "walk-in interview",
-  "important dates",
-  "documents required",
-  "selection process",
-  "important notes",
-  "job overview",
-  "contact",
-  "contact information",
+import "../styles/job-detail-presentation.css";
+
+type DescriptionSectionKey =
+  | "details"
+  | "eligibility"
+  | "responsibilities"
+  | "application"
+  | "selection"
+  | "documents"
+  | "notes"
+  | "contact";
+
+type DescriptionSection = {
+  key: DescriptionSectionKey;
+  label: string;
+  lines: string[];
+};
+
+const SECTION_ORDER: Array<{ key: DescriptionSectionKey; label: string }> = [
+  { key: "details", label: "Job Details" },
+  { key: "eligibility", label: "Eligibility" },
+  { key: "responsibilities", label: "Responsibilities" },
+  { key: "application", label: "Application" },
+  { key: "selection", label: "Selection" },
+  { key: "documents", label: "Documents" },
+  { key: "notes", label: "Important Notes" },
+  { key: "contact", label: "Contact" },
 ];
 
-const SECTION_PATTERN = new RegExp(
-  `\\b(${SECTION_TITLES.map((title) => title.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")).join("|")})\\b`,
-  "gi",
-);
+const BULLET_PATTERN = /^[•●▪·*\-–—]\s*/;
 
 function normalizeDescription(raw: string): string {
-  let text = raw.replace(/\r\n?/g, "\n").trim();
+  let text = raw
+    .replace(/\r\n?/g, "\n")
+    .replace(/\u00a0/g, " ")
+    .trim();
 
-  // Older AI-pasted descriptions may have been stored as one long line.
-  // Add safe section breaks around common recruitment headings.
+  // Older AI-pasted jobs may have been stored as a single line. Add safe
+  // breaks before the common headings that already exist in the content.
   if (!text.includes("\n")) {
-    text = text.replace(SECTION_PATTERN, (match) => `\n\n${match}\n`);
-    text = text.replace(/\s+[•●▪]\s+/g, "\n- ");
-    text = text.replace(/\s+-\s+(?=[A-Z0-9🎓🏥👤💰📍📋🎂📝📢📅⏰⚠️📄🎯🔄🚫☎️🌐])/g, "\n- ");
+    text = text
+      .replace(/\s+(STEP\s*[1-4]\s*:[^:]{2,80})/gi, "\n\n$1\n")
+      .replace(/\s+(Application Process\s*:)/gi, "\n\n$1\n")
+      .replace(/\s+(Selection Process\s*:)/gi, "\n\n$1\n")
+      .replace(/\s+(Important Documents Required\s*:|Documents Required\s*:)/gi, "\n\n$1\n")
+      .replace(/\s+(Important Notes\s*:)/gi, "\n\n$1\n")
+      .replace(/\s+(Contact Information\s*:|Contact\s*:)/gi, "\n\n$1\n")
+      .replace(/\s+[•●▪·]\s*/g, "\n· ");
   }
 
   return text
     .split("\n")
     .map((line) => line.trim())
+    .filter((line, index, lines) => line !== "---" || index === 0 || lines[index - 1] !== "---")
     .join("\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 
-function isSectionHeading(line: string): boolean {
-  const normalized = line
-    .replace(/^[^A-Za-z0-9]+/, "")
+function detectSection(line: string): DescriptionSectionKey | null {
+  const value = line
+    .replace(BULLET_PATTERN, "")
     .replace(/[:：]+$/, "")
     .trim()
     .toLowerCase();
 
-  return SECTION_TITLES.includes(normalized);
+  if (/^step\s*1\b/.test(value) || value.includes("basic job information") || value === "job details" || value === "job overview" || value === "about the role") {
+    return "details";
+  }
+  if (/^step\s*2\b/.test(value) || value.includes("requirements & details") || value === "eligibility" || value === "eligibility criteria") {
+    return "eligibility";
+  }
+  if (value === "key responsibilities" || value === "responsibilities") {
+    return "responsibilities";
+  }
+  if (/^step\s*3\b/.test(value) || /^step\s*4\b/.test(value) || value.includes("extra details") || value === "application process" || value === "walk-in interview" || value === "interview schedule" || value === "important dates") {
+    return "application";
+  }
+  if (value === "selection process") {
+    return "selection";
+  }
+  if (value === "documents required" || value === "important documents required") {
+    return "documents";
+  }
+  if (value === "important notes" || value === "benefits" || value === "benefits & perks") {
+    return "notes";
+  }
+  if (value === "contact" || value === "contact information") {
+    return "contact";
+  }
+
+  return null;
+}
+
+function isMainSectionHeading(line: string): boolean {
+  const value = line.replace(BULLET_PATTERN, "").trim();
+  if (/^step\s*[1-4]\b/i.test(value)) return true;
+
+  const normalized = value.replace(/[:：]+$/, "").trim().toLowerCase();
+  return [
+    "job details",
+    "job overview",
+    "about the role",
+    "eligibility",
+    "eligibility criteria",
+    "key responsibilities",
+    "responsibilities",
+    "application process",
+    "walk-in interview",
+    "selection process",
+    "documents required",
+    "important documents required",
+    "important notes",
+    "contact",
+    "contact information",
+  ].includes(normalized);
+}
+
+function parseSections(raw: string): DescriptionSection[] {
+  const buckets = new Map<DescriptionSectionKey, string[]>();
+  SECTION_ORDER.forEach(({ key }) => buckets.set(key, []));
+
+  let current: DescriptionSectionKey = "details";
+  const lines = normalizeDescription(raw).split("\n");
+
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || /^-{3,}$/.test(trimmed)) return;
+
+    const detected = detectSection(trimmed);
+    if (detected) {
+      current = detected;
+      if (isMainSectionHeading(trimmed)) return;
+    }
+
+    buckets.get(current)?.push(trimmed);
+  });
+
+  return SECTION_ORDER
+    .map(({ key, label }) => ({ key, label, lines: buckets.get(key) || [] }))
+    .filter((section) => section.lines.length > 0);
 }
 
 function appendLinkifiedText(parent: HTMLElement, text: string) {
@@ -79,21 +170,182 @@ function appendLinkifiedText(parent: HTMLElement, text: string) {
   }
 }
 
-function createBodyLine(line: string): HTMLElement {
-  const element = document.createElement("p");
-  element.className = "medex-description-line";
+function stripBullet(line: string): string {
+  return line.replace(BULLET_PATTERN, "").trim();
+}
 
-  const colonIndex = line.indexOf(":");
-  if (colonIndex > 0 && colonIndex <= 32) {
-    const label = document.createElement("strong");
-    label.textContent = `${line.slice(0, colonIndex + 1)} `;
-    element.append(label);
-    appendLinkifiedText(element, line.slice(colonIndex + 1).trim());
-  } else {
-    appendLinkifiedText(element, line);
-  }
+function looksLikeSubheading(line: string): boolean {
+  const clean = stripBullet(line);
+  return clean.endsWith(":") && clean.length <= 70 && clean.indexOf(":") === clean.length - 1;
+}
 
-  return element;
+function createKeyValueRow(labelText: string, valueText: string): HTMLElement {
+  const row = document.createElement("div");
+  row.className = "medex-kv-row";
+
+  const label = document.createElement("span");
+  label.className = "medex-kv-label";
+  label.textContent = labelText.replace(/[:：]+$/, "").trim();
+
+  const value = document.createElement("span");
+  value.className = "medex-kv-value";
+  appendLinkifiedText(value, valueText.trim());
+
+  row.append(label, value);
+  return row;
+}
+
+function createContentBlock(section: DescriptionSection): HTMLElement {
+  const block = document.createElement("div");
+  block.className = `medex-section-body medex-section-${section.key}`;
+
+  let list: HTMLUListElement | null = null;
+  let kvGrid: HTMLDivElement | null = null;
+
+  const flushList = () => {
+    if (list) {
+      block.append(list);
+      list = null;
+    }
+  };
+
+  const flushGrid = () => {
+    if (kvGrid) {
+      block.append(kvGrid);
+      kvGrid = null;
+    }
+  };
+
+  section.lines.forEach((rawLine) => {
+    const line = rawLine.trim();
+    if (!line || /^-{3,}$/.test(line)) return;
+
+    if (looksLikeSubheading(line)) {
+      flushList();
+      flushGrid();
+      const heading = document.createElement("h4");
+      heading.className = "medex-description-subheading";
+      heading.textContent = stripBullet(line).replace(/[:：]+$/, "");
+      block.append(heading);
+      return;
+    }
+
+    const clean = stripBullet(line);
+    const colonIndex = clean.indexOf(":");
+    if (colonIndex > 0 && colonIndex <= 42 && clean.slice(colonIndex + 1).trim()) {
+      flushList();
+      if (!kvGrid) {
+        kvGrid = document.createElement("div");
+        kvGrid.className = "medex-kv-grid";
+      }
+      kvGrid.append(createKeyValueRow(clean.slice(0, colonIndex), clean.slice(colonIndex + 1)));
+      return;
+    }
+
+    const compactNumberRow = clean.match(/^(.{2,45}?)\s+(\d{1,4})$/);
+    if (compactNumberRow && !/[.!?]$/.test(clean)) {
+      flushList();
+      if (!kvGrid) {
+        kvGrid = document.createElement("div");
+        kvGrid.className = "medex-kv-grid";
+      }
+      kvGrid.append(createKeyValueRow(compactNumberRow[1], compactNumberRow[2]));
+      return;
+    }
+
+    flushGrid();
+
+    if (BULLET_PATTERN.test(line)) {
+      if (!list) {
+        list = document.createElement("ul");
+        list.className = "medex-description-list";
+      }
+      const item = document.createElement("li");
+      appendLinkifiedText(item, clean);
+      list.append(item);
+      return;
+    }
+
+    flushList();
+    const paragraph = document.createElement("p");
+    paragraph.className = "medex-description-line";
+    appendLinkifiedText(paragraph, clean);
+    block.append(paragraph);
+  });
+
+  flushList();
+  flushGrid();
+  return block;
+}
+
+function createTabButton(section: DescriptionSection, index: number): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "medex-description-tab";
+  button.dataset.tab = section.key;
+  button.setAttribute("role", "tab");
+  button.setAttribute("aria-selected", index === 0 ? "true" : "false");
+  button.textContent = section.label;
+  return button;
+}
+
+function createSectionPanel(section: DescriptionSection, index: number): HTMLElement {
+  const panel = document.createElement("section");
+  panel.className = "medex-description-panel";
+  panel.dataset.panel = section.key;
+  panel.dataset.section = section.key;
+  panel.setAttribute("role", "tabpanel");
+  panel.hidden = index !== 0;
+
+  const header = document.createElement("div");
+  header.className = "medex-description-panel-header";
+
+  const title = document.createElement("h3");
+  title.textContent = section.label;
+
+  const hint = document.createElement("span");
+  hint.textContent = `${section.lines.length} item${section.lines.length === 1 ? "" : "s"}`;
+
+  header.append(title, hint);
+  panel.append(header, createContentBlock(section));
+  return panel;
+}
+
+function createPreviewCard(
+  title: string,
+  section: DescriptionSection | undefined,
+  tone: "overview" | "documents" | "notes",
+): HTMLElement | null {
+  if (!section || section.lines.length === 0) return null;
+
+  const card = document.createElement("div");
+  card.className = `medex-summary-card medex-summary-${tone}`;
+
+  const heading = document.createElement("h4");
+  heading.textContent = title;
+  card.append(heading);
+
+  const list = document.createElement("ul");
+  section.lines
+    .filter((line) => !looksLikeSubheading(line) && !/^-{3,}$/.test(line))
+    .slice(0, 5)
+    .forEach((line) => {
+      const item = document.createElement("li");
+      const clean = stripBullet(line);
+      const colonIndex = clean.indexOf(":");
+      if (colonIndex > 0 && colonIndex <= 38) {
+        const strong = document.createElement("strong");
+        strong.textContent = `${clean.slice(0, colonIndex)}: `;
+        item.append(strong);
+        appendLinkifiedText(item, clean.slice(colonIndex + 1).trim());
+      } else {
+        appendLinkifiedText(item, clean);
+      }
+      list.append(item);
+    });
+
+  card.append(list);
+  return card;
 }
 
 function enhanceDescription(root: ParentNode) {
@@ -111,62 +363,77 @@ function enhanceDescription(root: ParentNode) {
   const raw = original.textContent || "";
   if (!raw.trim()) return;
 
-  const formatted = document.createElement("div");
-  formatted.className = "medex-job-description";
+  const sections = parseSections(raw);
+  if (!sections.length) return;
 
-  const lines = normalizeDescription(raw).split("\n");
-  let list: HTMLUListElement | null = null;
-
-  const closeList = () => {
-    if (list) {
-      formatted.append(list);
-      list = null;
-    }
-  };
-
-  lines.forEach((line) => {
-    if (!line) {
-      closeList();
-      return;
-    }
-
-    if (isSectionHeading(line)) {
-      closeList();
-      const heading = document.createElement("h3");
-      heading.className = "medex-description-heading";
-      heading.textContent = line.replace(/[:：]+$/, "");
-      formatted.append(heading);
-      return;
-    }
-
-    if (/^[-•*]\s+/.test(line)) {
-      if (!list) {
-        list = document.createElement("ul");
-        list.className = "medex-description-list";
-      }
-      const item = document.createElement("li");
-      appendLinkifiedText(item, line.replace(/^[-•*]\s+/, ""));
-      list.append(item);
-      return;
-    }
-
-    closeList();
-    formatted.append(createBodyLine(line));
-  });
-
-  closeList();
-  original.replaceWith(formatted);
   card.dataset.medexDescriptionEnhanced = "true";
   card.classList.add("medex-description-card");
+  descriptionHeading?.classList.add("medex-description-title");
+
+  const intro = document.createElement("p");
+  intro.className = "medex-description-intro";
+  intro.textContent = "Browse the important details by section instead of reading one long description.";
+
+  const shell = document.createElement("div");
+  shell.className = "medex-description-shell";
+
+  const tabs = document.createElement("div");
+  tabs.className = "medex-description-tabs";
+  tabs.setAttribute("role", "tablist");
+  tabs.setAttribute("aria-label", "Job description sections");
+
+  const panels = document.createElement("div");
+  panels.className = "medex-description-panels";
+
+  sections.forEach((section, index) => {
+    tabs.append(createTabButton(section, index));
+    panels.append(createSectionPanel(section, index));
+  });
+
+  tabs.addEventListener("click", (event) => {
+    const target = (event.target as HTMLElement).closest<HTMLButtonElement>(".medex-description-tab");
+    if (!target) return;
+
+    const key = target.dataset.tab;
+    tabs.querySelectorAll<HTMLButtonElement>(".medex-description-tab").forEach((button) => {
+      const active = button === target;
+      button.setAttribute("aria-selected", active ? "true" : "false");
+    });
+
+    panels.querySelectorAll<HTMLElement>(".medex-description-panel").forEach((panel) => {
+      panel.hidden = panel.dataset.panel !== key;
+    });
+  });
+
+  shell.append(tabs, panels);
+
+  const details = sections.find((section) => section.key === "details");
+  const documents = sections.find((section) => section.key === "documents");
+  const notes = sections.find((section) => section.key === "notes");
+  const summaryGrid = document.createElement("div");
+  summaryGrid.className = "medex-description-summary-grid";
+
+  [
+    createPreviewCard("Job Overview", details, "overview"),
+    createPreviewCard("Documents Required", documents, "documents"),
+    createPreviewCard("Important Notes", notes, "notes"),
+  ].forEach((summaryCard) => {
+    if (summaryCard) summaryGrid.append(summaryCard);
+  });
+
+  if (summaryGrid.childElementCount > 0) shell.append(summaryGrid);
+
+  descriptionHeading?.after(intro);
+  original.replaceWith(shell);
 }
 
 function findLinkByText(root: ParentNode, labels: string[]): HTMLAnchorElement | null {
   return (
-    Array.from(root.querySelectorAll("a")).find((anchor) => {
+    (Array.from(root.querySelectorAll("a")).find((anchor) => {
       const text = anchor.textContent?.trim().toLowerCase() || "";
       return labels.some((label) => text.includes(label));
-    }) as HTMLAnchorElement | undefined
-  ) || null;
+    }) as HTMLAnchorElement | undefined) || null
+  );
 }
 
 function relabelExistingGovernmentLinks(root: ParentNode) {
@@ -235,50 +502,73 @@ function enhanceGovernmentLinks(root: ParentNode) {
 
   const header = document.createElement("div");
   header.className = "medex-government-links-header";
-  header.innerHTML = `
-    <div>
-      <div class="medex-government-links-eyebrow">Government Job</div>
-      <h2>Official Links</h2>
-      <p>Use the official source to verify the notification and application details.</p>
-    </div>
-  `;
+
+  const headerCopy = document.createElement("div");
+  const eyebrow = document.createElement("div");
+  eyebrow.className = "medex-government-links-eyebrow";
+  eyebrow.textContent = "Government Job";
+  const heading = document.createElement("h2");
+  heading.textContent = "Official Links";
+  const helper = document.createElement("p");
+  helper.textContent = "Verify the notification and application details from the official source.";
+  headerCopy.append(eyebrow, heading, helper);
+  header.append(headerCopy);
   section.append(header);
 
   const grid = document.createElement("div");
   grid.className = "medex-government-links-grid";
 
-  if (websiteSource) {
+  const appendOfficialLink = (
+    source: HTMLAnchorElement,
+    className: string,
+    icon: string,
+    title: string,
+    description: string,
+  ) => {
     const link = document.createElement("a");
-    link.className = "medex-official-link medex-official-website";
-    link.href = websiteSource.href;
+    link.className = `medex-official-link ${className}`;
+    link.href = source.href;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
-    link.innerHTML = `
-      <span class="medex-official-link-icon">🌐</span>
-      <span class="medex-official-link-copy">
-        <strong>Official Website</strong>
-        <small>Open the official recruitment/application page</small>
-      </span>
-      <span class="medex-official-link-arrow">↗</span>
-    `;
+
+    const iconElement = document.createElement("span");
+    iconElement.className = "medex-official-link-icon";
+    iconElement.textContent = icon;
+
+    const copy = document.createElement("span");
+    copy.className = "medex-official-link-copy";
+    const strong = document.createElement("strong");
+    strong.textContent = title;
+    const small = document.createElement("small");
+    small.textContent = description;
+    copy.append(strong, small);
+
+    const arrow = document.createElement("span");
+    arrow.className = "medex-official-link-arrow";
+    arrow.textContent = "↗";
+
+    link.append(iconElement, copy, arrow);
     grid.append(link);
+  };
+
+  if (websiteSource) {
+    appendOfficialLink(
+      websiteSource,
+      "medex-official-website",
+      "🌐",
+      "Official Website",
+      "Open the official recruitment/application page",
+    );
   }
 
   if (pdfSource) {
-    const link = document.createElement("a");
-    link.className = "medex-official-link medex-official-pdf";
-    link.href = pdfSource.href;
-    link.target = "_blank";
-    link.rel = "noopener noreferrer";
-    link.innerHTML = `
-      <span class="medex-official-link-icon">📄</span>
-      <span class="medex-official-link-copy">
-        <strong>Notification PDF</strong>
-        <small>Read the complete official notification</small>
-      </span>
-      <span class="medex-official-link-arrow">↗</span>
-    `;
-    grid.append(link);
+    appendOfficialLink(
+      pdfSource,
+      "medex-official-pdf",
+      "📄",
+      "Notification PDF",
+      "Read the complete official notification",
+    );
   }
 
   section.append(grid);
@@ -289,20 +579,18 @@ function enhanceGovernmentLinks(root: ParentNode) {
     mainColumn.append(section);
   }
 
-  // The original large inline PDF block consumes significant space. The two
-  // official actions above are the primary government-job navigation now.
+  // The compact official-link panel replaces the oversized duplicate PDF card.
   Array.from(mainColumn.children).forEach((element) => {
-    const heading = Array.from(element.querySelectorAll("h2")).find(
+    const officialHeading = Array.from(element.querySelectorAll("h2")).find(
       (item) => item.textContent?.trim().toLowerCase() === "official documents",
     );
-    if (heading) element.classList.add("medex-official-docs-original");
+    if (officialHeading) element.classList.add("medex-official-docs-original");
   });
 }
 
 function enhanceJobDetailPage() {
-  const root = document;
-  enhanceDescription(root);
-  enhanceGovernmentLinks(root);
+  enhanceDescription(document);
+  enhanceGovernmentLinks(document);
 }
 
 let scheduled = false;

@@ -1,0 +1,185 @@
+.medex-description-card {
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
+.medex-job-description {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: #374151;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+
+.medex-description-heading {
+  margin-top: 14px;
+  margin-bottom: 2px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #111827;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.medex-description-heading:first-child {
+  margin-top: 0;
+}
+
+.medex-description-line {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.medex-description-line strong {
+  color: #111827;
+  font-weight: 650;
+}
+
+.medex-description-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 7px;
+  list-style: disc;
+}
+
+.medex-description-list li::marker {
+  color: #16a34a;
+}
+
+.medex-description-link {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.medex-government-links {
+  padding: 22px;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 72%);
+  box-shadow: 0 10px 26px rgba(37, 99, 235, 0.07);
+}
+
+.medex-government-links-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.medex-government-links-eyebrow {
+  margin-bottom: 4px;
+  color: #2563eb;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.medex-government-links h2 {
+  margin: 0 0 4px;
+  color: #111827;
+  font-size: 1.15rem;
+  font-weight: 750;
+}
+
+.medex-government-links p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.86rem;
+}
+
+.medex-government-links-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.medex-official-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px 15px;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  background: #ffffff;
+  text-decoration: none;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.medex-official-link:hover {
+  transform: translateY(-1px);
+  border-color: #93c5fd;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.11);
+}
+
+.medex-official-link-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  border-radius: 10px;
+  background: #eff6ff;
+  font-size: 1.15rem;
+}
+
+.medex-official-pdf .medex-official-link-icon {
+  background: #fef2f2;
+}
+
+.medex-official-link-copy {
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.medex-official-link-copy strong {
+  color: #111827;
+  font-size: 0.93rem;
+}
+
+.medex-official-link-copy small {
+  color: #6b7280;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.medex-official-link-arrow {
+  flex: 0 0 auto;
+  color: #2563eb;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+/* The dedicated official-link panel replaces the oversized duplicate PDF card. */
+.medex-official-docs-original {
+  display: none !important;
+}
+
+@media (max-width: 640px) {
+  .medex-government-links {
+    padding: 16px;
+  }
+
+  .medex-government-links-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .medex-job-description {
+    font-size: 0.9rem;
+    line-height: 1.65;
+  }
+
+  .medex-description-heading {
+    font-size: 1rem;
+  }
+}

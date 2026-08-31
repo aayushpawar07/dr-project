@@ -74,34 +74,31 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // Allow error endpoint for Spring Boot error handling
                         .requestMatchers("/error").permitAll()
-                                // Public endpoints
-                                .requestMatchers("/api/auth/**").permitAll()
-                                .requestMatchers(HttpMethod.GET, "/api/jobs/employer/**").authenticated() // Employer jobs require auth
-                                .requestMatchers(HttpMethod.GET, "/api/jobs/**").permitAll() // Public job listings
-                                .requestMatchers(HttpMethod.GET, "/api/recruitments/**").permitAll() // Published master recruitments
-                                .requestMatchers(HttpMethod.GET, "/api/news/**").permitAll()
-                                .requestMatchers(HttpMethod.POST, "/api/news").hasRole("ADMIN")
-                                .requestMatchers(HttpMethod.PUT, "/api/news/**").hasRole("ADMIN")
-                                .requestMatchers(HttpMethod.DELETE, "/api/news/**").hasRole("ADMIN")
-                                // Job posting requires authentication (controller validates subscription)
-                                .requestMatchers(HttpMethod.POST, "/api/jobs").authenticated()
+                        // Public share endpoints. /api/share is the production path
+                        // because Nginx proxies /api to Spring Boot.
+                        .requestMatchers(HttpMethod.GET, "/share/**", "/api/share/**").permitAll()
+                        // Public endpoints
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/jobs/employer/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/jobs/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/recruitments/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/news/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/news").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/news/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/news/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/jobs").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/jobs/**").hasAnyRole("ADMIN", "EMPLOYER")
                         .requestMatchers(HttpMethod.DELETE, "/api/jobs/**").hasAnyRole("ADMIN", "EMPLOYER")
                         // Application endpoints
-                        .requestMatchers(HttpMethod.POST, "/api/applications").authenticated() // Any logged-in user can
-                                                                                               // apply
-                        .requestMatchers(HttpMethod.GET, "/api/applications").authenticated() // Authenticated users can
-                                                                                              // fetch applications (controller validates access)
-                        .requestMatchers(HttpMethod.PUT, "/api/applications/*/status").hasRole("ADMIN") // Only admin
-                                                                                                         // can update
-                                                                                                         // status
-                        .requestMatchers(HttpMethod.DELETE, "/api/applications/**").hasRole("ADMIN") // Only admin can
-                                                                                                     // delete
+                        .requestMatchers(HttpMethod.POST, "/api/applications").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/applications").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/applications/*/status").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/applications/**").hasRole("ADMIN")
                         // Notification endpoints
                         .requestMatchers(HttpMethod.GET, "/api/notifications/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/notifications/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/notifications/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/notifications/send").hasRole("ADMIN") // Only admin can send
+                        .requestMatchers(HttpMethod.POST, "/api/notifications/send").hasRole("ADMIN")
                         // Job Alert endpoints
                         .requestMatchers("/api/job-alerts/**").authenticated()
                         // Fraud Report endpoints
@@ -114,20 +111,18 @@ public class SecurityConfig {
                         .requestMatchers("/api/subscriptions/**").authenticated()
                         .requestMatchers("/api/payments/razorpay/webhook").permitAll()
                         .requestMatchers("/api/payments/**").authenticated()
-                        // Employer endpoints - bypass Spring Security pattern matching, let controller handle authorization
-                        // Use regex or custom matcher to avoid pattern parsing issues
+                        // Employer endpoints
                         .requestMatchers(request -> {
                             String path = request.getRequestURI();
                             return path.startsWith("/api/employers");
                         }).authenticated()
-                        // Admin endpoints - require ADMIN role
+                        // Admin endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/analytics/**").permitAll()
                         .requestMatchers("/api/actuator/**").permitAll()
                         .requestMatchers("/api/health").permitAll()
-                        .requestMatchers("/share/**").permitAll() // Public job share pages for social media crawlers
-                        .requestMatchers("/uploads/**").permitAll() // Allow public access to uploaded files
-                        .requestMatchers("/api/uploads/**").permitAll() // Allow public access to uploaded files via API path
+                        .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers("/api/uploads/**").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
@@ -141,36 +136,28 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Parse allowed origins from configuration (comma-separated)
         List<String> origins = Arrays.stream(allowedOrigins.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toList());
 
-        // Check if wildcard is used (allows all origins)
         boolean allowAllOrigins = origins.isEmpty() || origins.contains("*");
 
-        // Add default localhost origins for development if not using wildcard
         if (!allowAllOrigins) {
             List<String> defaultLocalhostOrigins = Arrays.asList(
                     "http://localhost:3000", "http://localhost:3001", "http://localhost:3002",
                     "http://localhost:3003", "http://localhost:5173", "http://localhost:5174",
                     "http://localhost:5175", "http://localhost:5176", "http://localhost:5177",
                     "http://localhost:5178", "http://localhost:5179", "http://localhost:5180");
-            // Combine configured origins with default localhost origins
             origins.addAll(defaultLocalhostOrigins);
         }
 
-        // Use setAllowedOrigins for exact match, or setAllowedOriginPatterns for
-        // pattern matching
-        // For production, allow all origins if needed (less secure but works)
         if (allowAllOrigins) {
             configuration.addAllowedOriginPattern("*");
         } else {
             configuration.setAllowedOriginPatterns(origins);
         }
 
-        // Parse allowed methods from configuration
         List<String> methods = Arrays.stream(allowedMethods.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
@@ -178,8 +165,6 @@ public class SecurityConfig {
         configuration.setAllowedMethods(methods);
 
         configuration.setAllowedHeaders(Arrays.asList("*"));
-        // Cannot use allow-credentials with wildcard origins (browser security
-        // restriction)
         configuration.setAllowCredentials(!allowAllOrigins);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

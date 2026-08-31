@@ -55,7 +55,6 @@ import { RecruitmentPage } from "./components/RecruitmentPage";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 
-// Wrapper component to extract employerId from URL params
 function EmployerManagementPageWrapper({
   onNavigate,
 }: {
@@ -79,18 +78,15 @@ function AppContent() {
     setCurrentPage(location.pathname.substring(1) || "home");
   }, [location]);
 
-  // Track visitor on each route change (fire-and-forget)
   useEffect(() => {
     trackVisitor();
   }, [location.pathname]);
 
-  // Scroll to top on route change
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [location.pathname]);
 
   const handleNavigate = (page: string, entityId?: string) => {
-    // Scroll to top before navigation
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
 
     if (page === "logout") {
@@ -98,13 +94,12 @@ function AppContent() {
       navigate("/login");
       return;
     }
-    // Handle dashboard navigation based on user role - ignore entityId for dashboard
+
     if (page === "dashboard") {
       if (!isAuthenticated || !user) {
         navigate("/login");
         return;
       }
-      // Navigate to role-specific dashboard
       if (user.role === "admin") {
         navigate("/dashboard/admin");
       } else if (user.role === "employer") {
@@ -112,10 +107,11 @@ function AppContent() {
       } else if (user.role === "candidate") {
         navigate("/dashboard/candidate");
       } else {
-        navigate("/dashboard/candidate"); // Default fallback
+        navigate("/dashboard/candidate");
       }
       return;
     }
+
     const path = entityId ? `/${page}/${entityId}` : `/${page}`;
     navigate(path);
   };
@@ -126,7 +122,7 @@ function AppContent() {
     if (user.role === "admin")
       return <AdminDashboard onNavigate={handleNavigate} />;
     if (user.role === "employer")
-      return <EmployerVerification onNavigate={handleNavigate} />; // Employers land on verification first
+      return <EmployerVerification onNavigate={handleNavigate} />;
     return <CandidateDashboard onNavigate={handleNavigate} />;
   };
 
@@ -141,101 +137,30 @@ function AppContent() {
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<HomePage onNavigate={handleNavigate} />} />
-          <Route
-            path="/home"
-            element={<HomePage onNavigate={handleNavigate} />}
-          />
-          <Route
-            path="/login"
-            element={<AuthPage mode="login" onNavigate={handleNavigate} />}
-          />
-          <Route
-            path="/register"
-            element={<AuthPage mode="register" onNavigate={handleNavigate} />}
-          />
+          <Route path="/home" element={<HomePage onNavigate={handleNavigate} />} />
+          <Route path="/login" element={<AuthPage mode="login" onNavigate={handleNavigate} />} />
+          <Route path="/register" element={<AuthPage mode="register" onNavigate={handleNavigate} />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route
-            path="/jobs"
-            element={<JobListingPage onNavigate={handleNavigate} />}
-          />
-          <Route
-            path="/govt-jobs"
-            element={
-              <JobListingPage onNavigate={handleNavigate} sector="government" />
-            }
-          />
-          <Route
-            path="/private-jobs"
-            element={
-              <JobListingPage onNavigate={handleNavigate} sector="private" />
-            }
-          />
-          <Route
-            path="/recruitment/:recruitmentId"
-            element={<RecruitmentPage />}
-          />
-          <Route
-            path="/news"
-            element={<NewsPage onNavigate={handleNavigate} />}
-          />
-          <Route
-            path="/news/:newsId"
-            element={<NewsDetailPage onNavigate={handleNavigate} />}
-          />
-          <Route
-            path="/share/news/:newsId"
-            element={<NewsDetailPage onNavigate={handleNavigate} />}
-          />
-          <Route
-            path="/job/:jobId"
-            element={<JobDetailPage onNavigate={handleNavigate} />}
-          />
-          <Route
-            path="/share/job/:jobId"
-            element={<JobDetailPage onNavigate={handleNavigate} />}
-          />
-          <Route
-            path="/jobs/:jobId"
-            element={<JobDetailPage onNavigate={handleNavigate} />}
-          />
-          <Route
-            path="/job-detail/:jobId"
-            element={<JobDetailPage onNavigate={handleNavigate} />}
-          />
-          <Route
-            path="/about"
-            element={<AboutPage onNavigate={handleNavigate} />}
-          />
-          <Route
-            path="/pricing"
-            element={<PricingPage onNavigate={handleNavigate} />}
-          />
-          <Route
-            path="/faq"
-            element={<FAQPage onNavigate={handleNavigate} />}
-          />
-          <Route
-            path="/privacy-policy"
-            element={<PrivacyPolicyPage onNavigate={handleNavigate} />}
-          />
-          <Route
-            path="/terms-conditions"
-            element={<TermsConditionsPage onNavigate={handleNavigate} />}
-          />
-          <Route
-            path="/refund-cancellation"
-            element={<RefundCancellationPage onNavigate={handleNavigate} />}
-          />
-          <Route
-            path="/contact"
-            element={<ContactUsPage onNavigate={handleNavigate} />}
-          />
-          <Route
-            path="/subscription"
-            element={<SubscriptionPage onNavigate={handleNavigate} />}
-          />
+          <Route path="/jobs" element={<JobListingPage onNavigate={handleNavigate} />} />
+          <Route path="/govt-jobs" element={<JobListingPage onNavigate={handleNavigate} sector="government" />} />
+          <Route path="/private-jobs" element={<JobListingPage onNavigate={handleNavigate} sector="private" />} />
+          <Route path="/recruitment/:recruitmentId" element={<RecruitmentPage />} />
+          <Route path="/news" element={<NewsPage onNavigate={handleNavigate} />} />
+          <Route path="/news/:newsId" element={<NewsDetailPage onNavigate={handleNavigate} />} />
+          <Route path="/share/news/:newsId" element={<NewsDetailPage onNavigate={handleNavigate} />} />
+          <Route path="/job/:jobId" element={<JobDetailPage onNavigate={handleNavigate} />} />
+          <Route path="/share/job/:jobId" element={<JobDetailPage onNavigate={handleNavigate} />} />
+          <Route path="/jobs/:jobId" element={<JobDetailPage onNavigate={handleNavigate} />} />
+          <Route path="/job-detail/:jobId" element={<JobDetailPage onNavigate={handleNavigate} />} />
+          <Route path="/about" element={<AboutPage onNavigate={handleNavigate} />} />
+          <Route path="/pricing" element={<PricingPage onNavigate={handleNavigate} />} />
+          <Route path="/faq" element={<FAQPage onNavigate={handleNavigate} />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage onNavigate={handleNavigate} />} />
+          <Route path="/terms-conditions" element={<TermsConditionsPage onNavigate={handleNavigate} />} />
+          <Route path="/refund-cancellation" element={<RefundCancellationPage onNavigate={handleNavigate} />} />
+          <Route path="/contact" element={<ContactUsPage onNavigate={handleNavigate} />} />
+          <Route path="/subscription" element={<SubscriptionPage onNavigate={handleNavigate} />} />
 
-          {/* Notifications Route */}
           <Route
             path="/notifications"
             element={
@@ -250,27 +175,13 @@ function AppContent() {
             }
           />
 
-          {/* Authenticated Routes */}
           {isAuthenticated && user && (
             <>
-              {/* Generic dashboard route, redirects based on role */}
               <Route path="/dashboard" element={getDashboard()} />
+              <Route path="/dashboard/candidate" element={<CandidateDashboard onNavigate={handleNavigate} />} />
+              <Route path="/dashboard/employer" element={<EmployerDashboard onNavigate={handleNavigate} />} />
+              <Route path="/verification" element={<EmployerVerification onNavigate={handleNavigate} />} />
 
-              {/* Role-specific dashboard routes */}
-              <Route
-                path="/dashboard/candidate"
-                element={<CandidateDashboard onNavigate={handleNavigate} />}
-              />
-              <Route
-                path="/dashboard/employer"
-                element={<EmployerDashboard onNavigate={handleNavigate} />}
-              />
-              <Route
-                path="/verification"
-                element={<EmployerVerification onNavigate={handleNavigate} />}
-              />
-
-              {/* Employer Job Posting Route */}
               {user.role === "employer" && (
                 <Route
                   path="/employer-post-job"
@@ -280,14 +191,12 @@ function AppContent() {
                       onSave={async (jobData: any) => {
                         try {
                           if (!token) {
-                            toast.error(
-                              "Authentication token not found. Please login again.",
-                            );
+                            toast.error("Authentication token not found. Please login again.");
                             return;
                           }
                           const payload = {
                             ...jobData,
-                            status: "pending", // Jobs need admin approval
+                            status: "pending",
                             featured: false,
                             views: 0,
                             applications: 0,
@@ -296,31 +205,19 @@ function AppContent() {
                           const createdJob = await createJob(payload);
                           const jobId = createdJob?.id;
 
-                          // Upload PDF document if provided
                           if (jobId && jobData.pdfFile) {
                             try {
                               await uploadJobDocument(jobId, jobData.pdfFile);
-                              console.log("Job document uploaded successfully");
-                            } catch (uploadError: any) {
-                              console.error(
-                                "Error uploading job document:",
-                                uploadError,
-                              );
-                              // Don't fail the whole operation, just log the error
+                            } catch (uploadError) {
+                              console.error("Error uploading job document:", uploadError);
                             }
                           }
 
-                          // Upload image if provided
                           if (jobId && jobData.imageFile) {
                             try {
                               await uploadJobImage(jobId, jobData.imageFile);
-                              console.log("Job image uploaded successfully");
-                            } catch (uploadError: any) {
-                              console.error(
-                                "Error uploading job image:",
-                                uploadError,
-                              );
-                              // Don't fail the whole operation, just log the error
+                            } catch (uploadError) {
+                              console.error("Error uploading job image:", uploadError);
                             }
                           }
 
@@ -328,27 +225,12 @@ function AppContent() {
                           handleNavigate("dashboard/employer");
                         } catch (e: any) {
                           console.error("Error creating job:", e);
-                          console.error("Error details:", {
-                            message: e.message,
-                            response: e.response?.data,
-                            status: e.response?.status,
-                          });
-                          let errorMessage =
-                            "Failed to create job. Please try again.";
+                          let errorMessage = "Failed to create job. Please try again.";
                           if (e.response?.data?.error) {
                             errorMessage = e.response.data.error;
-                            // If it's an authentication error, redirect to login
-                            if (
-                              e.response.status === 401 ||
-                              e.response.status === 403
-                            ) {
-                              if (
-                                errorMessage.includes("Unauthorized") ||
-                                errorMessage.includes("login")
-                              ) {
-                                toast.error(
-                                  "Your session has expired. Please login again.",
-                                );
+                            if (e.response.status === 401 || e.response.status === 403) {
+                              if (errorMessage.includes("Unauthorized") || errorMessage.includes("login")) {
+                                toast.error("Your session has expired. Please login again.");
                                 handleNavigate("logout");
                                 return;
                               }
@@ -364,41 +246,14 @@ function AppContent() {
                 />
               )}
 
-              {/* Admin Routes */}
-              <Route
-                path="/dashboard/admin"
-                element={<AdminDashboard onNavigate={handleNavigate} />}
-              />
-              <Route
-                path="/admin-jobs"
-                element={<AdminJobManagementPage onNavigate={handleNavigate} />}
-              />
-              <Route
-                path="/admin-ai-bulk-upload"
-                element={<AiBulkJobUploader onNavigate={handleNavigate} />}
-              />
-              <Route
-                path="/admin/jobs/edit/:jobId"
-                element={<EditJobPage onNavigate={handleNavigate} />}
-              />
-              <Route
-                path="/edit-job/:jobId"
-                element={<EditJobPage onNavigate={handleNavigate} />}
-              />
-              <Route
-                path="/employer/jobs/edit/:jobId"
-                element={<EditJobPage onNavigate={handleNavigate} />}
-              />
-              <Route
-                path="/admin-news"
-                element={
-                  <AdminNewsManagementPage onNavigate={handleNavigate} />
-                }
-              />
-              <Route
-                path="/admin-pricing"
-                element={<AdminPricingManagement onNavigate={handleNavigate} />}
-              />
+              <Route path="/dashboard/admin" element={<AdminDashboard onNavigate={handleNavigate} />} />
+              <Route path="/admin-jobs" element={<AdminJobManagementPage onNavigate={handleNavigate} />} />
+              <Route path="/admin-ai-bulk-upload" element={<AiBulkJobUploader onNavigate={handleNavigate} />} />
+              <Route path="/admin/jobs/edit/:jobId" element={<EditJobPage onNavigate={handleNavigate} />} />
+              <Route path="/edit-job/:jobId" element={<EditJobPage onNavigate={handleNavigate} />} />
+              <Route path="/employer/jobs/edit/:jobId" element={<EditJobPage onNavigate={handleNavigate} />} />
+              <Route path="/admin-news" element={<AdminNewsManagementPage onNavigate={handleNavigate} />} />
+              <Route path="/admin-pricing" element={<AdminPricingManagement onNavigate={handleNavigate} />} />
               <Route
                 path="/admin-post-job"
                 element={
@@ -407,9 +262,7 @@ function AppContent() {
                     onSave={async (jobData: any) => {
                       try {
                         if (!token) {
-                          toast.error(
-                            "Authentication token not found. Please login again.",
-                          );
+                          toast.error("Authentication token not found. Please login again.");
                           return;
                         }
                         const payload = {
@@ -420,33 +273,22 @@ function AppContent() {
                           applications: jobData.applications || 0,
                           type: "hospital",
                         };
-                        // Use admin API for job creation (no subscription required)
                         const createdJob = await createAdminJob(payload);
                         const jobId = createdJob?.id;
 
-                        // Upload PDF document if provided
                         if (jobId && jobData.pdfFile) {
                           try {
                             await uploadJobDocument(jobId, jobData.pdfFile);
-                            console.log("Job document uploaded successfully");
-                          } catch (uploadError: any) {
-                            console.error(
-                              "Error uploading job document:",
-                              uploadError,
-                            );
+                          } catch (uploadError) {
+                            console.error("Error uploading job document:", uploadError);
                           }
                         }
 
-                        // Upload image if provided
                         if (jobId && jobData.imageFile) {
                           try {
                             await uploadJobImage(jobId, jobData.imageFile);
-                            console.log("Job image uploaded successfully");
-                          } catch (uploadError: any) {
-                            console.error(
-                              "Error uploading job image:",
-                              uploadError,
-                            );
+                          } catch (uploadError) {
+                            console.error("Error uploading job image:", uploadError);
                           }
                         }
 
@@ -454,42 +296,22 @@ function AppContent() {
                         handleNavigate("admin-jobs");
                       } catch (e: any) {
                         console.error("Error creating job:", e);
-                        const errorMsg =
-                          e?.error || e?.message || "Unknown error";
+                        const errorMsg = e?.error || e?.message || "Unknown error";
                         toast.error(`Error creating job: ${errorMsg}`);
                       }
                     }}
                   />
                 }
               />
-              <Route
-                path="/profile"
-                element={<ProfilePage onNavigate={handleNavigate} />}
-              />
-              <Route
-                path="/admin-users"
-                element={<AdminUsersPage onNavigate={handleNavigate} />}
-              />
-              <Route
-                path="/admin-employer-verification"
-                element={
-                  <EmployerVerificationPage onNavigate={handleNavigate} />
-                }
-              />
-              <Route
-                path="/employer-management/:employerId"
-                element={
-                  <EmployerManagementPageWrapper onNavigate={handleNavigate} />
-                }
-              />
+              <Route path="/profile" element={<ProfilePage onNavigate={handleNavigate} />} />
+              <Route path="/admin-users" element={<AdminUsersPage onNavigate={handleNavigate} />} />
+              <Route path="/admin-employer-verification" element={<EmployerVerificationPage onNavigate={handleNavigate} />} />
+              <Route path="/employer-management/:employerId" element={<EmployerManagementPageWrapper onNavigate={handleNavigate} />} />
               <Route
                 path="/admin-applications"
                 element={
                   isAuthenticated && user && user.role === "admin" ? (
-                    <AdminApplications
-                      onNavigate={handleNavigate}
-                      userRole="admin"
-                    />
+                    <AdminApplications onNavigate={handleNavigate} userRole="admin" />
                   ) : (
                     <AuthPage mode="login" onNavigate={handleNavigate} />
                   )
@@ -498,24 +320,14 @@ function AppContent() {
               <Route
                 path="/employer-manage-applications"
                 element={
-                  isAuthenticated &&
-                  user &&
-                  (user.role === "employer" || user.role === "admin") ? (
-                    <AdminApplications
-                      onNavigate={handleNavigate}
-                      userRole="employer"
-                    />
+                  isAuthenticated && user && (user.role === "employer" || user.role === "admin") ? (
+                    <AdminApplications onNavigate={handleNavigate} userRole="employer" />
                   ) : (
                     <AuthPage mode="login" onNavigate={handleNavigate} />
                   )
                 }
               />
-              <Route
-                path="/analytics"
-                element={
-                  <AnalyticsDashboard userRole={user.role} userId={user.id} />
-                }
-              />
+              <Route path="/analytics" element={<AnalyticsDashboard userRole={user.role} userId={user.id} />} />
             </>
           )}
         </Routes>

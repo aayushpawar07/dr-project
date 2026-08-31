@@ -1,47 +1,89 @@
 // AI assisted development
-import { Briefcase, BookmarkIcon, Bell, User, FileText, TrendingUp, ArrowLeft, Trash2, Heart, Search, Filter, Download, Building2 } from 'lucide-react';
-import { Card } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Progress } from './ui/progress';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { useAuth } from '../contexts/AuthContext';
-import { useState, useEffect, useCallback } from 'react';
+import {
+  ArrowLeft,
+  Bell,
+  Bookmark,
+  Briefcase,
+  Building2,
+  Calendar,
+  ChevronRight,
+  Heart,
+  LayoutDashboard,
+  LogOut,
+  MapPin,
+  Menu,
+  Search,
+  Star,
+  User,
+  X,
+} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { fetchApplications, ApplicationResponse } from '../api/applications';
-import { fetchJobs, fetchJob } from '../api/jobs';
-import { getSavedJobs, unsaveJob } from '../api/savedJobs';
+import { fetchJobs } from '../api/jobs';
+import { getSavedJobs, saveJob, unsaveJob } from '../api/savedJobs';
 import { fetchNotifications } from '../api/notifications';
-import { openFileInViewer } from '../utils/fileUtils';
 
 interface CandidateDashboardProps {
   onNavigate: (page: string, jobId?: string) => void;
 }
 
+type CandidateSection = 'overview' | 'saved' | 'applications' | 'recommended' | 'notifications';
+type ApplicationStatusFilter = 'all' | ApplicationResponse['status'];
+
+function formatDate(value?: string) {
+  if (!value) return 'N/A';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'N/A';
+  return date.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function getInitials(value?: string) {
+  const parts = (value || 'User').trim().split(/\s+/).filter(Boolean);
+  return parts.slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('') || 'U';
+}
+
+function normalizeStatus(status?: string) {
+  if (!status) return 'Applied';
+  if (status === 'applied' || status === 'pending') return 'Under Review';
+  if (status === 'hired' || status === 'selected') return 'Selected';
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function getStatusClass(status?: string) {
+  switch (status) {
+    case 'shortlisted':
+      return 'candidate-status candidate-status--shortlisted';
+    case 'interview':
+      return 'candidate-status candidate-status--interview';
+    case 'selected':
+    case 'hired':
+      return 'candidate-status candidate-status--selected';
+    case 'rejected':
+      return 'candidate-status candidate-status--rejected';
+    default:
+      return 'candidate-status candidate-status--review';
+  }
+}
+
 export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
   const { user, logout, token } = useAuth();
   const location = useLocation();
+
   const [savedJobs, setSavedJobs] = useState<any[]>([]);
   const [applications, setApplications] = useState<ApplicationResponse[]>([]);
-  const [filteredApplications, setFilteredApplications] = useState<ApplicationResponse[]>([]);
   const [recommendedJobs, setRecommendedJobs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState<any[]>([]);
-  const profileCompleteness = 75;
-  
-  // Filter states
+  const [loading, setLoading] = useState(true);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<CandidateSection>('overview');
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [postedByFilter, setPostedByFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<string>('appliedDate,desc');
-
-  const handleLogout = () => {
-    logout();
-    onNavigate('logout');
-  };
+  const [statusFilter, setStatusFilter] = useState<ApplicationStatusFilter>('all');
 
   const loadDashboardData = useCallback(async () => {
     if (!user || !token) {
@@ -50,548 +92,509 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
     }
 
     setLoading(true);
-    try {
-      console.log('📥 Loading dashboard data for user:', user.id);
-      // Fetch user's applications - handle errors gracefully
-      let fetchedApplications: ApplicationResponse[] = [];
-      try {
-        console.log('📋 Fetching applications for candidate:', user.id);
-        const applicationsData = await fetchApplications({ candidateId: user.id }, token);
-        fetchedApplications = applicationsData?.content || [];
-        console.log('✅ Applications fetched:', fetchedApplications.length, 'applications found');
-      } catch (error: any) {
-        console.error('❌ Error fetching applications:', error);
-        // If 500 error or any error, just set empty array
-        fetchedApplications = [];
-      }
-      
-      setApplications(fetchedApplications);
 
-      // Fetch saved jobs from backend
-      try {
-        console.log('📥 Fetching saved jobs for user:', user.id);
-        const savedJobsData = await getSavedJobs(token, 0, 100);
-        console.log('✅ Saved jobs response:', savedJobsData);
-        console.log('📋 Saved jobs content:', savedJobsData?.content);
-        
-        if (savedJobsData && Array.isArray(savedJobsData.content)) {
-          console.log(`✅ Found ${savedJobsData.content.length} saved jobs`);
-          setSavedJobs(savedJobsData.content);
-        } else {
-          console.log('⚠️ No saved jobs found or invalid response format');
-          setSavedJobs([]);
-        }
-      } catch (error: any) {
-        console.error('❌ Error fetching saved jobs:', error);
-        console.error('Error details:', {
-          message: error.message,
-          stack: error.stack
-        });
-        setSavedJobs([]);
-      }
-      
-      // Fetch recommended jobs (featured or recent jobs)
-      try {
-        const recommendedData = await fetchJobs({ featured: true, size: 3 });
-        setRecommendedJobs(Array.isArray(recommendedData?.content) ? recommendedData.content : []);
-      } catch (error) {
-        console.error('Error fetching recommended jobs:', error);
-        setRecommendedJobs([]);
-      }
-
-      // Fetch notifications from backend
-      try {
-        const notificationsData = await fetchNotifications({ page: 0, size: 10 }, token);
-        setNotifications(notificationsData.content || []);
-      } catch (error) {
-        console.error('Error fetching notifications:', error);
-        setNotifications([]);
-      }
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-      // Set empty arrays on error
-      setApplications([]);
-      setSavedJobs([]);
-      setRecommendedJobs([]);
-      setNotifications([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [user, token]);
-
-  // Filter and sort applications
-  useEffect(() => {
-    let filtered = [...applications];
-
-    // Apply search filter
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(app => 
-        app.jobTitle.toLowerCase().includes(searchLower) ||
-        app.jobOrganization.toLowerCase().includes(searchLower) ||
-        (app.postedBy?.name && app.postedBy.name.toLowerCase().includes(searchLower)) ||
-        (app.postedBy?.company && app.postedBy.company.toLowerCase().includes(searchLower))
-      );
-    }
-
-    // Apply status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(app => app.status === statusFilter);
-    }
-
-    // Apply postedBy filter
-    if (postedByFilter !== 'all') {
-      filtered = filtered.filter(app => {
-        if (!app.postedBy) return false;
-        if (postedByFilter === 'name') return app.postedBy.name && app.postedBy.name !== 'N/A';
-        if (postedByFilter === 'company') return app.postedBy.company && app.postedBy.company !== 'N/A';
-        return true;
+    const applicationPromise = fetchApplications(
+      { candidateId: user.id, page: 0, size: 100, sort: 'appliedDate,desc' },
+      token,
+    )
+      .then((data) => (Array.isArray(data?.content) ? data.content : Array.isArray(data) ? data : []))
+      .catch((error) => {
+        console.error('Failed to fetch candidate applications:', error);
+        return [] as ApplicationResponse[];
       });
-    }
 
-    // Apply sorting
-    filtered.sort((a, b) => {
-      const [sortField, sortDir] = sortBy.split(',');
-      const dir = sortDir === 'asc' ? 1 : -1;
-      
-      switch (sortField) {
-        case 'appliedDate':
-          return dir * (new Date(a.appliedDate).getTime() - new Date(b.appliedDate).getTime());
-        case 'jobTitle':
-          return dir * a.jobTitle.localeCompare(b.jobTitle);
-        case 'status':
-          return dir * a.status.localeCompare(b.status);
-        case 'postedBy':
-          const aName = a.postedBy?.name || '';
-          const bName = b.postedBy?.name || '';
-          return dir * aName.localeCompare(bName);
-        default:
-          return 0;
-      }
-    });
+    const savedPromise = getSavedJobs(token, 0, 100)
+      .then((data) => (Array.isArray(data?.content) ? data.content : []))
+      .catch((error) => {
+        console.error('Failed to fetch saved jobs:', error);
+        return [] as any[];
+      });
 
-    setFilteredApplications(filtered);
-  }, [applications, searchTerm, statusFilter, postedByFilter, sortBy]);
+    const featuredPromise = fetchJobs({
+      featured: true,
+      status: 'active',
+      openOnly: true,
+      page: 0,
+      size: 8,
+      sort: 'createdAt,desc',
+    })
+      .then((data) => (Array.isArray(data?.content) ? data.content : []))
+      .catch((error) => {
+        console.error('Failed to fetch featured jobs:', error);
+        return [] as any[];
+      });
+
+    const notificationPromise = fetchNotifications({ page: 0, size: 12 }, token)
+      .then((data) => (Array.isArray(data?.content) ? data.content : []))
+      .catch((error) => {
+        console.error('Failed to fetch notifications:', error);
+        return [] as any[];
+      });
+
+    const [fetchedApplications, fetchedSavedJobs, fetchedFeaturedJobs, fetchedNotifications] = await Promise.all([
+      applicationPromise,
+      savedPromise,
+      featuredPromise,
+      notificationPromise,
+    ]);
+
+    setApplications(fetchedApplications);
+    setSavedJobs(fetchedSavedJobs);
+    setRecommendedJobs(fetchedFeaturedJobs);
+    setNotifications(fetchedNotifications);
+    setLoading(false);
+  }, [token, user]);
 
   useEffect(() => {
-    console.log('🔄 Dashboard useEffect triggered - pathname:', location.pathname, 'user:', user?.id);
     loadDashboardData();
-  }, [user, token, location.pathname, loadDashboardData]); // Reload when location changes (e.g., after applying to a job)
-  
-  // Also reload when component mounts or becomes visible
+  }, [loadDashboardData, location.pathname]);
+
   useEffect(() => {
-    const handleFocus = () => {
-      console.log('🔄 Window focused, reloading dashboard data...');
-      loadDashboardData();
-    };
+    const handleFocus = () => loadDashboardData();
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
   }, [loadDashboardData]);
 
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileNavOpen]);
+
+  const filteredApplications = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return applications.filter((application) => {
+      const matchesSearch =
+        !term ||
+        application.jobTitle?.toLowerCase().includes(term) ||
+        application.jobOrganization?.toLowerCase().includes(term) ||
+        application.postedBy?.name?.toLowerCase().includes(term) ||
+        application.postedBy?.company?.toLowerCase().includes(term);
+      const matchesStatus = statusFilter === 'all' || application.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [applications, searchTerm, statusFilter]);
+
+  const interviewCount = applications.filter((application) => application.status === 'interview' || application.interviewDate).length;
+  const shortlistedCount = applications.filter((application) => application.status === 'shortlisted').length;
+  const selectedCount = applications.filter((application) => application.status === 'selected' || application.status === 'hired').length;
+  const unreadNotifications = notifications.filter((notification: any) => !notification.read).length;
+
+  const handleLogout = () => {
+    logout();
+    onNavigate('logout');
+  };
+
+  const openSection = (section: CandidateSection) => {
+    setActiveSection(section);
+    setMobileNavOpen(false);
+  };
+
   const handleRemoveSavedJob = async (jobId: string) => {
-    if (!token) {
-      alert('Please login to remove saved jobs');
+    if (!token) return;
+    try {
+      await unsaveJob(jobId, token);
+      setSavedJobs((previous) => previous.filter((job) => job.id !== jobId));
+    } catch (error) {
+      console.error('Failed to remove saved job:', error);
+    }
+  };
+
+  const handleSaveJob = async (job: any) => {
+    if (!token || !job?.id) return;
+    if (savedJobs.some((saved) => saved.id === job.id)) {
+      openSection('saved');
       return;
     }
 
     try {
-      await unsaveJob(jobId, token);
-      setSavedJobs(prev => prev.filter(job => job.id !== jobId));
-      alert('Job removed from saved jobs');
-    } catch (error: any) {
-      console.error('Error removing saved job:', error);
-      alert(error.message || 'Failed to remove saved job. Please try again.');
+      await saveJob(job.id, token);
+      const refreshed = await getSavedJobs(token, 0, 100);
+      setSavedJobs(Array.isArray(refreshed?.content) ? refreshed.content : []);
+    } catch (error) {
+      console.error('Failed to save job:', error);
     }
   };
 
-  const handleSaveForLater = (job: any) => {
-    setSavedJobs(prev => [...prev, job]);
-  };
+  const stats = [
+    { label: 'Saved Jobs', value: savedJobs.length, icon: Bookmark, tone: 'blue', action: () => openSection('saved') },
+    { label: 'Applications', value: applications.length, icon: Briefcase, tone: 'navy', action: () => openSection('applications') },
+    { label: 'Interviews', value: interviewCount, icon: Calendar, tone: 'purple', action: () => openSection('applications') },
+    { label: 'Shortlisted', value: shortlistedCount, icon: Star, tone: 'green', action: () => openSection('applications') },
+    { label: 'Selected', value: selectedCount, icon: User, tone: 'sky', action: () => openSection('applications') },
+    { label: 'Unread Alerts', value: unreadNotifications, icon: Bell, tone: 'amber', action: () => openSection('notifications') },
+  ];
 
-  const handleTrackStatus = (jobId: string) => {
-    // In a real app, this would open a modal or navigate to a tracking page
-    alert(`Tracking status for job ${jobId}`);
-  };
+  const renderJobCard = (job: any, mode: 'recommended' | 'saved' = 'recommended') => {
+    const isSaved = savedJobs.some((saved) => saved.id === job.id);
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onNavigate('home')}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Go Back
-            </Button>
+    return (
+      <article className="candidate-job-card" key={job.id}>
+        <div className="candidate-job-card__head">
+          <div>
+            <div className="candidate-job-card__org">
+              <Building2 size={16} />
+              <span>{job.organization || 'Organisation not specified'}</span>
+              {job.sector && <small>{job.sector}</small>}
+            </div>
+            <h3 onClick={() => onNavigate('job-detail', job.id)}>{job.title || 'Untitled Job'}</h3>
           </div>
-          <h1 className="text-3xl text-gray-900 mb-2">Welcome, {user?.name || 'User'}</h1>
-          <p className="text-gray-600">Manage your job applications and profile</p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Applied Jobs</p>
-                <p className="text-3xl text-gray-900">{applications.length}</p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <Briefcase className="w-6 h-6 text-blue-600" />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Saved Jobs</p>
-                <p className="text-3xl text-gray-900">{savedJobs.length}</p>
-              </div>
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                <BookmarkIcon className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Interviews</p>
-                <p className="text-3xl text-gray-900">{applications.filter(app => app.status === 'interview' || app.interviewDate).length}</p>
-              </div>
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-purple-600" />
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Profile Views</p>
-                <p className="text-3xl text-gray-900">0</p>
-              </div>
-              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                <User className="w-6 h-6 text-orange-600" />
-              </div>
-            </div>
-          </Card>
+        <div className="candidate-job-card__meta">
+          {job.location && <span><MapPin size={14} />{job.location}</span>}
+          {job.salary && <span>{job.salary}</span>}
+          {job.lastDate && <span>Last date {formatDate(job.lastDate)}</span>}
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          {/* Main Content */}
-          <div className="md:col-span-2 space-y-6">
-            <Tabs defaultValue="applied" className="w-full">
-              <TabsList className="w-full grid grid-cols-3">
-                <TabsTrigger value="applied">Applied Jobs</TabsTrigger>
-                <TabsTrigger value="saved">Saved Jobs</TabsTrigger>
-                <TabsTrigger value="recommended">Recommended</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="applied" className="space-y-4 mt-6">
-                {/* Filters and Search */}
-                <Card className="p-4">
-                  <div className="grid md:grid-cols-4 gap-4">
-                    <div className="md:col-span-2">
-                      <Label htmlFor="search">Search</Label>
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <Input
-                          id="search"
-                          placeholder="Search by job title, company, or posted by..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="pl-10"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="status">Status</Label>
-                      <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="All Statuses" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Statuses</SelectItem>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="shortlisted">Shortlisted</SelectItem>
-                          <SelectItem value="interview">Interview</SelectItem>
-                          <SelectItem value="hired">Hired</SelectItem>
-                          <SelectItem value="rejected">Rejected</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="sort">Sort By</Label>
-                      <Select value={sortBy} onValueChange={setSortBy}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="appliedDate,desc">Newest First</SelectItem>
-                          <SelectItem value="appliedDate,asc">Oldest First</SelectItem>
-                          <SelectItem value="jobTitle,asc">Job Title (A-Z)</SelectItem>
-                          <SelectItem value="jobTitle,desc">Job Title (Z-A)</SelectItem>
-                          <SelectItem value="status,asc">Status</SelectItem>
-                          <SelectItem value="postedBy,asc">Posted By (A-Z)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </Card>
-
-                {loading ? (
-                  <div className="text-center py-8 text-gray-500">Loading applications...</div>
-                ) : filteredApplications.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-600">
-                      {applications.length === 0 
-                        ? "You haven't applied for any jobs yet."
-                        : "No applications match your filters."}
-                    </p>
-                    {applications.length === 0 && (
-                      <Button className="mt-4" onClick={() => onNavigate('jobs')}>
-                        Browse Jobs
-                      </Button>
-                    )}
-                  </div>
-                ) : (
-                  filteredApplications.map((app) => (
-                  <Card key={app.id} className="p-6">
-                    <div className="space-y-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2 flex-wrap">
-                            <Badge 
-                              className={
-                                app.status === 'shortlisted' ? 'bg-green-100 text-green-700 border-green-200' :
-                                app.status === 'interview' ? 'bg-purple-100 text-purple-700 border-purple-200' :
-                                app.status === 'hired' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-                                app.status === 'rejected' ? 'bg-red-100 text-red-700 border-red-200' :
-                                'bg-gray-100 text-gray-700 border-gray-200'
-                              }
-                              variant="outline"
-                            >
-                              {app.status === 'pending' ? 'Under Review' :
-                               app.status === 'shortlisted' ? 'Shortlisted' :
-                               app.status === 'interview' ? 'Interview Scheduled' :
-                               app.status === 'hired' ? 'Hired' :
-                               app.status === 'rejected' ? 'Rejected' : app.status}
-                            </Badge>
-                          </div>
-                          <h3 
-                            className="text-lg font-semibold text-gray-900 mb-1 cursor-pointer hover:text-blue-600"
-                            onClick={() => onNavigate('job-detail', app.jobId)}
-                          >
-                            {app.jobTitle}
-                          </h3>
-                          <p className="text-sm text-gray-600 mb-2">{app.jobOrganization}</p>
-                          
-                          {/* Posted By Information */}
-                          {app.postedBy && (
-                            <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
-                              <Building2 className="w-4 h-4" />
-                              <span className="font-medium">Posted by:</span>
-                              <span>{app.postedBy.name !== 'N/A' ? app.postedBy.name : 'Unknown'}</span>
-                              {app.postedBy.company && app.postedBy.company !== 'N/A' && (
-                                <span className="text-gray-500">• {app.postedBy.company}</span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="text-sm text-gray-600 space-y-1">
-                        <p>Applied on: {new Date(app.appliedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                        {app.interviewDate && (
-                          <p className="text-purple-600">
-                            Interview scheduled: {new Date(app.interviewDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="flex gap-2 flex-wrap">
-                        <Button variant="outline" size="sm" onClick={() => onNavigate('job-detail', app.jobId)}>
-                          View Job
-                        </Button>
-                        {app.resumeUrl && (
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => openFileInViewer(app.resumeUrl!)}
-                          >
-                            <Download className="w-4 h-4 mr-1" />
-                            View Resume
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </Card>
-                  ))
-                )}
-              </TabsContent>
-
-              <TabsContent value="saved" className="space-y-4 mt-6">
-                {loading ? (
-                  <div className="text-center py-8 text-gray-500">Loading saved jobs...</div>
-                ) : savedJobs.length === 0 ? (
-                  <div className="text-center py-8">
-                    <BookmarkIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-600">You haven't saved any jobs yet.</p>
-                    <Button className="mt-4" onClick={() => onNavigate('jobs')}>
-                      Browse Jobs
-                    </Button>
-                  </div>
-                ) : (
-                  savedJobs.map((job) => {
-                    console.log('📋 Rendering saved job:', job);
-                    return (
-                      <Card key={job.id || `job-${Math.random()}`} className="p-6">
-                        <div className="space-y-4">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <Badge 
-                                className={job.sector === 'government' 
-                                  ? 'bg-blue-100 text-blue-700 border-blue-200' 
-                                  : 'bg-green-100 text-green-700 border-green-200'}
-                                variant="outline"
-                              >
-                                {job.sector === 'government' ? 'Government' : 'Private'}
-                              </Badge>
-                              <h3 
-                                className="text-lg text-gray-900 mt-2 mb-1 cursor-pointer hover:text-blue-600"
-                                onClick={() => onNavigate('job-detail', job.id)}
-                              >
-                                {job.title || 'Untitled Job'}
-                              </h3>
-                              <p className="text-sm text-gray-600">
-                                {job.organization || 'Organization not specified'} • {job.location || 'Location not specified'}
-                              </p>
-                              {job.savedAt && (
-                                <p className="text-xs text-gray-500 mt-1">
-                                  Saved on: {new Date(job.savedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button size="sm" onClick={() => onNavigate('job-detail', job.id)}>
-                              Apply Now
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => handleRemoveSavedJob(job.id)}>
-                              <Trash2 className="w-4 h-4 mr-1" />
-                              Remove
-                            </Button>
-                          </div>
-                        </div>
-                      </Card>
-                    );
-                  })
-                )}
-              </TabsContent>
-
-              <TabsContent value="recommended" className="space-y-4 mt-6">
-                <p className="text-gray-600">Based on your profile and preferences, here are jobs we recommend:</p>
-                {loading ? (
-                  <div className="text-center py-8 text-gray-500">Loading recommended jobs...</div>
-                ) : recommendedJobs.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-gray-600">No recommended jobs at the moment.</p>
-                    <Button className="mt-4" onClick={() => onNavigate('jobs')}>
-                      Browse All Jobs
-                    </Button>
-                  </div>
-                ) : (
-                  recommendedJobs.map((job) => (
-                  <Card key={job.id} className="p-6">
-                    <div className="space-y-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <Badge 
-                            className={job.sector === 'government' 
-                              ? 'bg-blue-100 text-blue-700 border-blue-200' 
-                              : 'bg-green-100 text-green-700 border-green-200'}
-                            variant="outline"
-                          >
-                            {job.sector === 'government' ? 'Government' : 'Private'}
-                          </Badge>
-                          <h3 
-                            className="text-lg text-gray-900 mt-2 mb-1 cursor-pointer hover:text-blue-600"
-                            onClick={() => onNavigate('job-detail', job.id)}
-                          >
-                            {job.title}
-                          </h3>
-                          <p className="text-sm text-gray-600">{job.organization} • {job.location}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button size="sm" onClick={() => onNavigate('job-detail', job.id)}>
-                          View Details
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => handleSaveForLater(job)}>
-                          <Heart className="w-4 h-4 mr-1" />
-                          Save for Later
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                  ))
-                )}
-              </TabsContent>
-            </Tabs>
+        <div className="candidate-job-card__footer">
+          <div className="candidate-job-card__signals">
+            {job.featured && <span className="featured-signal"><Star size={14} />Featured</span>}
           </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Profile Completeness */}
-            <Card className="p-6">
-              <h3 className="text-lg text-gray-900 mb-4">Profile Completeness</h3>
-              <div className="space-y-3">
-                <Progress value={profileCompleteness} className="h-2" />
-                <p className="text-sm text-gray-600">{profileCompleteness}% complete</p>
-                <Button variant="outline" className="w-full" onClick={() => onNavigate('profile')}>
-                  <User className="w-4 h-4 mr-2" />
-                  Complete Profile
-                </Button>
-              </div>
-            </Card>
-
-            {/* Notifications */}
-            <Card className="p-6">
-              <h3 className="text-lg text-gray-900 mb-4">Recent Notifications</h3>
-              <div className="space-y-3">
-                {notifications.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-4">No notifications yet</p>
-                ) : (
-                  notifications.slice(0, 3).map((notification) => (
-                    <div key={notification.id} className="pb-3 border-b last:border-b-0">
-                      <p className="text-sm text-gray-900 mb-1">{notification.message}</p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(notification.createdAt).toLocaleDateString('en-IN')}
-                      </p>
-                    </div>
-                  ))
-                )}
-              </div>
-              <Button 
-                variant="link" 
-                className="w-full mt-2 text-blue-600"
-                onClick={() => onNavigate('notifications')}
-              >
-                View All Notifications
-              </Button>
-            </Card>
+          <div className="candidate-job-card__actions">
+            {mode === 'saved' ? (
+              <button type="button" className="text-action text-action--danger" onClick={() => handleRemoveSavedJob(job.id)}>
+                <Heart size={15} fill="currentColor" /> Remove
+              </button>
+            ) : (
+              <button type="button" className="text-action" onClick={() => handleSaveJob(job)}>
+                <Heart size={15} fill={isSaved ? 'currentColor' : 'none'} /> {isSaved ? 'Saved' : 'Save'}
+              </button>
+            )}
+            <button type="button" className="candidate-primary-button candidate-primary-button--small" onClick={() => onNavigate('job-detail', job.id)}>
+              View Job
+            </button>
           </div>
+        </div>
+      </article>
+    );
+  };
+
+  const navGroups = [
+    {
+      label: 'Main',
+      items: [
+        { label: 'Dashboard', icon: LayoutDashboard, active: activeSection === 'overview', action: () => openSection('overview') },
+        { label: 'Find Jobs', icon: Search, action: () => { setMobileNavOpen(false); onNavigate('jobs'); } },
+        { label: 'Saved Jobs', icon: Bookmark, badge: savedJobs.length, active: activeSection === 'saved', action: () => openSection('saved') },
+        { label: 'My Applications', icon: Briefcase, badge: applications.length, active: activeSection === 'applications', action: () => openSection('applications') },
+      ],
+    },
+    {
+      label: 'Jobs',
+      items: [
+        { label: 'Recommended', icon: Star, badge: recommendedJobs.length, active: activeSection === 'recommended', action: () => openSection('recommended') },
+      ],
+    },
+    {
+      label: 'Account',
+      items: [
+        { label: 'My Profile', icon: User, action: () => { setMobileNavOpen(false); onNavigate('profile'); } },
+        { label: 'Notifications', icon: Bell, badge: unreadNotifications, active: activeSection === 'notifications', action: () => openSection('notifications') },
+      ],
+    },
+  ];
+
+  const sidebarContent = (
+    <>
+      <div className="candidate-sidebar__brand">
+        <div className="candidate-sidebar__brand-mark">M</div>
+        <div>
+          <strong>MedExJob</strong>
+          <span>Healthcare careers</span>
         </div>
       </div>
+
+      <div className="candidate-sidebar__scroll">
+        {navGroups.map((group) => (
+          <div className="candidate-sidebar__group" key={group.label}>
+            <p>{group.label}</p>
+            <nav>
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    type="button"
+                    key={item.label}
+                    onClick={item.action}
+                    className={item.active ? 'is-active' : ''}
+                  >
+                    <span><Icon size={18} />{item.label}</span>
+                    {typeof item.badge === 'number' && item.badge > 0 && <em>{item.badge > 99 ? '99+' : item.badge}</em>}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        ))}
+      </div>
+
+      <div className="candidate-sidebar__user">
+        <div className="candidate-user-avatar">{getInitials(user?.name)}</div>
+        <div>
+          <strong>{user?.name || 'Candidate'}</strong>
+          <span>{user?.email || 'Candidate account'}</span>
+        </div>
+        <button type="button" onClick={handleLogout} aria-label="Logout" title="Logout"><LogOut size={17} /></button>
+      </div>
+    </>
+  );
+
+  if (loading) {
+    return (
+      <div className="candidate-dashboard-state">
+        <div className="candidate-dashboard-loader" />
+        <h2>Loading your dashboard</h2>
+        <p>Fetching your applications, saved jobs and notifications.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="candidate-dashboard">
+      <div className="candidate-mobile-bar">
+        <button type="button" onClick={() => setMobileNavOpen(true)} aria-label="Open dashboard menu"><Menu size={21} /></button>
+        <strong>Candidate Dashboard</strong>
+        <button type="button" onClick={() => openSection('notifications')} className="candidate-mobile-notification" aria-label="Notifications">
+          <Bell size={20} />
+          {unreadNotifications > 0 && <span>{unreadNotifications > 9 ? '9+' : unreadNotifications}</span>}
+        </button>
+      </div>
+
+      {mobileNavOpen && (
+        <div className="candidate-mobile-nav" role="dialog" aria-modal="true" aria-label="Candidate navigation">
+          <button className="candidate-mobile-nav__backdrop" onClick={() => setMobileNavOpen(false)} aria-label="Close menu" />
+          <aside className="candidate-mobile-nav__panel">
+            <div className="candidate-mobile-nav__close">
+              <strong>Menu</strong>
+              <button type="button" onClick={() => setMobileNavOpen(false)} aria-label="Close menu"><X size={21} /></button>
+            </div>
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+
+      <div className="candidate-dashboard__shell">
+        <aside className="candidate-sidebar">{sidebarContent}</aside>
+
+        <main className="candidate-main">
+          <div className="candidate-page-header">
+            <div>
+              <button type="button" className="candidate-back-link" onClick={() => onNavigate('home')}>
+                <ArrowLeft size={16} /> Back
+              </button>
+              <h1>Dashboard</h1>
+              <p>Welcome back, {user?.name || 'Candidate'}.</p>
+            </div>
+            <div className="candidate-page-header__actions">
+              <button type="button" className="candidate-icon-button" onClick={() => openSection('notifications')} aria-label="Notifications">
+                <Bell size={20} />
+                {unreadNotifications > 0 && <span>{unreadNotifications > 9 ? '9+' : unreadNotifications}</span>}
+              </button>
+              <button type="button" className="candidate-outline-button" onClick={handleLogout}><LogOut size={16} />Logout</button>
+            </div>
+          </div>
+
+          {activeSection === 'overview' && (
+            <>
+              <section className="candidate-greeting-card">
+                <div>
+                  <span className="candidate-eyebrow">MedExJob Dashboard</span>
+                  <h2>Manage your job search from one place.</h2>
+                  <p>Your dashboard uses your current applications, saved jobs, featured jobs and notifications.</p>
+                </div>
+                <button type="button" className="candidate-primary-button" onClick={() => onNavigate('jobs')}>
+                  <Search size={17} /> Find Jobs
+                </button>
+              </section>
+
+              <section className="candidate-stats-grid" aria-label="Candidate statistics">
+                {stats.map((stat) => {
+                  const Icon = stat.icon;
+                  return (
+                    <button type="button" className={`candidate-stat-card candidate-stat-card--${stat.tone}`} key={stat.label} onClick={stat.action}>
+                      <span className="candidate-stat-card__icon"><Icon size={22} /></span>
+                      <strong>{stat.value}</strong>
+                      <span>{stat.label}</span>
+                    </button>
+                  );
+                })}
+              </section>
+
+              <section className="candidate-dashboard-section">
+                <div className="candidate-section-heading">
+                  <div><Star size={20} /><h2>Recommended Jobs</h2></div>
+                  <button type="button" onClick={() => openSection('recommended')}>See All <ChevronRight size={15} /></button>
+                </div>
+                {recommendedJobs.length === 0 ? (
+                  <div className="candidate-empty"><Star size={28} /><h3>No recommended jobs available</h3><p>Featured jobs from the portal will appear here when available.</p></div>
+                ) : (
+                  <div className="candidate-job-scroll">{recommendedJobs.slice(0, 5).map((job) => renderJobCard(job, 'recommended'))}</div>
+                )}
+              </section>
+
+              <section className="candidate-dashboard-section">
+                <div className="candidate-section-heading">
+                  <div><Briefcase size={20} /><h2>Recent Applications</h2></div>
+                  <button type="button" onClick={() => openSection('applications')}>View All</button>
+                </div>
+                {applications.length === 0 ? (
+                  <div className="candidate-empty candidate-empty--compact"><Briefcase size={26} /><h3>No applications yet</h3><p>Applications submitted from MedExJob will appear here.</p></div>
+                ) : (
+                  <div className="candidate-application-list candidate-application-list--preview">
+                    {applications.slice(0, 4).map((application) => (
+                      <article key={application.id}>
+                        <div className="candidate-application-list__head">
+                          <div>
+                            <span className={getStatusClass(application.status)}>{normalizeStatus(application.status)}</span>
+                            <h3 onClick={() => onNavigate('job-detail', application.jobId)}>{application.jobTitle}</h3>
+                            <p>{application.jobOrganization}</p>
+                          </div>
+                          <small>Applied {formatDate(application.appliedDate)}</small>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section className="candidate-dashboard-section">
+                <div className="candidate-section-heading">
+                  <div><Bell size={20} /><h2>Recent Notifications</h2></div>
+                  <button type="button" onClick={() => openSection('notifications')}>View All</button>
+                </div>
+                {notifications.length === 0 ? (
+                  <div className="candidate-empty candidate-empty--compact"><Bell size={26} /><h3>No notifications yet</h3></div>
+                ) : (
+                  <div className="candidate-notification-list">
+                    {notifications.slice(0, 4).map((notification: any) => (
+                      <article key={notification.id} className={notification.read ? '' : 'is-unread'}>
+                        <span><Bell size={16} /></span>
+                        <div><p>{notification.message}</p><small>{formatDate(notification.createdAt)}</small></div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </>
+          )}
+
+          {activeSection === 'saved' && (
+            <section className="candidate-content-panel">
+              <div className="candidate-content-panel__header">
+                <div><Bookmark size={21} /><div><h2>Saved Jobs</h2><p>{savedJobs.length} saved job{savedJobs.length === 1 ? '' : 's'}</p></div></div>
+                <button type="button" className="candidate-primary-button candidate-primary-button--small" onClick={() => onNavigate('jobs')}><Search size={16} />Find Jobs</button>
+              </div>
+              {savedJobs.length === 0 ? (
+                <div className="candidate-empty"><Bookmark size={30} /><h3>No saved jobs yet</h3><p>Save jobs while browsing and they will appear here.</p></div>
+              ) : (
+                <div className="candidate-grid-list">{savedJobs.map((job) => renderJobCard(job, 'saved'))}</div>
+              )}
+            </section>
+          )}
+
+          {activeSection === 'recommended' && (
+            <section className="candidate-content-panel">
+              <div className="candidate-content-panel__header">
+                <div><Star size={21} /><div><h2>Recommended Jobs</h2><p>Current featured jobs available on MedExJob.</p></div></div>
+                <button type="button" className="candidate-outline-button" onClick={() => onNavigate('jobs')}>Browse All Jobs</button>
+              </div>
+              {recommendedJobs.length === 0 ? (
+                <div className="candidate-empty"><Star size={30} /><h3>No recommendations available</h3></div>
+              ) : (
+                <div className="candidate-grid-list">{recommendedJobs.map((job) => renderJobCard(job, 'recommended'))}</div>
+              )}
+            </section>
+          )}
+
+          {activeSection === 'applications' && (
+            <section className="candidate-content-panel">
+              <div className="candidate-content-panel__header">
+                <div><Briefcase size={21} /><div><h2>My Applications</h2><p>Track applications submitted from your account.</p></div></div>
+              </div>
+
+              <div className="candidate-application-filters">
+                <label>
+                  <span>Search applications</span>
+                  <div><Search size={16} /><input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="Job title or organisation" /></div>
+                </label>
+                <label>
+                  <span>Status</span>
+                  <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as ApplicationStatusFilter)}>
+                    <option value="all">All statuses</option>
+                    <option value="applied">Under Review</option>
+                    <option value="shortlisted">Shortlisted</option>
+                    <option value="interview">Interview</option>
+                    <option value="selected">Selected</option>
+                    <option value="hired">Hired</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </label>
+              </div>
+
+              {filteredApplications.length === 0 ? (
+                <div className="candidate-empty"><Briefcase size={30} /><h3>{applications.length === 0 ? 'No applications yet' : 'No applications match your filters'}</h3>{applications.length === 0 && <button type="button" className="candidate-primary-button candidate-primary-button--small" onClick={() => onNavigate('jobs')}>Browse Jobs</button>}</div>
+              ) : (
+                <div className="candidate-application-list">
+                  {filteredApplications.map((application) => (
+                    <article key={application.id}>
+                      <div className="candidate-application-list__head">
+                        <div>
+                          <span className={getStatusClass(application.status)}>{normalizeStatus(application.status)}</span>
+                          <h3 onClick={() => onNavigate('job-detail', application.jobId)}>{application.jobTitle}</h3>
+                          <p>{application.jobOrganization}</p>
+                        </div>
+                        <small>Applied {formatDate(application.appliedDate)}</small>
+                      </div>
+
+                      <div className="candidate-application-list__details">
+                        {application.postedBy?.company && <span><Building2 size={14} />{application.postedBy.company}</span>}
+                        {application.interviewDate && <span><Calendar size={14} />Interview {formatDate(application.interviewDate)}</span>}
+                      </div>
+
+                      <div className="candidate-application-list__actions">
+                        <button type="button" className="candidate-primary-button candidate-primary-button--small" onClick={() => onNavigate('job-detail', application.jobId)}>View Job</button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+
+          {activeSection === 'notifications' && (
+            <section className="candidate-content-panel">
+              <div className="candidate-content-panel__header">
+                <div><Bell size={21} /><div><h2>Notifications</h2><p>Your latest account and job activity.</p></div></div>
+                <button type="button" className="candidate-outline-button" onClick={() => onNavigate('notifications')}>Open Notification Center</button>
+              </div>
+              {notifications.length === 0 ? (
+                <div className="candidate-empty"><Bell size={30} /><h3>No notifications yet</h3></div>
+              ) : (
+                <div className="candidate-notification-list candidate-notification-list--full">
+                  {notifications.map((notification: any) => (
+                    <article key={notification.id} className={notification.read ? '' : 'is-unread'}>
+                      <span><Bell size={17} /></span>
+                      <div><p>{notification.message}</p><small>{formatDate(notification.createdAt)}</small></div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+        </main>
+      </div>
+
+      <nav className="candidate-bottom-nav" aria-label="Candidate mobile navigation">
+        <button type="button" className={activeSection === 'overview' ? 'is-active' : ''} onClick={() => openSection('overview')}><LayoutDashboard size={20} /><span>Home</span></button>
+        <button type="button" onClick={() => onNavigate('jobs')}><Search size={20} /><span>Jobs</span></button>
+        <button type="button" className={activeSection === 'saved' ? 'is-active' : ''} onClick={() => openSection('saved')}><Bookmark size={20} /><span>Saved</span>{savedJobs.length > 0 && <em>{savedJobs.length > 9 ? '9+' : savedJobs.length}</em>}</button>
+        <button type="button" className={activeSection === 'applications' ? 'is-active' : ''} onClick={() => openSection('applications')}><Briefcase size={20} /><span>Apps</span>{applications.length > 0 && <em>{applications.length > 9 ? '9+' : applications.length}</em>}</button>
+        <button type="button" onClick={() => onNavigate('profile')}><User size={20} /><span>Profile</span></button>
+      </nav>
     </div>
   );
 }

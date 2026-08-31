@@ -1,0 +1,596 @@
+/* MedExJob brand alignment for candidate/employer dashboards and shared profile page. */
+
+:root {
+  --medex-navy: #2a3f6b;
+  --medex-blue: #2563eb;
+  --medex-blue-dark: #1d4ed8;
+  --medex-sky: #4299d4;
+  --medex-surface: #ffffff;
+  --medex-bg: #f6f8fc;
+  --medex-border: #dfe6f1;
+  --medex-text: #172033;
+  --medex-muted: #667085;
+  --medex-success: #16855b;
+  --medex-warning: #b7791f;
+  --medex-danger: #c2414b;
+}
+
+/* Employer dashboard: match the existing MedExJob blue/navy language. */
+.employer-dashboard {
+  --dashboard-ink: var(--medex-text);
+  --dashboard-muted: var(--medex-muted);
+  --dashboard-border: var(--medex-border);
+  --dashboard-primary: var(--medex-blue);
+  --dashboard-primary-dark: var(--medex-blue-dark);
+  background: linear-gradient(180deg, #f8faff 0%, #f4f7fc 100%);
+}
+
+.employer-sidebar__brand-mark {
+  background: linear-gradient(135deg, var(--medex-navy), var(--medex-sky));
+}
+
+.employer-nav-item:hover {
+  color: var(--medex-blue);
+  background: #f2f6ff;
+}
+
+.employer-nav-item--active {
+  color: var(--medex-blue);
+  background: #edf3ff;
+}
+
+.dashboard-primary-button {
+  border-color: var(--medex-blue);
+  background: linear-gradient(135deg, var(--medex-blue), #3178f4);
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.18);
+}
+
+.dashboard-primary-button:hover {
+  border-color: var(--medex-blue-dark);
+  background: linear-gradient(135deg, var(--medex-blue-dark), var(--medex-blue));
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.22);
+}
+
+.employer-verification-card {
+  border-color: #c9d8f5;
+  background: linear-gradient(135deg, #f7faff 0%, #ffffff 60%, #eef4ff 100%);
+  box-shadow: 0 10px 30px rgba(42, 63, 107, 0.07);
+}
+
+.employer-verification-card__status,
+.dashboard-section-switcher button.is-active,
+.job-filter-tabs button.is-active,
+.dashboard-job-card__actions button:hover {
+  color: var(--medex-blue);
+}
+
+.job-filter-tabs button.is-active {
+  border-color: #b7caf3;
+  background: #eef4ff;
+}
+
+.employer-verification-card__plan {
+  border-left-color: #d5e1f5;
+}
+
+.dashboard-metric--teal .dashboard-metric__icon,
+.dashboard-metric--blue .dashboard-metric__icon {
+  background: #eaf1ff;
+  color: var(--medex-blue);
+}
+
+.dashboard-metric--purple .dashboard-metric__icon,
+.dashboard-metric--indigo .dashboard-metric__icon {
+  background: #eef0ff;
+  color: #5b63c7;
+}
+
+.dashboard-metric--green .dashboard-metric__icon {
+  background: #eaf8f0;
+  color: var(--medex-success);
+}
+
+.dashboard-post-cta {
+  border-color: #cedcf4;
+  background: linear-gradient(90deg, #f5f8ff, #fbfcff);
+}
+
+.dashboard-post-cta__hint svg {
+  color: var(--medex-blue);
+}
+
+/* Candidate dashboard: use the same MedExJob brand palette. */
+.candidate-dashboard {
+  --candidate-primary: var(--medex-blue);
+  --candidate-primary-dark: var(--medex-blue-dark);
+  --candidate-secondary: var(--medex-navy);
+  --candidate-ink: var(--medex-text);
+  --candidate-muted: var(--medex-muted);
+  --candidate-border: var(--medex-border);
+  --candidate-soft: #f4f7fc;
+  background: linear-gradient(180deg, #f8faff 0%, #f4f7fc 100%);
+}
+
+.candidate-sidebar__brand-mark,
+.candidate-user-avatar {
+  background: linear-gradient(135deg, var(--medex-navy), var(--medex-sky));
+}
+
+.candidate-sidebar__group nav button:hover {
+  background: #f2f6ff;
+  color: var(--medex-blue);
+}
+
+.candidate-sidebar__group nav button.is-active {
+  background: #edf3ff;
+  color: var(--medex-blue);
+}
+
+.candidate-primary-button {
+  border-color: var(--medex-blue);
+  background: linear-gradient(135deg, var(--medex-blue), #3178f4);
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.18);
+}
+
+.candidate-primary-button:hover {
+  border-color: var(--medex-blue-dark);
+  background: linear-gradient(135deg, var(--medex-blue-dark), var(--medex-blue));
+}
+
+.candidate-greeting-card {
+  border-color: #cbdaf7;
+  background: linear-gradient(135deg, #ffffff 0%, #f6f9ff 52%, #edf4ff 100%);
+  box-shadow: 0 14px 34px rgba(42, 63, 107, 0.07);
+}
+
+.candidate-eyebrow,
+.candidate-section-heading > div > svg,
+.candidate-section-heading button,
+.text-action,
+.featured-signal {
+  color: var(--medex-blue);
+}
+
+.candidate-stat-card--blue .candidate-stat-card__icon,
+.candidate-stat-card--navy .candidate-stat-card__icon,
+.candidate-stat-card--sky .candidate-stat-card__icon {
+  background: #eaf1ff;
+  color: var(--medex-blue);
+}
+
+.candidate-stat-card--green .candidate-stat-card__icon {
+  background: #eaf8f0;
+  color: var(--medex-success);
+}
+
+.candidate-stat-card--purple .candidate-stat-card__icon {
+  background: #f0edff;
+  color: #6b5cc6;
+}
+
+.candidate-stat-card--amber .candidate-stat-card__icon {
+  background: #fff6e6;
+  color: var(--medex-warning);
+}
+
+.candidate-job-card:hover,
+.candidate-content-panel,
+.candidate-dashboard-section {
+  border-color: #d9e3f3;
+}
+
+.candidate-bottom-nav button.is-active {
+  color: var(--medex-blue);
+}
+
+.candidate-mobile-notification > span,
+.candidate-icon-button > span {
+  background: #e5484d;
+}
+
+/* Shared candidate + employer profile page. */
+.medex-profile-page {
+  min-height: calc(100vh - 64px);
+  background:
+    radial-gradient(circle at 15% 0%, rgba(66, 153, 212, 0.09), transparent 30%),
+    linear-gradient(180deg, #f8faff 0%, #f3f6fb 100%);
+  color: var(--medex-text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.medex-profile-shell {
+  width: min(1120px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 38px 0 56px;
+}
+
+.medex-profile-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 28px;
+  margin-bottom: 24px;
+}
+
+.medex-profile-back {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  border: 1px solid var(--medex-border);
+  border-radius: 10px;
+  background: #fff;
+  color: #536176;
+  padding: 9px 13px;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.medex-profile-back:hover {
+  border-color: #bfd0ed;
+  color: var(--medex-blue);
+  background: #f8faff;
+}
+
+.medex-profile-eyebrow {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--medex-blue);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.medex-profile-header h1 {
+  margin: 0;
+  color: var(--medex-navy);
+  font-size: clamp(30px, 3vw, 42px);
+  line-height: 1.08;
+  font-weight: 760;
+  letter-spacing: -0.035em;
+}
+
+.medex-profile-header p {
+  margin: 8px 0 0;
+  color: var(--medex-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.medex-profile-hero {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 20px;
+  border: 1px solid #d7e2f4;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8faff 62%, #eef4ff 100%);
+  padding: 24px;
+  box-shadow: 0 16px 42px rgba(42, 63, 107, 0.07);
+}
+
+.medex-profile-avatar {
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--medex-navy), var(--medex-sky));
+  color: #fff;
+  font-size: 22px;
+  font-weight: 800;
+  box-shadow: 0 10px 24px rgba(42, 63, 107, 0.18);
+}
+
+.medex-profile-hero__copy {
+  min-width: 0;
+}
+
+.medex-profile-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.medex-profile-title-row h2 {
+  margin: 0;
+  color: var(--medex-text);
+  font-size: clamp(22px, 2.2vw, 30px);
+  font-weight: 750;
+  letter-spacing: -0.025em;
+}
+
+.medex-profile-hero__copy > p {
+  margin: 6px 0 0;
+  color: var(--medex-muted);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.medex-profile-verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #bce6d1;
+  border-radius: 999px;
+  background: #ecf9f2;
+  color: var(--medex-success);
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.medex-profile-tags {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.medex-profile-tags span {
+  border: 1px solid #d9e4f4;
+  border-radius: 999px;
+  background: #fff;
+  color: #53637a;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 650;
+  text-transform: capitalize;
+}
+
+.medex-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.medex-profile-card {
+  min-width: 0;
+  border: 1px solid var(--medex-border);
+  border-radius: 16px;
+  background: #fff;
+  padding: 22px;
+  box-shadow: 0 10px 30px rgba(42, 63, 107, 0.045);
+}
+
+.medex-profile-card--wide {
+  grid-column: 1 / -1;
+}
+
+.medex-profile-card--compact {
+  grid-column: span 1;
+}
+
+.medex-profile-card__heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin-bottom: 20px;
+}
+
+.medex-profile-card__heading > svg {
+  color: var(--medex-blue);
+  margin-top: 2px;
+}
+
+.medex-profile-card__heading h3 {
+  margin: 0;
+  color: var(--medex-navy);
+  font-size: 17px;
+  font-weight: 730;
+}
+
+.medex-profile-card__heading p {
+  margin: 4px 0 0;
+  color: var(--medex-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.medex-profile-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.medex-profile-fields > div {
+  min-width: 0;
+  border: 1px solid #e7ecf4;
+  border-radius: 12px;
+  background: #fafcff;
+  padding: 14px;
+}
+
+.medex-profile-fields span,
+.medex-profile-fields strong,
+.medex-profile-fields a {
+  display: block;
+}
+
+.medex-profile-fields span {
+  margin-bottom: 5px;
+  color: #8490a2;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.medex-profile-fields strong,
+.medex-profile-fields a {
+  color: #27364e;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.medex-profile-fields a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--medex-blue);
+  text-decoration: none;
+}
+
+.medex-profile-description {
+  margin: 18px 0 0;
+  border-top: 1px solid #edf0f5;
+  padding-top: 16px;
+  color: #5d6b7e;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.medex-profile-address {
+  display: grid;
+  gap: 5px;
+  color: var(--medex-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.medex-profile-address strong {
+  color: #27364e;
+  font-size: 14px;
+}
+
+.medex-profile-status {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 3px;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 750;
+  text-transform: capitalize;
+}
+
+.medex-profile-status small {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: none;
+}
+
+.medex-profile-status--approved {
+  border: 1px solid #bce6d1;
+  background: #ecf9f2;
+  color: var(--medex-success);
+}
+
+.medex-profile-status--pending {
+  border: 1px solid #ead7a8;
+  background: #fff8e8;
+  color: var(--medex-warning);
+}
+
+.medex-profile-status--rejected {
+  border: 1px solid #efc5c8;
+  background: #fff1f2;
+  color: var(--medex-danger);
+}
+
+.medex-profile-loading {
+  border: 1px solid var(--medex-border);
+  border-radius: 14px;
+  background: #fff;
+  padding: 24px;
+  color: var(--medex-muted);
+  text-align: center;
+}
+
+.medex-profile-contact-value {
+  color: #27364e;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .medex-profile-shell {
+    width: min(100% - 28px, 1120px);
+    padding-top: 26px;
+  }
+
+  .medex-profile-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .medex-profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .medex-profile-card--wide,
+  .medex-profile-card--compact {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .medex-profile-page {
+    min-height: 100vh;
+  }
+
+  .medex-profile-shell {
+    width: 100%;
+    padding: 18px 14px 34px;
+  }
+
+  .medex-profile-header h1 {
+    font-size: 28px;
+  }
+
+  .medex-profile-back {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .medex-profile-hero {
+    align-items: flex-start;
+    border-radius: 14px;
+    padding: 18px;
+  }
+
+  .medex-profile-avatar {
+    width: 58px;
+    height: 58px;
+    border-radius: 14px;
+    font-size: 18px;
+  }
+
+  .medex-profile-title-row h2 {
+    font-size: 21px;
+  }
+
+  .medex-profile-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .medex-profile-card {
+    border-radius: 14px;
+    padding: 18px;
+  }
+}
+
+@media (max-width: 430px) {
+  .medex-profile-hero {
+    flex-direction: column;
+  }
+
+  .medex-profile-avatar {
+    width: 54px;
+    height: 54px;
+  }
+
+  .candidate-greeting-card,
+  .candidate-content-panel,
+  .candidate-dashboard-section,
+  .dashboard-panel,
+  .employer-verification-card {
+    border-radius: 12px;
+  }
+}

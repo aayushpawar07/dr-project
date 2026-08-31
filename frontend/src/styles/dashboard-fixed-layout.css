@@ -1,0 +1,152 @@
+/*
+ * Dashboard viewport behavior
+ * Keep every left navigation rail fixed/non-scrollable and make the
+ * right-hand dashboard content the only vertical scrolling region.
+ */
+
+:root {
+  --medex-dashboard-header-height: 64px;
+}
+
+/* Prevent the document/footer from becoming the dashboard scroll container. */
+body:has(.candidate-dashboard),
+body:has(.employer-dashboard),
+body:has(.admin-ui-shell) {
+  overflow: hidden;
+}
+
+/* Candidate + employer dashboards fill the viewport below the global header. */
+.candidate-dashboard,
+.employer-dashboard {
+  height: calc(100dvh - var(--medex-dashboard-header-height));
+  min-height: 0 !important;
+  overflow: hidden !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.candidate-dashboard__shell,
+.employer-dashboard__shell {
+  flex: 1 1 auto;
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* The desktop sidebars never become independent scroll containers. */
+.candidate-sidebar,
+.employer-sidebar {
+  position: relative !important;
+  top: auto !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+.candidate-sidebar__scroll,
+.employer-sidebar__scroll {
+  min-height: 0;
+  overflow: hidden !important;
+  overscroll-behavior: none;
+  scrollbar-width: none;
+}
+
+.candidate-sidebar__scroll::-webkit-scrollbar,
+.employer-sidebar__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Only the right dashboard content scrolls. */
+.candidate-main,
+.employer-main {
+  height: 100%;
+  min-height: 0 !important;
+  overflow-x: hidden;
+  overflow-y: auto !important;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+
+/* Admin dashboard uses the same fixed-left / scrolling-right layout. */
+.admin-ui-shell {
+  height: calc(100dvh - var(--medex-dashboard-header-height));
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.admin-ui-sidebar {
+  position: relative !important;
+  top: auto !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+.admin-ui-nav {
+  min-height: 0;
+  overflow: hidden !important;
+  overscroll-behavior: none;
+  scrollbar-width: none;
+}
+
+.admin-ui-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.admin-ui-main {
+  height: 100%;
+  min-height: 0 !important;
+  overflow-x: hidden;
+  overflow-y: auto !important;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+
+/* Keep the admin control bar visible while only its right column scrolls. */
+.admin-ui-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+/* Mobile drawers are also fixed panels, never nested scroll areas. */
+.candidate-mobile-nav__panel,
+.employer-mobile-nav__panel,
+.admin-ui-sidebar.is-open {
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+@media (max-width: 860px) {
+  /* Mobile dashboard bar stays fixed; the content below it owns scrolling. */
+  .candidate-mobile-bar,
+  .employer-dashboard__mobile-bar {
+    position: relative !important;
+    top: auto !important;
+    flex: 0 0 auto;
+  }
+
+  .candidate-dashboard__shell,
+  .employer-dashboard__shell {
+    flex: 1 1 auto;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .candidate-main,
+  .employer-main {
+    height: 100%;
+    max-height: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  /* The global header is slightly shorter on compact screens. */
+  :root {
+    --medex-dashboard-header-height: 60px;
+  }
+}

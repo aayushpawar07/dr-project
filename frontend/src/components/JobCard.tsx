@@ -4,6 +4,7 @@ import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Job } from '../types';
+import { buildJobShareText, getJobShareUrl, shareTextWithoutUrl } from '../utils/shareContent';
 
 interface JobCardProps {
   job: Job;
@@ -22,14 +23,27 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
     (job as any).state
   ].filter(Boolean).join(', ');
 
+  const organizationName =
+    job.organization ||
+    (job as any).companyName ||
+    (job as any).employer?.companyName ||
+    (job as any).employerName ||
+    '';
+
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Use backend share endpoint for social media OG metadata.
-    // Human browsers are redirected by the backend to the SPA job page.
-    const shareUrl = `${window.location.origin.replace(/:\d+$/, '')}/share/job/${job.id}`;
+    const shareUrl = getJobShareUrl(job.id);
+    const shareText = buildJobShareText(
+      {
+        ...job,
+        organization: organizationName,
+        location: locationText,
+      },
+      shareUrl,
+    );
     const shareData = {
-      title: `${job.title} | MedExJob`,
-      text: `Check out this medical job opening: ${job.title} at ${job.organization || 'MedExJob'}`,
+      title: job.title,
+      text: shareTextWithoutUrl(shareText, shareUrl),
       url: shareUrl,
     };
 
@@ -38,32 +52,23 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
         await navigator.share(shareData);
         return;
       } catch (err) {
-        // User cancelled or fallback
+        // User cancelled or the device does not support this share target.
       }
     }
 
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(shareText);
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     } catch (err) {
-      console.error('Failed to copy link', err);
+      console.error('Failed to copy job share content', err);
     }
   };
 
-
-  const organizationName =
-    job.organization ||
-    (job as any).companyName ||
-    (job as any).employer?.companyName ||
-    (job as any).employerName ||
-    '';
-
   return (
-    <Card className="relative cursor-pointer overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 md:p-6 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-md group h-full flex flex-col">
+    <Card className="medex-job-card relative cursor-pointer overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 md:p-6 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-md group h-full flex flex-col">
       <div className="flex flex-col h-full justify-between gap-3 flex-1">
         <div className="flex flex-col gap-3">
-          {/* Top row: Sector/Category badges on left + Share/Save icons on top right */}
           <div className="flex items-start justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
               <span
@@ -84,7 +89,7 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
                 </Badge>
               )}
 
-              {job.featured && (
+              {(job as any).featured && (
                 <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200 px-3 py-1 text-xs font-medium" variant="outline">
                   <Star className="w-3 h-3 mr-1 fill-yellow-500 text-yellow-500" />
                   Featured
@@ -92,12 +97,11 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
               )}
             </div>
 
-            {/* Top Right Action Buttons (Share & Save) */}
             <div className="flex items-center gap-1.5 shrink-0">
               <Button
                 variant="ghost"
                 size="icon"
-                title={copied ? "Link Copied!" : "Share Job"}
+                title={copied ? "Share Content Copied!" : "Share Job"}
                 className={`h-8 w-8 rounded-full border transition-all ${
                   copied
                     ? 'text-green-600 bg-green-50 border-green-200 shadow-sm'
@@ -125,7 +129,6 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
             </div>
           </div>
 
-          {/* Title + Organization */}
           <div>
             <h3
               className="text-lg font-semibold text-gray-900 leading-snug hover:text-blue-700 transition-colors cursor-pointer line-clamp-2"
@@ -141,7 +144,6 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
             )}
           </div>
 
-          {/* Meta pills: Location, Posts */}
           <div className="flex flex-wrap gap-2 text-sm">
             {locationText && (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-blue-700">
@@ -157,7 +159,6 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
             )}
           </div>
 
-          {/* Qualification */}
           {job.qualification && (
             <div>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-600">
@@ -167,7 +168,6 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
             </div>
           )}
 
-          {/* Salary & Experience */}
           {(job.salary || job.experience) && (
             <div className="flex flex-wrap gap-2 text-sm">
               {job.salary && (
@@ -184,19 +184,18 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
           )}
         </div>
 
-        {/* Footer pinned to bottom */}
-        <div className="flex items-center justify-between border-t border-gray-100 pt-3 mt-auto">
-          <div className="flex flex-col gap-1 text-xs text-gray-500">
+        <div className="flex items-center justify-between border-t border-gray-100 pt-3 mt-auto gap-3">
+          <div className="flex flex-col gap-1 text-xs text-gray-500 min-w-0">
             {job.lastDate && (
               <div className="flex items-center gap-1 text-orange-700 font-medium">
-                <Calendar className="w-3.5 h-3.5 text-orange-600" />
+                <Calendar className="w-3.5 h-3.5 text-orange-600 shrink-0" />
                 <span>Apply by {new Date(job.lastDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
               </div>
             )}
-            <div className="flex items-center gap-2 text-gray-400">
-              <span>{job.views ?? 0} views</span>
+            <div className="flex items-center gap-2 text-gray-400 flex-wrap">
+              <span>{(job as any).views ?? 0} views</span>
               <span>•</span>
-              <span>{job.applications ?? 0} applications</span>
+              <span>{(job as any).applications ?? 0} applications</span>
               {daysLeft > 0 && daysLeft <= 7 && (
                 <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
                   {daysLeft}d left

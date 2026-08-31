@@ -1,0 +1,458 @@
+/*
+ * MedExJob cross-device responsive layer
+ * Loaded last so it can normalize legacy page layouts without changing data/API logic.
+ * Breakpoints cover narrow foldables, phones, tablets, laptops and wide desktops.
+ */
+
+:root {
+  --medex-page-gutter: clamp(12px, 2.4vw, 28px);
+  --medex-section-y: clamp(36px, 5vw, 72px);
+  --medex-card-radius: clamp(12px, 1.6vw, 18px);
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+img,
+video,
+canvas,
+svg,
+iframe {
+  max-width: 100%;
+}
+
+img,
+video {
+  height: auto;
+}
+
+button,
+input,
+select,
+textarea {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.container {
+  width: min(100%, 1536px);
+  max-width: 100%;
+}
+
+/* Prevent utility-layout children from forcing horizontal overflow. */
+.flex,
+.grid,
+[class*="grid-cols-"],
+[class*="flex-"] {
+  min-width: 0;
+}
+
+[class*="max-w-"] {
+  min-width: 0;
+}
+
+/* Long dynamic content should wrap instead of stretching cards/pages. */
+p,
+span,
+div,
+a,
+button,
+td,
+th,
+label,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: anywhere;
+}
+
+/* Keep pills/chips readable when content is long. */
+.rounded-full,
+[class*="rounded-full"] {
+  max-width: 100%;
+}
+
+/* Public cards and generic panels. */
+.medex-job-card,
+[class*="dashboard-card"],
+[class*="profile-card"],
+[class*="analytics-card"] {
+  min-width: 0;
+}
+
+/* Tables stay usable on touch screens rather than compressing text beyond readability. */
+.overflow-x-auto,
+[class*="table-scroll"],
+[class*="table-wrapper"] {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-inline: contain;
+}
+
+table {
+  max-width: 100%;
+}
+
+/* Modal/dialog safety for every device. */
+[role="dialog"] {
+  max-width: min(calc(100vw - 24px), 960px) !important;
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Hero / page typography scales rather than clipping on foldables. */
+.min-h-screen h1,
+main h1 {
+  line-height: 1.12;
+}
+
+.min-h-screen h2,
+main h2 {
+  line-height: 1.2;
+}
+
+/* Site header mobile drawer. */
+.medex-site-header {
+  isolation: isolate;
+}
+
+.medex-mobile-nav {
+  z-index: 70;
+}
+
+.medex-mobile-nav-overlay {
+  z-index: 60;
+}
+
+/* Search component safety at intermediate widths. */
+@media (min-width: 769px) and (max-width: 1100px) {
+  .search-bar {
+    max-width: 820px;
+    padding-inline: 10px;
+  }
+
+  .search-bar--compact {
+    max-width: 680px;
+  }
+
+  .search-bar__field-inner {
+    padding: 10px 13px;
+    gap: 9px;
+  }
+
+  .search-bar__input {
+    font-size: 14px;
+  }
+
+  .search-bar__button {
+    padding-inline: 20px;
+  }
+}
+
+/* Large tablet / small laptop */
+@media (max-width: 1024px) {
+  :root {
+    --medex-page-gutter: 18px;
+  }
+
+  .container {
+    padding-left: var(--medex-page-gutter) !important;
+    padding-right: var(--medex-page-gutter) !important;
+  }
+
+  /* Generic four-column content becomes two-column unless a dashboard owns it. */
+  main .grid.grid-cols-4:not(.admin-ui-stats-grid),
+  .min-h-screen > .container .grid.grid-cols-4:not(.admin-ui-stats-grid) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Pricing / analytics / stat sections often use 3/4 cards. */
+  main .grid.lg\:grid-cols-4,
+  main .grid.xl\:grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  table {
+    min-width: 700px;
+  }
+}
+
+/* Tablets and phones */
+@media (max-width: 768px) {
+  :root {
+    --medex-page-gutter: 14px;
+    --medex-section-y: 42px;
+  }
+
+  body {
+    min-width: 280px;
+  }
+
+  .container {
+    padding-left: var(--medex-page-gutter) !important;
+    padding-right: var(--medex-page-gutter) !important;
+  }
+
+  /* Avoid iOS focus zoom and keep controls touch-friendly. */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  button,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"] {
+    min-height: 40px;
+  }
+
+  /* Common section heading/action pairs stack cleanly. */
+  .min-h-screen section > .container > .flex.items-center.justify-between,
+  main > .container > .flex.items-center.justify-between,
+  .min-h-screen .container > .flex.items-center.justify-between.mb-8,
+  .min-h-screen .container > .flex.items-center.justify-between.mb-6 {
+    align-items: flex-start;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  /* Generic public grids become a single readable column. */
+  main .grid.md\:grid-cols-2,
+  main .grid.md\:grid-cols-3,
+  main .grid.md\:grid-cols-4,
+  .min-h-screen .grid.md\:grid-cols-2:not(.candidate-stats-grid):not(.admin-ui-stats-grid),
+  .min-h-screen .grid.md\:grid-cols-3:not(.candidate-stats-grid):not(.admin-ui-stats-grid),
+  .min-h-screen .grid.md\:grid-cols-4:not(.candidate-stats-grid):not(.admin-ui-stats-grid) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  /* Forms with paired fields stack. */
+  form .grid.grid-cols-2,
+  form .grid.md\:grid-cols-2,
+  form .grid.sm\:grid-cols-2 {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  /* Horizontal action bars wrap instead of clipping. */
+  .flex.items-center.gap-4,
+  .flex.items-center.gap-6,
+  .flex.justify-between.gap-4,
+  .flex.justify-between.gap-6 {
+    flex-wrap: wrap;
+  }
+
+  /* Public job chips and action/footer area. */
+  .medex-job-card {
+    border-radius: 14px !important;
+  }
+
+  .medex-job-card .flex.flex-wrap {
+    row-gap: 8px;
+  }
+
+  /* Detail pages: side columns should not remain squeezed beside primary content. */
+  .grid.lg\:grid-cols-3,
+  .grid.lg\:grid-cols-4,
+  .grid.xl\:grid-cols-3,
+  .grid.xl\:grid-cols-4 {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  table {
+    min-width: 660px;
+  }
+
+  footer .container {
+    padding-left: 18px !important;
+    padding-right: 18px !important;
+  }
+
+  footer .grid.md\:grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 28px 22px;
+  }
+}
+
+/* Small phones and foldables */
+@media (max-width: 520px) {
+  :root {
+    --medex-page-gutter: 12px;
+    --medex-section-y: 34px;
+  }
+
+  .container {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  /* Scale oversized legacy headings. */
+  .text-6xl,
+  .md\:text-6xl,
+  .lg\:text-6xl {
+    font-size: clamp(2rem, 10vw, 2.75rem) !important;
+  }
+
+  .text-5xl,
+  .md\:text-5xl,
+  .lg\:text-5xl {
+    font-size: clamp(1.85rem, 9vw, 2.4rem) !important;
+  }
+
+  .text-4xl,
+  .md\:text-4xl,
+  .lg\:text-4xl {
+    font-size: clamp(1.65rem, 8vw, 2.05rem) !important;
+  }
+
+  .text-3xl,
+  .md\:text-3xl {
+    font-size: clamp(1.45rem, 7vw, 1.8rem) !important;
+  }
+
+  /* Buttons in page headers should not force overflow. */
+  .min-h-screen section > .container > .flex.items-center.justify-between > button,
+  .min-h-screen section > .container > .flex.items-center.justify-between > a {
+    flex: 0 0 auto;
+  }
+
+  /* Search is already stacked by SearchBar.css; reduce outer padding for narrow foldables. */
+  .search-bar {
+    padding-inline: 0 !important;
+  }
+
+  .search-bar__container {
+    padding: 10px !important;
+    border-radius: 18px !important;
+  }
+
+  .search-bar__field-inner {
+    padding: 10px 6px !important;
+  }
+
+  .search-bar__button {
+    min-height: 46px;
+    margin-top: 8px;
+  }
+
+  /* Job card internal spacing on 280-430px devices. */
+  .medex-job-card {
+    padding: 16px !important;
+    min-height: 0 !important;
+  }
+
+  .medex-job-card h3 {
+    font-size: 1rem !important;
+    line-height: 1.4 !important;
+  }
+
+  .medex-job-card [class*="px-3"] {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .medex-job-card [class*="text-sm"] {
+    font-size: 0.8125rem;
+  }
+
+  /* News/cards/forms should fill narrow width without excessive margins. */
+  .rounded-2xl,
+  .rounded-xl {
+    border-radius: 14px;
+  }
+
+  [role="dialog"] {
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    max-height: calc(100dvh - 16px);
+  }
+
+  footer .grid.md\:grid-cols-4 {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  footer .flex.flex-col.md\:flex-row {
+    align-items: flex-start !important;
+  }
+
+  footer .flex.flex-wrap {
+    justify-content: flex-start !important;
+  }
+
+  table {
+    min-width: 620px;
+  }
+}
+
+/* Ultra-narrow foldables / legacy small phones */
+@media (max-width: 360px) {
+  :root {
+    --medex-page-gutter: 10px;
+  }
+
+  .container {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  .medex-site-header h1 {
+    font-size: 17px !important;
+  }
+
+  .medex-site-header button {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .search-bar__container {
+    padding: 8px !important;
+  }
+
+  .medex-job-card {
+    padding: 13px !important;
+  }
+
+  .medex-job-card button {
+    min-height: 36px;
+  }
+}
+
+/* Wide desktop: let content breathe without becoming excessively stretched. */
+@media (min-width: 1600px) {
+  .container {
+    width: min(100% - 48px, 1560px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

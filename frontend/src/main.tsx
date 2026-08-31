@@ -14,6 +14,7 @@ import "./styles/job-detail-typography-polish.css";
 import "./styles/homepage-mobile-stats.css";
 import "./utils/dashboardNavigation";
 import "./utils/jobDetailPresentation";
+import "./utils/jobDetailSummaryLayout";
 import { AuthProvider } from "./contexts/AuthContext.tsx";
 
 createRoot(document.getElementById("root")!).render(

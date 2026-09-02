@@ -12,8 +12,11 @@ import {
   Layers3,
   MapPin,
   Share2,
+  Shield,
   ShieldCheck,
   Star,
+  BriefcaseIcon,
+  Gift,
 } from 'lucide-react';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
@@ -36,11 +39,11 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
   const isGovernment = sector === 'government';
   const displayTitle = view.displayTitle || job.title;
   const sourceRecruitmentId = view.sourceRecruitmentId;
+  const grouped = Boolean(view.recruitmentGrouped && sourceRecruitmentId);
   const departments: string[] = Array.isArray(view.departments)
     ? view.departments.filter(Boolean)
-    : [job.department, job.speciality].filter(Boolean) as string[];
+    : [view.department].filter(Boolean);
   const uniqueDepartments = [...new Set(departments)];
-  const grouped = Boolean(view.recruitmentGrouped && sourceRecruitmentId);
   const locationText = job.location || [view.city, view.state].filter(Boolean).join(', ');
   const organizationName =
     job.organization ||
@@ -85,7 +88,7 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
         await navigator.share(shareData);
         return;
       } catch {
-        // User cancelled or native sharing is unavailable.
+        // User cancelled or the device does not support this share target.
       }
     }
 
@@ -98,113 +101,286 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
     }
   };
 
-  return (
-    <Card className="medex-job-card relative h-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">
-      <div className="flex h-full flex-col p-5 md:p-6">
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="mb-2 flex flex-wrap items-center gap-2">
-              <Badge className={isGovernment
-                ? 'border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-50'
-                : 'border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-50'}>
-                {isGovernment ? 'Government' : 'Private'}
-              </Badge>
-              {grouped && (
+  if (grouped) {
+    return (
+      <Card className="medex-job-card relative h-full overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 md:p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+        <div className="flex h-full flex-col">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-white shadow-sm"
+                  style={{
+                    background: isGovernment
+                      ? 'linear-gradient(to right, #3b82f6, #2563eb)'
+                      : 'linear-gradient(to right, #10b981, #059669)',
+                  }}
+                >
+                  {isGovernment ? <Shield className="h-3.5 w-3.5" /> : <BriefcaseIcon className="h-3.5 w-3.5" />}
+                  {isGovernment ? 'Government' : 'Private'}
+                </span>
                 <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700">
                   <ShieldCheck className="mr-1 h-3.5 w-3.5" />
-                  One Recruitment
+                  Official Recruitment
                 </Badge>
-              )}
-              {view.featured && (
-                <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
-                  <Star className="mr-1 h-3.5 w-3.5 fill-amber-400" />Featured
-                </Badge>
-              )}
-            </div>
-            {organizationName && (
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                <Building2 className="h-4 w-4 shrink-0 text-blue-600" />
-                <span className="line-clamp-1">{organizationName}</span>
               </div>
-            )}
-          </div>
 
-          <div className="flex shrink-0 items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full border border-slate-200" onClick={handleShare} title="Share">
-              {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Share2 className="h-4 w-4 text-slate-500" />}
-            </Button>
-            {onSaveJob && (
+              {organizationName && (
+                <div className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-gray-800">
+                  <Building2 className="h-4 w-4 shrink-0 text-blue-600" />
+                  <span className="line-clamp-1">{organizationName}</span>
+                </div>
+              )}
+
+              <button type="button" onClick={openDetails} className="block text-left">
+                <h3 className="text-xl font-semibold leading-snug text-gray-900 transition-colors hover:text-blue-700">
+                  {displayTitle}
+                </h3>
+                <p className="mt-1 text-sm font-semibold text-blue-700">Multiple Departments</p>
+              </button>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-1.5">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 rounded-full border border-slate-200"
-                onClick={(e) => { e.stopPropagation(); onSaveJob(job.id); }}
-                title={isSaved ? 'Saved' : 'Save job'}
+                title={copied ? 'Share Content Copied!' : 'Share Recruitment'}
+                className={`h-8 w-8 rounded-full border transition-all ${
+                  copied
+                    ? 'border-green-200 bg-green-50 text-green-600'
+                    : 'border-gray-200 text-gray-500 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600'
+                }`}
+                onClick={handleShare}
               >
-                <Star className={`h-4 w-4 ${isSaved ? 'fill-amber-400 text-amber-500' : 'text-slate-400'}`} />
+                {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
               </Button>
+              {onSaveJob && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full border border-gray-200"
+                  onClick={(e) => { e.stopPropagation(); onSaveJob(job.id); }}
+                  title={isSaved ? 'Saved' : 'Save recruitment'}
+                >
+                  <Star className={`h-4 w-4 ${isSaved ? 'fill-yellow-500 text-yellow-500' : 'text-gray-400'}`} />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-gray-700">
+            {job.numberOfPosts != null && (
+              <span className="inline-flex items-center gap-1.5 font-semibold">
+                <Briefcase className="h-4 w-4 text-blue-600" />
+                {job.numberOfPosts} Total Vacancies
+              </span>
+            )}
+            {locationText && (
+              <span className="inline-flex items-center gap-1.5">
+                <MapPin className="h-4 w-4 text-gray-500" />
+                {locationText}
+              </span>
+            )}
+            {job.lastDate && (
+              <span className="inline-flex items-center gap-1.5">
+                <Calendar className="h-4 w-4 text-gray-500" />
+                Apply by <strong className="text-rose-600">{new Date(job.lastDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</strong>
+              </span>
             )}
           </div>
-        </div>
 
-        <button type="button" onClick={openDetails} className="text-left">
-          <h3 className="text-xl font-bold leading-snug text-slate-950 transition-colors hover:text-blue-700">
-            {displayTitle}
-          </h3>
-          {grouped ? (
-            <p className="mt-1 text-sm font-medium text-blue-700">Multiple departments in one recruitment</p>
-          ) : job.speciality ? (
-            <p className="mt-1 text-sm font-medium text-blue-700">{job.speciality}</p>
-          ) : job.department ? (
-            <p className="mt-1 text-sm font-medium text-blue-700">{job.department}</p>
-          ) : null}
-        </button>
+          <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+            {job.qualification && <GroupedInfo icon={GraduationCap} value={job.qualification} />}
+            {job.salary && <GroupedInfo icon={IndianRupee} value={job.salary} />}
+            {job.experience && <GroupedInfo icon={Clock3} value={job.experience} />}
+            {uniqueDepartments.length > 0 && (
+              <GroupedInfo icon={Layers3} value={`${uniqueDepartments.length} Department${uniqueDepartments.length === 1 ? '' : 's'}`} />
+            )}
+          </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-          {job.numberOfPosts != null && (
-            <InfoPill icon={Briefcase} label={`${job.numberOfPosts} Vacanc${job.numberOfPosts === 1 ? 'y' : 'ies'}`} />
-          )}
-          {locationText && <InfoPill icon={MapPin} label={locationText} />}
-          {job.qualification && <InfoPill icon={GraduationCap} label={job.qualification} />}
-          {job.salary && <InfoPill icon={IndianRupee} label={job.salary} />}
-          {job.experience && <InfoPill icon={Clock3} label={job.experience} />}
-          {grouped && uniqueDepartments.length > 0 && (
-            <InfoPill icon={Layers3} label={`${uniqueDepartments.length} Department${uniqueDepartments.length === 1 ? '' : 's'}`} />
-          )}
-        </div>
-
-        {grouped && uniqueDepartments.length > 0 && (
-          <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50/60 p-3">
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">Departments</span>
-              {uniqueDepartments.length > 4 && <span className="text-xs font-medium text-blue-700">+{uniqueDepartments.length - 4} more</span>}
+          {uniqueDepartments.length > 0 && (
+            <div className="mt-4 border-t border-gray-100 pt-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold text-gray-700">Departments:</span>
+                {uniqueDepartments.length > 6 && (
+                  <span className="text-xs font-semibold text-blue-700">+{uniqueDepartments.length - 6} more</span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-x-2 gap-y-1.5 text-xs text-blue-800">
+                {uniqueDepartments.slice(0, 6).map((department, index) => (
+                  <span key={department} className="font-medium">
+                    {department}{index < Math.min(uniqueDepartments.length, 6) - 1 ? ' •' : ''}
+                  </span>
+                ))}
+              </div>
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {uniqueDepartments.slice(0, 4).map((department) => (
-                <span key={department} className="rounded-full border border-blue-200 bg-white px-2.5 py-1 text-xs font-medium text-blue-800">
-                  {department}
-                </span>
-              ))}
+          )}
+
+          <div className="mt-auto flex items-center justify-between gap-3 border-t border-gray-100 pt-4">
+            <div className="text-xs text-gray-500">
+              {view.groupedVacancyRows ? `${view.groupedVacancyRows} department-wise vacancy record${view.groupedVacancyRows === 1 ? '' : 's'}` : 'Department-wise vacancies available'}
+            </div>
+            <Button
+              size="sm"
+              onClick={openDetails}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white shadow hover:bg-blue-700 hover:shadow-md"
+            >
+              View All Vacancies
+              <ArrowUpRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  // Keep the original MedExJob card face unchanged for normal single jobs.
+  return (
+    <Card className="medex-job-card relative cursor-pointer overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 md:p-6 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-md group h-full flex flex-col">
+      <div className="flex flex-col h-full justify-between gap-3 flex-1">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-white shadow-sm"
+                style={{
+                  background: isGovernment
+                    ? 'linear-gradient(to right, #3b82f6, #2563eb)'
+                    : 'linear-gradient(to right, #10b981, #059669)',
+                }}
+              >
+                {isGovernment ? <Shield className="w-3.5 h-3.5" /> : <BriefcaseIcon className="w-3.5 h-3.5" />}
+                {isGovernment ? 'Government' : 'Private'}
+              </span>
+
+              {job.category && (
+                <Badge variant="outline" className="px-3 py-1 text-xs font-medium text-gray-600 border-gray-300 bg-white">
+                  {job.category}
+                </Badge>
+              )}
+
+              {view.featured && (
+                <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200 px-3 py-1 text-xs font-medium" variant="outline">
+                  <Star className="w-3 h-3 mr-1 fill-yellow-500 text-yellow-500" />
+                  Featured
+                </Badge>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                title={copied ? 'Share Content Copied!' : 'Share Job'}
+                className={`h-8 w-8 rounded-full border transition-all ${
+                  copied
+                    ? 'text-green-600 bg-green-50 border-green-200 shadow-sm'
+                    : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50 border-gray-200 shadow-sm'
+                }`}
+                onClick={handleShare}
+              >
+                {copied ? <Check className="w-4 h-4 text-green-600" /> : <Share2 className="w-4 h-4" />}
+              </Button>
+              {onSaveJob && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  title={isSaved ? 'Saved' : 'Save Job'}
+                  className={`h-8 w-8 rounded-full border transition-all ${
+                    isSaved
+                      ? 'text-yellow-600 bg-yellow-50 border-yellow-200 shadow-sm'
+                      : 'text-gray-400 hover:text-yellow-500 hover:bg-yellow-50 border-gray-200 shadow-sm'
+                  }`}
+                  onClick={(e) => { e.stopPropagation(); onSaveJob(job.id); }}
+                >
+                  <Star className={`w-4 h-4 ${isSaved ? 'fill-yellow-500 text-yellow-500' : ''}`} />
+                </Button>
+              )}
             </div>
           </div>
-        )}
 
-        <div className="mt-auto flex items-end justify-between gap-3 border-t border-slate-100 pt-4">
-          <div className="min-w-0 text-xs text-slate-500">
+          <div>
+            <h3
+              className="text-lg font-semibold text-gray-900 leading-snug hover:text-blue-700 transition-colors cursor-pointer line-clamp-2"
+              onClick={() => onViewDetails(job.slug || job.id)}
+            >
+              {job.title}
+            </h3>
+            {organizationName && (
+              <div className="flex items-center gap-1.5 mt-1 text-sm text-gray-600">
+                <Building2 className="w-4 h-4 shrink-0 text-blue-600" />
+                <span className="font-medium text-gray-700 truncate">{organizationName}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2 text-sm">
+            {locationText && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-blue-700">
+                <MapPin className="w-3.5 h-3.5" />
+                {locationText}
+              </span>
+            )}
+            {job.numberOfPosts != null && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-purple-700">
+                <Briefcase className="w-3.5 h-3.5" />
+                {job.numberOfPosts} Post{job.numberOfPosts > 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+
+          {job.qualification && (
+            <div>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-600">
+                <Gift className="w-3.5 h-3.5 text-gray-400" />
+                Qualification: {job.qualification}
+              </span>
+            </div>
+          )}
+
+          {(job.salary || job.experience) && (
+            <div className="flex flex-wrap gap-2 text-sm">
+              {job.salary && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-3 py-1.5 text-green-700 font-medium">
+                  💰 {job.salary}
+                </span>
+              )}
+              {job.experience && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-600">
+                  📊 Experience: {job.experience}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between border-t border-gray-100 pt-3 mt-auto gap-3">
+          <div className="flex flex-col gap-1 text-xs text-gray-500 min-w-0">
             {job.lastDate && (
-              <div className="flex items-center gap-1.5 font-medium text-rose-600">
-                <Calendar className="h-3.5 w-3.5 shrink-0" />
+              <div className="flex items-center gap-1 text-orange-700 font-medium">
+                <Calendar className="w-3.5 h-3.5 text-orange-600 shrink-0" />
                 <span>Apply by {new Date(job.lastDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
               </div>
             )}
-            {daysLeft != null && daysLeft > 0 && daysLeft <= 7 && (
-              <div className="mt-1 font-semibold text-amber-700">{daysLeft} day{daysLeft === 1 ? '' : 's'} left</div>
-            )}
+            <div className="flex items-center gap-2 text-gray-400 flex-wrap">
+              <span>{view.views ?? 0} views</span>
+              <span>•</span>
+              <span>{view.applications ?? 0} applications</span>
+              {daysLeft != null && daysLeft > 0 && daysLeft <= 7 && (
+                <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                  {daysLeft}d left
+                </Badge>
+              )}
+            </div>
           </div>
-
-          <Button onClick={openDetails} className="shrink-0 rounded-lg bg-blue-600 px-4 text-white hover:bg-blue-700">
-            {grouped ? 'View All Vacancies' : 'View Details'}
-            <ArrowUpRight className="ml-1.5 h-4 w-4" />
+          <Button
+            size="sm"
+            onClick={() => onViewDetails(job.slug || job.id)}
+            className="inline-flex items-center gap-1.5 rounded-full text-white text-sm font-semibold px-5 py-2 shadow hover:shadow-md transition-all shrink-0"
+            style={{ background: 'linear-gradient(to right, #2563eb, #1d4ed8)' }}
+          >
+            View Details
+            <ArrowUpRight className="w-3.5 h-3.5" />
           </Button>
         </div>
       </div>
@@ -212,11 +388,11 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
   );
 }
 
-function InfoPill({ icon: Icon, label }: { icon: any; label: string }) {
+function GroupedInfo({ icon: Icon, value }: { icon: any; value: string }) {
   return (
-    <div className="flex min-w-0 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-slate-700">
+    <div className="flex min-w-0 items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-700">
       <Icon className="h-4 w-4 shrink-0 text-blue-600" />
-      <span className="line-clamp-2 min-w-0 text-xs font-medium sm:text-sm">{label}</span>
+      <span className="line-clamp-2 min-w-0 text-xs font-medium sm:text-sm">{value}</span>
     </div>
   );
 }

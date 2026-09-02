@@ -58,23 +58,34 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
     const q = filter.trim().toLowerCase();
     if (!q) return recruitment.vacancies || [];
     return (recruitment.vacancies || []).filter((v) =>
-      [v.postName, v.department, v.speciality, v.subSpeciality, v.category, v.qualification, v.location]
+      [
+        v.postName, v.department, v.speciality, v.subSpeciality, v.category,
+        v.qualification, v.experience, v.ageLimit, v.salary, v.payLevel,
+        v.payScale, v.jobType, v.location, v.otherEligibilityRequirements,
+      ]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(q)),
     );
   }, [recruitment, filter]);
 
-  const replaceRow = (row: VacancyRecord) => {
-    setRecruitment((current) => current ? {
-      ...current,
-      vacancies: current.vacancies.map((v) => v.id === row.id ? row : v),
-    } : current);
-  };
+  const selectedCount = selected.size;
+  const approved = recruitment?.vacancies.filter((v) => v.status === 'APPROVED').length || 0;
+  const needsReview = recruitment?.vacancies.filter((v) => v.status === 'NEEDS_REVIEW').length || 0;
+  const published = recruitment?.vacancies.filter((v) => v.status === 'PUBLISHED').length || 0;
+  const structuredTotal = recruitment?.vacancies.reduce((sum, v) => sum + Number(v.numberOfVacancies || 0), 0) || 0;
+  const vacancyTotalMatches = recruitment ? structuredTotal === recruitment.totalVacancies : true;
 
   const reloadRecruitment = async (id: string) => {
     const latest = await fetchRecruitment(id);
     setRecruitment(latest);
     return latest;
+  };
+
+  const updateLocalRow = (id: string, key: keyof VacancyRecord, value: any) => {
+    setRecruitment((current) => current ? {
+      ...current,
+      vacancies: current.vacancies.map((v) => v.id === id ? { ...v, [key]: value } : v),
+    } : current);
   };
 
   const processFile = async (forceCreate = false) => {
@@ -88,11 +99,9 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
       setRecruitment(result.recruitment);
       setDuplicateWarning(result.duplicate && !result.created);
       setSelected(new Set());
-      if (result.duplicate && !result.created) {
-        toast.warning('Possible duplicate found. Existing recruitment loaded for review.');
-      } else {
-        toast.success('PDF extracted. Review every row before publishing.');
-      }
+      toast.success(result.duplicate && !result.created
+        ? 'Existing recruitment loaded for review.'
+        : 'Gemini extraction complete. Review every vacancy before publishing.');
     } catch (error: any) {
       toast.error(error?.response?.data?.error || error?.message || 'PDF extraction failed.');
     } finally {
@@ -102,6 +111,7 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
 
   const saveMaster = async () => {
     if (!recruitment) return;
+    setActionLoading('master');
     try {
       const saved = await updateRecruitment(recruitment.id, {
         organisationName: recruitment.organisationName,
@@ -123,6 +133,8 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
       toast.success('Recruitment details saved.');
     } catch (error: any) {
       toast.error(error?.response?.data?.error || 'Unable to save recruitment.');
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -131,8 +143,11 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
     setSavingId(row.id);
     try {
       const saved = await updateVacancy(recruitment.id, row.id, row);
-      replaceRow(saved);
-      toast.success('Vacancy updated.');
+      setRecruitment((current) => current ? {
+        ...current,
+        vacancies: current.vacancies.map((v) => v.id === saved.id ? saved : v),
+      } : current);
+      toast.success(`${row.postName} saved.`);
     } catch (error: any) {
       toast.error(error?.response?.data?.error || 'Unable to update vacancy.');
     } finally {
@@ -142,14 +157,14 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
 
   const runBulkStatus = async (status: VacancyRecord['status']) => {
     if (!recruitment || selected.size === 0) {
-      toast.error('Select at least one vacancy row.');
+      toast.error('Select at least one vacancy.');
       return;
     }
     setActionLoading(status);
     try {
       const result = await bulkSetVacancyStatus(recruitment.id, [...selected], status);
       await reloadRecruitment(recruitment.id);
-      toast.success(`${result.updatedCount} row(s) marked ${status.replace('_', ' ').toLowerCase()}.`);
+      toast.success(`${result.updatedCount} vacancy row(s) updated.`);
     } catch (error: any) {
       toast.error(error?.response?.data?.error || 'Bulk status update failed.');
     } finally {
@@ -159,12 +174,12 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
 
   const runBulkEdit = async () => {
     if (!recruitment || selected.size === 0) {
-      toast.error('Select at least one vacancy row.');
+      toast.error('Select at least one vacancy.');
       return;
     }
     const updates = Object.fromEntries(Object.entries(bulkFields).filter(([, value]) => value.trim()));
-    if (Object.keys(updates).length === 0) {
-      toast.error('Enter at least one common field to apply.');
+    if (!Object.keys(updates).length) {
+      toast.error('Enter at least one manual override.');
       return;
     }
     setActionLoading('bulk-edit');
@@ -172,7 +187,7 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
       await bulkUpdateVacancies(recruitment.id, [...selected], updates);
       await reloadRecruitment(recruitment.id);
       setBulkFields(emptyBulk);
-      toast.success(`Bulk-edited ${selected.size} row(s).`);
+      toast.success(`Manual overrides applied to ${selected.size} row(s).`);
     } catch (error: any) {
       toast.error(error?.response?.data?.error || 'Bulk edit failed.');
     } finally {
@@ -185,20 +200,30 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
     try {
       const added = await addVacancy(recruitment.id, {
         postName: 'New Vacancy',
-        department: '',
-        speciality: '',
         numberOfVacancies: 1,
         status: 'NEEDS_REVIEW',
       });
       setRecruitment({ ...recruitment, vacancies: [...recruitment.vacancies, added] });
-      toast.success('New review row added.');
+      toast.success('Blank vacancy row added.');
     } catch (error: any) {
       toast.error(error?.response?.data?.error || 'Unable to add vacancy.');
     }
   };
 
+  const duplicateRow = async (row: VacancyRecord) => {
+    if (!recruitment) return;
+    try {
+      const copy = await duplicateVacancy(recruitment.id, row.id);
+      setRecruitment({ ...recruitment, vacancies: [...recruitment.vacancies, copy] });
+      toast.success('Vacancy duplicated.');
+    } catch (error: any) {
+      toast.error(error?.response?.data?.error || 'Unable to duplicate vacancy.');
+    }
+  };
+
   const removeRow = async (row: VacancyRecord) => {
-    if (!recruitment || !window.confirm(`Delete ${row.postName} / ${row.speciality || row.department || 'vacancy'}?`)) return;
+    if (!recruitment || row.status === 'PUBLISHED') return;
+    if (!window.confirm(`Delete ${row.postName}?`)) return;
     try {
       await deleteVacancy(recruitment.id, row.id);
       setRecruitment({ ...recruitment, vacancies: recruitment.vacancies.filter((v) => v.id !== row.id) });
@@ -212,23 +237,12 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
     }
   };
 
-  const duplicateRow = async (row: VacancyRecord) => {
-    if (!recruitment) return;
-    try {
-      const copy = await duplicateVacancy(recruitment.id, row.id);
-      setRecruitment({ ...recruitment, vacancies: [...recruitment.vacancies, copy] });
-      toast.success('Vacancy duplicated for editing.');
-    } catch (error: any) {
-      toast.error(error?.response?.data?.error || 'Unable to duplicate vacancy.');
-    }
-  };
-
   const splitRow = async (row: VacancyRecord) => {
     if (!recruitment || row.numberOfVacancies <= 1) {
       toast.error('Only rows with more than one vacancy can be split.');
       return;
     }
-    const raw = window.prompt(`How many vacancies should move to the new row? (1-${row.numberOfVacancies - 1})`, '1');
+    const raw = window.prompt(`Move how many vacancies to a new row? (1-${row.numberOfVacancies - 1})`, '1');
     if (!raw) return;
     const count = Number(raw);
     if (!Number.isInteger(count) || count < 1 || count >= row.numberOfVacancies) {
@@ -243,7 +257,7 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
         ...recruitment,
         vacancies: [...recruitment.vacancies.map((v) => v.id === row.id ? updated : v), split],
       });
-      toast.success('Vacancy row split. Review both rows.');
+      toast.success('Vacancy row split.');
     } catch (error: any) {
       toast.error(error?.response?.data?.error || 'Unable to split vacancy.');
     }
@@ -251,7 +265,7 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
 
   const mergeSelected = async () => {
     if (!recruitment || selected.size < 2) {
-      toast.error('Select at least two compatible rows to merge.');
+      toast.error('Select at least two compatible rows.');
       return;
     }
     const candidates = recruitment.vacancies.filter((v) => selected.has(v.id));
@@ -264,7 +278,7 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
       v.status !== 'PUBLISHED',
     );
     if (!compatible) {
-      toast.error('Merge requires the same post, department, speciality and category, and unpublished rows.');
+      toast.error('Merge requires the same post, department, speciality and category.');
       return;
     }
     try {
@@ -277,9 +291,9 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
         vacancies: recruitment.vacancies.filter((v) => !deleted.has(v.id)).map((v) => v.id === merged.id ? merged : v),
       });
       setSelected(new Set([merged.id]));
-      toast.success('Selected vacancy rows merged.');
+      toast.success('Selected rows merged.');
     } catch (error: any) {
-      toast.error(error?.response?.data?.error || 'Unable to merge vacancy rows.');
+      toast.error(error?.response?.data?.error || 'Unable to merge rows.');
     }
   };
 
@@ -287,9 +301,9 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
     if (!recruitment) return;
     setActionLoading('verify');
     try {
-      await verifyRecruitment(recruitment.id);
-      await reloadRecruitment(recruitment.id);
-      toast.success('Official source verification recorded.');
+      const saved = await verifyRecruitment(recruitment.id);
+      setRecruitment(saved);
+      toast.success('Official source verified.');
     } catch (error: any) {
       toast.error(error?.response?.data?.error || 'Verification requirements are incomplete.');
     } finally {
@@ -298,17 +312,14 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
   };
 
   const publish = async () => {
-    if (!recruitment) return;
-    if (!window.confirm('Publish all APPROVED vacancy rows? Published vacancies become active searchable jobs.')) return;
+    if (!recruitment || !approved) return;
+    if (!window.confirm('Publish all APPROVED vacancy rows?')) return;
     setActionLoading('publish');
     try {
       const result = await publishApprovedVacancies(recruitment.id);
       await reloadRecruitment(recruitment.id);
-      if (result.failedCount) {
-        toast.error(`${result.publishedCount} published, ${result.failedCount} failed. Retry is safe.`);
-      } else {
-        toast.success(`${result.publishedCount} approved vacancy row(s) published.`);
-      }
+      if (result.failedCount) toast.error(`${result.publishedCount} published, ${result.failedCount} failed.`);
+      else toast.success(`${result.publishedCount} approved vacancy row(s) published.`);
     } catch (error: any) {
       toast.error(error?.response?.data?.error || 'Publish failed.');
     } finally {
@@ -318,286 +329,169 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
 
   const copyAll = async () => {
     if (!recruitment) return;
-    const text = [
-      `RECRUITMENT: ${recruitment.title}`,
-      `ORGANISATION: ${recruitment.organisationName}`,
-      `TOTAL VACANCIES: ${recruitment.totalVacancies}`,
-      '',
-      ...recruitment.vacancies.map((v) => [
-        `POST: ${v.postName}`,
-        `DEPARTMENT: ${v.department || '-'}`,
-        `SPECIALITY: ${v.speciality || '-'}`,
-        `SUB-SPECIALITY: ${v.subSpeciality || '-'}`,
-        `VACANCIES: ${v.numberOfVacancies}`,
-        `CATEGORY: ${v.category || '-'}`,
-        `STATUS: ${v.status}`,
-        '',
-      ].join('\n')),
-    ].join('\n');
+    const text = recruitment.vacancies.map((v) => [
+      `Post: ${v.postName}`,
+      `Department: ${v.department || '-'}`,
+      `Speciality: ${v.speciality || '-'}`,
+      `Vacancies: ${v.numberOfVacancies}`,
+      `Qualification: ${v.qualification || '-'}`,
+      `Experience: ${v.experience || '-'}`,
+      `Salary: ${v.salary || '-'}`,
+      `Job Type: ${v.jobType || '-'}`,
+      `Location: ${v.location || '-'}`,
+    ].join('\n')).join('\n\n');
     await navigator.clipboard.writeText(text);
-    toast.success('Structured recruitment data copied.');
+    toast.success('Vacancy data copied.');
   };
-
-  const updateLocalRow = (id: string, key: keyof VacancyRecord, value: any) => {
-    setRecruitment((current) => current ? {
-      ...current,
-      vacancies: current.vacancies.map((v) => v.id === id ? { ...v, [key]: value } : v),
-    } : current);
-  };
-
-  const selectedCount = selected.size;
-  const allVisibleSelected = rows.length > 0 && rows.every((v) => selected.has(v.id));
-  const approved = recruitment?.vacancies.filter((v) => v.status === 'APPROVED').length || 0;
-  const needsReview = recruitment?.vacancies.filter((v) => v.status === 'NEEDS_REVIEW').length || 0;
-  const published = recruitment?.vacancies.filter((v) => v.status === 'PUBLISHED').length || 0;
-  const structuredTotal = recruitment?.vacancies.reduce((sum, v) => sum + v.numberOfVacancies, 0) || 0;
-  const vacancyTotalMatches = recruitment ? structuredTotal === recruitment.totalVacancies : true;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8 max-w-[1600px]">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div className="min-h-screen bg-slate-50">
+      <div className="container mx-auto max-w-[1500px] px-4 py-8">
+        <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="w-7 h-7 text-blue-600" />
-              <h1 className="text-3xl font-semibold text-gray-900">AI Bulk Job Uploader</h1>
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-7 w-7 text-blue-600" />
+              <h1 className="text-3xl font-bold text-slate-950">AI Bulk Job Uploader</h1>
             </div>
-            <p className="text-gray-600">Upload one recruitment PDF, review structured vacancy records, verify the official source, then publish approved rows in bulk.</p>
+            <p className="mt-1 text-slate-600">Gemini extracts the PDF. You review every field before anything is published.</p>
           </div>
           <Button variant="outline" onClick={() => onNavigate('dashboard/admin')}>Back to Admin</Button>
         </div>
 
-        <Card className="p-6 mb-6">
-          <div className="grid lg:grid-cols-[1fr_auto] gap-4 items-end">
+        <Card className="mb-6 p-6">
+          <div className="grid items-end gap-4 lg:grid-cols-[1fr_auto]">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Recruitment notification PDF</label>
-              <div
-                className="border-2 border-dashed border-gray-300 rounded-lg p-5 bg-white cursor-pointer hover:border-blue-400"
-                onClick={() => fileRef.current?.click()}
-              >
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="application/pdf,.pdf"
-                  className="hidden"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
-                />
+              <label className="mb-2 block text-sm font-semibold text-slate-700">Recruitment notification PDF</label>
+              <button type="button" onClick={() => fileRef.current?.click()} className="w-full rounded-xl border-2 border-dashed border-blue-200 bg-blue-50/40 p-5 text-left transition hover:border-blue-400 hover:bg-blue-50">
+                <input ref={fileRef} type="file" accept="application/pdf,.pdf" className="hidden" onChange={(e) => setFile(e.target.files?.[0] || null)} />
                 <div className="flex items-center gap-3">
-                  <Upload className="w-7 h-7 text-blue-600" />
+                  <Upload className="h-7 w-7 text-blue-600" />
                   <div>
-                    <p className="font-medium text-gray-900">{file?.name || 'Choose a PDF notification'}</p>
-                    <p className="text-sm text-gray-500">PDF only, maximum 20 MB. Extracted data is never auto-published.</p>
+                    <p className="font-semibold text-slate-900">{file?.name || 'Choose a PDF notification'}</p>
+                    <p className="text-sm text-slate-500">PDF only, maximum 20 MB. AI extraction never auto-publishes.</p>
                   </div>
                 </div>
-              </div>
+              </button>
             </div>
-            <Button onClick={() => processFile(false)} disabled={!file || processing} className="h-11 px-6">
-              {processing ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
-              Extract Recruitment
+            <Button onClick={() => processFile(false)} disabled={!file || processing} className="h-11 bg-blue-600 px-6 hover:bg-blue-700">
+              {processing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+              {processing ? 'Extracting with Gemini…' : 'Extract Recruitment'}
             </Button>
           </div>
         </Card>
 
         {duplicateWarning && recruitment && (
-          <div className="mb-6 border border-amber-300 bg-amber-50 rounded-lg p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="mb-6 flex flex-col justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 md:flex-row md:items-center">
             <div className="flex gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
-              <div>
-                <p className="font-semibold text-amber-900">Possible duplicate recruitment found</p>
-                <p className="text-sm text-amber-800">The existing recruitment was loaded. Use it, or deliberately create a revision so duplicate uploads are not created silently.</p>
-              </div>
+              <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-600" />
+              <div><p className="font-semibold text-amber-900">Possible duplicate recruitment found</p><p className="text-sm text-amber-800">The existing record is loaded. Create a revision only when the PDF is genuinely revised.</p></div>
             </div>
-            <Button variant="outline" onClick={() => processFile(true)} disabled={processing}>
-              <RefreshCw className="w-4 h-4 mr-2" />Create Revision
-            </Button>
-          </div>
-        )}
-
-        {recruitment?.extractionMethod === 'OCR_REQUIRED' && (
-          <div className="mb-6 border border-amber-300 bg-amber-50 rounded-lg p-4 flex gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
-            <div>
-              <p className="font-semibold text-amber-900">Scanned PDF detected — OCR is required</p>
-              <p className="text-sm text-amber-800">Enable the configured OCR worker (MEDEX_OCR_ENABLED=true with Tesseract installed) and re-upload this notification. Do not approve an empty or partial extraction.</p>
-            </div>
+            <Button variant="outline" onClick={() => processFile(true)} disabled={processing}><RefreshCw className="mr-2 h-4 w-4" />Create Revision</Button>
           </div>
         )}
 
         {recruitment && (
           <>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-6 gap-4 mb-4">
+            <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-5">
               <Stat label="Notification Total" value={recruitment.totalVacancies} />
-              <Stat label="Structured Total" value={structuredTotal} tone={!vacancyTotalMatches ? 'amber' : 'gray'} />
-              <Stat label="Vacancy Records" value={recruitment.vacancies.length} />
-              <Stat label="Needs Review" value={needsReview} tone="amber" />
-              <Stat label="Approved" value={approved} tone="green" />
-              <Stat label="Published" value={published} tone="blue" />
+              <Stat label="Structured Total" value={structuredTotal} tone={vacancyTotalMatches ? 'default' : 'warning'} />
+              <Stat label="Needs Review" value={needsReview} tone="warning" />
+              <Stat label="Approved" value={approved} tone="success" />
+              <Stat label="Published" value={published} tone="info" />
             </div>
+
             {!vacancyTotalMatches && (
-              <div className="mb-6 border border-amber-300 bg-amber-50 text-amber-900 rounded-lg p-3 flex gap-2 items-start">
-                <AlertTriangle className="w-5 h-5 mt-0.5 shrink-0" />
-                <span className="text-sm">The structured vacancy total does not match the notification total. Review missing, duplicated, or incorrectly split rows before approval.</span>
+              <div className="mb-5 flex gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+                <AlertTriangle className="h-5 w-5 shrink-0" />The structured vacancy total does not match the notification total. Review the rows before approval.
               </div>
             )}
 
-            <Card className="p-6 mb-6">
-              <div className="flex items-center justify-between gap-3 mb-5">
+            <Card className="mb-6 p-6">
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900">Master Recruitment</h2>
-                  <p className="text-sm text-gray-500">Extraction method: {recruitment.extractionMethod || 'Unknown'} · Status: {recruitment.status}</p>
+                  <h2 className="text-xl font-bold text-slate-950">Master Recruitment</h2>
+                  <p className="text-sm text-slate-500">Extraction method: {recruitment.extractionMethod || 'Unknown'} · Status: {recruitment.status}</p>
                 </div>
-                <Button onClick={saveMaster}><Save className="w-4 h-4 mr-2" />Save Details</Button>
+                <Button onClick={saveMaster} disabled={actionLoading === 'master'}>{actionLoading === 'master' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Save Details</Button>
               </div>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <Field label="Organisation" value={recruitment.organisationName} onChange={(value) => setRecruitment({ ...recruitment, organisationName: value })} />
                 <Field label="Recruitment Title" value={recruitment.title} onChange={(value) => setRecruitment({ ...recruitment, title: value })} />
                 <Field label="Advertisement No." value={recruitment.advertisementNumber || ''} onChange={(value) => setRecruitment({ ...recruitment, advertisementNumber: value })} />
                 <Field label="Recruitment Year" type="number" value={recruitment.recruitmentYear || ''} onChange={(value) => setRecruitment({ ...recruitment, recruitmentYear: Number(value) || undefined })} />
-                <Field label="Location" value={recruitment.location || ''} onChange={(value) => setRecruitment({ ...recruitment, location: value })} />
-                <Field label="Start Date" type="date" value={recruitment.applicationStartDate || ''} onChange={(value) => setRecruitment({ ...recruitment, applicationStartDate: value })} />
+                <Field label="Recruitment-wide Location" value={recruitment.location || ''} onChange={(value) => setRecruitment({ ...recruitment, location: value })} />
+                <Field label="Application Start Date" type="date" value={recruitment.applicationStartDate || ''} onChange={(value) => setRecruitment({ ...recruitment, applicationStartDate: value })} />
                 <Field label="Last Date" type="date" value={recruitment.applicationLastDate || ''} onChange={(value) => setRecruitment({ ...recruitment, applicationLastDate: value })} />
                 <Field label="Application Fee" value={recruitment.applicationFee || ''} onChange={(value) => setRecruitment({ ...recruitment, applicationFee: value })} />
-                <label className="block">
-                  <span className="block text-sm font-medium text-gray-700 mb-1">Sector</span>
-                  <select className="w-full h-10 rounded-md border border-gray-300 px-3 bg-white" value={recruitment.sector} onChange={(e) => setRecruitment({ ...recruitment, sector: e.target.value as Recruitment['sector'] })}>
-                    <option value="government">Government</option>
-                    <option value="private">Private</option>
-                  </select>
-                </label>
+                <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">Sector</span><select className="h-10 w-full rounded-md border border-slate-300 bg-white px-3" value={recruitment.sector} onChange={(e) => setRecruitment({ ...recruitment, sector: e.target.value as Recruitment['sector'] })}><option value="government">Government</option><option value="private">Private</option></select></label>
                 <Field label="Official Notification URL" value={recruitment.officialNotificationUrl || ''} onChange={(value) => setRecruitment({ ...recruitment, officialNotificationUrl: value })} />
                 <Field label="Official Application URL" value={recruitment.officialApplicationUrl || ''} onChange={(value) => setRecruitment({ ...recruitment, officialApplicationUrl: value })} />
-                <Field label="Official Organisation Website" value={recruitment.officialWebsite || ''} onChange={(value) => setRecruitment({ ...recruitment, officialWebsite: value })} />
+                <Field label="Organisation Website" value={recruitment.officialWebsite || ''} onChange={(value) => setRecruitment({ ...recruitment, officialWebsite: value })} />
                 <Field label="Selection Process" value={recruitment.selectionProcess || ''} onChange={(value) => setRecruitment({ ...recruitment, selectionProcess: value })} />
                 <Field label="Important Instructions" value={recruitment.importantInstructions || ''} onChange={(value) => setRecruitment({ ...recruitment, importantInstructions: value })} />
               </div>
-              <div className="flex flex-wrap gap-2 mt-5 items-center">
-                <Button variant="outline" onClick={verify} disabled={recruitment.officialSourceVerified || actionLoading === 'verify'}>
-                  {actionLoading === 'verify' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
-                  {recruitment.officialSourceVerified ? 'Official Source Verified' : 'Verify Official Source'}
-                </Button>
-                {recruitment.sector === 'government' && !recruitment.officialSourceVerified && (
-                  <span className="text-sm text-amber-700">Government jobs cannot be published until official notification, application and organisation URLs are verified.</span>
-                )}
+              <div className="mt-5 flex flex-wrap items-center gap-2">
+                <Button variant="outline" onClick={verify} disabled={recruitment.officialSourceVerified || actionLoading === 'verify'}>{actionLoading === 'verify' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}{recruitment.officialSourceVerified ? 'Official Source Verified' : 'Verify Official Source'}</Button>
+                {recruitment.sector === 'government' && !recruitment.officialSourceVerified && <span className="text-sm text-amber-700">Government jobs require official source verification before publishing.</span>}
               </div>
             </Card>
 
-            <Card className="p-5 mb-6">
-              <div className="flex flex-col xl:flex-row xl:items-end gap-3 justify-between">
-                <div className="flex-1 grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  <Field label="Bulk Location" value={bulkFields.location} onChange={(value) => setBulkFields({ ...bulkFields, location: value })} />
-                  <Field label="Bulk Qualification" value={bulkFields.qualification} onChange={(value) => setBulkFields({ ...bulkFields, qualification: value })} />
-                  <Field label="Bulk Salary" value={bulkFields.salary} onChange={(value) => setBulkFields({ ...bulkFields, salary: value })} />
-                  <Field label="Bulk Job Type" value={bulkFields.jobType} onChange={(value) => setBulkFields({ ...bulkFields, jobType: value })} />
-                </div>
+            <Card className="mb-6 p-5">
+              <div className="mb-3">
+                <h2 className="font-bold text-slate-900">Bulk edit selected rows <span className="font-normal text-slate-500">(optional manual override)</span></h2>
+                <p className="text-sm text-slate-500">These fields are not Gemini output. Use them only when you intentionally want to overwrite the same value across selected rows.</p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <Field label="Location" value={bulkFields.location} onChange={(value) => setBulkFields({ ...bulkFields, location: value })} />
+                <Field label="Qualification" value={bulkFields.qualification} onChange={(value) => setBulkFields({ ...bulkFields, qualification: value })} />
+                <Field label="Salary" value={bulkFields.salary} onChange={(value) => setBulkFields({ ...bulkFields, salary: value })} />
+                <Field label="Job Type" value={bulkFields.jobType} onChange={(value) => setBulkFields({ ...bulkFields, jobType: value })} />
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button variant="outline" onClick={runBulkEdit} disabled={!selectedCount || !!actionLoading}>Apply Override ({selectedCount})</Button>
+                <Button variant="outline" onClick={() => runBulkStatus('APPROVED')} disabled={!selectedCount || !!actionLoading}>Approve ({selectedCount})</Button>
+                <Button variant="outline" onClick={() => runBulkStatus('REJECTED')} disabled={!selectedCount || !!actionLoading}>Reject ({selectedCount})</Button>
+                <Button variant="outline" onClick={mergeSelected} disabled={selectedCount < 2 || !!actionLoading}>Merge Compatible Rows</Button>
+              </div>
+            </Card>
+
+            <Card className="mb-6 p-5">
+              <div className="mb-5 flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
+                <div><h2 className="text-xl font-bold text-slate-950">AI Vacancy Review</h2><p className="text-sm text-slate-500">All extracted vacancy fields are visible and editable below.</p></div>
                 <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={runBulkEdit} disabled={!selectedCount || !!actionLoading}>
-                    {actionLoading === 'bulk-edit' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                    Apply Bulk Edit ({selectedCount})
-                  </Button>
-                  <Button variant="outline" onClick={() => runBulkStatus('APPROVED')} disabled={!selectedCount || !!actionLoading}>
-                    {actionLoading === 'APPROVED' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                    Approve
-                  </Button>
-                  <Button variant="outline" onClick={() => runBulkStatus('REJECTED')} disabled={!selectedCount || !!actionLoading}>
-                    {actionLoading === 'REJECTED' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                    Reject
-                  </Button>
-                  <Button variant="outline" onClick={mergeSelected} disabled={selectedCount < 2 || !!actionLoading}>Merge</Button>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="overflow-hidden mb-6">
-              <div className="p-5 border-b flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900">AI Review Table</h2>
-                  <p className="text-sm text-gray-500">Edit, add, duplicate, split, merge, approve or reject individual vacancy rows.</p>
-                </div>
-                <div className="flex flex-wrap gap-2 items-center">
-                  <div className="relative">
-                    <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
-                    <input className="h-10 border rounded-md pl-9 pr-3 w-64" placeholder="Filter vacancy rows" value={filter} onChange={(e) => setFilter(e.target.value)} />
-                  </div>
-                  <Button variant="outline" onClick={addBlankRow}><Plus className="w-4 h-4 mr-2" />Add Row</Button>
+                  <div className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" /><input className="h-10 w-64 rounded-md border pl-9 pr-3" placeholder="Filter extracted vacancies" value={filter} onChange={(e) => setFilter(e.target.value)} /></div>
+                  <Button variant="outline" onClick={addBlankRow}><Plus className="mr-2 h-4 w-4" />Add Row</Button>
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[1500px] text-sm">
-                  <thead className="bg-gray-50 text-gray-700">
-                    <tr>
-                      <th className="p-3 text-left w-10">
-                        <input type="checkbox" checked={allVisibleSelected} onChange={(e) => {
-                          const next = new Set(selected);
-                          rows.forEach((v) => e.target.checked ? next.add(v.id) : next.delete(v.id));
-                          setSelected(next);
-                        }} />
-                      </th>
-                      <th className="p-3 text-left">Post</th><th className="p-3 text-left">Department</th><th className="p-3 text-left">Speciality</th>
-                      <th className="p-3 text-left">Sub-speciality</th><th className="p-3 text-left w-24">Category</th><th className="p-3 text-left w-24">Vacancies</th>
-                      <th className="p-3 text-left">Qualification</th><th className="p-3 text-left">Location</th><th className="p-3 text-left w-28">Confidence</th>
-                      <th className="p-3 text-left w-32">Status</th><th className="p-3 text-left w-56">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((row) => (
-                      <tr key={row.id} className="border-t align-top bg-white">
-                        <td className="p-3"><input type="checkbox" checked={selected.has(row.id)} onChange={(e) => {
-                          const next = new Set(selected); e.target.checked ? next.add(row.id) : next.delete(row.id); setSelected(next);
-                        }} /></td>
-                        <Editable value={row.postName} onChange={(value) => updateLocalRow(row.id, 'postName', value)} />
-                        <Editable value={row.department || ''} onChange={(value) => updateLocalRow(row.id, 'department', value)} />
-                        <Editable value={row.speciality || ''} onChange={(value) => updateLocalRow(row.id, 'speciality', value)} />
-                        <Editable value={row.subSpeciality || ''} onChange={(value) => updateLocalRow(row.id, 'subSpeciality', value)} />
-                        <Editable value={row.category || ''} onChange={(value) => updateLocalRow(row.id, 'category', value)} />
-                        <td className="p-2"><input type="number" min={1} className="w-20 border rounded px-2 py-1.5" value={row.numberOfVacancies} onChange={(e) => updateLocalRow(row.id, 'numberOfVacancies', Number(e.target.value))} /></td>
-                        <Editable value={row.qualification || ''} onChange={(value) => updateLocalRow(row.id, 'qualification', value)} wide />
-                        <Editable value={row.location || ''} onChange={(value) => updateLocalRow(row.id, 'location', value)} />
-                        <td className="p-3">
-                          <Badge className={(row.confidenceScore || 0) >= 0.9 ? 'bg-green-100 text-green-800' : (row.confidenceScore || 0) >= 0.75 ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'}>
-                            {Math.round((row.confidenceScore || 0) * 100)}%
-                          </Badge>
-                          {(row.confidenceScore || 0) < 0.8 && <div className="text-xs text-amber-700 mt-1">Needs review</div>}
-                        </td>
-                        <td className="p-3"><Badge variant="outline">{row.status.replace('_', ' ')}</Badge></td>
-                        <td className="p-2">
-                          <div className="flex flex-wrap gap-1">
-                            <Button size="sm" variant="outline" onClick={() => saveRow(row)} disabled={savingId === row.id} title="Save row">
-                              {savingId === row.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={() => duplicateRow(row)} title="Duplicate"><Copy className="w-3.5 h-3.5" /></Button>
-                            <Button size="sm" variant="outline" onClick={() => splitRow(row)} title="Split">Split</Button>
-                            <Button size="sm" variant="outline" onClick={() => removeRow(row)} title="Delete" disabled={row.status === 'PUBLISHED'}><Trash2 className="w-3.5 h-3.5" /></Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {rows.length === 0 && <div className="py-12 text-center text-gray-500">No vacancy rows match the current filter.</div>}
-              </div>
-            </Card>
-
-            <div className="flex flex-col xl:flex-row gap-3 justify-between items-start xl:items-center bg-white border rounded-lg p-4">
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" onClick={copyAll}><Copy className="w-4 h-4 mr-2" />Copy All</Button>
-                {(['csv', 'xlsx', 'json'] as const).map((format) => (
-                  <Button key={format} variant="outline" onClick={() => downloadRecruitmentExport(recruitment.id, format)}>
-                    <Download className="w-4 h-4 mr-2" />{format.toUpperCase()}
-                  </Button>
+              <div className="space-y-4">
+                {rows.map((row, index) => (
+                  <VacancyEditor
+                    key={row.id}
+                    row={row}
+                    index={index}
+                    selected={selected.has(row.id)}
+                    saving={savingId === row.id}
+                    onSelect={(checked) => setSelected((current) => { const next = new Set(current); checked ? next.add(row.id) : next.delete(row.id); return next; })}
+                    onChange={(key, value) => updateLocalRow(row.id, key, value)}
+                    onSave={() => saveRow(row)}
+                    onDuplicate={() => duplicateRow(row)}
+                    onSplit={() => splitRow(row)}
+                    onDelete={() => removeRow(row)}
+                  />
                 ))}
+                {!rows.length && <div className="rounded-xl border border-dashed p-10 text-center text-slate-500">No vacancy rows match the current filter.</div>}
               </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-600">Only APPROVED rows are published. AI extraction itself never publishes.</span>
-                <span title={publishDisabledReason(approved, recruitment)}>
-                  <Button
-                    onClick={publish}
-                    disabled={approved === 0 || (recruitment.sector === 'government' && !recruitment.officialSourceVerified) || actionLoading === 'publish'}
-                  >
-                    {actionLoading === 'publish' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileText className="w-4 h-4 mr-2" />}
-                    Publish All Approved ({approved})
-                  </Button>
-                </span>
+            </Card>
+
+            <div className="flex flex-col justify-between gap-3 rounded-xl border bg-white p-4 xl:flex-row xl:items-center">
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" onClick={copyAll}><Copy className="mr-2 h-4 w-4" />Copy All</Button>
+                {(['csv', 'xlsx', 'json'] as const).map((format) => <Button key={format} variant="outline" onClick={() => downloadRecruitmentExport(recruitment.id, format)}><Download className="mr-2 h-4 w-4" />{format.toUpperCase()}</Button>)}
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-sm text-slate-500">Only APPROVED rows are published. Gemini never publishes automatically.</span>
+                <Button onClick={publish} disabled={!approved || (recruitment.sector === 'government' && !recruitment.officialSourceVerified) || actionLoading === 'publish'} className="bg-blue-600 hover:bg-blue-700">{actionLoading === 'publish' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}Publish All Approved ({approved})</Button>
               </div>
             </div>
           </>
@@ -607,28 +501,68 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
   );
 }
 
-function Stat({ label, value, tone = 'gray' }: { label: string; value: number; tone?: 'gray' | 'amber' | 'green' | 'blue' }) {
-  const classes = tone === 'amber' ? 'border-amber-200 bg-amber-50' : tone === 'green' ? 'border-green-200 bg-green-50' : tone === 'blue' ? 'border-blue-200 bg-blue-50' : 'border-gray-200 bg-white';
-  return <Card className={`p-4 ${classes}`}><p className="text-sm text-gray-600">{label}</p><p className="text-2xl font-semibold text-gray-900 mt-1">{value}</p></Card>;
-}
-
-function publishDisabledReason(approved: number, recruitment: Recruitment) {
-  if (approved === 0) return 'Approve at least one vacancy row before publishing.';
-  if (recruitment.sector === 'government' && !recruitment.officialSourceVerified) {
-    return 'Government recruitment cannot be published until official notification, application and organisation URLs are verified.';
-  }
-  return 'Publish all approved vacancy rows as candidate-facing jobs.';
-}
-
-function Field({ label, value, onChange, type = 'text' }: { label: string; value: string | number; onChange: (value: string) => void; type?: string }) {
+function VacancyEditor({ row, index, selected, saving, onSelect, onChange, onSave, onDuplicate, onSplit, onDelete }: {
+  row: VacancyRecord;
+  index: number;
+  selected: boolean;
+  saving: boolean;
+  onSelect: (checked: boolean) => void;
+  onChange: (key: keyof VacancyRecord, value: any) => void;
+  onSave: () => void;
+  onDuplicate: () => void;
+  onSplit: () => void;
+  onDelete: () => void;
+}) {
+  const confidence = Math.round((row.confidenceScore || 0) * 100);
   return (
-    <label className="block">
-      <span className="block text-sm font-medium text-gray-700 mb-1">{label}</span>
-      <input type={type} className="w-full h-10 rounded-md border border-gray-300 px-3 bg-white" value={value ?? ''} onChange={(e) => onChange(e.target.value)} />
-    </label>
+    <div className={`rounded-xl border p-4 transition ${selected ? 'border-blue-400 bg-blue-50/30' : 'border-slate-200 bg-white'}`}>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <input type="checkbox" checked={selected} onChange={(e) => onSelect(e.target.checked)} className="h-4 w-4" />
+          <div><p className="font-bold text-slate-900">Vacancy {index + 1}: {row.postName || 'Untitled vacancy'}</p><p className="text-xs text-slate-500">Gemini confidence: {confidence}%</p></div>
+          <Badge variant="outline" className={row.status === 'APPROVED' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : row.status === 'PUBLISHED' ? 'border-blue-200 bg-blue-50 text-blue-700' : row.status === 'REJECTED' ? 'border-red-200 bg-red-50 text-red-700' : 'border-amber-200 bg-amber-50 text-amber-700'}>{row.status.replace('_', ' ')}</Badge>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button size="sm" onClick={onSave} disabled={saving}>{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Save</Button>
+          <Button size="sm" variant="outline" onClick={onDuplicate}><Copy className="mr-1 h-4 w-4" />Duplicate</Button>
+          <Button size="sm" variant="outline" onClick={onSplit} disabled={row.numberOfVacancies <= 1}>Split</Button>
+          <Button size="sm" variant="outline" onClick={onDelete} disabled={row.status === 'PUBLISHED'}><Trash2 className="h-4 w-4" /></Button>
+        </div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <Field label="Post" value={row.postName || ''} onChange={(value) => onChange('postName', value)} />
+        <Field label="Department" value={row.department || ''} onChange={(value) => onChange('department', value)} />
+        <Field label="Speciality" value={row.speciality || ''} onChange={(value) => onChange('speciality', value)} />
+        <Field label="Sub-speciality" value={row.subSpeciality || ''} onChange={(value) => onChange('subSpeciality', value)} />
+        <Field label="Category" value={row.category || ''} onChange={(value) => onChange('category', value)} />
+        <Field label="Vacancies" type="number" value={row.numberOfVacancies || 1} onChange={(value) => onChange('numberOfVacancies', Math.max(1, Number(value) || 1))} />
+        <Field label="Location" value={row.location || ''} onChange={(value) => onChange('location', value)} />
+        <Field label="Job Type" value={row.jobType || ''} onChange={(value) => onChange('jobType', value)} />
+        <Field label="Age Limit" value={row.ageLimit || ''} onChange={(value) => onChange('ageLimit', value)} />
+        <Field label="Salary" value={row.salary || ''} onChange={(value) => onChange('salary', value)} />
+        <Field label="Pay Level" value={row.payLevel || ''} onChange={(value) => onChange('payLevel', value)} />
+        <Field label="Pay Scale" value={row.payScale || ''} onChange={(value) => onChange('payScale', value)} />
+      </div>
+      <div className="mt-3 grid gap-3 lg:grid-cols-3">
+        <AreaField label="Qualification" value={row.qualification || ''} onChange={(value) => onChange('qualification', value)} />
+        <AreaField label="Experience" value={row.experience || ''} onChange={(value) => onChange('experience', value)} />
+        <AreaField label="Other Eligibility / Requirements" value={row.otherEligibilityRequirements || ''} onChange={(value) => onChange('otherEligibilityRequirements', value)} />
+      </div>
+      {row.sourcePage != null && <p className="mt-3 text-xs text-slate-400">Source page: {row.sourcePage}</p>}
+    </div>
   );
 }
 
-function Editable({ value, onChange, wide = false }: { value: string; onChange: (value: string) => void; wide?: boolean }) {
-  return <td className="p-2"><input className={`border rounded px-2 py-1.5 ${wide ? 'w-72' : 'w-44'}`} value={value} onChange={(e) => onChange(e.target.value)} /></td>;
+function Stat({ label, value, tone = 'default' }: { label: string; value: number; tone?: 'default' | 'warning' | 'success' | 'info' }) {
+  const className = tone === 'warning' ? 'border-amber-200 bg-amber-50' : tone === 'success' ? 'border-emerald-200 bg-emerald-50' : tone === 'info' ? 'border-blue-200 bg-blue-50' : 'border-slate-200 bg-white';
+  return <Card className={`p-4 ${className}`}><p className="text-sm text-slate-500">{label}</p><p className="mt-1 text-2xl font-bold text-slate-950">{value}</p></Card>;
+}
+
+function Field({ label, value, onChange, type = 'text' }: { label: string; value: string | number; onChange: (value: string) => void; type?: string }) {
+  return <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">{label}</span><input type={type} className="h-10 w-full rounded-md border border-slate-300 bg-white px-3" value={value ?? ''} onChange={(e) => onChange(e.target.value)} /></label>;
+}
+
+function AreaField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">{label}</span><textarea className="min-h-24 w-full rounded-md border border-slate-300 bg-white p-3 text-sm" value={value} onChange={(e) => onChange(e.target.value)} /></label>;
 }

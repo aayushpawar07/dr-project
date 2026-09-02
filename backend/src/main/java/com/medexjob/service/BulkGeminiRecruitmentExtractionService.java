@@ -56,7 +56,11 @@ public class BulkGeminiRecruitmentExtractionService {
                 );
             }
 
-            RecruitmentExtractionResult result = aiClient.extractRequired(extractionText);
+            RecruitmentExtractionResult result = aiClient.extract(extractionText)
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Gemini extraction failed or is not configured. Verify MEDEX_AI_ENABLED, " +
+                            "MEDEX_AI_API_KEY, MEDEX_AI_CHAT_COMPLETIONS_URL and MEDEX_AI_MODEL, then retry."
+                    ));
 
             if (result.getRecruitment() == null) {
                 result.setRecruitment(new RecruitmentExtractionResult.RecruitmentData());

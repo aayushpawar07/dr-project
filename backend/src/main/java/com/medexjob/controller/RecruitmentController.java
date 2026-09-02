@@ -63,7 +63,9 @@ public class RecruitmentController {
         m.put("speciality", v.getSpeciality()); m.put("subSpeciality", v.getSubSpeciality()); m.put("numberOfVacancies", v.getNumberOfVacancies());
         m.put("category", v.getCategory()); m.put("qualification", v.getQualification()); m.put("experience", v.getExperience());
         m.put("ageLimit", v.getAgeLimit()); m.put("salary", v.getSalary()); m.put("payLevel", v.getPayLevel()); m.put("payScale", v.getPayScale());
-        m.put("location", v.getLocation()); m.put("publishedJobId", v.getPublishedJobId());
+        m.put("jobType", v.getJobType()); m.put("location", v.getLocation());
+        m.put("otherEligibilityRequirements", v.getOtherEligibilityRequirements()); m.put("sourcePage", v.getSourcePage());
+        m.put("publishedJobId", v.getPublishedJobId());
         return m;
     }
 }

@@ -15,11 +15,12 @@ import java.util.Locale;
 import java.util.Set;
 
 /**
- * Centralised dynamic job-search service.
+ * Centralised candidate-facing job search.
  *
- * Candidate WHAT searches are matched against the actual job title. WHERE is a
- * separate optional constraint, so callers can safely retry without location
- * while preserving the requested title.
+ * Free-text search deliberately spans title, organisation, department,
+ * speciality, qualification, description and location so a department query
+ * can discover the parent recruitment card without creating duplicate-looking
+ * cards for every department.
  */
 @Service
 public class JobSearchService {
@@ -54,7 +55,7 @@ public class JobSearchService {
     ) {
         String sanitizedSearch = sanitizeInput(searchQuery);
         Specification<Job> spec = JobSpecifications.buildSearchSpec(
-                null,
+                sanitizedSearch,
                 sanitizeLocation(location),
                 sector,
                 category,
@@ -63,7 +64,7 @@ public class JobSearchService {
                 dutyType,
                 status,
                 featured
-        ).and(titleMatchesAllTerms(sanitizedSearch));
+        );
 
         return jobRepository.findAll(spec, pageable);
     }
@@ -90,7 +91,7 @@ public class JobSearchService {
     ) {
         String sanitizedSearch = sanitizeInput(searchQuery);
         Specification<Job> spec = JobSpecifications.buildSearchSpec(
-                null,
+                sanitizedSearch,
                 sanitizeLocation(location),
                 sector,
                 category,
@@ -106,7 +107,7 @@ public class JobSearchService {
                 sanitizeInput(city),
                 sanitizeInput(salary),
                 openOnly
-        ).and(titleMatchesAllTerms(sanitizedSearch));
+        );
 
         return jobRepository.findAll(spec, pageable);
     }

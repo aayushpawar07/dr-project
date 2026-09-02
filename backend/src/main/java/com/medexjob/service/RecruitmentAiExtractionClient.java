@@ -17,8 +17,8 @@ import java.util.Optional;
 /**
  * AI extraction adapter using a configurable OpenAI-compatible chat-completions endpoint.
  *
- * Recruitment PDF extraction is now Gemini-first and must not silently fall back to
- * the legacy deterministic vacancy parser when Gemini is configured but fails.
+ * Recruitment PDF extraction is Gemini-required and must not silently fall back to
+ * the legacy deterministic vacancy parser.
  */
 @Component
 public class RecruitmentAiExtractionClient {
@@ -49,22 +49,17 @@ public class RecruitmentAiExtractionClient {
     }
 
     /**
-     * Backward-compatible optional API used by older callers.
-     *
-     * When AI is enabled/configured, extraction errors are deliberately propagated
-     * instead of being converted to Optional.empty(). This prevents a hidden parser
-     * fallback from producing misleading bulk vacancy data.
+     * Existing callers still receive Optional for compatibility, but extraction is
+     * required. Configuration/API failures are propagated and cannot trigger the
+     * legacy heuristic parser anymore.
      */
     public Optional<RecruitmentExtractionResult> extract(String pdfText) {
-        if (!isConfigured()) {
-            return Optional.empty();
-        }
         return Optional.of(extractRequired(pdfText));
     }
 
     /**
-     * Required AI extraction for recruitment PDFs. Throws a clear error if Gemini is
-     * unavailable, misconfigured, or returns invalid structured JSON.
+     * Required Gemini extraction for recruitment PDFs. Throws a clear error if Gemini
+     * is unavailable, misconfigured, or returns invalid structured JSON.
      */
     public RecruitmentExtractionResult extractRequired(String pdfText) {
         if (!isConfigured()) {

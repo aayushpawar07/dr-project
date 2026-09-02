@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -23,6 +24,8 @@ import java.util.Optional;
 public class RecruitmentAiExtractionClient {
     private static final Logger log = LoggerFactory.getLogger(RecruitmentAiExtractionClient.class);
     private static final int MAX_TEXT_CHARS = 140_000;
+    private static final int AI_CONNECT_TIMEOUT_MS = 10_000;
+    private static final int AI_READ_TIMEOUT_MS = 120_000;
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
@@ -39,7 +42,10 @@ public class RecruitmentAiExtractionClient {
             @Value("${medex.ai.api-key:}") String apiKey,
             @Value("${medex.ai.model:}") String model
     ) {
-        this.restClient = builder.build();
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(AI_CONNECT_TIMEOUT_MS);
+        requestFactory.setReadTimeout(AI_READ_TIMEOUT_MS);
+        this.restClient = builder.requestFactory(requestFactory).build();
         this.objectMapper = objectMapper;
         this.enabled = enabled;
         this.endpoint = endpoint;

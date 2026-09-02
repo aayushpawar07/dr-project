@@ -81,9 +81,6 @@ export function groupRecruitmentJobs(jobs: any[], query?: string) {
       standalone.push({
         ...enriched,
         _groupSearchText: searchText,
-        // JobListingPage currently performs one last title-token safety check.
-        // Keep a separate displayTitle for UI while exposing the complete search
-        // index through title only during an active free-text search.
         title: query?.trim() ? searchText : displayTitle,
       });
       continue;
@@ -124,7 +121,9 @@ export function groupRecruitmentJobs(jobs: any[], query?: string) {
       displayTitle,
       title: query?.trim() ? searchText : displayTitle,
       organization: org || first.organization,
-      recruitmentGrouped: items.length > 1,
+      // Any job published from a recruitment should open the recruitment-level
+      // view, even when a search happens to return only one matching department.
+      recruitmentGrouped: true,
       groupedVacancyRows: items.length,
       departments,
       specialities,

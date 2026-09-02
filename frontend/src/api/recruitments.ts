@@ -64,7 +64,7 @@ export interface Recruitment {
 export async function extractRecruitment(file: File, forceCreate = false) {
   const form = new FormData();
   form.append('file', file);
-  const res = await apiClient.post('/admin/recruitments/extract', form, {
+  const res = await apiClient.post('/admin/recruitments/gemini-extract', form, {
     params: { forceCreate },
     headers: { 'Content-Type': 'multipart/form-data' },
   });

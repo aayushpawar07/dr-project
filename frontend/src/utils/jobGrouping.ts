@@ -96,7 +96,11 @@ export function groupRecruitmentJobs(jobs: any[], query?: string) {
   const grouped = [...groups.values()].map((items) => {
     const first = items[0];
     const displayTitle = first._basePostName || basePostName(first);
-    const departments = unique(items.flatMap((item) => [item.department, item.speciality]));
+
+    // Department and speciality are separate concepts. Prefer the explicit
+    // department name for display/counting, and only use speciality as a fallback
+    // when a vacancy row genuinely has no department value.
+    const departments = unique(items.map((item) => item.department || item.speciality));
     const specialities = unique(items.map((item) => item.speciality));
     const locations = unique(items.map((item) => item.location));
     const qualifications = unique(items.map((item) => item.qualification));

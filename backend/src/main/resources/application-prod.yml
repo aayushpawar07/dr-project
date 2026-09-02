@@ -46,6 +46,16 @@ spring:
   mvc:
     throw-exception-if-no-handler-found: true
 
+# DeepSeek / chat-completions compatible recruitment extraction.
+# AI is attempted when MEDEX_AI_API_KEY is available. If the key/API is not
+# available, the existing deterministic PDF/OCR parser remains the fallback.
+medex:
+  ai:
+    enabled: ${MEDEX_AI_ENABLED:true}
+    chat-completions-url: ${MEDEX_AI_CHAT_COMPLETIONS_URL:https://api.deepseek.com/chat/completions}
+    api-key: ${MEDEX_AI_API_KEY:}
+    model: ${MEDEX_AI_MODEL:deepseek-chat}
+
 # JWT Configuration
 jwt:
   secret: ${JWT_SECRET:ThisIsMySuperSecretKeyForMedExJobComBackendApiWhichIsSecureAndLongEnoughForHS512}
@@ -100,4 +110,3 @@ management:
   endpoint:
     health:
       show-details: always
-

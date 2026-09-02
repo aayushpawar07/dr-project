@@ -88,12 +88,13 @@ public class RecruitmentAiExtractionClient {
     private String systemPrompt() {
         return """
                 You extract structured medical recruitment data from official recruitment notifications.
-                Return JSON only. Never invent missing values; use null instead. Preserve wording from the notification.
+                Return JSON only. Never invent, assume, copy from unrelated vacancies, or default missing values; use null instead.
+                Preserve wording from the notification and keep values tied to the vacancy/row they belong to.
                 Required JSON shape:
                 {
                   "recruitment": {
                     "organisationName": null, "title": null, "advertisementNumber": null,
-                    "recruitmentYear": null, "sector": "government|private", "location": null,
+                    "recruitmentYear": null, "sector": "government|private|null", "location": null,
                     "totalVacancies": null, "applicationStartDate": "YYYY-MM-DD|null",
                     "applicationLastDate": "YYYY-MM-DD|null", "applicationFee": null,
                     "selectionProcess": null, "officialNotificationUrl": null,
@@ -101,14 +102,20 @@ public class RecruitmentAiExtractionClient {
                   },
                   "vacancies": [{
                     "postName": null, "department": null, "speciality": null, "subSpeciality": null,
-                    "numberOfVacancies": 1, "category": null, "qualification": null, "experience": null,
+                    "numberOfVacancies": null, "category": null, "qualification": null, "experience": null,
                     "ageLimit": null, "salary": null, "payLevel": null, "payScale": null,
                     "jobType": null, "location": null, "otherEligibilityRequirements": null,
                     "confidenceScore": 0.0, "sourcePage": null
                   }]
                 }
-                A vacancy row must remain individually searchable. Do not collapse unrelated post/department/speciality/category rows.
-                Confidence is 0.0-1.0. This is extraction only; publication/verification is performed by an administrator.
+                Extraction rules:
+                - A vacancy row must remain individually searchable. Do not collapse unrelated post/department/speciality/category rows.
+                - numberOfVacancies must come from the exact vacancy/row. If the row count is missing or ambiguous, return null, never 1.
+                - vacancy.location must come from that vacancy/row when the notification gives a vacancy-specific location. Do not copy a location from another row.
+                - recruitment.location is only a recruitment-wide location when the document clearly states one location applies to all vacancies; otherwise use null.
+                - applicationLastDate must be the actual application closing/deadline date stated by the notification. Do not infer a date and do not reuse a date from an unrelated notice/row.
+                - Do not convert interview dates, advertisement dates, document-verification dates, or reporting dates into applicationLastDate.
+                - Confidence is 0.0-1.0. This is extraction only; publication/verification is performed by an administrator.
                 """;
     }
 }

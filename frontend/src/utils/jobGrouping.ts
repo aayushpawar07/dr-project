@@ -44,10 +44,8 @@ function searchTokens(query?: string) {
   return [...new Set(meaningful.length ? meaningful : raw)].slice(0, 12);
 }
 
-function matchesQuery(job: any, query?: string) {
-  const tokens = searchTokens(query);
-  if (!tokens.length) return true;
-  const haystack = clean(job?._groupSearchText || [
+function searchTextFor(job: any) {
+  return unique([
     job?.displayTitle,
     job?.title,
     organisation(job),
@@ -55,9 +53,19 @@ function matchesQuery(job: any, query?: string) {
     job?.qualification,
     job?.experience,
     job?.salary,
+    job?.salaryRange,
+    job?.department,
+    job?.speciality,
+    job?.description,
     ...(job?.departments || []),
     ...(job?.specialities || []),
-  ].join(' ')).toLowerCase();
+  ]).join(' ');
+}
+
+function matchesQuery(job: any, query?: string) {
+  const tokens = searchTokens(query);
+  if (!tokens.length) return true;
+  const haystack = clean(job?._groupSearchText || searchTextFor(job)).toLowerCase();
   return tokens.every((token) => haystack.includes(token));
 }
 
@@ -67,9 +75,20 @@ export function groupRecruitmentJobs(jobs: any[], query?: string) {
 
   for (const job of Array.isArray(jobs) ? jobs : []) {
     if (!job?.sourceRecruitmentId) {
-      standalone.push({ ...job, displayTitle: clean(job?.title) });
+      const displayTitle = clean(job?.title);
+      const enriched = { ...job, displayTitle };
+      const searchText = searchTextFor(enriched);
+      standalone.push({
+        ...enriched,
+        _groupSearchText: searchText,
+        // JobListingPage currently performs one last title-token safety check.
+        // Keep a separate displayTitle for UI while exposing the complete search
+        // index through title only during an active free-text search.
+        title: query?.trim() ? searchText : displayTitle,
+      });
       continue;
     }
+
     const postName = basePostName(job) || clean(job?.title) || 'Vacancy';
     const key = `${job.sourceRecruitmentId}::${postName.toLowerCase()}`;
     const bucket = groups.get(key) || [];
@@ -103,7 +122,7 @@ export function groupRecruitmentJobs(jobs: any[], query?: string) {
     return {
       ...first,
       displayTitle,
-      title: displayTitle,
+      title: query?.trim() ? searchText : displayTitle,
       organization: org || first.organization,
       recruitmentGrouped: items.length > 1,
       groupedVacancyRows: items.length,

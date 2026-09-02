@@ -16,7 +16,8 @@ import java.util.Optional;
 
 /**
  * Optional AI extraction adapter using a configurable chat-completions compatible endpoint.
- * The application works without it by falling back to deterministic PDF/table parsing.
+ * The standard extraction flow can fall back to deterministic PDF/table parsing.
+ * Bulk upload enforces Gemini separately in BulkGeminiRecruitmentExtractionService.
  */
 @Component
 public class RecruitmentAiExtractionClient {
@@ -80,7 +81,7 @@ public class RecruitmentAiExtractionClient {
             result.setExtractionMethod("AI");
             return Optional.of(result);
         } catch (Exception ex) {
-            log.warn("AI recruitment extraction failed; deterministic parser will be used: {}", ex.getMessage());
+            log.warn("AI recruitment extraction failed; deterministic parser will be used where allowed: {}", ex.getMessage());
             return Optional.empty();
         }
     }
@@ -109,13 +110,19 @@ public class RecruitmentAiExtractionClient {
                   }]
                 }
                 Extraction rules:
-                - A vacancy row must remain individually searchable. Do not collapse unrelated post/department/speciality/category rows.
-                - numberOfVacancies must come from the exact vacancy/row. If the row count is missing or ambiguous, return null, never 1.
+                - Extract every genuine vacancy row/post from the notification. Do not merge unrelated rows.
+                - Keep post, department, speciality, category, location and vacancy count associated with the exact row they came from.
+                - numberOfVacancies must come from the exact vacancy/row. If missing or ambiguous, return null, never 1.
+                - If a table has category-wise counts, keep category-wise rows separate when needed so totals stay accurate.
                 - vacancy.location must come from that vacancy/row when the notification gives a vacancy-specific location. Do not copy a location from another row.
                 - recruitment.location is only a recruitment-wide location when the document clearly states one location applies to all vacancies; otherwise use null.
-                - applicationLastDate must be the actual application closing/deadline date stated by the notification. Do not infer a date and do not reuse a date from an unrelated notice/row.
-                - Do not convert interview dates, advertisement dates, document-verification dates, or reporting dates into applicationLastDate.
-                - Confidence is 0.0-1.0. This is extraction only; publication/verification is performed by an administrator.
+                - applicationLastDate must be the actual application closing/deadline date. Never infer or manufacture a date.
+                - Do not use advertisement dates, interview dates, reporting dates, exam dates, document-verification dates, or unrelated dates as applicationLastDate.
+                - Extract qualification, experience, age limit, salary/pay scale, job type and eligibility only when supported by the notification.
+                - Never fill missing fields from common knowledge, previous notices, examples, or another vacancy in the same PDF.
+                - totalVacancies should reflect the notification total only when explicitly stated or safely sum-able from extracted vacancy rows.
+                - confidenceScore is 0.0-1.0 and should be lower for ambiguous/OCR-damaged rows.
+                - This is extraction only; an administrator reviews the result before publishing.
                 """;
     }
 }

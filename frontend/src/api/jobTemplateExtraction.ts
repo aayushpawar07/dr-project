@@ -1,4 +1,5 @@
 import apiClient from './apiClient';
+import { beginAiExtractionFeedback, endAiExtractionFeedback } from '../utils/aiExtractionFeedback';
 
 export interface JobTemplateRecruitmentExtraction {
   organisationName?: string | null;
@@ -48,10 +49,13 @@ export interface JobTemplateExtractionResponse {
 export async function extractJobTemplateFromPdf(file: File): Promise<JobTemplateExtractionResponse> {
   const form = new FormData();
   form.append('file', file);
-
-  const response = await apiClient.post('/jobs/template-extract', form, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
-
-  return response.data as JobTemplateExtractionResponse;
+  beginAiExtractionFeedback('Extracting job details with Gemini');
+  try {
+    const response = await apiClient.post('/jobs/template-extract', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data as JobTemplateExtractionResponse;
+  } finally {
+    endAiExtractionFeedback();
+  }
 }

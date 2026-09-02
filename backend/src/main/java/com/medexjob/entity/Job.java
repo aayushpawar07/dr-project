@@ -62,11 +62,13 @@ public class Job {
   @Column(name = "location", nullable = false)
   private String location;
 
-  @NotBlank
+  // Optional in the posting template. Keep the existing non-null column for
+  // schema compatibility; an empty string is allowed when the notice does not
+  // provide a qualification.
   @Column(name = "qualification", columnDefinition = "TEXT", nullable = false)
   private String qualification;
 
-  @NotBlank
+  // Optional in the posting template for the same reason as qualification.
   @Size(max = 100)
   @Column(name = "experience", nullable = false)
   private String experience;
@@ -172,11 +174,9 @@ public class Job {
   @Column(name = "updated_at")
   private LocalDateTime updatedAt;
 
-  // Soft delete support
   @Column(name = "deleted_at")
   private LocalDateTime deletedAt;
 
-  // Constructors
   public Job() {}
 
   public Job(
@@ -225,308 +225,82 @@ public class Job {
     this.dutyType = dutyType;
   }
 
-  // Getters and Setters
-  public UUID getId() {
-    return id;
-  }
+  public UUID getId() { return id; }
+  public void setId(UUID id) { this.id = id; }
+  public Employer getEmployer() { return employer; }
+  public void setEmployer(Employer employer) { this.employer = employer; }
+  public String getTitle() { return title; }
+  public void setTitle(String title) { this.title = title; }
+  public String getDescription() { return description; }
+  public void setDescription(String description) { this.description = description; }
+  public JobSector getSector() { return sector; }
+  public void setSector(JobSector sector) { this.sector = sector; }
+  public JobCategory getCategory() { return category; }
+  public void setCategory(JobCategory category) { this.category = category; }
+  public String getLocation() { return location; }
+  public void setLocation(String location) { this.location = location; }
+  public String getQualification() { return qualification; }
+  public void setQualification(String qualification) { this.qualification = qualification; }
+  public String getExperience() { return experience; }
+  public void setExperience(String experience) { this.experience = experience; }
+  public ExperienceLevel getExperienceLevel() { return experienceLevel; }
+  public void setExperienceLevel(ExperienceLevel experienceLevel) { this.experienceLevel = experienceLevel; }
+  public String getSpeciality() { return speciality; }
+  public void setSpeciality(String speciality) { this.speciality = speciality; }
+  public String getDepartment() { return department; }
+  public void setDepartment(String department) { this.department = department; }
+  public String getJobType() { return jobType; }
+  public void setJobType(String jobType) { this.jobType = jobType; }
+  public String getSlug() { return slug; }
+  public void setSlug(String slug) { this.slug = slug; }
+  public DutyType getDutyType() { return dutyType; }
+  public void setDutyType(DutyType dutyType) { this.dutyType = dutyType; }
+  public Integer getNumberOfPosts() { return numberOfPosts; }
+  public void setNumberOfPosts(Integer numberOfPosts) { this.numberOfPosts = numberOfPosts; }
+  public String getSalaryRange() { return salaryRange; }
+  public void setSalaryRange(String salaryRange) { this.salaryRange = salaryRange; }
+  public String getRequirements() { return requirements; }
+  public void setRequirements(String requirements) { this.requirements = requirements; }
+  public String getBenefits() { return benefits; }
+  public void setBenefits(String benefits) { this.benefits = benefits; }
+  public LocalDate getLastDate() { return lastDate; }
+  public void setLastDate(LocalDate lastDate) { this.lastDate = lastDate; }
+  public String getContactEmail() { return contactEmail; }
+  public void setContactEmail(String contactEmail) { this.contactEmail = contactEmail; }
+  public String getContactPhone() { return contactPhone; }
+  public void setContactPhone(String contactPhone) { this.contactPhone = contactPhone; }
+  public String getPdfUrl() { return pdfUrl; }
+  public void setPdfUrl(String pdfUrl) { this.pdfUrl = pdfUrl; }
+  public String getJobDocumentUrl() { return jobDocumentUrl; }
+  public void setJobDocumentUrl(String jobDocumentUrl) { this.jobDocumentUrl = jobDocumentUrl; }
+  public String getJobImageUrl() { return jobImageUrl; }
+  public void setJobImageUrl(String jobImageUrl) { this.jobImageUrl = jobImageUrl; }
+  public String getApplyLink() { return applyLink; }
+  public void setApplyLink(String applyLink) { this.applyLink = applyLink; }
+  public JobStatus getStatus() { return status; }
+  public void setStatus(JobStatus status) { this.status = status; }
+  public Boolean getIsFeatured() { return isFeatured; }
+  public void setIsFeatured(Boolean isFeatured) { this.isFeatured = isFeatured; }
+  public Integer getViews() { return views; }
+  public void setViews(Integer views) { this.views = views; }
+  public Integer getApplicationsCount() { return applicationsCount; }
+  public void setApplicationsCount(Integer applicationsCount) { this.applicationsCount = applicationsCount; }
+  public UUID getSourceRecruitmentId() { return sourceRecruitmentId; }
+  public void setSourceRecruitmentId(UUID sourceRecruitmentId) { this.sourceRecruitmentId = sourceRecruitmentId; }
+  public UUID getSourceVacancyId() { return sourceVacancyId; }
+  public void setSourceVacancyId(UUID sourceVacancyId) { this.sourceVacancyId = sourceVacancyId; }
+  public LocalDateTime getApprovedAt() { return approvedAt; }
+  public void setApprovedAt(LocalDateTime approvedAt) { this.approvedAt = approvedAt; }
+  public User getApprovedBy() { return approvedBy; }
+  public void setApprovedBy(User approvedBy) { this.approvedBy = approvedBy; }
+  public LocalDateTime getCreatedAt() { return createdAt; }
+  public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+  public LocalDateTime getUpdatedAt() { return updatedAt; }
+  public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+  public LocalDateTime getDeletedAt() { return deletedAt; }
+  public void setDeletedAt(LocalDateTime deletedAt) { this.deletedAt = deletedAt; }
+  public boolean isDeleted() { return deletedAt != null; }
 
-  public void setId(UUID id) {
-    this.id = id;
-  }
-
-  public Employer getEmployer() {
-    return employer;
-  }
-
-  public void setEmployer(Employer employer) {
-    this.employer = employer;
-  }
-
-  public String getTitle() {
-    return title;
-  }
-
-  public void setTitle(String title) {
-    this.title = title;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public void setDescription(String description) {
-    this.description = description;
-  }
-
-  public JobSector getSector() {
-    return sector;
-  }
-
-  public void setSector(JobSector sector) {
-    this.sector = sector;
-  }
-
-  public JobCategory getCategory() {
-    return category;
-  }
-
-  public void setCategory(JobCategory category) {
-    this.category = category;
-  }
-
-  public String getLocation() {
-    return location;
-  }
-
-  public void setLocation(String location) {
-    this.location = location;
-  }
-
-  public String getQualification() {
-    return qualification;
-  }
-
-  public void setQualification(String qualification) {
-    this.qualification = qualification;
-  }
-
-  public String getExperience() {
-    return experience;
-  }
-
-  public void setExperience(String experience) {
-    this.experience = experience;
-  }
-
-  public ExperienceLevel getExperienceLevel() {
-    return experienceLevel;
-  }
-
-  public void setExperienceLevel(ExperienceLevel experienceLevel) {
-    this.experienceLevel = experienceLevel;
-  }
-
-  public String getSpeciality() {
-    return speciality;
-  }
-
-  public void setSpeciality(String speciality) {
-    this.speciality = speciality;
-  }
-
-  public String getDepartment() {
-    return department;
-  }
-
-  public void setDepartment(String department) {
-    this.department = department;
-  }
-
-  public String getJobType() {
-    return jobType;
-  }
-
-  public void setJobType(String jobType) {
-    this.jobType = jobType;
-  }
-
-  public String getSlug() {
-    return slug;
-  }
-
-  public void setSlug(String slug) {
-    this.slug = slug;
-  }
-
-  public DutyType getDutyType() {
-    return dutyType;
-  }
-
-  public void setDutyType(DutyType dutyType) {
-    this.dutyType = dutyType;
-  }
-
-  public Integer getNumberOfPosts() {
-    return numberOfPosts;
-  }
-
-  public void setNumberOfPosts(Integer numberOfPosts) {
-    this.numberOfPosts = numberOfPosts;
-  }
-
-  public String getSalaryRange() {
-    return salaryRange;
-  }
-
-  public void setSalaryRange(String salaryRange) {
-    this.salaryRange = salaryRange;
-  }
-
-  public String getRequirements() {
-    return requirements;
-  }
-
-  public void setRequirements(String requirements) {
-    this.requirements = requirements;
-  }
-
-  public String getBenefits() {
-    return benefits;
-  }
-
-  public void setBenefits(String benefits) {
-    this.benefits = benefits;
-  }
-
-  public LocalDate getLastDate() {
-    return lastDate;
-  }
-
-  public void setLastDate(LocalDate lastDate) {
-    this.lastDate = lastDate;
-  }
-
-  public String getContactEmail() {
-    return contactEmail;
-  }
-
-  public void setContactEmail(String contactEmail) {
-    this.contactEmail = contactEmail;
-  }
-
-  public String getContactPhone() {
-    return contactPhone;
-  }
-
-  public void setContactPhone(String contactPhone) {
-    this.contactPhone = contactPhone;
-  }
-
-  public String getPdfUrl() {
-    return pdfUrl;
-  }
-
-  public void setPdfUrl(String pdfUrl) {
-    this.pdfUrl = pdfUrl;
-  }
-
-  public String getJobDocumentUrl() {
-    return jobDocumentUrl;
-  }
-
-  public void setJobDocumentUrl(String jobDocumentUrl) {
-    this.jobDocumentUrl = jobDocumentUrl;
-  }
-
-  public String getJobImageUrl() {
-    return jobImageUrl;
-  }
-
-  public void setJobImageUrl(String jobImageUrl) {
-    this.jobImageUrl = jobImageUrl;
-  }
-
-  public String getApplyLink() {
-    return applyLink;
-  }
-
-  public void setApplyLink(String applyLink) {
-    this.applyLink = applyLink;
-  }
-
-  public JobStatus getStatus() {
-    return status;
-  }
-
-  public void setStatus(JobStatus status) {
-    this.status = status;
-  }
-
-  public Boolean getIsFeatured() {
-    return isFeatured;
-  }
-
-  public void setIsFeatured(Boolean isFeatured) {
-    this.isFeatured = isFeatured;
-  }
-
-  public Integer getViews() {
-    return views;
-  }
-
-  public void setViews(Integer views) {
-    this.views = views;
-  }
-
-  public Integer getApplicationsCount() {
-    return applicationsCount;
-  }
-
-  public void setApplicationsCount(Integer applicationsCount) {
-    this.applicationsCount = applicationsCount;
-  }
-
-  public UUID getSourceRecruitmentId() {
-    return sourceRecruitmentId;
-  }
-
-  public void setSourceRecruitmentId(UUID sourceRecruitmentId) {
-    this.sourceRecruitmentId = sourceRecruitmentId;
-  }
-
-  public UUID getSourceVacancyId() {
-    return sourceVacancyId;
-  }
-
-  public void setSourceVacancyId(UUID sourceVacancyId) {
-    this.sourceVacancyId = sourceVacancyId;
-  }
-
-  public LocalDateTime getApprovedAt() {
-    return approvedAt;
-  }
-
-  public void setApprovedAt(LocalDateTime approvedAt) {
-    this.approvedAt = approvedAt;
-  }
-
-  public User getApprovedBy() {
-    return approvedBy;
-  }
-
-  public void setApprovedBy(User approvedBy) {
-    this.approvedBy = approvedBy;
-  }
-
-  public LocalDateTime getCreatedAt() {
-    return createdAt;
-  }
-
-  public void setCreatedAt(LocalDateTime createdAt) {
-    this.createdAt = createdAt;
-  }
-
-  public LocalDateTime getUpdatedAt() {
-    return updatedAt;
-  }
-
-  public void setUpdatedAt(LocalDateTime updatedAt) {
-    this.updatedAt = updatedAt;
-  }
-
-  public LocalDateTime getDeletedAt() {
-    return deletedAt;
-  }
-
-  public void setDeletedAt(LocalDateTime deletedAt) {
-    this.deletedAt = deletedAt;
-  }
-
-  public boolean isDeleted() {
-    return deletedAt != null;
-  }
-
-  // Enums
   public enum JobSector {
     GOVERNMENT,
     PRIVATE,

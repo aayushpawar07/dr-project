@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  BadgeIndianRupee,
+  ArrowRight,
   BriefcaseBusiness,
   Building2,
   CalendarDays,
@@ -30,14 +30,18 @@ export function RecruitmentPage() {
   const [recruitment, setRecruitment] = useState<Recruitment | null>(null);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
-  const [post, setPost] = useState('');
-  const [department, setDepartment] = useState('');
+  const [activePost, setActivePost] = useState('');
+  const [selectedVacancyId, setSelectedVacancyId] = useState('');
 
   useEffect(() => {
     if (!recruitmentId) return;
     setLoading(true);
     fetchPublishedRecruitment(recruitmentId)
-      .then(setRecruitment)
+      .then((data) => {
+        setRecruitment(data);
+        setActivePost(data.vacancies?.[0]?.postName || '');
+        setSelectedVacancyId(data.vacancies?.[0]?.id || '');
+      })
       .catch(() => setRecruitment(null))
       .finally(() => setLoading(false));
   }, [recruitmentId]);
@@ -45,58 +49,67 @@ export function RecruitmentPage() {
   const postGroups = useMemo(() => {
     const groups = new Map<string, VacancyRecord[]>();
     for (const vacancy of recruitment?.vacancies || []) {
-      const rows = groups.get(vacancy.postName) || [];
-      rows.push(vacancy);
-      groups.set(vacancy.postName, rows);
+      const items = groups.get(vacancy.postName) || [];
+      items.push(vacancy);
+      groups.set(vacancy.postName, items);
     }
     return [...groups.entries()].map(([name, vacancies]) => ({
       name,
       vacancies,
       total: vacancies.reduce((sum, vacancy) => sum + Number(vacancy.numberOfVacancies || 0), 0),
-      departments: [...new Set(vacancies.map((vacancy) => vacancy.department || vacancy.speciality).filter(Boolean) as string[])],
+      departmentCount: new Set(vacancies.map((vacancy) => vacancy.department || vacancy.speciality).filter(Boolean)).size,
     }));
   }, [recruitment]);
 
-  const departments = useMemo(
-    () => [...new Set((recruitment?.vacancies || []).map((v) => v.department || v.speciality).filter(Boolean) as string[])].sort(),
-    [recruitment],
-  );
-
-  const rows = useMemo(() => {
+  const visibleVacancies = useMemo(() => {
     if (!recruitment) return [];
     const q = query.trim().toLowerCase();
-    return recruitment.vacancies.filter((v) => {
-      if (post && v.postName !== post) return false;
-      if (department && v.department !== department && v.speciality !== department) return false;
+    return recruitment.vacancies.filter((vacancy) => {
+      if (activePost && vacancy.postName !== activePost) return false;
       if (!q) return true;
       return [
-        v.postName,
-        v.department,
-        v.speciality,
-        v.subSpeciality,
-        v.category,
-        v.qualification,
-        v.experience,
-        v.ageLimit,
-        v.salary,
-        v.payLevel,
-        v.payScale,
-        v.jobType,
-        v.location,
-        v.otherEligibilityRequirements,
+        vacancy.department,
+        vacancy.speciality,
+        vacancy.subSpeciality,
+        vacancy.qualification,
+        vacancy.location,
+        vacancy.category,
       ]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(q));
     });
-  }, [recruitment, query, post, department]);
+  }, [recruitment, activePost, query]);
+
+  useEffect(() => {
+    if (!visibleVacancies.length) {
+      setSelectedVacancyId('');
+      return;
+    }
+    if (!visibleVacancies.some((vacancy) => vacancy.id === selectedVacancyId)) {
+      setSelectedVacancyId(visibleVacancies[0].id);
+    }
+  }, [visibleVacancies, selectedVacancyId]);
+
+  const selectedVacancy = useMemo(
+    () => visibleVacancies.find((vacancy) => vacancy.id === selectedVacancyId) || visibleVacancies[0] || null,
+    [visibleVacancies, selectedVacancyId],
+  );
+
+  const departments = useMemo(
+    () => new Set((recruitment?.vacancies || []).map((vacancy) => vacancy.department || vacancy.speciality).filter(Boolean)).size,
+    [recruitment],
+  );
 
   if (loading) {
     return (
-      <div className="flex min-h-[65vh] flex-col items-center justify-center gap-3 bg-slate-50">
+      <div className="flex min-h-[65vh] flex-col items-center justify-center gap-4 bg-slate-50">
         <div className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm">
           <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
         </div>
-        <p className="font-medium text-slate-500">Loading recruitment details…</p>
+        <div className="text-center">
+          <p className="font-semibold text-slate-800">Loading recruitment</p>
+          <p className="text-sm text-slate-500">Preparing department-wise vacancies…</p>
+        </div>
       </div>
     );
   }
@@ -110,60 +123,56 @@ export function RecruitmentPage() {
     );
   }
 
-  const activeFilters = Boolean(post || department || query);
-
   return (
-    <div className="min-h-screen bg-[#f6f8fb]">
+    <div className="min-h-screen bg-[#f5f7fb]">
       <section className="border-b border-slate-200 bg-white">
-        <div className="container mx-auto max-w-7xl px-4 py-7 md:py-9">
-          <div className="mb-4 flex flex-wrap items-center gap-2">
-            <Badge className={recruitment.sector === 'government'
-              ? 'border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-50'
-              : 'border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-50'}>
-              {recruitment.sector === 'government' ? 'Government' : 'Private'}
-            </Badge>
-            {recruitment.officialSourceVerified && (
-              <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
-                <ShieldCheck className="mr-1 h-3.5 w-3.5" />Official Source
-              </Badge>
-            )}
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-[1fr_340px] lg:items-start">
-            <div>
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                <Building2 className="h-4 w-4 text-blue-600" />
-                {recruitment.organisationName}
-              </div>
-              <h1 className="mt-2 max-w-4xl text-3xl font-bold leading-tight text-slate-950 md:text-4xl">
-                {recruitment.title}
-              </h1>
-
-              <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-600">
-                {recruitment.location && (
-                  <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" />{recruitment.location}</span>
-                )}
-                {recruitment.advertisementNumber && (
-                  <span className="flex items-center gap-1.5"><FileText className="h-4 w-4" />Advt. No. {recruitment.advertisementNumber}</span>
-                )}
-                {recruitment.applicationLastDate && (
-                  <span className="flex items-center gap-1.5 font-semibold text-rose-600">
-                    <CalendarDays className="h-4 w-4" />Apply by {formatDate(recruitment.applicationLastDate)}
-                  </span>
+        <div className="container mx-auto max-w-7xl px-4 py-6 md:py-8">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_310px] lg:items-start">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge className={recruitment.sector === 'government'
+                  ? 'border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-50'
+                  : 'border border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-50'}>
+                  {recruitment.sector === 'government' ? 'Government' : 'Private'}
+                </Badge>
+                {recruitment.officialSourceVerified && (
+                  <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
+                    <ShieldCheck className="mr-1 h-3.5 w-3.5" />Official Source
+                  </Badge>
                 )}
               </div>
 
-              <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-                <HeroMetric icon={Users} value={recruitment.totalVacancies} label="Total Vacancies" />
-                <HeroMetric icon={BriefcaseBusiness} value={postGroups.length} label="Post Groups" />
-                <HeroMetric icon={Layers3} value={departments.length} label="Departments" />
-                <HeroMetric icon={CalendarDays} value={recruitment.applicationLastDate ? formatDate(recruitment.applicationLastDate) : 'See notice'} label="Last Date" />
+              <div className="mt-4 flex gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-blue-100 bg-blue-50 text-xl font-bold text-blue-700">
+                  {initials(recruitment.organisationName)}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                    <Building2 className="h-4 w-4 text-blue-600" />
+                    <span className="truncate">{recruitment.organisationName}</span>
+                  </div>
+                  <h1 className="mt-1 text-2xl font-bold leading-tight text-slate-950 md:text-3xl">{recruitment.title}</h1>
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-600">
+                    {recruitment.location && <Meta icon={MapPin}>{recruitment.location}</Meta>}
+                    {recruitment.advertisementNumber && <Meta icon={FileText}>Advt. No. {recruitment.advertisementNumber}</Meta>}
+                    {recruitment.applicationLastDate && (
+                      <Meta icon={CalendarDays} className="font-semibold text-rose-600">Apply by {formatDate(recruitment.applicationLastDate)}</Meta>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <Metric icon={Users} value={recruitment.totalVacancies} label="Total Vacancies" />
+                <Metric icon={BriefcaseBusiness} value={postGroups.length} label="Post Groups" />
+                <Metric icon={Layers3} value={departments} label="Departments" />
+                <Metric icon={CalendarDays} value={recruitment.applicationLastDate ? formatDate(recruitment.applicationLastDate) : 'See notice'} label="Last Date" />
               </div>
             </div>
 
-            <Card className="border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-20">
-              <p className="text-sm font-semibold text-slate-900">Official recruitment actions</p>
-              <p className="mt-1 text-xs leading-5 text-slate-500">Use the verified notification and official application link for final submission.</p>
+            <Card className="border-slate-200 bg-white p-4 shadow-sm">
+              <p className="text-sm font-bold text-slate-950">Official actions</p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">Always complete the final application through the official source.</p>
               <div className="mt-4 space-y-2">
                 {recruitment.officialApplicationUrl && (
                   <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => openExternal(recruitment.officialApplicationUrl)}>
@@ -172,7 +181,7 @@ export function RecruitmentPage() {
                 )}
                 {recruitment.officialNotificationUrl && (
                   <Button className="w-full" variant="outline" onClick={() => openExternal(recruitment.officialNotificationUrl)}>
-                    View Official Notification <FileText className="ml-2 h-4 w-4" />
+                    Official Notification <FileText className="ml-2 h-4 w-4" />
                   </Button>
                 )}
                 {recruitment.officialWebsite && (
@@ -186,154 +195,123 @@ export function RecruitmentPage() {
         </div>
       </section>
 
-      <div className="container mx-auto max-w-7xl px-4 py-7">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <main className="min-w-0 space-y-6">
-            {postGroups.length > 1 && (
-              <Card className="overflow-hidden border-slate-200 bg-white shadow-sm">
-                <div className="border-b border-slate-100 px-5 py-4">
-                  <h2 className="text-lg font-bold text-slate-950">Post Groups</h2>
-                  <p className="mt-1 text-sm text-slate-500">Choose a post group to see its department-wise vacancies.</p>
-                </div>
-                <div className="divide-y divide-slate-100">
-                  {postGroups.map((group) => (
+      <div className="container mx-auto max-w-7xl px-4 py-6">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_330px]">
+          <main className="min-w-0 space-y-5">
+            <Card className="overflow-hidden border-slate-200 bg-white shadow-sm">
+              <div className="border-b border-slate-100 px-5 py-4">
+                <h2 className="text-lg font-bold text-slate-950">Choose a post</h2>
+                <p className="mt-1 text-sm text-slate-500">One notification can contain several post groups and departments.</p>
+              </div>
+              <div className="grid gap-2 p-3 sm:grid-cols-2 xl:grid-cols-3">
+                {postGroups.map((group) => {
+                  const active = group.name === activePost;
+                  return (
                     <button
                       key={group.name}
                       type="button"
-                      onClick={() => { setPost(group.name); setDepartment(''); }}
-                      className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-blue-50/40"
+                      onClick={() => { setActivePost(group.name); setQuery(''); }}
+                      className={`rounded-xl border p-4 text-left transition ${active
+                        ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-100'
+                        : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/40'}`}
                     >
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-bold text-slate-900">{group.name}</span>
-                          <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-700">{group.total} vacancies</Badge>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-bold text-slate-950">{group.name}</p>
+                          <p className="mt-1 text-sm text-slate-500">{group.departmentCount} department{group.departmentCount === 1 ? '' : 's'}</p>
                         </div>
-                        <p className="mt-1 truncate text-sm text-slate-500">
-                          {group.departments.length
-                            ? `${group.departments.slice(0, 5).join(' • ')}${group.departments.length > 5 ? ` • +${group.departments.length - 5} more` : ''}`
-                            : 'Department details available inside'}
-                        </p>
+                        <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-blue-700 shadow-sm">{group.total}</span>
                       </div>
-                      <ChevronRight className="h-5 w-5 shrink-0 text-slate-400" />
                     </button>
-                  ))}
-                </div>
-              </Card>
-            )}
-
-            <Card className="border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-950">Find your department</h2>
-                  <p className="mt-1 text-sm text-slate-500">Search by post, department, speciality or qualification.</p>
-                </div>
-                {activeFilters && (
-                  <button
-                    type="button"
-                    className="text-sm font-semibold text-blue-700 hover:text-blue-800"
-                    onClick={() => { setPost(''); setDepartment(''); setQuery(''); }}
-                  >
-                    Clear filters
-                  </button>
-                )}
-              </div>
-              <div className="mt-4 grid gap-3 md:grid-cols-[1.3fr_1fr_1fr]">
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                  <input
-                    className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                    placeholder="e.g. General Surgery"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                  />
-                </div>
-                <SelectFilter value={post} onChange={setPost} options={postGroups.map((group) => group.name)} placeholder="All Posts" />
-                <SelectFilter value={department} onChange={setDepartment} options={departments} placeholder="All Departments" />
+                  );
+                })}
               </div>
             </Card>
 
             <Card className="overflow-hidden border-slate-200 bg-white shadow-sm">
-              <div className="flex flex-col gap-2 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-950">Department-wise vacancies</h2>
-                  <p className="mt-1 text-sm text-slate-500">{rows.length} matching vacancy record{rows.length === 1 ? '' : 's'}</p>
+              <div className="border-b border-slate-100 p-5">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-950">Find your department</h2>
+                    <p className="mt-1 text-sm text-slate-500">Select a department to instantly view its eligibility and vacancy details.</p>
+                  </div>
+                  <Badge className="w-fit bg-blue-50 text-blue-700 hover:bg-blue-50">{visibleVacancies.length} results</Badge>
                 </div>
-                {post && <Badge className="w-fit bg-blue-50 text-blue-700 hover:bg-blue-50">{post}</Badge>}
-              </div>
-
-              <div className="hidden overflow-x-auto md:block">
-                <table className="w-full min-w-[900px] text-sm">
-                  <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                    <tr>
-                      <th className="px-5 py-3 text-left">Department</th>
-                      <th className="px-4 py-3 text-left">Speciality</th>
-                      <th className="px-4 py-3 text-center">Vacancies</th>
-                      <th className="px-4 py-3 text-left">Qualification</th>
-                      <th className="px-4 py-3 text-left">Experience</th>
-                      <th className="px-5 py-3 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {rows.map((vacancy) => (
-                      <tr key={vacancy.id} className="transition hover:bg-slate-50/70">
-                        <td className="px-5 py-4">
-                          <div className="font-semibold text-slate-900">{vacancy.department || vacancy.postName}</div>
-                          <div className="mt-1 text-xs text-slate-500">{vacancy.postName}</div>
-                        </td>
-                        <td className="px-4 py-4 text-slate-700">{vacancy.speciality || '-'}</td>
-                        <td className="px-4 py-4 text-center">
-                          <span className="inline-flex min-w-9 items-center justify-center rounded-full bg-blue-50 px-2.5 py-1 font-bold text-blue-700">{vacancy.numberOfVacancies}</span>
-                        </td>
-                        <td className="max-w-[240px] px-4 py-4 text-slate-700">{vacancy.qualification || 'See notification'}</td>
-                        <td className="max-w-[230px] px-4 py-4 text-slate-600">{shorten(vacancy.experience, 90) || 'As per notification'}</td>
-                        <td className="px-5 py-4 text-right">
-                          {vacancy.publishedJobId && (
-                            <Button size="sm" variant="outline" onClick={() => navigate(`/job-detail/${vacancy.publishedJobId}`)}>
-                              View Details <ChevronRight className="ml-1 h-4 w-4" />
-                            </Button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="divide-y divide-slate-100 md:hidden">
-                {rows.map((vacancy) => (
-                  <VacancyMobileCard
-                    key={vacancy.id}
-                    vacancy={vacancy}
-                    onView={() => vacancy.publishedJobId && navigate(`/job-detail/${vacancy.publishedJobId}`)}
+                <div className="relative mt-4">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                  <input
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="Search General Surgery, Radiology, Anaesthesiology…"
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                   />
-                ))}
+                </div>
               </div>
 
-              {!rows.length && <div className="p-10 text-center text-slate-500">No vacancies match these filters.</div>}
+              <div className="grid min-h-[470px] md:grid-cols-[280px_minmax(0,1fr)]">
+                <div className="border-b border-slate-100 bg-slate-50/70 p-3 md:border-b-0 md:border-r">
+                  <div className="max-h-[560px] space-y-2 overflow-y-auto pr-1">
+                    {visibleVacancies.map((vacancy) => {
+                      const active = vacancy.id === selectedVacancy?.id;
+                      return (
+                        <button
+                          key={vacancy.id}
+                          type="button"
+                          onClick={() => setSelectedVacancyId(vacancy.id)}
+                          className={`w-full rounded-xl border p-3 text-left transition ${active
+                            ? 'border-blue-400 bg-white shadow-sm ring-2 ring-blue-100'
+                            : 'border-transparent bg-transparent hover:border-slate-200 hover:bg-white'}`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-slate-900">{vacancy.department || vacancy.speciality || vacancy.postName}</p>
+                              <p className="mt-1 truncate text-xs text-slate-500">{vacancy.speciality || vacancy.postName}</p>
+                            </div>
+                            <span className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-bold ${active ? 'bg-blue-600 text-white' : 'bg-white text-blue-700'}`}>
+                              {vacancy.numberOfVacancies}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                    {!visibleVacancies.length && <p className="p-5 text-center text-sm text-slate-500">No departments match your search.</p>}
+                  </div>
+                </div>
+
+                <div className="min-w-0 p-5">
+                  {selectedVacancy ? (
+                    <VacancyDetail
+                      vacancy={selectedVacancy}
+                      recruitment={recruitment}
+                      onViewJob={() => selectedVacancy.publishedJobId && navigate(`/job-detail/${selectedVacancy.publishedJobId}`)}
+                    />
+                  ) : (
+                    <div className="flex h-full min-h-[360px] items-center justify-center text-center text-slate-500">
+                      Select a department to view its details.
+                    </div>
+                  )}
+                </div>
+              </div>
             </Card>
           </main>
 
           <aside className="space-y-4">
             <Card className="border-slate-200 bg-white p-5 shadow-sm lg:sticky lg:top-20">
               <h3 className="font-bold text-slate-950">Recruitment overview</h3>
-              <div className="mt-4 space-y-3 text-sm">
-                <OverviewRow icon={Users} label="Total vacancies" value={String(recruitment.totalVacancies)} />
-                <OverviewRow icon={Layers3} label="Departments" value={String(departments.length)} />
-                <OverviewRow icon={BriefcaseBusiness} label="Post groups" value={String(postGroups.length)} />
-                {recruitment.applicationStartDate && <OverviewRow icon={CalendarDays} label="Starts" value={formatDate(recruitment.applicationStartDate)} />}
-                {recruitment.applicationLastDate && <OverviewRow icon={CalendarDays} label="Last date" value={formatDate(recruitment.applicationLastDate)} />}
+              <div className="mt-4 space-y-3">
+                <Overview icon={Users} label="Total vacancies" value={String(recruitment.totalVacancies)} />
+                <Overview icon={Layers3} label="Departments" value={String(departments)} />
+                <Overview icon={BriefcaseBusiness} label="Post groups" value={String(postGroups.length)} />
+                {recruitment.applicationStartDate && <Overview icon={CalendarDays} label="Application starts" value={formatDate(recruitment.applicationStartDate)} />}
+                {recruitment.applicationLastDate && <Overview icon={CalendarDays} label="Last date" value={formatDate(recruitment.applicationLastDate)} />}
               </div>
-            </Card>
 
-            {recruitment.applicationFee && (
-              <SideInfoCard icon={BadgeIndianRupee} title="Application Fee" text={recruitment.applicationFee} />
-            )}
-            {recruitment.selectionProcess && (
-              <SideInfoCard icon={CheckCircle2} title="Selection Process" text={recruitment.selectionProcess} />
-            )}
-            {recruitment.importantInstructions && (
-              <SideInfoCard icon={FileText} title="Important Instructions" text={recruitment.importantInstructions} />
-            )}
+              {(recruitment.applicationFee || recruitment.selectionProcess || recruitment.importantInstructions) && <div className="my-5 border-t border-slate-100" />}
+
+              {recruitment.applicationFee && <MiniSection title="Application Fee" value={recruitment.applicationFee} />}
+              {recruitment.selectionProcess && <MiniSection title="Selection Process" value={recruitment.selectionProcess} />}
+              {recruitment.importantInstructions && <MiniSection title="Important Instructions" value={recruitment.importantInstructions} />}
+            </Card>
           </aside>
         </div>
       </div>
@@ -341,78 +319,110 @@ export function RecruitmentPage() {
   );
 }
 
-function HeroMetric({ icon: Icon, value, label }: { icon: any; value: string | number; label: string }) {
+function VacancyDetail({ vacancy, recruitment, onViewJob }: { vacancy: VacancyRecord; recruitment: Recruitment; onViewJob: () => void }) {
+  const heading = vacancy.department || vacancy.speciality || vacancy.postName;
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
-      <Icon className="mb-2 h-5 w-5 text-blue-600" />
-      <div className="text-xl font-bold text-slate-950">{value}</div>
-      <div className="mt-0.5 text-xs font-medium text-slate-500">{label}</div>
-    </div>
-  );
-}
-
-function OverviewRow({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
-  return (
-    <div className="flex items-start gap-3 rounded-lg bg-slate-50 p-3">
-      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
-      <div className="min-w-0">
-        <div className="text-xs font-medium text-slate-500">{label}</div>
-        <div className="mt-0.5 font-semibold text-slate-900">{value}</div>
-      </div>
-    </div>
-  );
-}
-
-function SideInfoCard({ icon: Icon, title, text }: { icon: any; title: string; text: string }) {
-  return (
-    <Card className="border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-center gap-2 font-bold text-slate-950"><Icon className="h-4 w-4 text-blue-600" />{title}</div>
-      <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-600">{text}</p>
-    </Card>
-  );
-}
-
-function VacancyMobileCard({ vacancy, onView }: { vacancy: VacancyRecord; onView: () => void }) {
-  return (
-    <div className="p-4">
-      <div className="flex items-start justify-between gap-3">
+    <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <div className="font-bold text-slate-950">{vacancy.department || vacancy.postName}</div>
-          <div className="mt-1 text-sm font-medium text-blue-700">{vacancy.speciality || vacancy.postName}</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge className="bg-blue-50 text-blue-700 hover:bg-blue-50">{vacancy.postName}</Badge>
+            <Badge variant="outline">{vacancy.numberOfVacancies} Vacanc{vacancy.numberOfVacancies === 1 ? 'y' : 'ies'}</Badge>
+          </div>
+          <h2 className="mt-3 text-2xl font-bold text-slate-950">{heading}</h2>
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-600">
+            {vacancy.speciality && vacancy.speciality !== heading && <span>Speciality: <strong>{vacancy.speciality}</strong></span>}
+            {vacancy.location && <Meta icon={MapPin}>{vacancy.location}</Meta>}
+            {vacancy.jobType && <span className="font-medium text-slate-700">{vacancy.jobType}</span>}
+          </div>
         </div>
-        <Badge variant="outline">{vacancy.numberOfVacancies} vacancies</Badge>
+        {vacancy.publishedJobId && (
+          <Button variant="outline" onClick={onViewJob}>Open Job Page <ExternalLink className="ml-2 h-4 w-4" /></Button>
+        )}
       </div>
-      <div className="mt-3 grid gap-2 text-sm">
-        {vacancy.qualification && <MobileFact icon={GraduationCap} label="Qualification" value={vacancy.qualification} />}
-        {vacancy.experience && <MobileFact icon={Stethoscope} label="Experience" value={vacancy.experience} />}
-        {(vacancy.salary || vacancy.payScale || vacancy.payLevel) && <MobileFact icon={IndianRupee} label="Salary / Pay" value={vacancy.salary || vacancy.payScale || vacancy.payLevel || ''} />}
-        {vacancy.location && <MobileFact icon={MapPin} label="Location" value={vacancy.location} />}
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <DetailCard icon={GraduationCap} title="Qualification" value={vacancy.qualification || 'See official notification'} />
+        <DetailCard icon={Stethoscope} title="Experience" value={vacancy.experience || 'As per recruitment rules'} />
+        <DetailCard icon={IndianRupee} title="Salary / Pay" value={vacancy.salary || vacancy.payScale || vacancy.payLevel || 'As per notification'} />
+        <DetailCard icon={Users} title="Age Limit" value={vacancy.ageLimit || 'As per recruitment rules'} />
       </div>
-      {vacancy.publishedJobId && <Button className="mt-4 w-full" variant="outline" onClick={onView}>View Vacancy Details</Button>}
+
+      {vacancy.otherEligibilityRequirements && (
+        <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50/60 p-4">
+          <p className="text-xs font-bold uppercase tracking-wide text-amber-700">Other eligibility</p>
+          <p className="mt-1 text-sm leading-6 text-slate-700">{vacancy.otherEligibilityRequirements}</p>
+        </div>
+      )}
+
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <p className="text-sm font-bold text-slate-900">Selection process</p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">{recruitment.selectionProcess || 'Refer to the official notification for the selection process.'}</p>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <p className="text-sm font-bold text-slate-900">Important dates</p>
+          <div className="mt-2 space-y-2 text-sm text-slate-600">
+            <div className="flex justify-between gap-3"><span>Start date</span><strong className="text-slate-800">{recruitment.applicationStartDate ? formatDate(recruitment.applicationStartDate) : 'Not mentioned'}</strong></div>
+            <div className="flex justify-between gap-3"><span>Last date</span><strong className="text-rose-600">{recruitment.applicationLastDate ? formatDate(recruitment.applicationLastDate) : 'See notice'}</strong></div>
+          </div>
+        </div>
+      </div>
+
+      {recruitment.officialApplicationUrl && (
+        <Button className="mt-5 w-full bg-blue-600 py-5 text-base hover:bg-blue-700" onClick={() => openExternal(recruitment.officialApplicationUrl)}>
+          Apply for {heading} <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      )}
     </div>
   );
 }
 
-function MobileFact({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+function Metric({ icon: Icon, value, label }: { icon: any; value: string | number; label: string }) {
   return (
-    <div className="rounded-lg bg-slate-50 p-3">
-      <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500"><Icon className="h-3.5 w-3.5 text-blue-600" />{label}</div>
-      <div className="mt-1 font-medium text-slate-800">{value}</div>
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+      <Icon className="h-4 w-4 text-blue-600" />
+      <div className="mt-2 text-lg font-bold text-slate-950">{value}</div>
+      <div className="text-xs font-medium text-slate-500">{label}</div>
     </div>
   );
 }
 
-function SelectFilter({ value, onChange, options, placeholder }: { value: string; onChange: (value: string) => void; options: string[]; placeholder: string }) {
+function DetailCard({ icon: Icon, title, value }: { icon: any; title: string; value: string }) {
   return (
-    <select
-      className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    >
-      <option value="">{placeholder}</option>
-      {options.map((option) => <option key={option} value={option}>{option}</option>)}
-    </select>
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+        <div className="rounded-lg bg-blue-50 p-1.5"><Icon className="h-4 w-4 text-blue-600" /></div>
+        {title}
+      </div>
+      <p className="mt-3 text-sm font-semibold leading-6 text-slate-800">{value}</p>
+    </div>
   );
+}
+
+function Overview({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-3 rounded-lg bg-slate-50 p-3">
+      <div className="rounded-lg bg-white p-2"><Icon className="h-4 w-4 text-blue-600" /></div>
+      <div className="min-w-0">
+        <p className="text-xs text-slate-500">{label}</p>
+        <p className="truncate text-sm font-bold text-slate-900">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function MiniSection({ title, value }: { title: string; value: string }) {
+  return (
+    <div className="mb-4 last:mb-0">
+      <div className="flex items-center gap-2 text-sm font-bold text-slate-900"><CheckCircle2 className="h-4 w-4 text-emerald-600" />{title}</div>
+      <p className="mt-2 text-sm leading-6 text-slate-600">{value}</p>
+    </div>
+  );
+}
+
+function Meta({ icon: Icon, children, className = '' }: { icon: any; children: React.ReactNode; className?: string }) {
+  return <span className={`inline-flex items-center gap-1.5 ${className}`}><Icon className="h-4 w-4" />{children}</span>;
 }
 
 function formatDate(value: string) {
@@ -425,11 +435,13 @@ function formatDate(value: string) {
   return value;
 }
 
-function shorten(value?: string, max = 100) {
-  if (!value) return '';
-  if (value.length <= max) return value;
-  const cut = value.lastIndexOf(' ', max - 1);
-  return `${value.slice(0, cut > 40 ? cut : max).trim()}…`;
+function initials(value: string) {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase())
+    .join('') || 'MJ';
 }
 
 function openExternal(url?: string) {

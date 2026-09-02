@@ -15,10 +15,9 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * AI extraction adapter using a configurable OpenAI-compatible chat-completions endpoint.
- *
- * Recruitment PDF extraction is Gemini-required and must not silently fall back to
- * the legacy deterministic vacancy parser.
+ * Optional AI extraction adapter using a configurable chat-completions compatible endpoint.
+ * The standard extraction flow can fall back to deterministic PDF/table parsing.
+ * Bulk upload enforces Gemini separately in BulkGeminiRecruitmentExtractionService.
  */
 @Component
 public class RecruitmentAiExtractionClient {
@@ -48,30 +47,10 @@ public class RecruitmentAiExtractionClient {
         this.model = model;
     }
 
-    /**
-     * Existing callers still receive Optional for compatibility, but extraction is
-     * required. Configuration/API failures are propagated and cannot trigger the
-     * legacy heuristic parser anymore.
-     */
     public Optional<RecruitmentExtractionResult> extract(String pdfText) {
-        return Optional.of(extractRequired(pdfText));
-    }
-
-    /**
-     * Required Gemini extraction for recruitment PDFs. Throws a clear error if Gemini
-     * is unavailable, misconfigured, or returns invalid structured JSON.
-     */
-    public RecruitmentExtractionResult extractRequired(String pdfText) {
-        if (!isConfigured()) {
-            throw new IllegalStateException(
-                    "Gemini extraction is not configured. Set MEDEX_AI_ENABLED=true, " +
-                    "MEDEX_AI_API_KEY, MEDEX_AI_CHAT_COMPLETIONS_URL and MEDEX_AI_MODEL."
-            );
+        if (!enabled || endpoint.isBlank() || apiKey.isBlank() || model.isBlank()) {
+            return Optional.empty();
         }
-        if (pdfText == null || pdfText.isBlank()) {
-            throw new IllegalArgumentException("No readable PDF text was provided to Gemini extraction");
-        }
-
         try {
             String text = pdfText.length() > MAX_TEXT_CHARS ? pdfText.substring(0, MAX_TEXT_CHARS) : pdfText;
             Map<String, Object> body = Map.of(
@@ -92,45 +71,19 @@ public class RecruitmentAiExtractionClient {
                     .retrieve()
                     .body(String.class);
 
-            if (raw == null || raw.isBlank()) {
-                throw new IllegalStateException("Gemini returned an empty API response");
-            }
-
             JsonNode root = objectMapper.readTree(raw);
             String content = root.path("choices").path(0).path("message").path("content").asText();
             if (content.isBlank()) {
-                throw new IllegalStateException("Gemini returned an empty extraction result");
+                return Optional.empty();
             }
-
             content = content.replaceFirst("^```(?:json)?\\s*", "").replaceFirst("\\s*```$", "");
             RecruitmentExtractionResult result = objectMapper.readValue(content, RecruitmentExtractionResult.class);
-            if (result.getRecruitment() == null) {
-                result.setRecruitment(new RecruitmentExtractionResult.RecruitmentData());
-            }
-            if (result.getVacancies() == null) {
-                result.setVacancies(new java.util.ArrayList<>());
-            }
-            result.setExtractionMethod("GEMINI");
-            return result;
-        } catch (IllegalArgumentException | IllegalStateException ex) {
-            throw ex;
+            result.setExtractionMethod("AI");
+            return Optional.of(result);
         } catch (Exception ex) {
-            log.error("Gemini recruitment extraction failed: {}", ex.getMessage());
-            throw new IllegalStateException("Gemini recruitment extraction failed: " + safeMessage(ex), ex);
+            log.warn("AI recruitment extraction failed; deterministic parser will be used where allowed: {}", ex.getMessage());
+            return Optional.empty();
         }
-    }
-
-    private boolean isConfigured() {
-        return enabled
-                && endpoint != null && !endpoint.isBlank()
-                && apiKey != null && !apiKey.isBlank()
-                && model != null && !model.isBlank();
-    }
-
-    private String safeMessage(Exception ex) {
-        String message = ex.getMessage();
-        if (message == null || message.isBlank()) return ex.getClass().getSimpleName();
-        return message.length() > 250 ? message.substring(0, 250) : message;
     }
 
     private String systemPrompt() {

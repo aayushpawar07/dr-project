@@ -1,5 +1,6 @@
 // AI assisted development
 import apiClient from './apiClient';
+import { groupRecruitmentJobs } from '../utils/jobGrouping';
 
 export interface JobsQuery {
   search?: string;
@@ -19,18 +20,22 @@ export interface JobsQuery {
   openOnly?: boolean;
   page?: number;
   size?: number;
-  sort?: string; // e.g. 'createdAt,desc'
+  sort?: string;
   status?: 'active' | 'closed' | 'pending' | 'draft';
 }
 
 export async function fetchJobs(params: JobsQuery = {}) {
   try {
+    const requestedSize = params.size ?? 20;
+    const requestSize = Math.min(Math.max(requestedSize * 4, requestedSize), 100);
     const requestParams = {
       ...params,
       search: params.search?.trim() || undefined,
       location: params.location?.trim() || undefined,
       page: params.page ?? 0,
-      size: params.size ?? 20,
+      // Pull a wider window before grouping so multiple child departments do not
+      // consume all visible slots on the homepage/search page.
+      size: requestSize,
       sort: params.sort || 'createdAt,desc',
     };
 
@@ -42,12 +47,15 @@ export async function fetchJobs(params: JobsQuery = {}) {
 
     const res = await apiClient.get('/jobs', { params: requestParams });
     const data = res.data;
+    const rawContent = Array.isArray(data?.content) ? data.content : [];
+    const grouped = groupRecruitmentJobs(rawContent, params.search).slice(0, requestedSize);
+
     return {
-      content: Array.isArray(data?.content) ? data.content : [],
-      totalElements: Number(data?.totalElements || 0),
-      totalPages: Number(data?.totalPages || 0),
+      content: grouped,
+      totalElements: grouped.length,
+      totalPages: grouped.length > 0 ? 1 : 0,
       number: Number(data?.page ?? params.page ?? 0),
-      size: Number(data?.size ?? params.size ?? 20),
+      size: requestedSize,
     };
   } catch (err) {
     console.error('Fetch jobs error:', err);
@@ -91,7 +99,6 @@ export async function fetchJobsByEmployer(employerId: string, params: { status?:
     });
     const data = res.data;
 
-    // Return empty array if no content
     if (!Array.isArray(data?.content) || data.content.length === 0) {
       return {
         content: [],
@@ -105,7 +112,6 @@ export async function fetchJobsByEmployer(employerId: string, params: { status?:
     return data;
   } catch (err) {
     console.error('Error fetching jobs by employer:', err);
-    // Return empty data on error
     return {
       content: [],
       totalElements: 0,
@@ -131,7 +137,6 @@ export async function incrementJobView(id: string) {
     return res.data;
   } catch (error) {
     console.error('Error incrementing job view:', error);
-    // Don't throw error, just log it - view increment is not critical
     return null;
   }
 }
@@ -171,7 +176,7 @@ export interface JobPayload {
   numberOfPosts?: number;
   salary?: string;
   description: string;
-  lastDate: string; // yyyy-MM-dd
+  lastDate: string;
   pdfUrl?: string;
   jobDocumentUrl?: string;
   jobImageUrl?: string;
@@ -186,7 +191,6 @@ export interface JobPayload {
 }
 
 export async function createJob(payload: JobPayload) {
-  // The token is now added automatically by the interceptor
   const res = await apiClient.post('/jobs', payload);
   return res.data;
 }
@@ -205,47 +209,26 @@ export async function deleteJob(id: string) {
   await apiClient.delete(`/jobs/${id}`);
 }
 
-/**
- * Upload job document (PDF) for a specific job
- * @param jobId The job ID to upload the document for
- * @param file The PDF file to upload
- * @returns The uploaded document URL
- */
 export async function uploadJobDocument(jobId: string, file: File): Promise<{ jobDocumentUrl: string; jobId: string }> {
   const formData = new FormData();
   formData.append('file', file);
 
   const res = await apiClient.post(`/jobs/${jobId}/upload-document`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+    headers: { 'Content-Type': 'multipart/form-data' },
   });
   return res.data;
 }
 
-/**
- * Upload job image (jpg, jpeg, png, webp) for a specific job
- * @param jobId The job ID to upload the image for
- * @param file The image file to upload
- * @returns The uploaded image URL
- */
 export async function uploadJobImage(jobId: string, file: File): Promise<{ jobImageUrl: string; jobId: string }> {
   const formData = new FormData();
   formData.append('file', file);
 
   const res = await apiClient.post(`/jobs/${jobId}/upload-image`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
+    headers: { 'Content-Type': 'multipart/form-data' },
   });
   return res.data;
 }
 
-// ==================== ADMIN JOB API FUNCTIONS ====================
-
-/**
- * Fetch all jobs for admin (including all statuses)
- */
 export async function fetchAdminJobs(params: {
   search?: string;
   status?: string;
@@ -263,9 +246,6 @@ export async function fetchAdminJobs(params: {
   }
 }
 
-/**
- * Fetch a single job by ID for admin
- */
 export async function fetchAdminJob(id: string) {
   try {
     const res = await apiClient.get(`/admin/jobs/${id}`);
@@ -276,9 +256,6 @@ export async function fetchAdminJob(id: string) {
   }
 }
 
-/**
- * Create a new job as admin (without subscription requirement)
- */
 export async function createAdminJob(payload: JobPayload) {
   try {
     const res = await apiClient.post('/admin/jobs', payload);
@@ -289,9 +266,6 @@ export async function createAdminJob(payload: JobPayload) {
   }
 }
 
-/**
- * Update a job as admin
- */
 export async function updateAdminJob(id: string, payload: Partial<JobPayload>) {
   try {
     const res = await apiClient.put(`/admin/jobs/${id}`, payload);
@@ -302,9 +276,6 @@ export async function updateAdminJob(id: string, payload: Partial<JobPayload>) {
   }
 }
 
-/**
- * Update job status (DRAFT, ACTIVE, CLOSED, PENDING)
- */
 export async function updateAdminJobStatus(id: string, status: string) {
   try {
     const res = await apiClient.put(`/admin/jobs/${id}/status`, { status });
@@ -315,9 +286,6 @@ export async function updateAdminJobStatus(id: string, status: string) {
   }
 }
 
-/**
- * Publish a job (change status to ACTIVE)
- */
 export async function publishAdminJob(id: string) {
   try {
     const res = await apiClient.put(`/admin/jobs/${id}/publish`);
@@ -328,9 +296,6 @@ export async function publishAdminJob(id: string) {
   }
 }
 
-/**
- * Delete a job (soft delete)
- */
 export async function deleteAdminJob(id: string) {
   try {
     const res = await apiClient.delete(`/admin/jobs/${id}`);
@@ -341,9 +306,6 @@ export async function deleteAdminJob(id: string) {
   }
 }
 
-/**
- * Create a sample job for testing
- */
 export async function createSampleJob() {
   try {
     const res = await apiClient.post('/admin/jobs/sample');

@@ -1,4 +1,5 @@
 import apiClient from './apiClient';
+import { beginAiExtractionFeedback, endAiExtractionFeedback } from '../utils/aiExtractionFeedback';
 
 export interface VacancyRecord {
   id: string;
@@ -64,11 +65,16 @@ export interface Recruitment {
 export async function extractRecruitment(file: File, forceCreate = false) {
   const form = new FormData();
   form.append('file', file);
-  const res = await apiClient.post('/admin/recruitments/gemini-extract', form, {
-    params: { forceCreate },
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
-  return res.data as { duplicate: boolean; created: boolean; message: string; recruitment: Recruitment };
+  beginAiExtractionFeedback('Extracting recruitment with Gemini');
+  try {
+    const res = await apiClient.post('/admin/recruitments/gemini-extract', form, {
+      params: { forceCreate },
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data as { duplicate: boolean; created: boolean; message: string; recruitment: Recruitment };
+  } finally {
+    endAiExtractionFeedback();
+  }
 }
 
 export async function fetchRecruitment(id: string): Promise<Recruitment> {

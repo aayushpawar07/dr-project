@@ -54,6 +54,7 @@ export interface Job {
   sector: JobSector;
   category: JobCategory;
   location: string;
+  state?: string;
   qualification: string;
   experience: string;
   numberOfPosts: number;

@@ -1,8 +1,20 @@
 // AI assisted development
 import { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, useNavigate, useLocation, useParams } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useNavigate,
+  useLocation,
+  useParams,
+} from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
-import { createJob, createAdminJob, uploadJobDocument, uploadJobImage } from "./api/jobs";
+import {
+  createJob,
+  createAdminJob,
+  uploadJobDocument,
+  uploadJobImage,
+} from "./api/jobs";
 import { trackVisitor } from "./api/analytics";
 
 import { Header } from "./components/Header";
@@ -44,45 +56,85 @@ import { AdminCandidateInsights } from "./components/AdminCandidateInsights";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 
-function EmployerManagementPageWrapper({ onNavigate }: { onNavigate: (page: string) => void }) {
+function EmployerManagementPageWrapper({
+  onNavigate,
+}: {
+  onNavigate: (page: string) => void;
+}) {
   const { employerId } = useParams<{ employerId: string }>();
-  return <EmployerManagementPage onNavigate={onNavigate} employerId={employerId} />;
+  return (
+    <EmployerManagementPage onNavigate={onNavigate} employerId={employerId} />
+  );
 }
 
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, user, logout, token } = useAuth();
-  const [currentPage, setCurrentPage] = useState(location.pathname.substring(1) || "home");
+  const [currentPage, setCurrentPage] = useState(
+    location.pathname.substring(1) || "home",
+  );
 
-  useEffect(() => { setCurrentPage(location.pathname.substring(1) || "home"); }, [location]);
-  useEffect(() => { trackVisitor(); }, [location.pathname]);
-  useEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: "instant" }); }, [location.pathname]);
+  useEffect(() => {
+    setCurrentPage(location.pathname.substring(1) || "home");
+  }, [location]);
+
+  useEffect(() => {
+    trackVisitor();
+  }, [location.pathname]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [location.pathname]);
 
   const handleNavigate = (page: string, entityId?: string) => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-    if (page === "logout") { logout(); navigate("/login"); return; }
-    if (page === "dashboard") {
-      if (!isAuthenticated || !user) { navigate("/login"); return; }
-      if (user.role === "admin") navigate("/dashboard/admin");
-      else if (user.role === "employer") navigate("/dashboard/employer");
-      else navigate("/dashboard/candidate");
+
+    if (page === "logout") {
+      logout();
+      navigate("/login");
       return;
     }
+
+    if (page === "dashboard") {
+      if (!isAuthenticated || !user) {
+        navigate("/login");
+        return;
+      }
+      if (user.role === "admin") {
+        navigate("/dashboard/admin");
+      } else if (user.role === "employer") {
+        navigate("/dashboard/employer");
+      } else if (user.role === "candidate") {
+        navigate("/dashboard/candidate");
+      } else {
+        navigate("/dashboard/candidate");
+      }
+      return;
+    }
+
     const path = entityId ? `/${page}/${entityId}` : `/${page}`;
     navigate(path);
   };
 
   const getDashboard = () => {
-    if (!isAuthenticated || !user) return <AuthPage mode="login" onNavigate={handleNavigate} />;
-    if (user.role === "admin") return <AdminDashboard onNavigate={handleNavigate} />;
-    if (user.role === "employer") return <EmployerVerification onNavigate={handleNavigate} />;
+    if (!isAuthenticated || !user)
+      return <AuthPage mode="login" onNavigate={handleNavigate} />;
+    if (user.role === "admin")
+      return <AdminDashboard onNavigate={handleNavigate} />;
+    if (user.role === "employer")
+      return <EmployerVerification onNavigate={handleNavigate} />;
     return <CandidateDashboard onNavigate={handleNavigate} />;
   };
 
   return (
     <div className="flex flex-col min-h-screen">
-      <Header currentPage={currentPage} onNavigate={handleNavigate} isAuthenticated={isAuthenticated} userRole={user?.role} />
+      <Header
+        currentPage={currentPage}
+        onNavigate={handleNavigate}
+        isAuthenticated={isAuthenticated}
+        userRole={user?.role}
+      />
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<HomePage onNavigate={handleNavigate} />} />
@@ -109,7 +161,20 @@ function AppContent() {
           <Route path="/refund-cancellation" element={<RefundCancellationPage onNavigate={handleNavigate} />} />
           <Route path="/contact" element={<ContactUsPage onNavigate={handleNavigate} />} />
           <Route path="/subscription" element={<SubscriptionPage onNavigate={handleNavigate} />} />
-          <Route path="/notifications" element={isAuthenticated && user ? <NotificationCenter userId={user.id} userRole={user.role as "admin" | "employer" | "candidate"} /> : <AuthPage mode="login" onNavigate={handleNavigate} />} />
+
+          <Route
+            path="/notifications"
+            element={
+              isAuthenticated && user ? (
+                <NotificationCenter
+                  userId={user.id}
+                  userRole={user.role as "admin" | "employer" | "candidate"}
+                />
+              ) : (
+                <AuthPage mode="login" onNavigate={handleNavigate} />
+              )
+            }
+          />
 
           {isAuthenticated && user && (
             <>
@@ -119,22 +184,73 @@ function AppContent() {
               <Route path="/verification" element={<EmployerVerification onNavigate={handleNavigate} />} />
 
               {user.role === "employer" && (
-                <Route path="/employer-post-job" element={<JobPostingForm onCancel={() => handleNavigate("dashboard/employer")} onSave={async (jobData: any) => {
-                  try {
-                    if (!token) { toast.error("Authentication token not found. Please login again."); return; }
-                    const payload = { ...jobData, sector: "private", status: "pending", featured: false, views: 0, applications: 0, type: "hospital" };
-                    const createdJob = await createJob(payload);
-                    const jobId = createdJob?.id;
-                    if (jobId && jobData.pdfFile) { try { await uploadJobDocument(jobId, jobData.pdfFile); } catch (uploadError) { console.error("Error uploading job document:", uploadError); } }
-                    if (jobId && jobData.imageFile) { try { await uploadJobImage(jobId, jobData.imageFile); } catch (uploadError) { console.error("Error uploading job image:", uploadError); } }
-                    toast.success("Job created successfully!"); handleNavigate("dashboard/employer");
-                  } catch (e: any) {
-                    console.error("Error creating job:", e);
-                    const errorMessage = e.response?.data?.error || e.message || "Failed to create job. Please try again.";
-                    if ((e.response?.status === 401 || e.response?.status === 403) && e.response?.data?.redirectTo) { toast.error(errorMessage); navigate(e.response.data.redirectTo); return; }
-                    toast.error(`Error creating job: ${errorMessage}`);
+                <Route
+                  path="/employer-post-job"
+                  element={
+                    <JobPostingForm
+                      onCancel={() => handleNavigate("dashboard/employer")}
+                      onSave={async (jobData: any) => {
+                        try {
+                          if (!token) {
+                            toast.error("Authentication token not found. Please login again.");
+                            return;
+                          }
+                          const payload = {
+                            ...jobData,
+                            sector: "private",
+                            status: "pending",
+                            featured: false,
+                            views: 0,
+                            applications: 0,
+                            type: "hospital",
+                          };
+                          const createdJob = await createJob(payload);
+                          const jobId = createdJob?.id;
+
+                          if (jobId && jobData.pdfFile) {
+                            try {
+                              await uploadJobDocument(jobId, jobData.pdfFile);
+                            } catch (uploadError) {
+                              console.error("Error uploading job document:", uploadError);
+                            }
+                          }
+
+                          if (jobId && jobData.imageFile) {
+                            try {
+                              await uploadJobImage(jobId, jobData.imageFile);
+                            } catch (uploadError) {
+                              console.error("Error uploading job image:", uploadError);
+                            }
+                          }
+
+                          toast.success("Job created successfully!");
+                          handleNavigate("dashboard/employer");
+                        } catch (e: any) {
+                          console.error("Error creating job:", e);
+                          let errorMessage = "Failed to create job. Please try again.";
+                          if (e.response?.data?.error) {
+                            errorMessage = e.response.data.error;
+                            if (e.response.status === 401 || e.response.status === 403) {
+                              if (e.response?.data?.redirectTo) {
+                                toast.error(errorMessage);
+                                navigate(e.response.data.redirectTo);
+                                return;
+                              }
+                              if (errorMessage.includes("Unauthorized") || errorMessage.includes("login")) {
+                                toast.error("Your session has expired. Please login again.");
+                                handleNavigate("logout");
+                                return;
+                              }
+                            }
+                          } else if (e.message) {
+                            errorMessage = e.message;
+                          }
+                          toast.error(`Error creating job: ${errorMessage}`);
+                        }
+                      }}
+                    />
                   }
-                }} /> } />
+                />
               )}
 
               <Route path="/dashboard/admin" element={<AdminDashboard onNavigate={handleNavigate} />} />
@@ -145,24 +261,89 @@ function AppContent() {
               <Route path="/employer/jobs/edit/:jobId" element={<EditJobPage onNavigate={handleNavigate} />} />
               <Route path="/admin-news" element={<AdminNewsManagementPage onNavigate={handleNavigate} />} />
               <Route path="/admin-pricing" element={<AdminPricingManagement onNavigate={handleNavigate} />} />
-              <Route path="/admin-candidate-insights" element={user.role === "admin" ? <AdminCandidateInsights onNavigate={handleNavigate} /> : <AuthPage mode="login" onNavigate={handleNavigate} />} />
-              <Route path="/admin-post-job" element={<JobPostingForm onCancel={() => handleNavigate("admin-jobs")} onSave={async (jobData: any) => {
-                try {
-                  if (!token) { toast.error("Authentication token not found. Please login again."); return; }
-                  const payload = { ...jobData, status: jobData.status || "active", featured: jobData.featured || false, views: jobData.views || 0, applications: jobData.applications || 0, type: "hospital" };
-                  const createdJob = await createAdminJob(payload);
-                  const jobId = createdJob?.id;
-                  if (jobId && jobData.pdfFile) { try { await uploadJobDocument(jobId, jobData.pdfFile); } catch (uploadError) { console.error("Error uploading job document:", uploadError); } }
-                  if (jobId && jobData.imageFile) { try { await uploadJobImage(jobId, jobData.imageFile); } catch (uploadError) { console.error("Error uploading job image:", uploadError); } }
-                  toast.success("Job created successfully!"); handleNavigate("admin-jobs");
-                } catch (e: any) { console.error("Error creating job:", e); toast.error(`Error creating job: ${e?.error || e?.message || "Unknown error"}`); }
-              }} /> } />
+              <Route
+                path="/admin-candidate-insights"
+                element={
+                  user.role === "admin" ? (
+                    <AdminCandidateInsights onNavigate={handleNavigate} />
+                  ) : (
+                    <AuthPage mode="login" onNavigate={handleNavigate} />
+                  )
+                }
+              />
+              <Route
+                path="/admin-post-job"
+                element={
+                  <JobPostingForm
+                    onCancel={() => handleNavigate("admin-jobs")}
+                    onSave={async (jobData: any) => {
+                      try {
+                        if (!token) {
+                          toast.error("Authentication token not found. Please login again.");
+                          return;
+                        }
+                        const payload = {
+                          ...jobData,
+                          status: jobData.status || "active",
+                          featured: jobData.featured || false,
+                          views: jobData.views || 0,
+                          applications: jobData.applications || 0,
+                          type: "hospital",
+                        };
+                        const createdJob = await createAdminJob(payload);
+                        const jobId = createdJob?.id;
+
+                        if (jobId && jobData.pdfFile) {
+                          try {
+                            await uploadJobDocument(jobId, jobData.pdfFile);
+                          } catch (uploadError) {
+                            console.error("Error uploading job document:", uploadError);
+                          }
+                        }
+
+                        if (jobId && jobData.imageFile) {
+                          try {
+                            await uploadJobImage(jobId, jobData.imageFile);
+                          } catch (uploadError) {
+                            console.error("Error uploading job image:", uploadError);
+                          }
+                        }
+
+                        toast.success("Job created successfully!");
+                        handleNavigate("admin-jobs");
+                      } catch (e: any) {
+                        console.error("Error creating job:", e);
+                        const errorMsg = e?.error || e?.message || "Unknown error";
+                        toast.error(`Error creating job: ${errorMsg}`);
+                      }
+                    }}
+                  />
+                }
+              />
               <Route path="/profile" element={<ProfilePage onNavigate={handleNavigate} />} />
               <Route path="/admin-users" element={<AdminUsersPage onNavigate={handleNavigate} />} />
               <Route path="/admin-employer-verification" element={<EmployerVerificationPage onNavigate={handleNavigate} />} />
               <Route path="/employer-management/:employerId" element={<EmployerManagementPageWrapper onNavigate={handleNavigate} />} />
-              <Route path="/admin-applications" element={user.role === "admin" ? <AdminApplications onNavigate={handleNavigate} userRole="admin" /> : <AuthPage mode="login" onNavigate={handleNavigate} />} />
-              <Route path="/employer-manage-applications" element={(user.role === "employer" || user.role === "admin") ? <AdminApplications onNavigate={handleNavigate} userRole="employer" /> : <AuthPage mode="login" onNavigate={handleNavigate} />} />
+              <Route
+                path="/admin-applications"
+                element={
+                  isAuthenticated && user && user.role === "admin" ? (
+                    <AdminApplications onNavigate={handleNavigate} userRole="admin" />
+                  ) : (
+                    <AuthPage mode="login" onNavigate={handleNavigate} />
+                  )
+                }
+              />
+              <Route
+                path="/employer-manage-applications"
+                element={
+                  isAuthenticated && user && (user.role === "employer" || user.role === "admin") ? (
+                    <AdminApplications onNavigate={handleNavigate} userRole="employer" />
+                  ) : (
+                    <AuthPage mode="login" onNavigate={handleNavigate} />
+                  )
+                }
+              />
               <Route path="/analytics" element={<AnalyticsDashboard userRole={user.role} userId={user.id} />} />
             </>
           )}
@@ -173,4 +354,11 @@ function AppContent() {
   );
 }
 
-export default function App() { return <BrowserRouter><AppContent /><Toaster position="top-right" richColors /></BrowserRouter>; }
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+      <Toaster position="top-right" richColors />
+    </BrowserRouter>
+  );
+}

@@ -1,99 +1,565 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
+  Activity,
   AlarmClock,
-  Briefcase,
+  Baby,
+  Bone,
+  Brain,
   BriefcaseBusiness,
   Building2,
-  Calendar,
+  CalendarDays,
   ChevronRight,
+  Cross,
+  Ear,
   ExternalLink,
   FileText,
   GraduationCap,
+  HeartPulse,
   IndianRupee,
-  Layers3,
-  Loader2,
   MapPin,
+  Microscope,
+  ScanLine,
+  Scissors,
   Search,
   Share2,
   Shield,
   ShieldCheck,
   Stethoscope,
   Users,
+  type LucideIcon,
 } from 'lucide-react';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Card } from './ui/card';
 import {
   fetchPublishedRecruitment,
   Recruitment,
   VacancyRecord,
 } from '../api/recruitments';
 
-const recruitmentLayoutCss = `
-  .recruitment-approved-top {
+const PAGE_STYLES = `
+  .recruit-page {
+    min-height: 100vh;
+    background: #f7f9fc;
+    color: #111827;
+    padding-bottom: 82px;
+  }
+
+  .recruit-shell {
+    width: min(1400px, calc(100% - 36px));
+    margin: 0 auto;
+    padding: 18px 0 40px;
+  }
+
+  .recruit-top {
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) 390px;
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  .recruit-card {
+    background: #ffffff;
+    border: 1px solid #dfe7f2;
+    border-radius: 14px;
+    box-shadow: 0 7px 24px rgba(15, 23, 42, 0.045);
+  }
+
+  .recruit-hero {
+    min-height: 270px;
+    padding: 18px 20px 20px;
+    position: relative;
+    overflow: hidden;
+    border-color: #c9dcff;
+    background:
+      radial-gradient(circle at 88% 12%, rgba(255,255,255,.95) 0 22%, transparent 23%),
+      linear-gradient(118deg, #edf5ff 0%, #f8fbff 52%, #ffffff 100%);
+  }
+
+  .recruit-hero.private {
+    border-color: #bcebd8;
+    background:
+      radial-gradient(circle at 88% 12%, rgba(255,255,255,.95) 0 22%, transparent 23%),
+      linear-gradient(118deg, #ecfdf5 0%, #f5fffb 52%, #ffffff 100%);
+  }
+
+  .recruit-badge-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .recruit-badges {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .sector-badge, .official-badge, .tiny-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 8px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .sector-badge {
+    padding: 7px 11px;
+    font-size: 12px;
+    color: #ffffff;
+    background: #1463ff;
+    box-shadow: 0 4px 10px rgba(20, 99, 255, .18);
+  }
+
+  .sector-badge.private { background: #059669; }
+
+  .official-badge {
+    padding: 6px 10px;
+    font-size: 12px;
+    color: #15803d;
+    border: 1px solid #bbebc8;
+    background: #ecfdf3;
+  }
+
+  .recruit-bookmark {
+    width: 36px;
+    height: 36px;
+    border: 1px solid #dbe4ef;
+    border-radius: 10px;
+    background: rgba(255,255,255,.9);
+    color: #64748b;
+    display: grid;
+    place-items: center;
+  }
+
+  .recruit-hero-main {
+    display: grid;
+    grid-template-columns: 144px minmax(0, 1fr);
+    gap: 20px;
+    align-items: center;
+    margin-top: 15px;
+  }
+
+  .org-seal {
+    width: 126px;
+    height: 126px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    background: #ffffff;
+    border: 5px solid #f1c34f;
+    box-shadow: 0 5px 16px rgba(15,23,42,.11);
+  }
+
+  .org-seal-inner {
+    width: 105px;
+    height: 105px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    background: linear-gradient(145deg, #0745a8 0%, #092f79 100%);
+    border: 2px solid #174da4;
+    color: #ffd85b;
+  }
+
+  .org-seal.private { border-color: #a7e6cf; }
+  .org-seal.private .org-seal-inner {
+    background: linear-gradient(145deg, #059669 0%, #087f6e 100%);
+    border-color: #34c79d;
+    color: #ffffff;
+  }
+
+  .seal-icon { margin-bottom: 2px; }
+  .seal-name { font-size: 13px; line-height: 1; font-weight: 900; letter-spacing: .7px; }
+
+  .recruit-title {
+    margin: 0;
+    color: #0f172a;
+    font-size: clamp(25px, 2vw, 31px);
+    line-height: 1.22;
+    letter-spacing: -.45px;
+    font-weight: 800;
+  }
+
+  .recruit-org {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: #1463ff;
+    font-size: 16px;
+    font-weight: 650;
+  }
+
+  .private .recruit-org { color: #059669; }
+
+  .recruit-location {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: #667085;
+    font-size: 14px;
+  }
+
+  .recruit-meta-row {
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
     gap: 18px;
   }
 
-  .recruitment-approved-summary {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
+  .recruit-meta-item {
+    min-width: 160px;
+    padding-right: 18px;
+    border-right: 1px solid #dbe4ef;
   }
 
-  .recruitment-approved-explorer {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
+  .recruit-meta-item:last-child { border-right: 0; }
+  .meta-label { color: #64748b; font-size: 12px; }
+  .meta-value { margin-top: 3px; color: #0f172a; font-size: 14px; font-weight: 800; }
+  .meta-value.deadline { color: #ef4444; }
+
+  .action-panel {
+    min-height: 270px;
+    padding: 16px;
+    border-color: #ffc7c7;
+    background: linear-gradient(180deg, #fff8f8 0%, #ffffff 100%);
   }
 
-  .recruitment-approved-vacancy-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
+  .deadline-box {
+    border: 1px solid #ffb9bd;
+    border-radius: 9px;
+    padding: 10px 12px;
+    background: #fff1f2;
+    color: #ef3340;
+    font-size: 14px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
-  .recruitment-approved-department-list {
+  .action-copy {
+    margin: 12px 0;
+    color: #667085;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .action-stack { display: grid; gap: 9px; }
+
+  .action-btn {
+    width: 100%;
+    min-height: 38px;
+    padding: 8px 12px;
+    border-radius: 7px;
+    border: 1px solid #dbe4ef;
+    background: #ffffff;
+    color: #1f2937;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+  }
+
+  .action-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 13px rgba(15,23,42,.08); border-color: #bfd2ef; }
+  .action-btn.primary { background: #1463ff; border-color: #1463ff; color: #ffffff; }
+  .action-btn.private-primary { background: #059669; border-color: #059669; color: #ffffff; }
+  .action-btn.share { color: #1463ff; }
+
+  .summary-shell { margin-top: 16px; padding: 13px 14px 14px; }
+  .section-eyebrow { margin: 0 0 11px; font-size: 12px; font-weight: 800; color: #0f172a; }
+
+  .summary-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .summary-item {
+    min-height: 73px;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 11px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
+  }
+
+  .summary-icon, .detail-icon, .department-icon {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+  }
+
+  .summary-icon { width: 44px; height: 44px; }
+  .icon-blue { background: #eef5ff; color: #1463ff; }
+  .icon-green { background: #edf9f1; color: #16a34a; }
+  .icon-purple { background: #f4edff; color: #7c3aed; }
+  .icon-orange { background: #fff3e8; color: #f97316; }
+  .icon-rose { background: #fff0f2; color: #fb4b5c; }
+  .icon-indigo { background: #eef2ff; color: #4f46e5; }
+  .icon-teal { background: #ecfdf8; color: #0f9f8f; }
+
+  .summary-label { color: #667085; font-size: 11px; }
+  .summary-value { color: #101828; font-size: 14px; font-weight: 800; line-height: 1.25; }
+  .summary-helper { margin-top: 2px; color: #7b8797; font-size: 10.5px; }
+
+  .explorer-shell {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: 480px minmax(0, 1fr);
+    overflow: hidden;
+  }
+
+  .department-pane {
+    padding: 13px 14px 14px;
+    border-right: 1px solid #e2e8f0;
+    background: #ffffff;
+  }
+
+  .explore-title { font-size: 14px; font-weight: 800; color: #101828; }
+  .explore-subtitle { margin-top: 2px; font-size: 11px; color: #7b8797; }
+
+  .department-controls {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 95px;
+    gap: 8px;
+  }
+
+  .search-wrap { position: relative; }
+  .search-wrap svg { position: absolute; left: 10px; top: 9px; color: #98a2b3; }
+  .department-search, .post-select, .post-label {
+    width: 100%;
+    height: 34px;
+    border: 1px solid #dbe4ef;
+    border-radius: 7px;
+    background: #ffffff;
+    color: #344054;
+    font-size: 11px;
+    outline: none;
+  }
+  .department-search { padding: 0 9px 0 31px; }
+  .post-select { padding: 0 8px; font-weight: 650; }
+  .post-label { display: grid; place-items: center; font-weight: 700; }
+  .department-search:focus, .post-select:focus { border-color: #8ab4ff; box-shadow: 0 0 0 2px rgba(20,99,255,.09); }
+
+  .department-list {
+    margin-top: 10px;
+    display: grid;
+    gap: 7px;
+    max-height: 474px;
+    overflow: auto;
+    padding-right: 3px;
+  }
+
+  .department-row {
+    width: 100%;
+    min-height: 58px;
+    padding: 8px 9px;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    background: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color .16s ease, background .16s ease, box-shadow .16s ease, transform .16s ease;
+  }
+
+  .department-row:hover { border-color: #b8cdf5; transform: translateY(-1px); box-shadow: 0 3px 9px rgba(15,23,42,.05); }
+  .department-row.selected { border: 1.5px solid #1463ff; background: #f8fbff; box-shadow: 0 0 0 2px rgba(20,99,255,.06); }
+
+  .department-icon { width: 40px; height: 40px; }
+  .department-text { min-width: 0; flex: 1; }
+  .department-name { font-size: 12.5px; font-weight: 800; color: #101828; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .department-sub { margin-top: 2px; font-size: 10.5px; color: #667085; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .department-count {
+    min-width: 25px;
+    height: 25px;
+    padding: 0 7px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    background: #edf4ff;
+    color: #1463ff;
+    font-size: 11px;
+    font-weight: 800;
+  }
+  .department-row.selected .department-count { background: #1463ff; color: #ffffff; }
+
+  .vacancy-pane { padding: 12px 14px 13px; background: #ffffff; min-width: 0; }
+  .vacancy-head {
+    display: grid;
+    grid-template-columns: 58px minmax(0, 1fr) 76px;
+    gap: 11px;
+    align-items: center;
+  }
+
+  .vacancy-head-icon {
+    width: 58px;
+    height: 58px;
+    border-radius: 10px;
+    display: grid;
+    place-items: center;
+    background: #eff6ff;
+    border: 1px solid #cfe0ff;
+    color: #1463ff;
+  }
+
+  .vacancy-title { margin: 0; color: #101828; font-size: 21px; font-weight: 850; line-height: 1.15; }
+  .vacancy-subtitle { margin-top: 2px; color: #344054; font-size: 12px; font-weight: 750; }
+  .vacancy-meta { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 6px 12px; color: #667085; font-size: 10.5px; }
+  .vacancy-meta span { display: inline-flex; align-items: center; gap: 4px; }
+
+  .vacancy-count-box {
+    min-height: 58px;
+    border: 1px solid #c8dcff;
+    border-radius: 10px;
+    background: #eef5ff;
+    color: #1463ff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .vacancy-count-num { font-size: 23px; font-weight: 900; line-height: 1; }
+  .vacancy-count-label { margin-top: 2px; font-size: 10px; }
+
+  .vacancy-chips { margin-top: 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+  .tiny-chip { padding: 4px 7px; font-size: 9.5px; border: 1px solid transparent; }
+  .chip-green { background: #effaf2; color: #15803d; border-color: #ccefd6; }
+  .chip-purple { background: #f6f0ff; color: #7c3aed; border-color: #e6d6ff; }
+  .chip-orange { background: #fff5e9; color: #e96508; border-color: #ffd9b0; }
+
+  .detail-grid {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 9px;
   }
 
-  @media (min-width: 700px) {
-    .recruitment-approved-top {
-      grid-template-columns: minmax(0, 2.4fr) minmax(285px, 0.95fr);
-      align-items: stretch;
-    }
+  .detail-card {
+    min-height: 91px;
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    background: #ffffff;
+    display: flex;
+    gap: 9px;
+    align-items: flex-start;
+  }
+  .detail-icon { width: 34px; height: 34px; }
+  .detail-label { color: #344054; font-size: 10px; font-weight: 800; }
+  .detail-value { margin-top: 4px; color: #475467; font-size: 10.2px; line-height: 1.4; }
 
-    .recruitment-approved-summary {
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-    }
+  .dates-strip {
+    margin-top: 10px;
+    padding: 9px 11px 10px;
+    border: 1px solid #bed7ff;
+    border-radius: 9px;
+    background: linear-gradient(180deg, #f5f9ff 0%, #edf5ff 100%);
+  }
+  .dates-title { display: flex; align-items: center; gap: 6px; color: #344054; font-size: 11px; font-weight: 800; }
+  .dates-title svg { color: #1463ff; }
+  .dates-grid { margin-top: 7px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; text-align: center; }
+  .date-label { color: #667085; font-size: 9.5px; }
+  .date-value { margin-top: 2px; color: #101828; font-size: 10.5px; font-weight: 850; }
 
-    .recruitment-approved-explorer {
-      grid-template-columns: minmax(290px, 0.88fr) minmax(0, 1.75fr);
-    }
+  .vacancy-actions { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .vacancy-action {
+    min-height: 38px;
+    border-radius: 7px;
+    border: 1px solid #dbe4ef;
+    background: #ffffff;
+    color: #1463ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .vacancy-action.primary { color: #ffffff; border-color: #1463ff; background: #1463ff; }
+  .vacancy-action.private-primary { color: #ffffff; border-color: #059669; background: #059669; }
 
-    .recruitment-approved-vacancy-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
+  .mobile-cta { display: none; }
+
+  @media (max-width: 1080px) {
+    .recruit-shell { width: min(100% - 28px, 980px); }
+    .recruit-top { grid-template-columns: 1fr 330px; }
+    .recruit-hero-main { grid-template-columns: 118px minmax(0, 1fr); }
+    .org-seal { width: 108px; height: 108px; }
+    .org-seal-inner { width: 88px; height: 88px; }
+    .summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .explorer-shell { grid-template-columns: 365px minmax(0, 1fr); }
+    .detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 
-  @media (min-width: 1180px) {
-    .recruitment-approved-vacancy-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
+  @media (max-width: 820px) {
+    .recruit-shell { width: calc(100% - 24px); }
+    .recruit-top { grid-template-columns: 1fr; }
+    .action-panel { min-height: auto; }
+    .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .explorer-shell { grid-template-columns: 1fr; }
+    .department-pane { border-right: 0; border-bottom: 1px solid #e2e8f0; }
+    .department-list { display: flex; overflow-x: auto; overflow-y: hidden; max-height: none; padding: 2px 1px 7px; }
+    .department-row { min-width: 250px; }
+    .vacancy-pane { padding-bottom: 16px; }
   }
 
-  @media (max-width: 699px) {
-    .recruitment-approved-department-list {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-
-  @media (max-width: 470px) {
-    .recruitment-approved-department-list {
-      grid-template-columns: minmax(0, 1fr);
+  @media (max-width: 580px) {
+    .recruit-page { padding-bottom: 76px; }
+    .recruit-shell { width: calc(100% - 18px); padding-top: 10px; }
+    .recruit-card { border-radius: 12px; }
+    .recruit-hero { padding: 14px; min-height: auto; }
+    .recruit-hero-main { grid-template-columns: 72px minmax(0, 1fr); gap: 11px; margin-top: 12px; }
+    .org-seal { width: 68px; height: 68px; border-width: 3px; }
+    .org-seal-inner { width: 56px; height: 56px; }
+    .seal-icon { width: 22px; height: 22px; }
+    .seal-name { font-size: 9px; }
+    .recruit-title { font-size: 20px; }
+    .recruit-org { font-size: 13px; }
+    .recruit-location { font-size: 12px; }
+    .recruit-meta-row { margin-top: 12px; gap: 10px; }
+    .recruit-meta-item { min-width: 0; flex: 1 1 120px; padding-right: 10px; }
+    .summary-grid { grid-template-columns: 1fr; }
+    .summary-item { min-height: 64px; }
+    .department-controls { grid-template-columns: 1fr; }
+    .vacancy-head { grid-template-columns: 48px minmax(0, 1fr) 62px; }
+    .vacancy-head-icon { width: 48px; height: 48px; }
+    .vacancy-title { font-size: 19px; }
+    .detail-grid { grid-template-columns: 1fr; }
+    .detail-card { min-height: 76px; }
+    .dates-grid { grid-template-columns: 1fr; text-align: left; }
+    .vacancy-actions { display: none; }
+    .mobile-cta {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 50;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 10px;
+      background: rgba(255,255,255,.96);
+      border-top: 1px solid #dbe4ef;
+      box-shadow: 0 -8px 24px rgba(15,23,42,.12);
+      backdrop-filter: blur(10px);
     }
   }
 `;
@@ -127,39 +593,21 @@ export function RecruitmentPage() {
       rows.push(vacancy);
       groups.set(vacancy.postName, rows);
     }
-
-    return [...groups.entries()].map(([name, vacancies]) => ({
+    return [...groups.entries()].map(([name, rows]) => ({
       name,
-      total: vacancies.reduce(
-        (sum, vacancy) => sum + Number(vacancy.numberOfVacancies || 0),
-        0,
-      ),
-      departmentCount: new Set(
-        vacancies
-          .map((vacancy) => vacancy.department || vacancy.speciality)
-          .filter(Boolean),
-      ).size,
+      total: rows.reduce((sum, row) => sum + Number(row.numberOfVacancies || 0), 0),
     }));
   }, [recruitment]);
 
   const visibleVacancies = useMemo(() => {
     if (!recruitment) return [];
-    const normalizedQuery = query.trim().toLowerCase();
-
+    const q = query.trim().toLowerCase();
     return recruitment.vacancies.filter((vacancy) => {
       if (activePost && vacancy.postName !== activePost) return false;
-      if (!normalizedQuery) return true;
-
-      return [
-        vacancy.department,
-        vacancy.speciality,
-        vacancy.subSpeciality,
-        vacancy.qualification,
-        vacancy.location,
-        vacancy.category,
-      ]
+      if (!q) return true;
+      return [vacancy.department, vacancy.speciality, vacancy.qualification, vacancy.location]
         .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(normalizedQuery));
+        .some((value) => String(value).toLowerCase().includes(q));
     });
   }, [recruitment, activePost, query]);
 
@@ -168,37 +616,27 @@ export function RecruitmentPage() {
       setSelectedVacancyId('');
       return;
     }
-
     if (!visibleVacancies.some((vacancy) => vacancy.id === selectedVacancyId)) {
       setSelectedVacancyId(visibleVacancies[0].id);
     }
   }, [visibleVacancies, selectedVacancyId]);
 
   const selectedVacancy = useMemo(
-    () =>
-      visibleVacancies.find((vacancy) => vacancy.id === selectedVacancyId) ||
-      visibleVacancies[0] ||
-      null,
+    () => visibleVacancies.find((vacancy) => vacancy.id === selectedVacancyId) || visibleVacancies[0] || null,
     [visibleVacancies, selectedVacancyId],
   );
 
   const departmentCount = useMemo(
-    () =>
-      new Set(
-        (recruitment?.vacancies || [])
-          .map((vacancy) => vacancy.department || vacancy.speciality)
-          .filter(Boolean),
-      ).size,
+    () => new Set((recruitment?.vacancies || []).map((v) => v.department || v.speciality).filter(Boolean)).size,
     [recruitment],
   );
 
   if (loading) {
     return (
-      <div className="flex min-h-[65vh] flex-col items-center justify-center gap-4 bg-slate-50">
-        <Loader2 className="h-9 w-9 animate-spin text-blue-600" />
-        <div className="text-center">
-          <p className="font-semibold text-slate-800">Loading recruitment</p>
-          <p className="text-sm text-slate-500">Preparing department-wise vacancies…</p>
+      <div className="recruit-page" style={{ display: 'grid', placeItems: 'center', minHeight: '70vh' }}>
+        <div style={{ textAlign: 'center', color: '#64748b' }}>
+          <Stethoscope size={34} color="#1463ff" />
+          <div style={{ marginTop: 10, fontWeight: 800 }}>Loading recruitment...</div>
         </div>
       </div>
     );
@@ -206,52 +644,45 @@ export function RecruitmentPage() {
 
   if (!recruitment) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <h1 className="text-2xl font-semibold">Recruitment not found</h1>
-        <Button className="mt-4" onClick={() => navigate('/jobs')}>
-          Browse Jobs
-        </Button>
+      <div className="recruit-page" style={{ display: 'grid', placeItems: 'center', minHeight: '70vh' }}>
+        <div style={{ textAlign: 'center' }}>
+          <h2>Recruitment not found</h2>
+          <button className="action-btn primary" onClick={() => navigate('/jobs')}>Browse Jobs</button>
+        </div>
       </div>
     );
   }
 
   const isGovernment = recruitment.sector === 'government';
   const daysLeft = recruitment.applicationLastDate
-    ? Math.ceil(
-        (parseRecruitmentDate(recruitment.applicationLastDate).getTime() - Date.now()) /
-          (1000 * 60 * 60 * 24),
-      )
+    ? Math.ceil((parseRecruitmentDate(recruitment.applicationLastDate).getTime() - Date.now()) / 86400000)
     : null;
-  const primaryPost = activePost || postGroups[0]?.name || 'Multiple Posts';
   const applicationMode = recruitment.officialApplicationUrl ? 'Online' : 'As notified';
+  const primaryPost = activePost || postGroups[0]?.name || 'Multiple Posts';
 
   const handleShare = async () => {
-    const shareData = {
+    const data = {
       title: recruitment.title,
       text: `${recruitment.title} - ${recruitment.organisationName}`,
       url: window.location.href,
     };
-
     try {
-      if (navigator.share) await navigator.share(shareData);
+      if (navigator.share) await navigator.share(data);
       else await navigator.clipboard.writeText(window.location.href);
     } catch {
-      // User cancelled the share action.
+      // User cancelled sharing.
     }
   };
 
   const openSelectedJob = () => {
-    if (selectedVacancy?.publishedJobId) {
-      navigate(`/job-detail/${selectedVacancy.publishedJobId}`);
-    }
+    if (selectedVacancy?.publishedJobId) navigate(`/job-detail/${selectedVacancy.publishedJobId}`);
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f9fc] pb-24 lg:pb-10">
-      <style>{recruitmentLayoutCss}</style>
-
-      <div className="mx-auto max-w-[1480px] px-3 py-5 sm:px-5 lg:px-7 lg:py-7">
-        <div className="recruitment-approved-top">
+    <div className="recruit-page">
+      <style>{PAGE_STYLES}</style>
+      <div className="recruit-shell">
+        <div className="recruit-top">
           <RecruitmentHero recruitment={recruitment} isGovernment={isGovernment} />
           <ApplicationPanel
             recruitment={recruitment}
@@ -261,183 +692,75 @@ export function RecruitmentPage() {
           />
         </div>
 
-        <Card className="mt-5 border-[#e2e8f0] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)] sm:p-5">
-          <h2 className="mb-3 text-sm font-semibold text-slate-900">Recruitment Summary</h2>
-          <div className="recruitment-approved-summary">
-            <SummaryCard
-              icon={Users}
-              tone="blue"
-              label="Total Vacancies"
-              value={String(recruitment.totalVacancies)}
-              helper={`Across ${departmentCount} departments`}
-            />
-            <SummaryCard
-              icon={Building2}
-              tone="green"
-              label="Departments"
-              value={String(departmentCount)}
-              helper="Medical specialties"
-            />
-            <SummaryCard
-              icon={BriefcaseBusiness}
-              tone="purple"
-              label="Job Role"
-              value={primaryPost}
-              helper={selectedVacancy?.jobType || 'Full Time'}
-            />
-            <SummaryCard
-              icon={Calendar}
-              tone="orange"
-              label="Application Mode"
-              value={applicationMode}
-              helper={isGovernment ? 'Through official process' : 'Recruitment process'}
-            />
-            <SummaryCard
-              icon={AlarmClock}
-              tone="rose"
-              label="Apply By"
-              value={
-                recruitment.applicationLastDate
-                  ? formatDate(recruitment.applicationLastDate)
-                  : 'See notification'
-              }
-              helper={daysLeft != null && daysLeft > 0 ? `${daysLeft} days remaining` : 'Check official dates'}
-            />
+        <section className="recruit-card summary-shell">
+          <h2 className="section-eyebrow">Recruitment Summary</h2>
+          <div className="summary-grid">
+            <SummaryCard icon={Users} tone="blue" label="Total Vacancies" value={String(recruitment.totalVacancies)} helper={`Across ${departmentCount} Departments`} />
+            <SummaryCard icon={Building2} tone="green" label="Departments" value={String(departmentCount)} helper="Medical Specialties" />
+            <SummaryCard icon={BriefcaseBusiness} tone="purple" label="Job Role" value={primaryPost} helper={selectedVacancy?.jobType || 'Full Time'} />
+            <SummaryCard icon={CalendarDays} tone="orange" label="Application Mode" value={applicationMode} helper="Through Official Portal" />
+            <SummaryCard icon={AlarmClock} tone="rose" label="Apply By" value={recruitment.applicationLastDate ? formatDate(recruitment.applicationLastDate) : 'See Notification'} helper={daysLeft != null && daysLeft > 0 ? `${daysLeft} days remaining` : 'Check dates'} />
           </div>
-        </Card>
+        </section>
 
-        <Card className="mt-5 overflow-hidden border-[#e2e8f0] bg-white shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
-          <div className="recruitment-approved-explorer">
-            <section className="border-b border-slate-200 bg-[#fbfcfe] p-4 sm:p-5 md:border-b-0 md:border-r">
-              <div className="mb-4">
-                <h2 className="text-lg font-semibold text-slate-950">Explore Departments</h2>
-                <p className="mt-1 text-xs text-slate-500">Select a department to view full vacancy details.</p>
+        <section className="recruit-card explorer-shell">
+          <aside className="department-pane">
+            <div className="explore-title">Explore Departments</div>
+            <div className="explore-subtitle">Select a department to view its vacancy details.</div>
+
+            <div className="department-controls">
+              <div className="search-wrap">
+                <Search size={16} />
+                <input className="department-search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search department or specialty..." />
               </div>
-
-              <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_120px] md:grid-cols-1 xl:grid-cols-[minmax(0,1fr)_120px]">
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                  <input
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Search department or speciality"
-                    className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
-
-                {postGroups.length > 1 ? (
-                  <select
-                    value={activePost}
-                    onChange={(event) => {
-                      setActivePost(event.target.value);
-                      setQuery('');
-                    }}
-                    className="h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none focus:border-blue-400"
-                  >
-                    {postGroups.map((group) => (
-                      <option key={group.name} value={group.name}>
-                        {group.name}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <div className="flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700">
-                    All ({departmentCount})
-                  </div>
-                )}
-              </div>
-
-              <div className="recruitment-approved-department-list mt-4 md:max-h-[690px] md:overflow-y-auto md:pr-1">
-                {visibleVacancies.map((vacancy, index) => {
-                  const selected = vacancy.id === selectedVacancy?.id;
-                  const department = vacancy.department || vacancy.speciality || vacancy.postName;
-
-                  return (
-                    <button
-                      key={vacancy.id}
-                      type="button"
-                      onClick={() => setSelectedVacancyId(vacancy.id)}
-                      className={`group rounded-xl border bg-white p-3 text-left transition duration-200 ${
-                        selected
-                          ? isGovernment
-                            ? 'border-blue-400 shadow-[0_5px_16px_rgba(37,99,235,0.12)] ring-2 ring-blue-100'
-                            : 'border-emerald-400 shadow-[0_5px_16px_rgba(5,150,105,0.12)] ring-2 ring-emerald-100'
-                          : 'border-slate-200 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-sm'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <DepartmentMark index={index} selected={selected} isGovernment={isGovernment} />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold text-slate-950">{department}</p>
-                          <p className="mt-0.5 truncate text-xs text-slate-500">
-                            {vacancy.qualification || vacancy.speciality || vacancy.postName}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className={`flex h-7 min-w-7 items-center justify-center rounded-full px-2 text-xs font-bold ${
-                              selected
-                                ? isGovernment
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-emerald-600 text-white'
-                                : 'bg-blue-50 text-blue-700'
-                            }`}
-                          >
-                            {vacancy.numberOfVacancies}
-                          </span>
-                          <ChevronRight className={`h-4 w-4 ${selected ? 'text-blue-600' : 'text-slate-300'}`} />
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-
-                {!visibleVacancies.length && (
-                  <div className="rounded-xl border border-dashed border-slate-300 bg-white p-7 text-center text-sm text-slate-500">
-                    No departments match your search.
-                  </div>
-                )}
-              </div>
-            </section>
-
-            <section className="min-w-0 bg-white p-4 sm:p-5 lg:p-6">
-              {selectedVacancy ? (
-                <VacancyDetailPanel
-                  vacancy={selectedVacancy}
-                  recruitment={recruitment}
-                  isGovernment={isGovernment}
-                  onViewJob={openSelectedJob}
-                />
+              {postGroups.length > 1 ? (
+                <select className="post-select" value={activePost} onChange={(e) => { setActivePost(e.target.value); setQuery(''); }}>
+                  {postGroups.map((group) => <option key={group.name} value={group.name}>{group.name}</option>)}
+                </select>
               ) : (
-                <div className="flex min-h-[480px] items-center justify-center text-center text-slate-500">
-                  Select a department to view its vacancy details.
-                </div>
+                <div className="post-label">All ({departmentCount})</div>
               )}
-            </section>
-          </div>
-        </Card>
+            </div>
+
+            <div className="department-list">
+              {visibleVacancies.map((vacancy, index) => {
+                const selected = vacancy.id === selectedVacancy?.id;
+                const name = vacancy.department || vacancy.speciality || vacancy.postName;
+                const DepartmentIcon = getDepartmentIcon(name);
+                const tone = getDepartmentTone(index);
+                return (
+                  <button key={vacancy.id} className={`department-row ${selected ? 'selected' : ''}`} onClick={() => setSelectedVacancyId(vacancy.id)}>
+                    <span className={`department-icon ${tone}`}><DepartmentIcon size={20} strokeWidth={2} /></span>
+                    <span className="department-text">
+                      <span className="department-name">{name}</span>
+                      <span className="department-sub">{vacancy.qualification || vacancy.speciality || vacancy.postName}</span>
+                    </span>
+                    <span className="department-count">{vacancy.numberOfVacancies}</span>
+                    <ChevronRight size={16} color={selected ? '#1463ff' : '#98a2b3'} />
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+
+          <main className="vacancy-pane">
+            {selectedVacancy ? (
+              <VacancyPanel vacancy={selectedVacancy} recruitment={recruitment} isGovernment={isGovernment} onViewJob={openSelectedJob} />
+            ) : (
+              <div style={{ minHeight: 420, display: 'grid', placeItems: 'center', color: '#667085' }}>Select a department to view details.</div>
+            )}
+          </main>
+        </section>
       </div>
 
       {selectedVacancy && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 p-3 shadow-[0_-8px_24px_rgba(15,23,42,0.12)] backdrop-blur md:hidden">
-          <div className="mx-auto flex max-w-3xl gap-2">
-            {selectedVacancy.publishedJobId && (
-              <Button variant="outline" className="flex-1" onClick={openSelectedJob}>
-                {isGovernment ? 'View Details' : 'View & Apply'}
-              </Button>
-            )}
-            {recruitment.officialApplicationUrl && (
-              <Button
-                className={`flex-1 ${
-                  isGovernment ? 'bg-blue-600 hover:bg-blue-700' : 'bg-emerald-600 hover:bg-emerald-700'
-                }`}
-                onClick={() => openExternal(recruitment.officialApplicationUrl)}
-              >
-                {isGovernment ? 'Official Apply' : 'Apply Now'}
-                <ExternalLink className="ml-2 h-4 w-4" />
-              </Button>
-            )}
-          </div>
+        <div className="mobile-cta">
+          <button className="vacancy-action" onClick={openSelectedJob}>{isGovernment ? 'View Details' : 'View & Apply'}</button>
+          {recruitment.officialApplicationUrl && (
+            <button className={`vacancy-action ${isGovernment ? 'primary' : 'private-primary'}`} onClick={() => openExternal(recruitment.officialApplicationUrl)}>
+              {isGovernment ? 'Official Apply' : 'Apply Now'} <ExternalLink size={15} />
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -446,435 +769,193 @@ export function RecruitmentPage() {
 
 function RecruitmentHero({ recruitment, isGovernment }: { recruitment: Recruitment; isGovernment: boolean }) {
   return (
-    <Card
-      className={`relative overflow-hidden border p-5 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:p-6 ${
-        isGovernment
-          ? 'border-blue-200 bg-gradient-to-br from-[#edf5ff] via-white to-[#f5f8ff]'
-          : 'border-emerald-200 bg-gradient-to-br from-[#ecfdf5] via-white to-[#f0fdfa]'
-      }`}
-    >
-      <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full border-[38px] border-white/60" />
-      <div className="relative z-10">
-        <div className="flex flex-wrap items-center gap-2">
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-bold text-white shadow-sm ${
-              isGovernment ? 'bg-blue-600' : 'bg-emerald-600'
-            }`}
-          >
-            {isGovernment ? <Shield className="h-3.5 w-3.5" /> : <BriefcaseBusiness className="h-3.5 w-3.5" />}
+    <section className={`recruit-card recruit-hero ${isGovernment ? '' : 'private'}`}>
+      <div className="recruit-badge-row">
+        <div className="recruit-badges">
+          <span className={`sector-badge ${isGovernment ? '' : 'private'}`}>
+            {isGovernment ? <Shield size={15} /> : <BriefcaseBusiness size={15} />}
             {isGovernment ? 'Government Recruitment' : 'Private Recruitment'}
           </span>
-
-          {recruitment.officialSourceVerified && (
-            <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
-              <ShieldCheck className="mr-1 h-3.5 w-3.5" />
-              Official Source
-            </Badge>
-          )}
+          {recruitment.officialSourceVerified && <span className="official-badge"><ShieldCheck size={14} />Official Source</span>}
         </div>
+        <button className="recruit-bookmark" aria-label="Save recruitment"><FileText size={17} /></button>
+      </div>
 
-        <div className="mt-5 flex flex-col gap-5 sm:flex-row sm:items-center">
-          <OrganisationSeal name={recruitment.organisationName} isGovernment={isGovernment} />
-
-          <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-bold leading-tight text-slate-950 sm:text-3xl lg:text-[32px]">
-              {recruitment.title}
-            </h1>
-            <div className={`mt-2 flex items-start gap-2 text-base font-semibold ${isGovernment ? 'text-blue-700' : 'text-emerald-700'}`}>
-              <Building2 className="mt-0.5 h-5 w-5 shrink-0" />
-              <span>{recruitment.organisationName}</span>
-            </div>
-
-            <div className="mt-4 grid gap-3 text-sm text-slate-600 sm:grid-cols-2 lg:grid-cols-3">
-              {recruitment.location && (
-                <span className="inline-flex items-center gap-1.5">
-                  <MapPin className="h-4 w-4 text-slate-500" />
-                  {recruitment.location}
-                </span>
-              )}
-              {recruitment.advertisementNumber && (
-                <span>
-                  <span className="text-slate-500">Advertisement No.</span>{' '}
-                  <strong className="text-slate-900">{recruitment.advertisementNumber}</strong>
-                </span>
-              )}
-              {recruitment.applicationLastDate && (
-                <span className="inline-flex items-center gap-1.5">
-                  <Calendar className="h-4 w-4 text-slate-500" />
-                  Apply by <strong className="text-red-600">{formatDate(recruitment.applicationLastDate)}</strong>
-                </span>
-              )}
+      <div className="recruit-hero-main">
+        <OrganisationSeal name={recruitment.organisationName} isGovernment={isGovernment} />
+        <div>
+          <h1 className="recruit-title">{recruitment.title}</h1>
+          <div className="recruit-org"><Building2 size={19} />{recruitment.organisationName}</div>
+          {recruitment.location && <div className="recruit-location"><MapPin size={16} />{recruitment.location}</div>}
+          <div className="recruit-meta-row">
+            {recruitment.advertisementNumber && (
+              <div className="recruit-meta-item">
+                <div className="meta-label">Advertisement No.</div>
+                <div className="meta-value">{recruitment.advertisementNumber}</div>
+              </div>
+            )}
+            <div className="recruit-meta-item">
+              <div className="meta-label">Apply by</div>
+              <div className="meta-value deadline">{recruitment.applicationLastDate ? formatDate(recruitment.applicationLastDate) : 'See Notification'}</div>
             </div>
           </div>
         </div>
       </div>
-    </Card>
+    </section>
   );
 }
 
-function ApplicationPanel({
-  recruitment,
-  isGovernment,
-  daysLeft,
-  onShare,
-}: {
-  recruitment: Recruitment;
-  isGovernment: boolean;
-  daysLeft: number | null;
-  onShare: () => void;
-}) {
+function ApplicationPanel({ recruitment, isGovernment, daysLeft, onShare }: { recruitment: Recruitment; isGovernment: boolean; daysLeft: number | null; onShare: () => void }) {
   return (
-    <Card className="border-red-100 bg-gradient-to-b from-[#fff5f5] to-white p-4 shadow-[0_10px_30px_rgba(15,23,42,0.05)] sm:p-5">
-      {daysLeft != null && daysLeft > 0 && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-semibold text-red-600">
-          <AlarmClock className="mr-2 inline h-4 w-4" />
-          {daysLeft <= 7 ? `Only ${daysLeft} days left to apply!` : `${daysLeft} days left to apply`}
-        </div>
-      )}
-
-      <p className="mt-3 text-sm leading-6 text-slate-600">
-        {isGovernment
-          ? 'Do not miss this opportunity. Follow the official notification and application process.'
-          : 'Review the vacancy details and continue through the available application route.'}
-      </p>
-
-      <div className="mt-3 space-y-2.5">
+    <aside className="recruit-card action-panel">
+      {daysLeft != null && daysLeft > 0 && <div className="deadline-box"><AlarmClock size={17} />Only {daysLeft} days left to apply!</div>}
+      <p className="action-copy">Don't miss this opportunity. {isGovernment ? 'Apply through the official recruitment process before the last date.' : 'Review the vacancy and apply through the available route.'}</p>
+      <div className="action-stack">
         {recruitment.officialApplicationUrl && (
-          <Button
-            className={`w-full ${
-              isGovernment ? 'bg-blue-600 hover:bg-blue-700' : 'bg-emerald-600 hover:bg-emerald-700'
-            }`}
-            onClick={() => openExternal(recruitment.officialApplicationUrl)}
-          >
-            {isGovernment ? 'Official Apply Link' : 'Apply Now'}
-            <ExternalLink className="ml-2 h-4 w-4" />
-          </Button>
+          <button className={`action-btn ${isGovernment ? 'primary' : 'private-primary'}`} onClick={() => openExternal(recruitment.officialApplicationUrl)}>
+            <ExternalLink size={15} />{isGovernment ? 'Official Apply Link' : 'Apply Now'}
+          </button>
         )}
-
-        {recruitment.officialNotificationUrl && (
-          <Button variant="outline" className="w-full bg-white" onClick={() => openExternal(recruitment.officialNotificationUrl)}>
-            <FileText className="mr-2 h-4 w-4" />
-            View Notification
-          </Button>
-        )}
-
-        {recruitment.officialWebsite && (
-          <Button variant="outline" className="w-full bg-white" onClick={() => openExternal(recruitment.officialWebsite)}>
-            <Building2 className="mr-2 h-4 w-4" />
-            Official Website
-            <ExternalLink className="ml-auto h-4 w-4" />
-          </Button>
-        )}
-
-        <Button variant="outline" className="w-full bg-white text-blue-600" onClick={onShare}>
-          <Share2 className="mr-2 h-4 w-4" />
-          Share Recruitment
-        </Button>
+        {recruitment.officialNotificationUrl && <button className="action-btn" onClick={() => openExternal(recruitment.officialNotificationUrl)}><FileText size={15} />View Notification</button>}
+        {recruitment.officialWebsite && <button className="action-btn" onClick={() => openExternal(recruitment.officialWebsite)}><Building2 size={15} />Official Website</button>}
+        <button className="action-btn share" onClick={onShare}><Share2 size={15} />Share Recruitment</button>
       </div>
-    </Card>
+    </aside>
   );
 }
 
-function VacancyDetailPanel({
-  vacancy,
-  recruitment,
-  isGovernment,
-  onViewJob,
-}: {
-  vacancy: VacancyRecord;
-  recruitment: Recruitment;
-  isGovernment: boolean;
-  onViewJob: () => void;
-}) {
+function VacancyPanel({ vacancy, recruitment, isGovernment, onViewJob }: { vacancy: VacancyRecord; recruitment: Recruitment; isGovernment: boolean; onViewJob: () => void }) {
   const department = vacancy.department || vacancy.speciality || vacancy.postName;
-  const cards = [
-    {
-      icon: GraduationCap,
-      label: 'Qualification',
-      value: vacancy.qualification || 'See notification',
-      tone: 'blue',
-    },
-    {
-      icon: Stethoscope,
-      label: 'Experience',
-      value: vacancy.experience || 'As per notification',
-      tone: 'indigo',
-    },
-    {
-      icon: IndianRupee,
-      label: 'Salary / Pay',
-      value: vacancy.salary || vacancy.payScale || vacancy.payLevel || 'See notification',
-      tone: 'green',
-    },
-    {
-      icon: Users,
-      label: 'Age Limit',
-      value: vacancy.ageLimit || 'As per notification',
-      tone: 'purple',
-    },
-    {
-      icon: ShieldCheck,
-      label: 'Other Eligibility',
-      value: vacancy.otherEligibilityRequirements || 'See official notification',
-      tone: 'orange',
-    },
-    {
-      icon: Briefcase,
-      label: 'Selection Process',
-      value: recruitment.selectionProcess || 'As per notification',
-      tone: 'violet',
-    },
+  const DepartmentIcon = getDepartmentIcon(department);
+  const details: Array<{ icon: LucideIcon; label: string; value: string; tone: string }> = [
+    { icon: GraduationCap, label: 'Qualification', value: vacancy.qualification || 'See notification', tone: 'icon-blue' },
+    { icon: Stethoscope, label: 'Experience', value: vacancy.experience || 'As per notification', tone: 'icon-indigo' },
+    { icon: IndianRupee, label: 'Salary / Pay', value: vacancy.salary || vacancy.payScale || vacancy.payLevel || 'See notification', tone: 'icon-teal' },
+    { icon: Users, label: 'Age Limit', value: vacancy.ageLimit || 'As per notification', tone: 'icon-purple' },
+    { icon: ShieldCheck, label: 'Other Eligibility', value: vacancy.otherEligibilityRequirements || 'See official notification', tone: 'icon-orange' },
+    { icon: BriefcaseBusiness, label: 'Selection Process', value: recruitment.selectionProcess || 'As per notification', tone: 'icon-indigo' },
   ];
 
   return (
     <div>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
-              {vacancy.postName} Role
-            </Badge>
-            <Badge className="border border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-50">
-              Clinical Department
-            </Badge>
-            {vacancy.jobType && (
-              <Badge className="border border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-50">
-                {vacancy.jobType}
-              </Badge>
-            )}
-          </div>
-
-          <h2 className="mt-3 text-2xl font-bold text-slate-950 sm:text-3xl">{department}</h2>
-          <p className="mt-1 text-sm font-medium text-slate-600">
-            {vacancy.qualification || vacancy.speciality || vacancy.postName}
-          </p>
-
-          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-500">
-            {vacancy.location && (
-              <span className="inline-flex items-center gap-1.5">
-                <MapPin className="h-4 w-4" />
-                {vacancy.location}
-              </span>
-            )}
-            {vacancy.jobType && (
-              <span className="inline-flex items-center gap-1.5">
-                <Briefcase className="h-4 w-4" />
-                {vacancy.jobType}
-              </span>
-            )}
+      <div className="vacancy-head">
+        <div className="vacancy-head-icon"><DepartmentIcon size={31} strokeWidth={2} /></div>
+        <div>
+          <h2 className="vacancy-title">{department}</h2>
+          <div className="vacancy-subtitle">{vacancy.qualification || vacancy.speciality || vacancy.postName}</div>
+          <div className="vacancy-meta">
+            {vacancy.location && <span><MapPin size={13} />{vacancy.location}</span>}
+            {vacancy.jobType && <span><BriefcaseBusiness size={13} />{vacancy.jobType}</span>}
           </div>
         </div>
+        <div className="vacancy-count-box"><div className="vacancy-count-num">{vacancy.numberOfVacancies}</div><div className="vacancy-count-label">Vacancies</div></div>
+      </div>
 
-        <div
-          className={`flex min-w-[94px] flex-col items-center justify-center rounded-xl border px-4 py-3 ${
-            isGovernment
-              ? 'border-blue-200 bg-blue-50 text-blue-700'
-              : 'border-emerald-200 bg-emerald-50 text-emerald-700'
-          }`}
-        >
-          <span className="text-3xl font-bold leading-none">{vacancy.numberOfVacancies}</span>
-          <span className="mt-1 text-xs font-semibold">Vacancies</span>
+      <div className="vacancy-chips">
+        <span className="tiny-chip chip-green"><Users size={11} />{vacancy.postName} Role</span>
+        <span className="tiny-chip chip-purple"><Stethoscope size={11} />Clinical Department</span>
+        {vacancy.jobType && <span className="tiny-chip chip-orange"><BriefcaseBusiness size={11} />{vacancy.jobType}</span>}
+      </div>
+
+      <div className="detail-grid">
+        {details.map((item) => <DetailCard key={item.label} {...item} />)}
+      </div>
+
+      <div className="dates-strip">
+        <div className="dates-title"><CalendarDays size={15} />Important Dates</div>
+        <div className="dates-grid">
+          <DateItem label="Notification Date" value={recruitment.verificationDate ? formatDate(recruitment.verificationDate) : 'Not specified'} />
+          <DateItem label="Application Start Date" value={recruitment.applicationStartDate ? formatDate(recruitment.applicationStartDate) : 'Not specified'} />
+          <DateItem label="Last Date to Apply" value={recruitment.applicationLastDate ? formatDate(recruitment.applicationLastDate) : 'Not specified'} />
         </div>
       </div>
 
-      <div className="recruitment-approved-vacancy-grid mt-5">
-        {cards.map((card) => (
-          <VacancyInfoCard key={card.label} {...card} />
-        ))}
-      </div>
-
-      {(recruitment.applicationStartDate || recruitment.applicationLastDate) && (
-        <div
-          className={`mt-4 rounded-xl border p-4 ${
-            isGovernment ? 'border-blue-200 bg-blue-50/60' : 'border-emerald-200 bg-emerald-50/60'
-          }`}
-        >
-          <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-            <Calendar className={`h-4 w-4 ${isGovernment ? 'text-blue-600' : 'text-emerald-600'}`} />
-            Important Dates
-          </div>
-          <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
-            {recruitment.verificationDate && (
-              <DateBlock label="Notification / Verification" value={formatDate(recruitment.verificationDate)} />
-            )}
-            {recruitment.applicationStartDate && (
-              <DateBlock label="Application Start Date" value={formatDate(recruitment.applicationStartDate)} />
-            )}
-            {recruitment.applicationLastDate && (
-              <DateBlock label="Last Date to Apply" value={formatDate(recruitment.applicationLastDate)} />
-            )}
-          </div>
-        </div>
-      )}
-
-      <div className="mt-5 hidden gap-3 border-t border-slate-200 pt-4 md:flex">
-        {vacancy.publishedJobId && (
-          <Button variant="outline" className="flex-1" onClick={onViewJob}>
-            <Briefcase className="mr-2 h-4 w-4" />
-            {isGovernment ? 'View Vacancy Details' : 'View & Apply'}
-          </Button>
-        )}
-
+      <div className="vacancy-actions">
+        <button className="vacancy-action" onClick={onViewJob}><BriefcaseBusiness size={15} />{isGovernment ? 'View Vacancy Details' : 'View & Apply'}</button>
         {recruitment.officialApplicationUrl && (
-          <Button
-            className={`flex-1 ${
-              isGovernment ? 'bg-blue-600 hover:bg-blue-700' : 'bg-emerald-600 hover:bg-emerald-700'
-            }`}
-            onClick={() => openExternal(recruitment.officialApplicationUrl)}
-          >
-            {isGovernment ? 'Official Apply Link' : 'Apply Now'}
-            <ExternalLink className="ml-2 h-4 w-4" />
-          </Button>
+          <button className={`vacancy-action ${isGovernment ? 'primary' : 'private-primary'}`} onClick={() => openExternal(recruitment.officialApplicationUrl)}>
+            <ExternalLink size={15} />{isGovernment ? 'Official Apply Link' : 'Apply Now'}
+          </button>
         )}
       </div>
     </div>
   );
 }
 
-function SummaryCard({
-  icon: Icon,
-  tone,
-  label,
-  value,
-  helper,
-}: {
-  icon: any;
-  tone: 'blue' | 'green' | 'purple' | 'orange' | 'rose';
-  label: string;
-  value: string;
-  helper: string;
-}) {
-  const styles = {
-    blue: 'bg-blue-50 text-blue-600',
-    green: 'bg-emerald-50 text-emerald-600',
-    purple: 'bg-purple-50 text-purple-600',
-    orange: 'bg-orange-50 text-orange-600',
-    rose: 'bg-rose-50 text-rose-600',
-  };
-
+function SummaryCard({ icon: Icon, tone, label, value, helper }: { icon: LucideIcon; tone: 'blue' | 'green' | 'purple' | 'orange' | 'rose'; label: string; value: string; helper: string }) {
   return (
-    <div className="flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white p-3.5 transition hover:-translate-y-0.5 hover:shadow-sm">
-      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${styles[tone]}`}>
-        <Icon className="h-5 w-5" />
-      </div>
-      <div className="min-w-0">
-        <p className="text-[11px] font-medium text-slate-500">{label}</p>
-        <p className="truncate text-base font-bold text-slate-950">{value}</p>
-        <p className="truncate text-[11px] text-slate-500">{helper}</p>
+    <div className="summary-item">
+      <div className={`summary-icon icon-${tone}`}><Icon size={21} strokeWidth={2} /></div>
+      <div style={{ minWidth: 0 }}>
+        <div className="summary-label">{label}</div>
+        <div className="summary-value">{value}</div>
+        <div className="summary-helper">{helper}</div>
       </div>
     </div>
   );
+}
+
+function DetailCard({ icon: Icon, label, value, tone }: { icon: LucideIcon; label: string; value: string; tone: string }) {
+  return (
+    <div className="detail-card">
+      <div className={`detail-icon ${tone}`}><Icon size={18} strokeWidth={2} /></div>
+      <div>
+        <div className="detail-label">{label}</div>
+        <div className="detail-value">{value}</div>
+      </div>
+    </div>
+  );
+}
+
+function DateItem({ label, value }: { label: string; value: string }) {
+  return <div><div className="date-label">{label}</div><div className="date-value">{value}</div></div>;
 }
 
 function OrganisationSeal({ name, isGovernment }: { name: string; isGovernment: boolean }) {
-  const acronym = buildAcronym(name);
-
   return (
-    <div
-      className={`flex h-24 w-24 shrink-0 items-center justify-center rounded-full border-[5px] bg-white shadow-md sm:h-28 sm:w-28 ${
-        isGovernment ? 'border-[#f0c34d]' : 'border-emerald-200'
-      }`}
-    >
-      <div
-        className={`flex h-[78px] w-[78px] items-center justify-center rounded-full border text-center text-xs font-extrabold tracking-wide sm:h-[90px] sm:w-[90px] ${
-          isGovernment
-            ? 'border-blue-300 bg-gradient-to-br from-blue-700 to-blue-900 text-amber-200'
-            : 'border-emerald-300 bg-gradient-to-br from-emerald-600 to-teal-700 text-white'
-        }`}
-      >
-        {acronym}
-      </div>
-    </div>
-  );
-}
-
-function DepartmentMark({
-  index,
-  selected,
-  isGovernment,
-}: {
-  index: number;
-  selected: boolean;
-  isGovernment: boolean;
-}) {
-  const tones = [
-    'bg-blue-50 text-blue-600',
-    'bg-indigo-50 text-indigo-600',
-    'bg-emerald-50 text-emerald-600',
-    'bg-orange-50 text-orange-600',
-    'bg-purple-50 text-purple-600',
-    'bg-rose-50 text-rose-600',
-  ];
-  const selectedTone = isGovernment ? 'bg-blue-50 text-blue-600' : 'bg-emerald-50 text-emerald-600';
-
-  return (
-    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${selected ? selectedTone : tones[index % tones.length]}`}>
-      <Stethoscope className="h-5 w-5" />
-    </div>
-  );
-}
-
-function VacancyInfoCard({
-  icon: Icon,
-  label,
-  value,
-  tone,
-}: {
-  icon: any;
-  label: string;
-  value: string;
-  tone: string;
-}) {
-  const toneStyles: Record<string, string> = {
-    blue: 'bg-blue-50 text-blue-600',
-    indigo: 'bg-indigo-50 text-indigo-600',
-    green: 'bg-emerald-50 text-emerald-600',
-    purple: 'bg-purple-50 text-purple-600',
-    orange: 'bg-orange-50 text-orange-600',
-    violet: 'bg-violet-50 text-violet-600',
-  };
-
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 transition duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-sm">
-      <div className="flex items-start gap-3">
-        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${toneStyles[tone] || toneStyles.blue}`}>
-          <Icon className="h-5 w-5" />
-        </div>
-        <div className="min-w-0">
-          <p className="text-xs font-semibold text-slate-700">{label}</p>
-          <p className="mt-1 text-sm leading-5 text-slate-600">{value}</p>
+    <div className={`org-seal ${isGovernment ? '' : 'private'}`}>
+      <div className="org-seal-inner">
+        <div>
+          <Stethoscope className="seal-icon" size={34} strokeWidth={1.7} />
+          <div className="seal-name">{buildAcronym(name)}</div>
         </div>
       </div>
     </div>
   );
 }
 
-function DateBlock({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg bg-white/80 px-3 py-2 text-center shadow-sm">
-      <p className="text-[11px] text-slate-500">{label}</p>
-      <p className="mt-0.5 text-sm font-semibold text-slate-900">{value}</p>
-    </div>
-  );
+function getDepartmentIcon(name: string): LucideIcon {
+  const value = name.toLowerCase();
+  if (value.includes('orthop')) return Bone;
+  if (value.includes('anaesth')) return Activity;
+  if (value.includes('surgery')) return Scissors;
+  if (value.includes('obstetric') || value.includes('gyn')) return Baby;
+  if (value.includes('paedi') || value.includes('pedi')) return Baby;
+  if (value.includes('radio')) return ScanLine;
+  if (value.includes('psychi')) return Brain;
+  if (value.includes('emergency') || value.includes('trauma')) return HeartPulse;
+  if (value.includes('ent') || value.includes('otorhino')) return Ear;
+  if (value.includes('dermat')) return Microscope;
+  if (value.includes('micro')) return Microscope;
+  if (value.includes('medicine')) return Stethoscope;
+  if (value.includes('critical')) return Cross;
+  return Stethoscope;
+}
+
+function getDepartmentTone(index: number) {
+  return ['icon-blue', 'icon-indigo', 'icon-green', 'icon-orange', 'icon-purple', 'icon-rose'][index % 6];
 }
 
 function buildAcronym(value: string) {
-  const aiimsMatch = value.match(/\bAIIMS\b/i);
-  if (aiimsMatch) return 'AIIMS';
+  if (/\bAIIMS\b/i.test(value)) return 'AIIMS';
   const words = value.replace(/\([^)]*\)/g, ' ').split(/\s+/).filter(Boolean);
-  const acronym = words.slice(0, 3).map((word) => word[0]?.toUpperCase()).join('');
-  return acronym || 'ORG';
+  return words.slice(0, 3).map((word) => word[0]?.toUpperCase()).join('') || 'ORG';
 }
 
 function formatDate(value: string) {
   const date = parseRecruitmentDate(value);
   if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
+  return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 }
 
 function parseRecruitmentDate(value: string) {

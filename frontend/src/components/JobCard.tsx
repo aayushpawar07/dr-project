@@ -234,7 +234,6 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
     );
   }
 
-  // Keep the original MedExJob card face unchanged for normal single jobs.
   return (
     <Card className="medex-job-card relative cursor-pointer overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 md:p-6 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-md group h-full flex flex-col">
       <div className="flex flex-col h-full justify-between gap-3 flex-1">
@@ -379,7 +378,7 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
             className="inline-flex items-center gap-1.5 rounded-full text-white text-sm font-semibold px-5 py-2 shadow hover:shadow-md transition-all shrink-0"
             style={{ background: 'linear-gradient(to right, #2563eb, #1d4ed8)' }}
           >
-            View Details
+            {isGovernment ? 'View Details' : 'Apply Now'}
             <ArrowUpRight className="w-3.5 h-3.5" />
           </Button>
         </div>

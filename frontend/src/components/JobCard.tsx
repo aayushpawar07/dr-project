@@ -171,7 +171,7 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2 text-sm">
+          <div className="flex flex-col items-start gap-2 text-sm">
             {locationText && (
               <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-blue-700">
                 <MapPin className="w-3.5 h-3.5" />

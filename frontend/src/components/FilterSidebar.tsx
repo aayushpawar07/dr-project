@@ -1,9 +1,9 @@
-import { useState } from 'react';
 import { Card } from './ui/card';
 import { Label } from './ui/label';
 import { Checkbox } from './ui/checkbox';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
+import { BriefcaseBusiness, Building2, MapPin, SlidersHorizontal } from 'lucide-react';
 
 interface FilterSidebarProps {
   onFilterChange: (filters: FilterOptions) => void;
@@ -15,12 +15,15 @@ interface FilterSidebarProps {
   qualifications?: string[];
   states?: string[];
   cities?: string[];
+  value?: FilterOptions;
+  showSector?: boolean;
 }
 
 export interface FilterOptions {
   categories: string[];
   locations: string[];
   featured: boolean;
+  sector?: 'government' | 'private' | '';
   speciality?: string;
   department?: string;
   jobType?: string;
@@ -29,10 +32,11 @@ export interface FilterOptions {
   city?: string;
 }
 
-const emptyFilters = (): FilterOptions => ({
+export const emptyJobFilters = (): FilterOptions => ({
   categories: [],
   locations: [],
   featured: false,
+  sector: '',
   speciality: '',
   department: '',
   jobType: '',
@@ -42,80 +46,34 @@ const emptyFilters = (): FilterOptions => ({
 });
 
 const INDIAN_STATES_AND_UTS = [
-  'Andaman and Nicobar Islands',
-  'Andhra Pradesh',
-  'Arunachal Pradesh',
-  'Assam',
-  'Bihar',
-  'Chandigarh',
-  'Chhattisgarh',
-  'Dadra and Nagar Haveli and Daman and Diu',
-  'Delhi',
-  'Goa',
-  'Gujarat',
-  'Haryana',
-  'Himachal Pradesh',
-  'Jammu and Kashmir',
-  'Jharkhand',
-  'Karnataka',
-  'Kerala',
-  'Ladakh',
-  'Lakshadweep',
-  'Madhya Pradesh',
-  'Maharashtra',
-  'Manipur',
-  'Meghalaya',
-  'Mizoram',
-  'Nagaland',
-  'Odisha',
-  'Puducherry',
-  'Punjab',
-  'Rajasthan',
-  'Sikkim',
-  'Tamil Nadu',
-  'Telangana',
-  'Tripura',
-  'Uttar Pradesh',
-  'Uttarakhand',
-  'West Bengal',
+  'Andaman and Nicobar Islands', 'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar',
+  'Chandigarh', 'Chhattisgarh', 'Dadra and Nagar Haveli and Daman and Diu', 'Delhi', 'Goa',
+  'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jammu and Kashmir', 'Jharkhand', 'Karnataka',
+  'Kerala', 'Ladakh', 'Lakshadweep', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya',
+  'Mizoram', 'Nagaland', 'Odisha', 'Puducherry', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu',
+  'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
 ] as const;
 
-const STATE_NAME_BY_NORMALIZED = new Map(
-  INDIAN_STATES_AND_UTS.map((state) => [state.toLowerCase(), state]),
-);
+const STATE_NAME_BY_NORMALIZED = new Map(INDIAN_STATES_AND_UTS.map((state) => [state.toLowerCase(), state]));
 
-function getValidJobStates(states: string[]) {
-  const uniqueStates = new Map<string, string>();
-
-  states.forEach((state) => {
-    const normalized = state?.trim().toLowerCase();
-    if (!normalized) return;
-
-    const canonicalState = STATE_NAME_BY_NORMALIZED.get(normalized);
-    if (canonicalState) {
-      uniqueStates.set(normalized, canonicalState);
-    }
+function validStates(values: string[]) {
+  const result = new Map<string, string>();
+  values.forEach((value) => {
+    const normalized = value?.trim().toLowerCase();
+    const canonical = normalized ? STATE_NAME_BY_NORMALIZED.get(normalized) : undefined;
+    if (canonical) result.set(normalized!, canonical);
   });
-
-  return Array.from(uniqueStates.values()).sort((a, b) => a.localeCompare(b));
+  return [...result.values()].sort();
 }
 
-function getValidJobCities(cities: string[]) {
-  const uniqueCities = new Map<string, string>();
-
-  cities.forEach((city) => {
-    const trimmedCity = city?.trim();
-    const normalized = trimmedCity?.toLowerCase();
-    if (!normalized) return;
-
-    // City metadata remains dynamic from available jobs, but state/UT names
-    // are excluded so they cannot accidentally appear in the City dropdown.
-    if (!STATE_NAME_BY_NORMALIZED.has(normalized)) {
-      uniqueCities.set(normalized, trimmedCity);
-    }
+function validCities(values: string[]) {
+  const result = new Map<string, string>();
+  values.forEach((value) => {
+    const text = value?.trim();
+    const normalized = text?.toLowerCase();
+    if (normalized && !STATE_NAME_BY_NORMALIZED.has(normalized)) result.set(normalized, text);
   });
-
-  return Array.from(uniqueCities.values()).sort((a, b) => a.localeCompare(b));
+  return [...result.values()].sort();
 }
 
 export function FilterSidebar({
@@ -128,115 +86,106 @@ export function FilterSidebar({
   qualifications = [],
   states = [],
   cities = [],
+  value,
+  showSector = true,
 }: FilterSidebarProps) {
-  const [filters, setFilters] = useState<FilterOptions>(emptyFilters());
-  const validStates = getValidJobStates(states);
-  const validCities = getValidJobCities(cities);
-
-  const emit = (next: FilterOptions) => {
-    setFilters(next);
-    onFilterChange(next);
-  };
-
-  const handleCategoryChange = (category: string, checked: boolean) => {
-    const newCategories = checked
-      ? [...filters.categories, category]
-      : filters.categories.filter(c => c !== category);
-    emit({ ...filters, categories: newCategories });
-  };
-
-  const handleLocationChange = (location: string, checked: boolean) => {
-    const newLocations = checked
-      ? [...filters.locations, location]
-      : filters.locations.filter(l => l !== location);
-    emit({ ...filters, locations: newLocations });
-  };
-
+  const filters = value || emptyJobFilters();
+  const stateOptions = validStates(states);
+  const cityOptions = validCities(cities);
   const citiesForState = filters.state
-    ? validCities.filter((city) => {
-        const match = locations.find((loc) => loc.toLowerCase().includes(city.toLowerCase()) && loc.toLowerCase().includes(filters.state!.toLowerCase()));
-        return Boolean(match);
-      })
-    : validCities;
+    ? cityOptions.filter((city) => locations.some((loc) => loc.toLowerCase().includes(city.toLowerCase()) && loc.toLowerCase().includes(filters.state!.toLowerCase())))
+    : cityOptions;
+
+  const emit = (next: FilterOptions) => onFilterChange(next);
+  const toggleArray = (field: 'categories' | 'locations', item: string, checked: boolean) => {
+    const current = filters[field];
+    emit({ ...filters, [field]: checked ? [...current, item] : current.filter((value) => value !== item) });
+  };
 
   return (
-    <Card className="p-6 sticky top-20">
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg">Filters</h3>
-          <Button variant="ghost" size="sm" onClick={() => emit(emptyFilters())}>
-            Clear All
-          </Button>
+    <Card className="sticky top-20 overflow-hidden border-slate-200 bg-white shadow-sm">
+      <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/70 px-5 py-4">
+        <div className="flex items-center gap-2">
+          <SlidersHorizontal className="h-4 w-4 text-blue-600" />
+          <h3 className="font-semibold text-slate-900">Filters</h3>
+        </div>
+        <Button variant="ghost" size="sm" className="text-blue-700" onClick={() => emit(emptyJobFilters())}>Clear all</Button>
+      </div>
+
+      <div className="space-y-5 p-5">
+        {showSector && (
+          <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-3">
+            <Label className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800"><Building2 className="h-4 w-4 text-blue-600" />Job Sector</Label>
+            <select
+              className="h-10 w-full rounded-md border border-blue-200 bg-white px-3 text-sm"
+              value={filters.sector || ''}
+              onChange={(e) => emit({ ...filters, sector: e.target.value as FilterOptions['sector'] })}
+            >
+              <option value="">Government & Private</option>
+              <option value="government">Government Jobs</option>
+              <option value="private">Private Jobs</option>
+            </select>
+          </div>
+        )}
+
+        <div className="grid gap-4">
+          <SelectBlock label="State" icon={MapPin} value={filters.state || ''} options={stateOptions} onChange={(state) => emit({ ...filters, state, city: '', locations: [] })} />
+          <SelectBlock label="City" value={filters.city || ''} options={citiesForState} onChange={(city) => emit({ ...filters, city, locations: [] })} />
+          <SelectBlock label="Speciality" value={filters.speciality || ''} options={specialities} onChange={(speciality) => emit({ ...filters, speciality })} />
+          <SelectBlock label="Department" value={filters.department || ''} options={departments} onChange={(department) => emit({ ...filters, department })} />
+          <SelectBlock label="Employment Type" value={filters.jobType || ''} options={jobTypes} onChange={(jobType) => emit({ ...filters, jobType })} />
+          <SelectBlock label="Qualification" value={filters.qualification || ''} options={qualifications} onChange={(qualification) => emit({ ...filters, qualification })} />
         </div>
 
         <Separator />
 
-        <SelectBlock label="State" value={filters.state || ''} options={validStates} onChange={(state) => emit({ ...filters, state, city: '' })} />
-        <SelectBlock label="City" value={filters.city || ''} options={citiesForState} onChange={(city) => emit({ ...filters, city })} />
-        <SelectBlock label="Speciality" value={filters.speciality || ''} options={specialities} onChange={(speciality) => emit({ ...filters, speciality })} />
-        <SelectBlock label="Department" value={filters.department || ''} options={departments} onChange={(department) => emit({ ...filters, department })} />
-        <SelectBlock label="Job Type" value={filters.jobType || ''} options={jobTypes} onChange={(jobType) => emit({ ...filters, jobType })} />
-        <SelectBlock label="Qualification" value={filters.qualification || ''} options={qualifications} onChange={(qualification) => emit({ ...filters, qualification })} />
+        {categories.length > 0 && (
+          <div>
+            <Label className="mb-3 flex items-center gap-2 text-sm font-semibold"><BriefcaseBusiness className="h-4 w-4 text-violet-600" />Job Role</Label>
+            <div className="max-h-44 space-y-2 overflow-y-auto pr-1">
+              {categories.map((category) => (
+                <label key={category} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+                  <Checkbox checked={filters.categories.includes(category)} onCheckedChange={(checked) => toggleArray('categories', category, !!checked)} />
+                  <span>{category}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
 
-        <Separator />
-
-        <div>
-          <Label className="mb-3 block">Job Category</Label>
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {categories.map((category) => (
-              <div key={category} className="flex items-center space-x-2">
-                <Checkbox
-                  id={category}
-                  checked={filters.categories.includes(category)}
-                  onCheckedChange={(checked) => handleCategoryChange(category, !!checked)}
-                />
-                <label htmlFor={category} className="text-sm cursor-pointer">{category}</label>
+        {locations.length > 0 && (
+          <>
+            <Separator />
+            <div>
+              <Label className="mb-3 block text-sm font-semibold">Location</Label>
+              <div className="max-h-40 space-y-2 overflow-y-auto pr-1">
+                {locations.map((location) => (
+                  <label key={location} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+                    <Checkbox checked={filters.locations.includes(location)} onCheckedChange={(checked) => toggleArray('locations', location, !!checked)} />
+                    <span>{location}</span>
+                  </label>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
+          </>
+        )}
 
         <Separator />
-
-        <div>
-          <Label className="mb-3 block">Location</Label>
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {locations.map((location) => (
-              <div key={location} className="flex items-center space-x-2">
-                <Checkbox
-                  id={location}
-                  checked={filters.locations.includes(location)}
-                  onCheckedChange={(checked) => handleLocationChange(location, !!checked)}
-                />
-                <label htmlFor={location} className="text-sm cursor-pointer">{location}</label>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <Separator />
-
-        <div>
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="featured"
-              checked={filters.featured}
-              onCheckedChange={(checked) => emit({ ...filters, featured: !!checked })}
-            />
-            <label htmlFor="featured" className="text-sm cursor-pointer">Featured Jobs Only</label>
-          </div>
-        </div>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+          <Checkbox checked={filters.featured} onCheckedChange={(checked) => emit({ ...filters, featured: !!checked })} />
+          Featured jobs only
+        </label>
       </div>
     </Card>
   );
 }
 
-function SelectBlock({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (value: string) => void }) {
+function SelectBlock({ label, value, options, onChange, icon: Icon }: { label: string; value: string; options: string[]; onChange: (value: string) => void; icon?: any }) {
   if (!options.length) return null;
   return (
     <div>
-      <Label className="mb-2 block">{label}</Label>
-      <select className="w-full h-10 border rounded-md px-3 bg-white text-sm" value={value} onChange={(e) => onChange(e.target.value)}>
+      <Label className="mb-2 flex items-center gap-2 text-sm font-medium">{Icon && <Icon className="h-4 w-4 text-slate-500" />}{label}</Label>
+      <select className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm" value={value} onChange={(e) => onChange(e.target.value)}>
         <option value="">All {label}s</option>
         {options.map((option) => <option key={option} value={option}>{option}</option>)}
       </select>

@@ -1,119 +1,74 @@
-import { useEffect, useState, useCallback, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { Search, Loader2 } from "lucide-react";
-import { Button } from "./ui/button";
-import { JobCard } from "./JobCard";
-import { FilterSidebar, FilterOptions } from "./FilterSidebar";
-import SearchBar from "./SearchBar";
-import { fetchJobs, fetchJobsMeta } from "../api/jobs";
-import { trackSearch } from "../utils/searchUtils";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Loader2, Search, SlidersHorizontal, X } from 'lucide-react';
+import { Button } from './ui/button';
+import { JobCard } from './JobCard';
+import { FilterSidebar, FilterOptions, emptyJobFilters } from './FilterSidebar';
+import SearchBar from './SearchBar';
+import { fetchJobs, fetchJobsMeta } from '../api/jobs';
+import { trackSearch } from '../utils/searchUtils';
 
 interface JobListingPageProps {
   onNavigate: (page: string, jobId?: string) => void;
-  sector?: "government" | "private";
+  sector?: 'government' | 'private';
 }
 
-const GLOBAL_LOCATION_TERMS = new Set([
-  "anywhere",
-  "any location",
-  "all locations",
-  "any",
-]);
-
-const TITLE_SEARCH_STOPWORDS = new Set([
-  "a",
-  "an",
-  "and",
-  "at",
-  "for",
-  "in",
-  "of",
-  "on",
-  "the",
-  "to",
-  "with",
-  "job",
-  "jobs",
-  "vacancy",
-  "vacancies",
-  "post",
-  "posts",
-]);
+const GLOBAL_LOCATION_TERMS = new Set(['anywhere', 'any location', 'all locations', 'any']);
+const STOPWORDS = new Set(['a', 'an', 'and', 'at', 'for', 'in', 'of', 'on', 'the', 'to', 'with', 'job', 'jobs', 'vacancy', 'vacancies', 'post', 'posts']);
 
 function normalizeLocation(value?: string) {
-  return (value || "").trim().toLowerCase().replace(/\s+/g, " ");
+  return (value || '').trim().toLowerCase().replace(/\s+/g, ' ');
 }
 
 function isGlobalLocation(value?: string) {
   return GLOBAL_LOCATION_TERMS.has(normalizeLocation(value));
 }
 
-function getTitleSearchTokens(value: string) {
-  const tokens = value
-    .toLowerCase()
-    .split(/[^\p{L}\p{N}]+/u)
-    .map((token) => token.trim())
-    .filter(Boolean);
-
-  if (tokens.length <= 1) return [...new Set(tokens)];
-
-  const meaningful = tokens.filter((token) => !TITLE_SEARCH_STOPWORDS.has(token));
-  return [...new Set(meaningful.length > 0 ? meaningful : tokens)].slice(0, 12);
+function roleTokens(value: string) {
+  const raw = value.toLowerCase().split(/[^\p{L}\p{N}]+/u).map((token) => token.trim()).filter(Boolean);
+  const filtered = raw.length > 1 ? raw.filter((token) => !STOPWORDS.has(token)) : raw;
+  return [...new Set(filtered.length ? filtered : raw)];
 }
 
-function matchesWhatTitle(job: any, keyword: string) {
-  const trimmedKeyword = keyword.trim();
-  if (!trimmedKeyword) return true;
-
-  const title = String(job?.title || "").toLowerCase();
-  if (!title) return false;
-
-  const tokens = getTitleSearchTokens(trimmedKeyword);
-  return tokens.length > 0 && tokens.every((token) => title.includes(token));
+function roleGroups(value: string) {
+  return value.split(',').map((part) => roleTokens(part)).filter((tokens) => tokens.length > 0);
 }
 
-function filterByWhatTitle(content: any[], keyword: string) {
-  return keyword.trim() ? content.filter((job) => matchesWhatTitle(job, keyword)) : content;
+function matchesRoleSearch(job: any, query: string) {
+  const groups = roleGroups(query);
+  if (!groups.length) return true;
+  const searchable = String(job?.title || job?.displayTitle || '').toLowerCase();
+  return groups.some((tokens) => tokens.every((token) => searchable.includes(token)));
 }
 
 export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [selectedJobOption, setSelectedJobOption] = useState("");
-  const [locationQuery, setLocationQuery] = useState("");
-  const [filters, setFilters] = useState<FilterOptions>({ categories: [], locations: [], featured: false });
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const liveSearchTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const [selectedJobOption, setSelectedJobOption] = useState('');
+  const [locationQuery, setLocationQuery] = useState('');
+  const [filters, setFilters] = useState<FilterOptions>(emptyJobFilters());
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [jobs, setJobs] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
-  const [metaCategories, setMetaCategories] = useState<string[]>([]);
-  const [metaLocations, setMetaLocations] = useState<string[]>([]);
-  const [metaSpecialities, setMetaSpecialities] = useState<string[]>([]);
-  const [metaDepartments, setMetaDepartments] = useState<string[]>([]);
-  const [metaJobTypes, setMetaJobTypes] = useState<string[]>([]);
-  const [metaQualifications, setMetaQualifications] = useState<string[]>([]);
-  const [metaStates, setMetaStates] = useState<string[]>([]);
-  const [metaCities, setMetaCities] = useState<string[]>([]);
+  const [meta, setMeta] = useState<any>({ categories: [], locations: [], specialities: [], departments: [], jobTypes: [], qualifications: [], states: [], cities: [] });
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [showingFallback, setShowingFallback] = useState(false);
-  const [fallbackReason, setFallbackReason] = useState("");
+  const [fallbackReason, setFallbackReason] = useState('');
 
-  const isInitialMount = useRef(true);
-  const lastSearchParams = useRef<string>("");
+  const effectiveSector = sector || (filters.sector || undefined);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const searchParam = params.get("search");
-    const locationParam = params.get("location")?.trim() || "";
-    const categoryParam = params.get("category");
-
-    if (searchParam) {
-      setSelectedJobOption(searchParam);
-      setHasSearched(true);
-    } else {
-      setSelectedJobOption("");
-    }
-
+    const searchParam = params.get('search') || '';
+    const locationParam = params.get('location')?.trim() || '';
+    const categoryParam = params.get('category') || '';
+    setSelectedJobOption(searchParam);
     setLocationQuery(locationParam);
+    setHasSearched(Boolean(searchParam));
     setFilters((prev) => ({
       ...prev,
       locations: locationParam && !isGlobalLocation(locationParam) ? [locationParam] : [],
@@ -122,55 +77,23 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
   }, [location.search]);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const meta = await fetchJobsMeta(sector);
-        setMetaCategories(Array.isArray(meta?.categories) ? meta.categories : []);
-        setMetaLocations(Array.isArray(meta?.locations) ? meta.locations : []);
-        setMetaSpecialities(Array.isArray(meta?.specialities) ? meta.specialities : []);
-        setMetaDepartments(Array.isArray(meta?.departments) ? meta.departments : []);
-        setMetaJobTypes(Array.isArray(meta?.jobTypes) ? meta.jobTypes : []);
-        setMetaQualifications(Array.isArray(meta?.qualifications) ? meta.qualifications : []);
-        setMetaStates(Array.isArray(meta?.states) ? meta.states : []);
-        setMetaCities(Array.isArray(meta?.cities) ? meta.cities : []);
-      } catch (err) {
-        console.error("Error loading meta:", err);
-      }
-    })();
-  }, [sector]);
+    fetchJobsMeta(effectiveSector)
+      .then((data) => setMeta(data || {}))
+      .catch(() => setMeta({ categories: [], locations: [], specialities: [], departments: [], jobTypes: [], qualifications: [], states: [], cities: [] }));
+  }, [effectiveSector]);
 
   useEffect(() => {
-    const fetchJobsData = async () => {
-      const activeLocation = filters.locations[0]?.trim() || "";
-      const currentParams = JSON.stringify({
-        search: selectedJobOption,
-        locationQuery,
-        sector,
-        category: filters.categories[0],
-        location: activeLocation,
-        featured: filters.featured,
-        speciality: filters.speciality,
-        department: filters.department,
-        jobType: filters.jobType,
-        qualification: filters.qualification,
-        state: filters.state,
-        city: filters.city,
-      });
-
-      if (currentParams === lastSearchParams.current && !isInitialMount.current) return;
-      lastSearchParams.current = currentParams;
-      isInitialMount.current = false;
-
+    let cancelled = false;
+    const run = async () => {
       setLoading(true);
       setShowingFallback(false);
-      setFallbackReason("");
-
+      setFallbackReason('');
       try {
         const keyword = selectedJobOption.trim();
-        const params: any = { status: "active", size: 50 };
-
+        const activeLocation = filters.locations[0]?.trim() || '';
+        const params: any = { status: 'active', size: 50 };
         if (keyword) params.search = keyword;
-        if (sector) params.sector = sector;
+        if (effectiveSector) params.sector = effectiveSector;
         if (filters.categories[0]) params.category = filters.categories[0];
         if (activeLocation) params.location = activeLocation;
         if (filters.featured) params.featured = true;
@@ -181,202 +104,144 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
         if (filters.state) params.state = filters.state;
         if (filters.city) params.city = filters.city;
 
-        const initialResponse = await fetchJobs(params);
-        const initialContent = Array.isArray(initialResponse?.content) ? initialResponse.content : [];
+        let response = await fetchJobs(params);
+        let content = (Array.isArray(response?.content) ? response.content : []).filter((job: any) => matchesRoleSearch(job, keyword));
 
-        // The backend may return broad relevance matches. The WHAT box is a job
-        // title search, so every meaningful WHAT term must exist in the real title.
-        let content = filterByWhatTitle(initialContent, keyword);
-
-        // If the requested location has no title-matching result, keep WHAT exactly
-        // as entered and retry only without WHERE. This makes "Anywhere" and unknown
-        // locations location-agnostic without ever showing unrelated job titles.
         if (content.length === 0 && activeLocation) {
-          const fallbackParams: any = { ...params };
+          const fallbackParams = { ...params };
           delete fallbackParams.location;
-
-          const fallback = await fetchJobs(fallbackParams);
-          const fallbackContent = Array.isArray(fallback?.content) ? fallback.content : [];
-          const titleMatchedFallback = filterByWhatTitle(fallbackContent, keyword);
-
-          if (titleMatchedFallback.length > 0) {
-            content = titleMatchedFallback;
+          response = await fetchJobs(fallbackParams);
+          const fallback = (Array.isArray(response?.content) ? response.content : []).filter((job: any) => matchesRoleSearch(job, keyword));
+          if (fallback.length) {
+            content = fallback;
             setShowingFallback(true);
-            setFallbackReason(
-              keyword
-                ? `No “${keyword}” jobs are currently listed in “${activeLocation}”. Showing matching “${keyword}” job titles from all available locations.`
-                : `No jobs are currently listed in “${activeLocation}”. Showing available jobs from all locations.`
-            );
+            setFallbackReason(keyword
+              ? `No matching jobs are listed in “${activeLocation}”. Showing matching roles from all locations.`
+              : `No jobs are listed in “${activeLocation}”. Showing available jobs from all locations.`);
           }
         }
 
-        const normalizedJobs = content.map((job: any) => ({
-          ...job,
-          sector: job.sector?.toLowerCase() || "private",
-        }));
-        const visibleCount = normalizedJobs.length;
-
-        setJobs(normalizedJobs);
-        setTotal(visibleCount);
-
-        if (keyword) {
-          setHasSearched(true);
-          trackSearch(keyword, locationQuery || activeLocation, visibleCount);
+        if (!cancelled) {
+          setJobs(content.map((job: any) => ({ ...job, sector: job.sector?.toLowerCase() || 'private' })));
+          setTotal(content.length);
+          if (keyword) {
+            setHasSearched(true);
+            trackSearch(keyword, locationQuery || activeLocation, content.length);
+          }
         }
       } catch (error) {
-        console.error("Error fetching jobs:", error);
-        setJobs([]);
-        setTotal(0);
+        console.error('Error fetching jobs:', error);
+        if (!cancelled) { setJobs([]); setTotal(0); }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
+    void run();
+    return () => { cancelled = true; };
+  }, [selectedJobOption, locationQuery, filters, effectiveSector]);
 
-    fetchJobsData();
-  }, [selectedJobOption, locationQuery, filters, sector]);
-
-  const title = sector === "government" ? "Government Jobs" : sector === "private" ? "Private Jobs" : "All Jobs";
-
-  const getCountLabel = () => {
-    if (loading) return "Searching...";
-
-    const count = total;
-    const jobWord = count === 1 ? "job" : "jobs";
-    const keyword = selectedJobOption.trim();
-    const requestedLocation = locationQuery.trim() || filters.locations[0]?.trim() || "";
-    const acrossAllLocations = showingFallback || isGlobalLocation(requestedLocation) || !requestedLocation;
-
-    if (keyword && count > 0 && acrossAllLocations) {
-      return `Found ${count} ${jobWord} matching “${keyword}” across all locations`;
-    }
-    if (keyword && count > 0 && requestedLocation) {
-      return `Found ${count} ${jobWord} matching “${keyword}” in “${requestedLocation}”`;
-    }
-    if (count > 0 && acrossAllLocations) return `Showing ${count} ${jobWord} across all locations`;
-    if (count > 0) return `Showing ${count} ${jobWord}`;
-    if (keyword) return `No job titles found matching “${keyword}”`;
-    return "No jobs available";
-  };
-
-  const liveSearchTimerRef = useRef<ReturnType<typeof setTimeout>>();
-
-  const handleLiveSearch = useCallback((query: string, locationVal?: string) => {
+  const handleLiveSearch = useCallback((query: string, locationValue?: string) => {
     if (liveSearchTimerRef.current) clearTimeout(liveSearchTimerRef.current);
-
     liveSearchTimerRef.current = setTimeout(() => {
       const keyword = query.trim();
       setSelectedJobOption(query);
-
-      if (locationVal !== undefined) {
-        const rawLocation = locationVal.trim();
-        setLocationQuery(rawLocation);
-        setFilters((prev) => ({
-          ...prev,
-          locations: rawLocation && !isGlobalLocation(rawLocation) ? [rawLocation] : [],
-        }));
+      if (locationValue !== undefined) {
+        const place = locationValue.trim();
+        setLocationQuery(place);
+        setFilters((prev) => ({ ...prev, locations: place && !isGlobalLocation(place) ? [place] : [] }));
       }
-
       if (keyword) setHasSearched(true);
-
       const params = new URLSearchParams(location.search);
-      if (keyword) params.set("search", keyword);
-      else params.delete("search");
-
-      if (locationVal !== undefined && locationVal.trim()) {
-        params.set("location", locationVal.trim());
-      } else if (locationVal !== undefined) {
-        params.delete("location");
-      }
-
-      const newSearch = params.toString() ? `?${params.toString()}` : "";
-      navigate(`${location.pathname}${newSearch}`, { replace: true });
+      keyword ? params.set('search', keyword) : params.delete('search');
+      if (locationValue !== undefined) locationValue.trim() ? params.set('location', locationValue.trim()) : params.delete('location');
+      navigate(`${location.pathname}${params.toString() ? `?${params}` : ''}`, { replace: true });
     }, 250);
-  }, [location.search, location.pathname, navigate]);
+  }, [location.pathname, location.search, navigate]);
 
-  const handleClearSearch = () => {
-    setSelectedJobOption("");
-    setLocationQuery("");
-    setHasSearched(false);
-    setShowingFallback(false);
-    setFallbackReason("");
-    setFilters({ categories: [], locations: [], featured: false });
-    navigate(sector === "government" ? "/govt-jobs" : sector === "private" ? "/private-jobs" : "/jobs");
+  const applyFilters = (next: FilterOptions) => {
+    setFilters(next);
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setMobileFiltersOpen(false);
+      window.setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+    }
   };
 
-  const keyword = selectedJobOption.trim();
+  const clearAll = () => {
+    setSelectedJobOption('');
+    setLocationQuery('');
+    setFilters(emptyJobFilters());
+    setHasSearched(false);
+    setShowingFallback(false);
+    setFallbackReason('');
+    navigate(sector === 'government' ? '/govt-jobs' : sector === 'private' ? '/private-jobs' : '/jobs');
+  };
+
+  const activeFilterCount = useMemo(() => [
+    filters.sector, filters.state, filters.city, filters.speciality, filters.department,
+    filters.jobType, filters.qualification, filters.featured ? 'featured' : '',
+    ...filters.categories, ...filters.locations,
+  ].filter(Boolean).length, [filters]);
+
+  const title = sector === 'government' ? 'Government Jobs' : sector === 'private' ? 'Private Jobs' : 'All Jobs';
+  const countLabel = loading ? 'Searching...' : total ? `${total} matching ${total === 1 ? 'job' : 'jobs'}` : 'No matching jobs';
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b">
+    <div className="min-h-screen bg-slate-50">
+      <div className="border-b bg-white">
         <div className="container mx-auto px-4 py-6 sm:py-8">
-          <h1 className="text-2xl sm:text-3xl text-gray-900 mb-4">{title}</h1>
-          <SearchBar
-            initialQuery={selectedJobOption}
-            initialLocation={locationQuery}
-            compact={true}
-            sector={sector}
-            onLiveSearch={handleLiveSearch}
-          />
+          <h1 className="mb-4 text-2xl font-semibold text-slate-900 sm:text-3xl">{title}</h1>
+          <SearchBar initialQuery={selectedJobOption} initialLocation={locationQuery} compact sector={effectiveSector} onLiveSearch={handleLiveSearch} showLabels={false} />
         </div>
       </div>
 
-      <div className="container mx-auto px-3 sm:px-4 py-5 sm:py-8">
-        <div className="grid md:grid-cols-4 gap-4 sm:gap-6">
-          <div className="md:col-span-1">
-            <FilterSidebar
-              onFilterChange={setFilters}
-              categories={metaCategories}
-              locations={metaLocations}
-              specialities={metaSpecialities}
-              departments={metaDepartments}
-              jobTypes={metaJobTypes}
-              qualifications={metaQualifications}
-              states={metaStates}
-              cities={metaCities}
-            />
-          </div>
+      <div className="container mx-auto px-3 py-5 sm:px-4 sm:py-8">
+        <div className="mb-4 flex items-center justify-between md:hidden">
+          <Button variant="outline" onClick={() => setMobileFiltersOpen(true)} className="gap-2">
+            <SlidersHorizontal className="h-4 w-4" /> Filters {activeFilterCount > 0 && <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs text-white">{activeFilterCount}</span>}
+          </Button>
+          {(activeFilterCount > 0 || selectedJobOption || locationQuery) && <Button variant="ghost" size="sm" onClick={clearAll}>Clear all</Button>}
+        </div>
 
-          <div className="md:col-span-3 min-w-0">
-            <div className="mb-4 sm:mb-6">
-              <p className="text-gray-700 font-medium text-sm sm:text-base">{getCountLabel()}</p>
-              {showingFallback && fallbackReason && (
-                <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 px-3 sm:px-4 py-3 text-xs sm:text-sm text-blue-800 leading-relaxed">
-                  {fallbackReason}
-                </div>
-              )}
+        {mobileFiltersOpen && (
+          <div className="fixed inset-0 z-50 bg-black/35 md:hidden" onClick={() => setMobileFiltersOpen(false)}>
+            <div className="absolute inset-y-0 left-0 w-[88%] max-w-sm overflow-y-auto bg-slate-50 p-3" onClick={(event) => event.stopPropagation()}>
+              <div className="mb-3 flex items-center justify-between px-1">
+                <strong>Filter jobs</strong>
+                <Button variant="ghost" size="icon" onClick={() => setMobileFiltersOpen(false)}><X className="h-5 w-5" /></Button>
+              </div>
+              <FilterSidebar value={filters} onFilterChange={applyFilters} showSector={!sector} categories={meta.categories || []} locations={meta.locations || []} specialities={meta.specialities || []} departments={meta.departments || []} jobTypes={meta.jobTypes || []} qualifications={meta.qualifications || []} states={meta.states || []} cities={meta.cities || []} />
+            </div>
+          </div>
+        )}
+
+        <div className="grid gap-6 md:grid-cols-4">
+          <aside className="hidden md:col-span-1 md:block">
+            <FilterSidebar value={filters} onFilterChange={applyFilters} showSector={!sector} categories={meta.categories || []} locations={meta.locations || []} specialities={meta.specialities || []} departments={meta.departments || []} jobTypes={meta.jobTypes || []} qualifications={meta.qualifications || []} states={meta.states || []} cities={meta.cities || []} />
+          </aside>
+
+          <main ref={resultsRef} className="min-w-0 md:col-span-3">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-medium text-slate-700 sm:text-base">{countLabel}</p>
+              {selectedJobOption.includes(',') && <span className="rounded-full bg-violet-50 px-3 py-1 text-xs font-medium text-violet-700">Multiple-role search</span>}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 items-stretch">
+            {showingFallback && fallbackReason && <div className="mb-5 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">{fallbackReason}</div>}
+
+            <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-2 xl:grid-cols-3 sm:gap-6">
               {loading ? (
-                <div className="lg:col-span-2 xl:col-span-3 text-center py-14 sm:py-16">
-                  <Loader2 className="w-10 h-10 sm:w-12 sm:h-12 animate-spin text-blue-600 mx-auto mb-4" />
-                  <p className="text-gray-500 text-base sm:text-lg">Searching for jobs...</p>
-                </div>
-              ) : jobs.length > 0 ? (
-                jobs.map((job: any) => (
-                  <div key={job.id} className="w-full max-w-[420px] h-full justify-self-center">
-                    <JobCard
-                      job={job}
-                      onViewDetails={(jobId) => onNavigate("job-detail", job.slug || jobId)}
-                    />
-                  </div>
-                ))
+                <div className="py-16 text-center lg:col-span-2 xl:col-span-3"><Loader2 className="mx-auto mb-4 h-11 w-11 animate-spin text-blue-600" /><p className="text-slate-500">Searching for jobs...</p></div>
+              ) : jobs.length ? (
+                jobs.map((job: any) => <div key={job.id} className="h-full w-full max-w-[420px] justify-self-center"><JobCard job={job} onViewDetails={(jobId) => onNavigate('job-detail', job.slug || jobId)} /></div>)
               ) : (
-                <div className="lg:col-span-2 xl:col-span-3 text-center py-12 sm:py-16 bg-white rounded-lg shadow-sm border px-4">
-                  <Search className="w-14 h-14 sm:w-16 sm:h-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
-                    {hasSearched && keyword ? "No matching job titles found" : "No active jobs available"}
-                  </h3>
-                  <p className="text-gray-500 mb-6 max-w-md mx-auto text-sm sm:text-base">
-                    {hasSearched && keyword
-                      ? `There are currently no active job titles matching “${keyword}” with the selected filters.`
-                      : "There are currently no active jobs matching the selected portal filters."}
-                  </p>
-                  <Button variant="outline" onClick={handleClearSearch}>Clear Search & Filters</Button>
+                <div className="rounded-xl border bg-white px-4 py-14 text-center shadow-sm lg:col-span-2 xl:col-span-3">
+                  <Search className="mx-auto mb-4 h-14 w-14 text-slate-300" />
+                  <h3 className="text-lg font-semibold text-slate-900">{hasSearched ? 'No matching jobs found' : 'No active jobs available'}</h3>
+                  <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">Try another role, remove a filter, or search multiple roles separated by commas.</p>
+                  <Button variant="outline" className="mt-5" onClick={clearAll}>Clear search & filters</Button>
                 </div>
               )}
             </div>
-          </div>
+          </main>
         </div>
       </div>
     </div>

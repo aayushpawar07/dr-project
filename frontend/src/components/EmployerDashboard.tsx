@@ -1,954 +1,179 @@
-// AI assisted development
-import {
-  AlertTriangle,
-  ArrowLeft,
-  Award,
-  BarChart3,
-  Bell,
-  Briefcase,
-  Building2,
-  Calendar,
-  CheckCircle,
-  ChevronRight,
-  CreditCard,
-  Edit,
-  Eye,
-  FileText,
-  LayoutDashboard,
-  LogOut,
-  Mail,
-  MapPin,
-  Menu,
-  Phone,
-  Plus,
-  RefreshCw,
-  ShieldCheck,
-  Star,
-  UserCheck,
-  UserPlus,
-  Users,
-  X,
-} from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import {
+  AlertTriangle, BarChart3, Bell, Briefcase, Building2, Calendar, CheckCircle2, ChevronRight,
+  Clock3, CreditCard, Edit, Eye, FileText, LogOut, Mail, MapPin, Phone, Plus, RefreshCw,
+  ShieldCheck, Star, UserCheck, Users, XCircle,
+} from 'lucide-react';
+import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchEmployer, EmployerResponse } from '../api/employers';
-import { fetchApplications, ApplicationResponse } from '../api/applications';
+import { fetchApplications, updateApplicationStatus, ApplicationResponse } from '../api/applications';
+import { fetchJobsByEmployer } from '../api/jobs';
 import { getCurrentSubscription, SubscriptionResponse } from '../api/subscriptions';
-import { fetchNotifications } from '../api/notifications';
 import { openFileInViewer } from '../utils/fileUtils';
-import './styles/../styles/employer-dashboard.css';
 
-interface EmployerDashboardProps {
-  onNavigate: (page: string, entityId?: string) => void;
-}
-
-type DashboardSection = 'jobs' | 'applications' | 'subscription' | 'notifications' | 'verification';
-type JobFilter = 'all' | 'active' | 'pending' | 'draft' | 'closed';
+interface EmployerDashboardProps { onNavigate: (page: string, entityId?: string) => void; }
+type Section = 'jobs' | 'applications' | 'account';
+type AppStatusFilter = 'all' | 'applied' | 'shortlisted' | 'interview' | 'selected' | 'rejected';
 
 function formatDate(value?: string) {
   if (!value) return 'N/A';
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'N/A';
-  return date.toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+  return Number.isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 }
-
-function getInitials(value?: string) {
-  if (!value) return 'ME';
-  const parts = value.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return 'ME';
-  return parts.slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('');
-}
-
-function getJobStatusClass(status?: string) {
+function initials(value?: string) { return (value || 'ME').trim().split(/\s+/).slice(0,2).map((v)=>v[0]?.toUpperCase()).join('') || 'ME'; }
+function statusTone(status?: string) {
   switch ((status || '').toLowerCase()) {
-    case 'active':
-      return 'dashboard-status dashboard-status--active';
-    case 'pending':
-      return 'dashboard-status dashboard-status--pending';
-    case 'draft':
-      return 'dashboard-status dashboard-status--draft';
-    case 'closed':
-      return 'dashboard-status dashboard-status--closed';
-    default:
-      return 'dashboard-status';
-  }
-}
-
-function getApplicationStatusClass(status?: string) {
-  switch ((status || '').toLowerCase()) {
-    case 'shortlisted':
-      return 'dashboard-status dashboard-status--active';
-    case 'interview':
-      return 'dashboard-status dashboard-status--interview';
-    case 'selected':
-    case 'hired':
-      return 'dashboard-status dashboard-status--selected';
-    case 'rejected':
-      return 'dashboard-status dashboard-status--rejected';
-    case 'applied':
-    case 'pending':
-      return 'dashboard-status dashboard-status--pending';
-    default:
-      return 'dashboard-status';
+    case 'active': case 'selected': return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+    case 'shortlisted': return 'border-blue-200 bg-blue-50 text-blue-700';
+    case 'interview': return 'border-violet-200 bg-violet-50 text-violet-700';
+    case 'rejected': case 'closed': return 'border-rose-200 bg-rose-50 text-rose-700';
+    case 'pending': case 'applied': return 'border-amber-200 bg-amber-50 text-amber-700';
+    default: return 'border-slate-200 bg-slate-50 text-slate-600';
   }
 }
 
 export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
   const { user, token, logout } = useAuth();
-  const [myJobs, setMyJobs] = useState<any[]>([]);
-  const [myApplications, setMyApplications] = useState<ApplicationResponse[]>([]);
   const [employer, setEmployer] = useState<EmployerResponse | null>(null);
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [applications, setApplications] = useState<ApplicationResponse[]>([]);
+  const [subscription, setSubscription] = useState<SubscriptionResponse | null>(null);
+  const [section, setSection] = useState<Section>('jobs');
+  const [jobFilter, setJobFilter] = useState('all');
+  const [applicationJobId, setApplicationJobId] = useState('all');
+  const [applicationStatus, setApplicationStatus] = useState<AppStatusFilter>('all');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [currentSubscription, setCurrentSubscription] = useState<SubscriptionResponse | null>(null);
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [activeSection, setActiveSection] = useState<DashboardSection>('jobs');
-  const [jobFilter, setJobFilter] = useState<JobFilter>('all');
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [updatingApplicationId, setUpdatingApplicationId] = useState<string | null>(null);
+  const [error, setError] = useState('');
 
-  const fetchApplicationsForJobs = async (jobs: any[], authToken: string) => {
-    if (jobs.length === 0) return [];
-
-    const allApplications: ApplicationResponse[] = [];
-    for (const job of jobs) {
-      try {
-        const appsResponse = await fetchApplications(
-          {
-            jobId: job.id,
-            page: 0,
-            size: 1000,
-          },
-          authToken,
-        );
-
-        if (appsResponse?.content && Array.isArray(appsResponse.content)) {
-          allApplications.push(...appsResponse.content);
-        } else if (Array.isArray(appsResponse)) {
-          allApplications.push(...appsResponse);
-        }
-      } catch (applicationError) {
-        console.error(`Failed to fetch applications for job ${job.id}:`, applicationError);
-      }
-    }
-    return allApplications;
-  };
-
-  const loadDashboardData = async (showLoader = false) => {
+  const load = async (showLoader = false) => {
     if (!user || !token) return;
     if (showLoader) setLoading(true);
-
     try {
-      setError(null);
-      let employerData: EmployerResponse;
+      setError('');
+      const employerData = await fetchEmployer(user.id, token);
+      setEmployer(employerData);
+      const jobResponse = await fetchJobsByEmployer(employerData.id, { status: 'all', page: 0, size: 1000 });
+      const employerJobs = jobResponse.content || [];
+      setJobs(employerJobs);
 
-      try {
-        employerData = await fetchEmployer(user.id, token);
-      } catch (employerError: any) {
-        if (employerError?.message?.includes('404')) {
-          const { createEmployer } = await import('../api/employers');
-          employerData = await createEmployer({}, token);
-        } else {
-          throw employerError;
+      const all: ApplicationResponse[] = [];
+      for (const job of employerJobs) {
+        try {
+          const response = await fetchApplications({ jobId: job.id, page: 0, size: 1000 }, token);
+          const content = Array.isArray(response?.content) ? response.content : Array.isArray(response) ? response : [];
+          all.push(...content);
+        } catch (applicationError) {
+          console.error(`Applications failed for job ${job.id}`, applicationError);
         }
       }
-
-      setEmployer(employerData);
-
-      if (employerData.verificationStatus === 'pending') {
-        onNavigate('verification');
-        return;
-      }
-
-      const { fetchJobsByEmployer } = await import('../api/jobs');
-      const jobsResponse = await fetchJobsByEmployer(employerData.id, {
-        status: 'all',
-        page: 0,
-        size: 1000,
-      });
-      const employerJobs = jobsResponse.content || [];
-      setMyJobs(employerJobs);
-
-      const applications = await fetchApplicationsForJobs(employerJobs, token);
-      setMyApplications(applications);
-
-      try {
-        const subscription = await getCurrentSubscription(token);
-        setCurrentSubscription(subscription);
-      } catch (subscriptionError) {
-        console.warn('Could not fetch subscription:', subscriptionError);
-        setCurrentSubscription(null);
-      }
-
-      try {
-        const notificationsData = await fetchNotifications({ page: 0, size: 10 }, token);
-        setNotifications(notificationsData.content || []);
-      } catch (notificationError) {
-        console.error('Error fetching notifications:', notificationError);
-        setNotifications([]);
-      }
-    } catch (dashboardError: any) {
-      console.error('Failed to fetch employer data:', dashboardError);
-      setError(dashboardError?.message || 'Failed to load dashboard data. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+      setApplications(all);
+      try { setSubscription(await getCurrentSubscription(token)); } catch { setSubscription(null); }
+    } catch (e: any) {
+      console.error(e);
+      setError(e?.message || 'Unable to load employer dashboard.');
+    } finally { setLoading(false); setRefreshing(false); }
   };
 
-  useEffect(() => {
-    loadDashboardData(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, token]);
+  useEffect(() => { void load(true); }, [user?.id, token]);
 
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden && user && token) {
-        loadDashboardData(false);
-      }
-    };
+  const filteredJobs = useMemo(() => jobFilter === 'all' ? jobs : jobs.filter((job) => job.status === jobFilter), [jobs, jobFilter]);
+  const filteredApplications = useMemo(() => applications.filter((application) => {
+    if (applicationJobId !== 'all' && application.jobId !== applicationJobId) return false;
+    if (applicationStatus !== 'all' && application.status !== applicationStatus) return false;
+    return true;
+  }), [applications, applicationJobId, applicationStatus]);
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, token]);
-
-  useEffect(() => {
-    if (!mobileNavOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [mobileNavOpen]);
-
-  const totalApplicationsFromList = myApplications.length;
-  const totalApplicationsFromJobs = myJobs.reduce((sum, job) => sum + (Number(job.applications) || 0), 0);
-  const totalApplications = Math.max(totalApplicationsFromList, totalApplicationsFromJobs);
-  const activeJobs = myJobs.filter((job) => job.status === 'active').length;
-  const shortlistedCount = myApplications.filter((application) => application.status === 'shortlisted').length;
-  const interviewCount = myApplications.filter((application) => application.status === 'interview').length;
-  const filledPositionsCount = myApplications.filter(
-    (application) => application.status === 'selected' || application.status === 'hired',
-  ).length;
-  const unreadNotifications = notifications.filter((notification: any) => !notification.read).length;
-
-  const jobsClosingSoon = useMemo(() => {
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    const sevenDaysFromNow = new Date(now);
-    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
-
-    return myJobs.filter((job) => {
-      if (job.status !== 'active' || !job.lastDate) return false;
-      const lastDate = new Date(job.lastDate);
-      if (Number.isNaN(lastDate.getTime())) return false;
-      lastDate.setHours(0, 0, 0, 0);
-      return lastDate >= now && lastDate <= sevenDaysFromNow;
-    }).length;
-  }, [myJobs]);
-
-  const totalViews = myJobs.reduce((sum, job) => sum + (Number(job.views) || 0), 0);
-
-  const filteredJobs = useMemo(() => {
-    if (jobFilter === 'all') return myJobs;
-    return myJobs.filter((job) => job.status === jobFilter);
-  }, [jobFilter, myJobs]);
-
-  const applicationsByJob = useMemo(() => {
-    const grouped = new Map<string, ApplicationResponse[]>();
-    myApplications.forEach((application) => {
-      const jobId = application.jobId || 'unknown';
-      if (!grouped.has(jobId)) grouped.set(jobId, []);
-      grouped.get(jobId)!.push(application);
+  const groupedApplications = useMemo(() => {
+    const map = new Map<string, ApplicationResponse[]>();
+    filteredApplications.forEach((application) => {
+      const bucket = map.get(application.jobId) || [];
+      bucket.push(application);
+      map.set(application.jobId, bucket);
     });
-    return Array.from(grouped.entries());
-  }, [myApplications]);
+    return [...map.entries()];
+  }, [filteredApplications]);
 
-  const handleLogout = () => {
-    logout();
-    onNavigate('logout');
+  const counts = useMemo(() => ({
+    active: jobs.filter((j) => j.status === 'active').length,
+    apps: applications.length,
+    shortlisted: applications.filter((a) => a.status === 'shortlisted').length,
+    interviews: applications.filter((a) => a.status === 'interview').length,
+    selected: applications.filter((a) => a.status === 'selected').length,
+    views: jobs.reduce((sum, job) => sum + (Number(job.views) || 0), 0),
+  }), [jobs, applications]);
+
+  const openApplicationsForJob = (jobId: string) => {
+    setApplicationJobId(jobId);
+    setApplicationStatus('all');
+    setSection('applications');
   };
 
-  const handlePostJob = () => {
-    setMobileNavOpen(false);
-    if (currentSubscription?.status === 'active') {
-      onNavigate('employer-post-job');
-    } else {
-      onNavigate('subscription');
+  const updateStatus = async (application: ApplicationResponse, status: string) => {
+    if (!token) return;
+    let interviewDate: string | undefined;
+    if (status === 'interview') {
+      const value = window.prompt('Interview date and time (YYYY-MM-DDTHH:mm)', new Date(Date.now() + 86400000).toISOString().slice(0,16));
+      if (!value) return;
+      interviewDate = value;
     }
-  };
-
-  const openSection = (section: DashboardSection) => {
-    setActiveSection(section);
-    setMobileNavOpen(false);
-  };
-
-  const handleRefreshApplications = async () => {
-    if (!user || !token || !employer || refreshing) return;
-    setRefreshing(true);
+    setUpdatingApplicationId(application.id);
     try {
-      const { fetchJobsByEmployer } = await import('../api/jobs');
-      const jobsResponse = await fetchJobsByEmployer(employer.id, {
-        status: 'all',
-        page: 0,
-        size: 1000,
-      });
-      const employerJobs = jobsResponse.content || [];
-      setMyJobs(employerJobs);
-      const applications = await fetchApplicationsForJobs(employerJobs, token);
-      setMyApplications(applications);
-    } catch (refreshError) {
-      console.error('Failed to refresh applications:', refreshError);
-    } finally {
-      setRefreshing(false);
-    }
+      await updateApplicationStatus(application.id, status, token, undefined, interviewDate);
+      toast.success(status === 'interview' ? 'Interview scheduled' : `Application marked ${status}`);
+      await load(false);
+    } catch (e: any) {
+      toast.error(e?.message || 'Unable to update application status.');
+    } finally { setUpdatingApplicationId(null); }
   };
 
-  if (loading) {
-    return (
-      <div className="employer-state employer-state--loading">
-        <div className="employer-loader" aria-hidden="true" />
-        <h2>Loading your dashboard</h2>
-        <p>Fetching your jobs, applications and account details.</p>
-      </div>
-    );
-  }
+  if (loading) return <div className="min-h-[60vh] bg-slate-50 flex items-center justify-center"><div className="text-center"><RefreshCw className="mx-auto h-9 w-9 animate-spin text-blue-600"/><p className="mt-3 text-slate-500">Loading employer workspace…</p></div></div>;
+  if (error) return <div className="min-h-[60vh] bg-slate-50 flex items-center justify-center p-4"><div className="max-w-md rounded-2xl border border-rose-200 bg-white p-6 text-center shadow-sm"><AlertTriangle className="mx-auto h-9 w-9 text-rose-500"/><h2 className="mt-3 text-xl font-semibold">Unable to load dashboard</h2><p className="mt-2 text-sm text-slate-600">{error}</p><button className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-white" onClick={()=>void load(true)}>Try again</button></div></div>;
+  if (!employer) return null;
 
-  if (error) {
-    return (
-      <div className="employer-state employer-state--error">
-        <div className="employer-state__icon employer-state__icon--error">
-          <AlertTriangle size={30} />
-        </div>
-        <h2>Unable to load dashboard</h2>
-        <p>{error}</p>
-        <button className="dashboard-primary-button" onClick={() => loadDashboardData(true)}>
-          Try Again
-        </button>
-      </div>
-    );
-  }
+  const verified = employer.verificationStatus === 'approved';
 
-  if (!employer) {
-    return (
-      <div className="employer-state employer-state--loading">
-        <div className="employer-loader" aria-hidden="true" />
-        <h2>Loading employer profile</h2>
-      </div>
-    );
-  }
+  return <div className="min-h-screen bg-slate-50">
+    <div className="border-b bg-white"><div className="container mx-auto max-w-7xl px-4 py-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 font-bold text-white">{initials(employer.companyName)}</div><div><h1 className="text-2xl font-semibold text-slate-950">Employer Workspace</h1><p className="text-sm text-slate-500">{employer.companyName} · {employer.companyType}</p></div></div>
+      <div className="flex flex-wrap gap-2"><button className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium" onClick={()=>onNavigate('profile')}><Building2 className="mr-2 inline h-4 w-4"/>Company Profile</button><button className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium" onClick={()=>onNavigate('analytics')}><BarChart3 className="mr-2 inline h-4 w-4"/>Analytics</button><button className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium" onClick={()=>{logout();onNavigate('logout')}}><LogOut className="mr-2 inline h-4 w-4"/>Logout</button></div>
+    </div></div>
 
-  if (employer.verificationStatus === 'pending') {
-    return (
-      <div className="employer-state employer-state--verification">
-        <div className="employer-state__icon employer-state__icon--warning">
-          <ShieldCheck size={30} />
-        </div>
-        <h2>Employer verification required</h2>
-        <p>Complete verification to access job posting and employer tools.</p>
-        <button className="dashboard-primary-button" onClick={() => onNavigate('verification')}>
-          Complete Verification
-        </button>
-      </div>
-    );
-  }
+    <div className="container mx-auto max-w-7xl space-y-5 px-4 py-6">
+      <section className={`rounded-2xl border p-4 ${verified?'border-emerald-200 bg-emerald-50':'border-amber-200 bg-amber-50'}`}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div className="flex gap-3"><ShieldCheck className={`h-6 w-6 ${verified?'text-emerald-600':'text-amber-600'}`}/><div><h2 className="font-semibold text-slate-900">{verified?'Verified Employer':'Employer verification required'}</h2><p className="text-sm text-slate-600">{verified?'Job posting and applicant-management access are enabled.':'Paid subscription no longer bypasses verification. Complete business verification before posting.'}</p></div></div>{!verified&&<button className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white" onClick={()=>onNavigate('verification')}>Complete Verification</button>}</div>
+      </section>
 
-  const navItems = [
-    {
-      label: 'Dashboard',
-      icon: LayoutDashboard,
-      active: activeSection === 'jobs',
-      action: () => openSection('jobs'),
-    },
-    {
-      label: 'Post a Job',
-      icon: Plus,
-      action: handlePostJob,
-    },
-    {
-      label: 'My Jobs',
-      icon: Briefcase,
-      badge: myJobs.length,
-      action: () => openSection('jobs'),
-    },
-    {
-      label: 'Applications',
-      icon: Users,
-      badge: totalApplications,
-      active: activeSection === 'applications',
-      action: () => openSection('applications'),
-    },
-    {
-      label: 'Shortlisted',
-      icon: Star,
-      badge: shortlistedCount,
-      action: () => openSection('applications'),
-    },
-    {
-      label: 'Interviews',
-      icon: Calendar,
-      badge: interviewCount,
-      action: () => openSection('applications'),
-    },
-  ];
+      <section className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+        <Metric icon={Briefcase} label="Active Jobs" value={counts.active} tone="blue"/><Metric icon={Users} label="Applications" value={counts.apps} tone="slate"/><Metric icon={Star} label="Shortlisted" value={counts.shortlisted} tone="violet"/><Metric icon={Calendar} label="Interviews" value={counts.interviews} tone="amber"/><Metric icon={UserCheck} label="Selected" value={counts.selected} tone="emerald"/><Metric icon={Eye} label="Job Views" value={counts.views} tone="slate"/>
+      </section>
 
-  const intelligenceNavItems = [
-    {
-      label: 'Analytics',
-      icon: BarChart3,
-      action: () => {
-        setMobileNavOpen(false);
-        onNavigate('analytics');
-      },
-    },
-  ];
-
-  const managementNavItems = [
-    {
-      label: 'Company Profile',
-      icon: Building2,
-      action: () => {
-        setMobileNavOpen(false);
-        onNavigate('profile');
-      },
-    },
-    {
-      label: 'Verification',
-      icon: ShieldCheck,
-      active: activeSection === 'verification',
-      action: () => openSection('verification'),
-    },
-    {
-      label: 'Plans & Billing',
-      icon: CreditCard,
-      active: activeSection === 'subscription',
-      action: () => openSection('subscription'),
-    },
-    {
-      label: 'Notifications',
-      icon: Bell,
-      badge: unreadNotifications,
-      active: activeSection === 'notifications',
-      action: () => openSection('notifications'),
-    },
-  ];
-
-  const renderNavGroup = (items: typeof navItems) =>
-    items.map((item) => {
-      const Icon = item.icon;
-      return (
-        <button
-          key={item.label}
-          className={`employer-nav-item${item.active ? ' employer-nav-item--active' : ''}`}
-          onClick={item.action}
-          type="button"
-        >
-          <span className="employer-nav-item__label">
-            <Icon size={17} />
-            <span>{item.label}</span>
-          </span>
-          {typeof item.badge === 'number' && item.badge > 0 && (
-            <span className="employer-nav-item__badge">{item.badge > 99 ? '99+' : item.badge}</span>
-          )}
-        </button>
-      );
-    });
-
-  const sidebarContent = (
-    <>
-      <div className="employer-sidebar__brand">
-        <div className="employer-sidebar__brand-mark">{getInitials(employer.companyName)}</div>
-        <div>
-          <strong>{employer.companyName || 'Employer'}</strong>
-          <span>{employer.companyType || 'Employer'} account</span>
-        </div>
+      <div className="flex flex-wrap gap-2 rounded-xl border bg-white p-2 shadow-sm">
+        <Tab active={section==='jobs'} onClick={()=>setSection('jobs')} icon={Briefcase}>My Jobs</Tab>
+        <Tab active={section==='applications'} onClick={()=>setSection('applications')} icon={Users}>Applications</Tab>
+        <Tab active={section==='account'} onClick={()=>setSection('account')} icon={CreditCard}>Account</Tab>
+        <button disabled={!verified||subscription?.status!=='active'} className="ml-auto rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300" onClick={()=>onNavigate(subscription?.status==='active'?'employer-post-job':'subscription')}><Plus className="mr-1 inline h-4 w-4"/>Post Private Job</button>
       </div>
 
-      <div className="employer-sidebar__scroll">
-        <p className="employer-sidebar__section-title">Main</p>
-        <nav className="employer-sidebar__nav">{renderNavGroup(navItems)}</nav>
+      {section==='jobs'&&<section className="rounded-2xl border bg-white shadow-sm">
+        <div className="flex flex-col gap-3 border-b p-5 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-lg font-semibold">My Jobs</h2><p className="text-sm text-slate-500">Every application stays attached to its exact job.</p></div><select className="h-10 rounded-lg border px-3 text-sm" value={jobFilter} onChange={(e)=>setJobFilter(e.target.value)}><option value="all">All statuses</option><option value="active">Active</option><option value="pending">Pending</option><option value="draft">Draft</option><option value="closed">Closed</option></select></div>
+        <div className="divide-y">{filteredJobs.length?filteredJobs.map((job)=><article key={job.id} className="p-5 hover:bg-slate-50/70"><div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold text-slate-950">{job.title}</h3><span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${statusTone(job.status)}`}>{job.status}</span></div><div className="mt-2 flex flex-wrap gap-3 text-sm text-slate-500">{job.location&&<span><MapPin className="mr-1 inline h-4 w-4"/>{job.location}</span>}<span><Users className="mr-1 inline h-4 w-4"/>{Number(job.applications)||0} applications</span><span><Eye className="mr-1 inline h-4 w-4"/>{Number(job.views)||0} views</span><span><Calendar className="mr-1 inline h-4 w-4"/>Closes {formatDate(job.lastDate)}</span></div></div><div className="flex flex-wrap gap-2"><button className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700" onClick={()=>openApplicationsForJob(job.id)}><Users className="mr-1 inline h-4 w-4"/>Applications</button><button className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium" onClick={()=>onNavigate('edit-job',job.id)}><Edit className="mr-1 inline h-4 w-4"/>Edit</button></div></div></article>):<Empty title="No jobs found" text="Post a verified private-sector vacancy to get started."/>}</div>
+      </section>}
 
-        <p className="employer-sidebar__section-title">Intelligence</p>
-        <nav className="employer-sidebar__nav">{renderNavGroup(intelligenceNavItems as typeof navItems)}</nav>
+      {section==='applications'&&<section className="space-y-4">
+        <div className="rounded-2xl border bg-white p-5 shadow-sm"><div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between"><div><h2 className="text-lg font-semibold">Applicant Pipeline</h2><p className="text-sm text-slate-500">Filter by job first so candidates from different posts never mix.</p></div><div className="grid gap-2 sm:grid-cols-2"><label className="text-xs font-semibold text-slate-600">Job<select className="mt-1 h-10 w-full min-w-[220px] rounded-lg border bg-white px-3 text-sm" value={applicationJobId} onChange={(e)=>setApplicationJobId(e.target.value)}><option value="all">All jobs (grouped separately)</option>{jobs.map((job)=><option key={job.id} value={job.id}>{job.title}</option>)}</select></label><label className="text-xs font-semibold text-slate-600">Status<select className="mt-1 h-10 w-full rounded-lg border bg-white px-3 text-sm" value={applicationStatus} onChange={(e)=>setApplicationStatus(e.target.value as AppStatusFilter)}><option value="all">All statuses</option><option value="applied">New / Applied</option><option value="shortlisted">Shortlisted</option><option value="interview">Interview</option><option value="selected">Selected</option><option value="rejected">Rejected</option></select></label></div></div><div className="mt-4 flex justify-end"><button disabled={refreshing} className="rounded-lg border px-3 py-2 text-sm" onClick={()=>{setRefreshing(true);void load(false)}}><RefreshCw className={`mr-1 inline h-4 w-4 ${refreshing?'animate-spin':''}`}/>Refresh</button></div></div>
+        {groupedApplications.length?groupedApplications.map(([jobId,apps])=>{const job=jobs.find((item)=>item.id===jobId);return <section key={jobId} className="overflow-hidden rounded-2xl border bg-white shadow-sm"><div className="flex items-center justify-between border-b bg-slate-50 px-5 py-4"><div><h3 className="font-semibold text-slate-900">{job?.title||apps[0]?.jobTitle||'Job'}</h3><p className="text-xs text-slate-500">{apps.length} candidate{apps.length===1?'':'s'} in this job only</p></div><button className="text-sm font-semibold text-blue-700" onClick={()=>setApplicationJobId(jobId)}>Focus this job</button></div><div className="grid gap-4 p-4 lg:grid-cols-2">{apps.map((application)=><CandidateCard key={application.id} application={application} busy={updatingApplicationId===application.id} onStatus={(status)=>void updateStatus(application,status)}/>)}</div></section>}):<Empty title="No applications match these filters" text="Choose another job or application status."/>}
+      </section>}
 
-        <p className="employer-sidebar__section-title">Management</p>
-        <nav className="employer-sidebar__nav">{renderNavGroup(managementNavItems as typeof navItems)}</nav>
-      </div>
-
-      <div className="employer-sidebar__profile">
-        <div className="employer-avatar">{getInitials(employer.userName || employer.companyName)}</div>
-        <div className="employer-sidebar__profile-copy">
-          <strong>{employer.userName || employer.companyName}</strong>
-          <span>{employer.userEmail}</span>
-        </div>
-        <button type="button" className="icon-button" onClick={handleLogout} aria-label="Logout" title="Logout">
-          <LogOut size={17} />
-        </button>
-      </div>
-    </>
-  );
-
-  const metricCards = [
-    {
-      label: 'Active Jobs',
-      value: activeJobs,
-      helper: `${myJobs.length} total job${myJobs.length === 1 ? '' : 's'}`,
-      icon: Briefcase,
-      tone: 'teal',
-    },
-    {
-      label: 'Total Applications',
-      value: totalApplications,
-      helper: `${totalViews} total job view${totalViews === 1 ? '' : 's'}`,
-      icon: Users,
-      tone: 'blue',
-    },
-    {
-      label: 'Shortlisted',
-      value: shortlistedCount,
-      helper: `${myApplications.length} applications loaded`,
-      icon: Star,
-      tone: 'purple',
-    },
-    {
-      label: 'Interviews',
-      value: interviewCount,
-      helper: 'Based on application status',
-      icon: Calendar,
-      tone: 'indigo',
-    },
-    {
-      label: 'Positions Filled',
-      value: filledPositionsCount,
-      helper: 'Selected candidates',
-      icon: UserCheck,
-      tone: 'green',
-    },
-    {
-      label: 'Jobs Closing Soon',
-      value: jobsClosingSoon,
-      helper: 'Within the next 7 days',
-      icon: AlertTriangle,
-      tone: jobsClosingSoon > 0 ? 'amber' : 'slate',
-    },
-  ];
-
-  const jobFilters: Array<{ value: JobFilter; label: string }> = [
-    { value: 'all', label: 'All' },
-    { value: 'active', label: 'Active' },
-    { value: 'pending', label: 'Pending' },
-    { value: 'draft', label: 'Draft' },
-    { value: 'closed', label: 'Closed' },
-  ];
-
-  return (
-    <div className="employer-dashboard">
-      <div className="employer-dashboard__mobile-bar">
-        <button
-          type="button"
-          className="icon-button"
-          onClick={() => setMobileNavOpen(true)}
-          aria-label="Open employer navigation"
-        >
-          <Menu size={20} />
-        </button>
-        <strong>Employer Dashboard</strong>
-        <button
-          type="button"
-          className="icon-button icon-button--notification"
-          onClick={() => openSection('notifications')}
-          aria-label="Notifications"
-        >
-          <Bell size={19} />
-          {unreadNotifications > 0 && <span>{unreadNotifications > 9 ? '9+' : unreadNotifications}</span>}
-        </button>
-      </div>
-
-      {mobileNavOpen && (
-        <div className="employer-mobile-nav" role="dialog" aria-modal="true" aria-label="Employer navigation">
-          <button
-            className="employer-mobile-nav__backdrop"
-            onClick={() => setMobileNavOpen(false)}
-            aria-label="Close employer navigation"
-          />
-          <aside className="employer-mobile-nav__panel">
-            <div className="employer-mobile-nav__close-row">
-              <span>Menu</span>
-              <button className="icon-button" onClick={() => setMobileNavOpen(false)} aria-label="Close menu">
-                <X size={20} />
-              </button>
-            </div>
-            {sidebarContent}
-          </aside>
-        </div>
-      )}
-
-      <div className="employer-dashboard__shell">
-        <aside className="employer-sidebar">{sidebarContent}</aside>
-
-        <main className="employer-main">
-          <div className="dashboard-page-header">
-            <div className="dashboard-page-header__title">
-              <button type="button" className="dashboard-back-link" onClick={() => onNavigate('home')}>
-                <ArrowLeft size={16} />
-                <span>Back</span>
-              </button>
-              <div>
-                <h1>Dashboard</h1>
-                <p>Welcome back, {employer.userName || employer.companyName}.</p>
-              </div>
-            </div>
-            <div className="dashboard-page-header__actions">
-              <button
-                type="button"
-                className="icon-button icon-button--notification dashboard-desktop-notification"
-                onClick={() => openSection('notifications')}
-                aria-label="Notifications"
-              >
-                <Bell size={19} />
-                {unreadNotifications > 0 && <span>{unreadNotifications > 9 ? '9+' : unreadNotifications}</span>}
-              </button>
-              <button type="button" className="dashboard-outline-button" onClick={handleLogout}>
-                <LogOut size={16} />
-                Logout
-              </button>
-            </div>
-          </div>
-
-          <section className="employer-verification-card">
-            <div className="employer-verification-card__content">
-              <div className="employer-verification-card__status">
-                <ShieldCheck size={18} />
-                <span>Verified Employer</span>
-              </div>
-              <div className="employer-verification-card__identity">
-                <strong>{employer.companyName}</strong>
-                <span>{employer.companyType}</span>
-                {employer.city && <span>{employer.city}{employer.state ? `, ${employer.state}` : ''}</span>}
-                <span className="employer-verification-card__email">{employer.userEmail}</span>
-              </div>
-              <div className="employer-verification-card__buttons">
-                <button className="dashboard-outline-button" type="button" onClick={() => onNavigate('profile')}>
-                  <Edit size={15} />
-                  Company Profile
-                </button>
-                <button className="dashboard-outline-button" type="button" onClick={() => onNavigate('analytics')}>
-                  <BarChart3 size={15} />
-                  View Analytics
-                </button>
-              </div>
-            </div>
-            <div className="employer-verification-card__plan">
-              <span className={`plan-dot${currentSubscription?.status === 'active' ? ' plan-dot--active' : ''}`} />
-              <div>
-                <small>Plan</small>
-                <strong>{currentSubscription?.status === 'active' ? currentSubscription.plan.name : 'No active subscription'}</strong>
-              </div>
-              <ChevronRight size={18} />
-            </div>
-          </section>
-
-          <section className="dashboard-metrics" aria-label="Employer statistics">
-            {metricCards.map((metric) => {
-              const Icon = metric.icon;
-              return (
-                <article className={`dashboard-metric dashboard-metric--${metric.tone}`} key={metric.label}>
-                  <div className="dashboard-metric__top">
-                    <div className="dashboard-metric__icon"><Icon size={20} /></div>
-                    <span>{metric.label}</span>
-                  </div>
-                  <strong>{metric.value}</strong>
-                  <small>{metric.helper}</small>
-                </article>
-              );
-            })}
-          </section>
-
-          <section className="dashboard-post-cta">
-            <button className="dashboard-primary-button" type="button" onClick={handlePostJob}>
-              <Plus size={18} />
-              {currentSubscription?.status === 'active' ? 'Post a New Job' : 'Choose a Plan to Post Jobs'}
-            </button>
-            <div className="dashboard-post-cta__hint">
-              <CheckCircle size={17} />
-              <span>
-                {currentSubscription?.status === 'active'
-                  ? `${currentSubscription.jobPostsUsed} of ${currentSubscription.jobPostsAllowed} job posts used`
-                  : 'An active subscription is required before posting a job'}
-              </span>
-            </div>
-          </section>
-
-          <div className="dashboard-section-switcher" role="tablist" aria-label="Employer dashboard sections">
-            <button className={activeSection === 'jobs' ? 'is-active' : ''} onClick={() => openSection('jobs')} type="button">
-              <Briefcase size={16} /> My Jobs
-            </button>
-            <button className={activeSection === 'applications' ? 'is-active' : ''} onClick={() => openSection('applications')} type="button">
-              <Users size={16} /> Applications
-            </button>
-            <button className={activeSection === 'subscription' ? 'is-active' : ''} onClick={() => openSection('subscription')} type="button">
-              <Award size={16} /> Plans
-            </button>
-            <button className={activeSection === 'notifications' ? 'is-active' : ''} onClick={() => openSection('notifications')} type="button">
-              <Bell size={16} /> Notifications
-              {unreadNotifications > 0 && <span className="section-count">{unreadNotifications}</span>}
-            </button>
-          </div>
-
-          {activeSection === 'jobs' && (
-            <section className="dashboard-panel">
-              <div className="dashboard-panel__heading">
-                <div>
-                  <div className="dashboard-panel__title-row">
-                    <Briefcase size={19} />
-                    <h2>My Jobs</h2>
-                  </div>
-                  <p>Manage your current and previous job postings.</p>
-                </div>
-                <button className="dashboard-primary-button dashboard-primary-button--small" type="button" onClick={handlePostJob}>
-                  <Plus size={16} /> New Job
-                </button>
-              </div>
-
-              <div className="job-filter-tabs" role="tablist" aria-label="Filter jobs by status">
-                {jobFilters.map((filter) => {
-                  const count = filter.value === 'all'
-                    ? myJobs.length
-                    : myJobs.filter((job) => job.status === filter.value).length;
-                  return (
-                    <button
-                      key={filter.value}
-                      type="button"
-                      className={jobFilter === filter.value ? 'is-active' : ''}
-                      onClick={() => setJobFilter(filter.value)}
-                    >
-                      {filter.label}
-                      <span>{count}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {filteredJobs.length === 0 ? (
-                <div className="dashboard-empty-state">
-                  <div className="dashboard-empty-state__icon"><Briefcase size={26} /></div>
-                  <h3>No {jobFilter === 'all' ? '' : `${jobFilter} `}jobs found</h3>
-                  <p>Your job postings will appear here as soon as they are available.</p>
-                  <button className="dashboard-primary-button dashboard-primary-button--small" onClick={handlePostJob} type="button">
-                    <Plus size={16} /> Post a Job
-                  </button>
-                </div>
-              ) : (
-                <div className="dashboard-job-list">
-                  {filteredJobs.map((job) => (
-                    <article className="dashboard-job-card" key={job.id}>
-                      <div className="dashboard-job-card__main">
-                        <div className="dashboard-job-card__title-row">
-                          <div>
-                            <h3>{job.title}</h3>
-                            <div className="dashboard-job-card__meta">
-                              {job.location && <span><MapPin size={14} />{job.location}</span>}
-                              {job.numberOfPosts != null && <span><Users size={14} />{job.numberOfPosts} post{Number(job.numberOfPosts) === 1 ? '' : 's'}</span>}
-                              {job.category && <span><Building2 size={14} />{job.category}</span>}
-                            </div>
-                          </div>
-                          <span className={getJobStatusClass(job.status)}>{job.status || 'N/A'}</span>
-                        </div>
-
-                        <div className="dashboard-job-card__details">
-                          <span><Calendar size={14} />Posted: {formatDate(job.postedDate || job.createdAt)}</span>
-                          <span><Calendar size={14} />Last date: {formatDate(job.lastDate)}</span>
-                          <span><Users size={14} />{Number(job.applications) || 0} applications</span>
-                          <span><Eye size={14} />{Number(job.views) || 0} views</span>
-                        </div>
-                      </div>
-
-                      <div className="dashboard-job-card__actions">
-                        <button type="button" onClick={() => openSection('applications')} title="View applications">
-                          <Users size={16} /> <span>Applications</span>
-                        </button>
-                        <button type="button" onClick={() => onNavigate('edit-job', job.id)} title="Edit job">
-                          <Edit size={16} /> <span>Edit</span>
-                        </button>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </section>
-          )}
-
-          {activeSection === 'applications' && (
-            <section className="dashboard-panel">
-              <div className="dashboard-panel__heading">
-                <div>
-                  <div className="dashboard-panel__title-row">
-                    <Users size={19} />
-                    <h2>Applications</h2>
-                  </div>
-                  <p>Review applications received for your jobs.</p>
-                </div>
-                <button
-                  className="dashboard-outline-button"
-                  type="button"
-                  onClick={handleRefreshApplications}
-                  disabled={refreshing}
-                >
-                  <RefreshCw size={16} className={refreshing ? 'spin-icon' : ''} />
-                  {refreshing ? 'Refreshing' : 'Refresh'}
-                </button>
-              </div>
-
-              <div className="application-summary-grid">
-                <article><Users size={18} /><span>Total</span><strong>{myApplications.length}</strong></article>
-                <article><UserPlus size={18} /><span>New</span><strong>{myApplications.filter((app) => app.status === 'applied').length}</strong></article>
-                <article><Star size={18} /><span>Shortlisted</span><strong>{shortlistedCount}</strong></article>
-                <article><Calendar size={18} /><span>Interviews</span><strong>{interviewCount}</strong></article>
-              </div>
-
-              {applicationsByJob.length === 0 ? (
-                <div className="dashboard-empty-state">
-                  <div className="dashboard-empty-state__icon"><Users size={26} /></div>
-                  <h3>No applications yet</h3>
-                  <p>Candidate applications will appear here when they apply to your jobs.</p>
-                </div>
-              ) : (
-                <div className="application-job-groups">
-                  {applicationsByJob.map(([jobId, applications]) => {
-                    const job = myJobs.find((item) => item.id === jobId);
-                    const jobTitle = job?.title || applications[0]?.jobTitle || 'Job';
-                    return (
-                      <section className="application-job-group" key={jobId}>
-                        <div className="application-job-group__header">
-                          <div>
-                            <h3>{jobTitle}</h3>
-                            <p>{applications.length} application{applications.length === 1 ? '' : 's'}</p>
-                          </div>
-                          {job?.status && <span className={getJobStatusClass(job.status)}>{job.status}</span>}
-                        </div>
-
-                        <div className="candidate-grid">
-                          {applications.map((application) => (
-                            <article className="candidate-card" key={application.id}>
-                              <div className="candidate-card__top">
-                                <div className="candidate-avatar">{getInitials(application.candidateName)}</div>
-                                <div className="candidate-card__identity">
-                                  <h4>{application.candidateName || 'Candidate'}</h4>
-                                  <span className={getApplicationStatusClass(application.status)}>{application.status}</span>
-                                </div>
-                              </div>
-
-                              <div className="candidate-card__contact">
-                                <a href={`mailto:${application.candidateEmail}`}><Mail size={14} />{application.candidateEmail}</a>
-                                {application.candidatePhone && <a href={`tel:${application.candidatePhone}`}><Phone size={14} />{application.candidatePhone}</a>}
-                                <span><Calendar size={14} />Applied {formatDate(application.appliedDate)}</span>
-                              </div>
-
-                              {application.notes && <p className="candidate-card__notes">{application.notes}</p>}
-
-                              <div className="candidate-card__actions">
-                                {application.resumeUrl ? (
-                                  <button type="button" onClick={() => openFileInViewer(application.resumeUrl!)}>
-                                    <FileText size={15} /> View Resume
-                                  </button>
-                                ) : (
-                                  <span className="candidate-card__no-resume">No resume uploaded</span>
-                                )}
-                              </div>
-                            </article>
-                          ))}
-                        </div>
-                      </section>
-                    );
-                  })}
-                </div>
-              )}
-
-              <div className="dashboard-panel__footer-action">
-                <button className="dashboard-outline-button" type="button" onClick={() => onNavigate('employer-manage-applications')}>
-                  Open Application Management <ChevronRight size={16} />
-                </button>
-              </div>
-            </section>
-          )}
-
-          {activeSection === 'subscription' && (
-            <section className="dashboard-panel dashboard-panel--centered">
-              <div className="dashboard-feature-icon dashboard-feature-icon--purple"><Award size={28} /></div>
-              {currentSubscription?.status === 'active' ? (
-                <>
-                  <h2>{currentSubscription.plan.name}</h2>
-                  <p>Your subscription is active. Job-posting usage is shown below.</p>
-                  <div className="subscription-usage">
-                    <span>Job posts used</span>
-                    <strong>{currentSubscription.jobPostsUsed} / {currentSubscription.jobPostsAllowed}</strong>
-                  </div>
-                  {currentSubscription.endDate && <small>Valid until {formatDate(currentSubscription.endDate)}</small>}
-                </>
-              ) : (
-                <>
-                  <h2>Choose a subscription plan</h2>
-                  <p>An active plan is required to post jobs and use employer posting features.</p>
-                </>
-              )}
-              <button className="dashboard-primary-button" type="button" onClick={() => onNavigate('subscription')}>
-                View Plans
-              </button>
-            </section>
-          )}
-
-          {activeSection === 'notifications' && (
-            <section className="dashboard-panel">
-              <div className="dashboard-panel__heading">
-                <div>
-                  <div className="dashboard-panel__title-row"><Bell size={19} /><h2>Notifications</h2></div>
-                  <p>Your latest employer account activity.</p>
-                </div>
-                <button className="dashboard-outline-button" type="button" onClick={() => onNavigate('notifications')}>View All</button>
-              </div>
-
-              {notifications.length === 0 ? (
-                <div className="dashboard-empty-state">
-                  <div className="dashboard-empty-state__icon"><Bell size={26} /></div>
-                  <h3>No notifications</h3>
-                  <p>New account and job activity will appear here.</p>
-                </div>
-              ) : (
-                <div className="notification-list">
-                  {notifications.slice(0, 8).map((notification: any) => (
-                    <article className={`notification-item${notification.read ? '' : ' notification-item--unread'}`} key={notification.id}>
-                      <div className="notification-item__dot" />
-                      <div>
-                        <p>{notification.message}</p>
-                        <span>{formatDate(notification.createdAt)}</span>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </section>
-          )}
-
-          {activeSection === 'verification' && (
-            <section className="dashboard-panel dashboard-panel--centered">
-              <div className="dashboard-feature-icon dashboard-feature-icon--green"><ShieldCheck size={28} /></div>
-              <h2>Employer Verification</h2>
-              <p>
-                Your current verification status is <strong>{employer.verificationStatus}</strong>.
-                Verification helps candidates identify trusted employers.
-              </p>
-              {employer.verifiedAt && <small>Verified on {formatDate(employer.verifiedAt)}</small>}
-              <button className="dashboard-primary-button" type="button" onClick={() => onNavigate('verification')}>
-                View Verification
-              </button>
-            </section>
-          )}
-        </main>
-      </div>
+      {section==='account'&&<section className="grid gap-4 md:grid-cols-2"><div className="rounded-2xl border bg-white p-5 shadow-sm"><h2 className="font-semibold">Verification</h2><div className="mt-3 flex items-center gap-3"><ShieldCheck className={verified?'text-emerald-600':'text-amber-600'}/><div><p className="font-medium">{verified?'Approved':'Not approved'}</p><p className="text-sm text-slate-500">Status: {employer.verificationStatus}</p></div></div><button className="mt-4 rounded-lg border px-3 py-2 text-sm" onClick={()=>onNavigate('verification')}>Verification details</button></div><div className="rounded-2xl border bg-white p-5 shadow-sm"><h2 className="font-semibold">Subscription</h2><p className="mt-3 text-lg font-semibold text-blue-700">{subscription?.status==='active'?subscription.plan.name:'No active plan'}</p>{subscription?.status==='active'&&<p className="mt-1 text-sm text-slate-500">{subscription.jobPostsUsed} of {subscription.jobPostsAllowed} job posts used</p>}<button className="mt-4 rounded-lg border px-3 py-2 text-sm" onClick={()=>onNavigate('subscription')}>Manage plan</button></div></section>}
     </div>
-  );
+  </div>;
 }
+
+function Metric({icon:Icon,label,value,tone}:{icon:any;label:string;value:number;tone:'blue'|'violet'|'amber'|'emerald'|'slate'}){const cls=tone==='blue'?'bg-blue-50 text-blue-700 border-blue-100':tone==='violet'?'bg-violet-50 text-violet-700 border-violet-100':tone==='amber'?'bg-amber-50 text-amber-700 border-amber-100':tone==='emerald'?'bg-emerald-50 text-emerald-700 border-emerald-100':'bg-slate-50 text-slate-700 border-slate-200';return <article className={`rounded-xl border p-4 ${cls}`}><Icon className="h-5 w-5"/><strong className="mt-3 block text-2xl">{value}</strong><span className="text-xs font-medium">{label}</span></article>}
+function Tab({active,onClick,icon:Icon,children}:{active:boolean;onClick:()=>void;icon:any;children:any}){return <button className={`rounded-lg px-4 py-2 text-sm font-medium ${active?'bg-blue-600 text-white':'text-slate-600 hover:bg-slate-100'}`} onClick={onClick}><Icon className="mr-1 inline h-4 w-4"/>{children}</button>}
+function Empty({title,text}:{title:string;text:string}){return <div className="rounded-2xl border bg-white p-10 text-center shadow-sm"><Users className="mx-auto h-8 w-8 text-slate-300"/><h3 className="mt-3 font-semibold">{title}</h3><p className="mt-1 text-sm text-slate-500">{text}</p></div>}
+function CandidateCard({application,busy,onStatus}:{application:ApplicationResponse;busy:boolean;onStatus:(status:string)=>void}){return <article className="rounded-xl border border-slate-200 p-4"><div className="flex items-start justify-between gap-3"><div className="flex min-w-0 gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100 font-semibold text-blue-700">{initials(application.candidateName)}</div><div className="min-w-0"><h4 className="font-semibold text-slate-900">{application.candidateName}</h4><span className={`mt-1 inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${statusTone(application.status)}`}>{application.status}</span></div></div><span className="text-xs text-slate-400">{formatDate(application.appliedDate)}</span></div><div className="mt-4 space-y-1 text-sm text-slate-600"><a className="block truncate hover:text-blue-700" href={`mailto:${application.candidateEmail}`}><Mail className="mr-1 inline h-4 w-4"/>{application.candidateEmail}</a>{application.candidatePhone&&<a className="block hover:text-blue-700" href={`tel:${application.candidatePhone}`}><Phone className="mr-1 inline h-4 w-4"/>{application.candidatePhone}</a>}</div>{application.resumeUrl&&<button className="mt-3 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium" onClick={()=>openFileInViewer(application.resumeUrl!)}><FileText className="mr-1 inline h-4 w-4"/>View Resume</button>}<div className="mt-4 grid grid-cols-2 gap-2 border-t pt-4 sm:grid-cols-4"><Action disabled={busy||application.status==='shortlisted'} icon={Star} label="Shortlist" cls="border-blue-200 text-blue-700 bg-blue-50" onClick={()=>onStatus('shortlisted')}/><Action disabled={busy||application.status==='interview'} icon={Calendar} label="Interview" cls="border-violet-200 text-violet-700 bg-violet-50" onClick={()=>onStatus('interview')}/><Action disabled={busy||application.status==='selected'} icon={CheckCircle2} label="Select" cls="border-emerald-200 text-emerald-700 bg-emerald-50" onClick={()=>onStatus('selected')}/><Action disabled={busy||application.status==='rejected'} icon={XCircle} label="Reject" cls="border-rose-200 text-rose-700 bg-rose-50" onClick={()=>onStatus('rejected')}/></div></article>}
+function Action({disabled,icon:Icon,label,cls,onClick}:{disabled:boolean;icon:any;label:string;cls:string;onClick:()=>void}){return <button disabled={disabled} className={`rounded-lg border px-2 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-40 ${cls}`} onClick={onClick}><Icon className="mr-1 inline h-3.5 w-3.5"/>{label}</button>}

@@ -70,14 +70,9 @@ public class SecurityConfig {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authz -> authz
-                        // Allow OPTIONS requests for CORS preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        // Allow error endpoint for Spring Boot error handling
                         .requestMatchers("/error").permitAll()
-                        // Public share endpoints. /api/share is the production path
-                        // because Nginx proxies /api to Spring Boot.
                         .requestMatchers(HttpMethod.GET, "/share/**", "/api/share/**").permitAll()
-                        // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/jobs/employer/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/jobs/**").permitAll()
@@ -89,34 +84,27 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/jobs").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/jobs/**").hasAnyRole("ADMIN", "EMPLOYER")
                         .requestMatchers(HttpMethod.DELETE, "/api/jobs/**").hasAnyRole("ADMIN", "EMPLOYER")
-                        // Application endpoints
                         .requestMatchers(HttpMethod.POST, "/api/applications").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/applications").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/api/applications/*/status").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/applications/*/status").hasAnyRole("ADMIN", "EMPLOYER")
                         .requestMatchers(HttpMethod.DELETE, "/api/applications/**").hasRole("ADMIN")
-                        // Notification endpoints
                         .requestMatchers(HttpMethod.GET, "/api/notifications/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/notifications/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/notifications/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/notifications/send").hasRole("ADMIN")
-                        // Job Alert endpoints
                         .requestMatchers("/api/job-alerts/**").authenticated()
-                        // Fraud Report endpoints
                         .requestMatchers(HttpMethod.POST, "/api/fraud-reports").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/fraud-reports/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/api/fraud-reports/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/fraud-reports/**").hasRole("ADMIN")
-                        // Subscription endpoints
                         .requestMatchers(HttpMethod.GET, "/api/subscriptions/plans").permitAll()
                         .requestMatchers("/api/subscriptions/**").authenticated()
                         .requestMatchers("/api/payments/razorpay/webhook").permitAll()
                         .requestMatchers("/api/payments/**").authenticated()
-                        // Employer endpoints
                         .requestMatchers(request -> {
                             String path = request.getRequestURI();
                             return path.startsWith("/api/employers");
                         }).authenticated()
-                        // Admin endpoints
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/analytics/**").permitAll()
                         .requestMatchers("/api/actuator/**").permitAll()

@@ -22,7 +22,7 @@ import { Footer } from "./components/Footer";
 import { HomePage } from "./components/HomePage";
 import { AuthPage } from "./components/AuthPage";
 import { JobListingPage } from "./components/JobListingPage";
-import { JobDetailPage } from "./components/JobDetailPage";
+import { SectorAwareJobDetailPage } from "./components/SectorAwareJobDetailPage";
 import { CandidateDashboard } from "./components/CandidateDashboard";
 import { EmployerDashboard } from "./components/EmployerDashboard";
 import { AdminDashboard } from "./components/AdminDashboard";
@@ -52,6 +52,7 @@ import { PricingPage } from "./components/PricingPage";
 import { EditJobPage } from "./components/EditJobPage";
 import { AiBulkJobUploader } from "./components/AiBulkJobUploader";
 import { RecruitmentPage } from "./components/RecruitmentPage";
+import { AdminCandidateInsights } from "./components/AdminCandidateInsights";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 
@@ -148,10 +149,10 @@ function AppContent() {
           <Route path="/news" element={<NewsPage onNavigate={handleNavigate} />} />
           <Route path="/news/:newsId" element={<NewsDetailPage onNavigate={handleNavigate} />} />
           <Route path="/share/news/:newsId" element={<NewsDetailPage onNavigate={handleNavigate} />} />
-          <Route path="/job/:jobId" element={<JobDetailPage onNavigate={handleNavigate} />} />
-          <Route path="/share/job/:jobId" element={<JobDetailPage onNavigate={handleNavigate} />} />
-          <Route path="/jobs/:jobId" element={<JobDetailPage onNavigate={handleNavigate} />} />
-          <Route path="/job-detail/:jobId" element={<JobDetailPage onNavigate={handleNavigate} />} />
+          <Route path="/job/:jobId" element={<SectorAwareJobDetailPage onNavigate={handleNavigate} />} />
+          <Route path="/share/job/:jobId" element={<SectorAwareJobDetailPage onNavigate={handleNavigate} />} />
+          <Route path="/jobs/:jobId" element={<SectorAwareJobDetailPage onNavigate={handleNavigate} />} />
+          <Route path="/job-detail/:jobId" element={<SectorAwareJobDetailPage onNavigate={handleNavigate} />} />
           <Route path="/about" element={<AboutPage onNavigate={handleNavigate} />} />
           <Route path="/pricing" element={<PricingPage onNavigate={handleNavigate} />} />
           <Route path="/faq" element={<FAQPage onNavigate={handleNavigate} />} />
@@ -196,6 +197,7 @@ function AppContent() {
                           }
                           const payload = {
                             ...jobData,
+                            sector: "private",
                             status: "pending",
                             featured: false,
                             views: 0,
@@ -229,6 +231,11 @@ function AppContent() {
                           if (e.response?.data?.error) {
                             errorMessage = e.response.data.error;
                             if (e.response.status === 401 || e.response.status === 403) {
+                              if (e.response?.data?.redirectTo) {
+                                toast.error(errorMessage);
+                                navigate(e.response.data.redirectTo);
+                                return;
+                              }
                               if (errorMessage.includes("Unauthorized") || errorMessage.includes("login")) {
                                 toast.error("Your session has expired. Please login again.");
                                 handleNavigate("logout");
@@ -254,6 +261,16 @@ function AppContent() {
               <Route path="/employer/jobs/edit/:jobId" element={<EditJobPage onNavigate={handleNavigate} />} />
               <Route path="/admin-news" element={<AdminNewsManagementPage onNavigate={handleNavigate} />} />
               <Route path="/admin-pricing" element={<AdminPricingManagement onNavigate={handleNavigate} />} />
+              <Route
+                path="/admin-candidate-insights"
+                element={
+                  user.role === "admin" ? (
+                    <AdminCandidateInsights onNavigate={handleNavigate} />
+                  ) : (
+                    <AuthPage mode="login" onNavigate={handleNavigate} />
+                  )
+                }
+              />
               <Route
                 path="/admin-post-job"
                 element={

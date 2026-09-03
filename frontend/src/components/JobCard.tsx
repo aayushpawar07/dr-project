@@ -6,14 +6,9 @@ import {
   Building2,
   Calendar,
   Check,
-  Clock3,
-  GraduationCap,
-  IndianRupee,
-  Layers3,
   MapPin,
   Share2,
   Shield,
-  ShieldCheck,
   Star,
   BriefcaseIcon,
   Gift,
@@ -40,10 +35,6 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
   const displayTitle = view.displayTitle || job.title;
   const sourceRecruitmentId = view.sourceRecruitmentId;
   const grouped = Boolean(view.recruitmentGrouped && sourceRecruitmentId);
-  const departments: string[] = Array.isArray(view.departments)
-    ? view.departments.filter(Boolean)
-    : [view.department].filter(Boolean);
-  const uniqueDepartments = [...new Set(departments)];
   const locationText = job.location || [view.city, view.state].filter(Boolean).join(', ');
   const organizationName =
     job.organization ||
@@ -100,139 +91,6 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
       console.error('Failed to copy job share content', err);
     }
   };
-
-  if (grouped) {
-    return (
-      <Card className="medex-job-card relative h-full overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 md:p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
-        <div className="flex h-full flex-col">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <div className="mb-2 flex flex-wrap items-center gap-2">
-                <span
-                  className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-white shadow-sm"
-                  style={{
-                    background: isGovernment
-                      ? 'linear-gradient(to right, #3b82f6, #2563eb)'
-                      : 'linear-gradient(to right, #10b981, #059669)',
-                  }}
-                >
-                  {isGovernment ? <Shield className="h-3.5 w-3.5" /> : <BriefcaseIcon className="h-3.5 w-3.5" />}
-                  {isGovernment ? 'Government' : 'Private'}
-                </span>
-                <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700">
-                  <ShieldCheck className="mr-1 h-3.5 w-3.5" />
-                  Official Recruitment
-                </Badge>
-              </div>
-
-              {organizationName && (
-                <div className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-gray-800">
-                  <Building2 className="h-4 w-4 shrink-0 text-blue-600" />
-                  <span className="line-clamp-1">{organizationName}</span>
-                </div>
-              )}
-
-              <button type="button" onClick={openDetails} className="block text-left">
-                <h3 className="text-xl font-semibold leading-snug text-gray-900 transition-colors hover:text-blue-700">
-                  {displayTitle}
-                </h3>
-                <p className="mt-1 text-sm font-semibold text-blue-700">Multiple Departments</p>
-              </button>
-            </div>
-
-            <div className="flex shrink-0 items-center gap-1.5">
-              <Button
-                variant="ghost"
-                size="icon"
-                title={copied ? 'Share Content Copied!' : 'Share Recruitment'}
-                className={`h-8 w-8 rounded-full border transition-all ${
-                  copied
-                    ? 'border-green-200 bg-green-50 text-green-600'
-                    : 'border-gray-200 text-gray-500 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600'
-                }`}
-                onClick={handleShare}
-              >
-                {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
-              </Button>
-              {onSaveJob && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 rounded-full border border-gray-200"
-                  onClick={(e) => { e.stopPropagation(); onSaveJob(job.id); }}
-                  title={isSaved ? 'Saved' : 'Save recruitment'}
-                >
-                  <Star className={`h-4 w-4 ${isSaved ? 'fill-yellow-500 text-yellow-500' : 'text-gray-400'}`} />
-                </Button>
-              )}
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-gray-700">
-            {job.numberOfPosts != null && (
-              <span className="inline-flex items-center gap-1.5 font-semibold">
-                <Briefcase className="h-4 w-4 text-blue-600" />
-                {job.numberOfPosts} Total Vacancies
-              </span>
-            )}
-            {locationText && (
-              <span className="inline-flex items-center gap-1.5">
-                <MapPin className="h-4 w-4 text-gray-500" />
-                {locationText}
-              </span>
-            )}
-            {job.lastDate && (
-              <span className="inline-flex items-center gap-1.5">
-                <Calendar className="h-4 w-4 text-gray-500" />
-                Apply by <strong className="text-rose-600">{new Date(job.lastDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</strong>
-              </span>
-            )}
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-            {job.qualification && <GroupedInfo icon={GraduationCap} value={job.qualification} />}
-            {job.salary && <GroupedInfo icon={IndianRupee} value={job.salary} />}
-            {job.experience && <GroupedInfo icon={Clock3} value={job.experience} />}
-            {uniqueDepartments.length > 0 && (
-              <GroupedInfo icon={Layers3} value={`${uniqueDepartments.length} Department${uniqueDepartments.length === 1 ? '' : 's'}`} />
-            )}
-          </div>
-
-          {uniqueDepartments.length > 0 && (
-            <div className="mt-4 border-t border-gray-100 pt-3">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <span className="text-xs font-semibold text-gray-700">Departments:</span>
-                {uniqueDepartments.length > 6 && (
-                  <span className="text-xs font-semibold text-blue-700">+{uniqueDepartments.length - 6} more</span>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-x-2 gap-y-1.5 text-xs text-blue-800">
-                {uniqueDepartments.slice(0, 6).map((department, index) => (
-                  <span key={department} className="font-medium">
-                    {department}{index < Math.min(uniqueDepartments.length, 6) - 1 ? ' •' : ''}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="mt-auto flex items-center justify-between gap-3 border-t border-gray-100 pt-4">
-            <div className="text-xs text-gray-500">
-              {view.groupedVacancyRows ? `${view.groupedVacancyRows} department-wise vacancy record${view.groupedVacancyRows === 1 ? '' : 's'}` : 'Department-wise vacancies available'}
-            </div>
-            <Button
-              size="sm"
-              onClick={openDetails}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-blue-600 px-5 text-sm font-semibold text-white shadow hover:bg-blue-700 hover:shadow-md"
-            >
-              View All Vacancies
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </div>
-      </Card>
-    );
-  }
 
   return (
     <Card className="medex-job-card relative cursor-pointer overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 md:p-6 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-md group h-full flex flex-col">
@@ -301,9 +159,9 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
           <div>
             <h3
               className="text-lg font-semibold text-gray-900 leading-snug hover:text-blue-700 transition-colors cursor-pointer line-clamp-2"
-              onClick={() => onViewDetails(job.slug || job.id)}
+              onClick={openDetails}
             >
-              {job.title}
+              {displayTitle}
             </h3>
             {organizationName && (
               <div className="flex items-center gap-1.5 mt-1 text-sm text-gray-600">
@@ -374,7 +232,7 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
           </div>
           <Button
             size="sm"
-            onClick={() => onViewDetails(job.slug || job.id)}
+            onClick={openDetails}
             className="inline-flex items-center gap-1.5 rounded-full text-white text-sm font-semibold px-5 py-2 shadow hover:shadow-md transition-all shrink-0"
             style={{ background: 'linear-gradient(to right, #2563eb, #1d4ed8)' }}
           >
@@ -384,14 +242,5 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
         </div>
       </div>
     </Card>
-  );
-}
-
-function GroupedInfo({ icon: Icon, value }: { icon: any; value: string }) {
-  return (
-    <div className="flex min-w-0 items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-700">
-      <Icon className="h-4 w-4 shrink-0 text-blue-600" />
-      <span className="line-clamp-2 min-w-0 text-xs font-medium sm:text-sm">{value}</span>
-    </div>
   );
 }

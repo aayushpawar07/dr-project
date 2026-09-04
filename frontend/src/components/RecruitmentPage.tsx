@@ -38,50 +38,54 @@ import {
 const PAGE_STYLES = `
   .recruit-page {
     min-height: 100vh;
-    background: #f8fafc;
+    background: #f7f9fc;
     color: #111827;
-    padding-bottom: 96px;
+    padding-bottom: 82px;
   }
 
   .recruit-shell {
-    width: min(1380px, calc(100% - 32px));
+    width: min(1400px, calc(100% - 36px));
     margin: 0 auto;
-    padding: 16px 0 32px;
+    padding: 18px 0 40px;
   }
 
   .recruit-top {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 360px;
-    gap: 14px;
+    grid-template-columns: minmax(0, 1fr) 390px;
+    gap: 16px;
     align-items: stretch;
   }
 
   .recruit-card {
     background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+    border: 1px solid #dfe7f2;
+    border-radius: 14px;
+    box-shadow: 0 7px 24px rgba(15, 23, 42, 0.045);
   }
 
   .recruit-hero {
-    min-height: auto;
-    padding: 18px 20px;
+    min-height: 270px;
+    padding: 18px 20px 20px;
     position: relative;
     overflow: hidden;
     border-color: #c9dcff;
-    background: linear-gradient(120deg, #f0f6ff 0%, #f8fbff 55%, #ffffff 100%);
+    background:
+      radial-gradient(circle at 88% 12%, rgba(255,255,255,.95) 0 22%, transparent 23%),
+      linear-gradient(118deg, #edf5ff 0%, #f8fbff 52%, #ffffff 100%);
   }
 
   .recruit-hero.private {
     border-color: #bcebd8;
-    background: linear-gradient(120deg, #ecfdf5 0%, #f6fdf9 55%, #ffffff 100%);
+    background:
+      radial-gradient(circle at 88% 12%, rgba(255,255,255,.95) 0 22%, transparent 23%),
+      linear-gradient(118deg, #ecfdf5 0%, #f5fffb 52%, #ffffff 100%);
   }
 
   .recruit-badge-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: 12px;
   }
 
   .recruit-badges {
@@ -94,66 +98,63 @@ const PAGE_STYLES = `
   .sector-badge, .official-badge, .tiny-chip {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    border-radius: 7px;
+    gap: 6px;
+    border-radius: 8px;
     font-weight: 700;
     white-space: nowrap;
   }
 
   .sector-badge {
-    padding: 5px 10px;
-    font-size: 11.5px;
+    padding: 7px 11px;
+    font-size: 12px;
     color: #ffffff;
     background: #1463ff;
-    box-shadow: 0 2px 6px rgba(20, 99, 255, .15);
+    box-shadow: 0 4px 10px rgba(20, 99, 255, .18);
   }
 
   .sector-badge.private { background: #059669; }
 
   .official-badge {
-    padding: 5px 9px;
-    font-size: 11.5px;
+    padding: 6px 10px;
+    font-size: 12px;
     color: #15803d;
-    border: 1px solid #bbf7d0;
-    background: #f0fdf4;
+    border: 1px solid #bbebc8;
+    background: #ecfdf3;
   }
 
   .recruit-bookmark {
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
     border: 1px solid #dbe4ef;
-    border-radius: 8px;
-    background: #ffffff;
+    border-radius: 10px;
+    background: rgba(255,255,255,.9);
     color: #64748b;
     display: grid;
     place-items: center;
-    cursor: pointer;
-    transition: all .15s ease;
   }
-  .recruit-bookmark:hover { border-color: #93c5fd; color: #1d4ed8; }
 
   .recruit-hero-main {
     display: grid;
-    grid-template-columns: 96px minmax(0, 1fr);
-    gap: 16px;
+    grid-template-columns: 144px minmax(0, 1fr);
+    gap: 20px;
     align-items: center;
-    margin-top: 14px;
+    margin-top: 15px;
   }
 
   .org-seal {
-    width: 86px;
-    height: 86px;
+    width: 126px;
+    height: 126px;
     border-radius: 999px;
     display: grid;
     place-items: center;
     background: #ffffff;
-    border: 4px solid #f1c34f;
-    box-shadow: 0 4px 12px rgba(15,23,42,.08);
+    border: 5px solid #f1c34f;
+    box-shadow: 0 5px 16px rgba(15,23,42,.11);
   }
 
   .org-seal-inner {
-    width: 70px;
-    height: 70px;
+    width: 105px;
+    height: 105px;
     border-radius: 999px;
     display: grid;
     place-items: center;
@@ -171,87 +172,85 @@ const PAGE_STYLES = `
   }
 
   .seal-icon { margin-bottom: 2px; }
-  .seal-name { font-size: 11px; line-height: 1; font-weight: 900; letter-spacing: .5px; }
+  .seal-name { font-size: 13px; line-height: 1; font-weight: 900; letter-spacing: .7px; }
 
   .recruit-title {
     margin: 0;
     color: #0f172a;
-    font-size: clamp(20px, 2.2vw, 27px);
-    line-height: 1.25;
-    letter-spacing: -.3px;
+    font-size: clamp(25px, 2vw, 31px);
+    line-height: 1.22;
+    letter-spacing: -.45px;
     font-weight: 800;
   }
 
   .recruit-org {
-    margin-top: 6px;
+    margin-top: 8px;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 7px;
     color: #1463ff;
-    font-size: 15px;
-    font-weight: 700;
+    font-size: 16px;
+    font-weight: 650;
   }
 
   .private .recruit-org { color: #059669; }
 
   .recruit-location {
-    margin-top: 6px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: #64748b;
-    font-size: 13px;
-  }
-
-  .recruit-meta-row {
     margin-top: 12px;
     display: flex;
     align-items: center;
+    gap: 7px;
+    color: #667085;
+    font-size: 14px;
+  }
+
+  .recruit-meta-row {
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
     flex-wrap: wrap;
-    gap: 14px;
+    gap: 18px;
   }
 
   .recruit-meta-item {
-    min-width: 140px;
-    padding-right: 14px;
-    border-right: 1px solid #e2e8f0;
+    min-width: 160px;
+    padding-right: 18px;
+    border-right: 1px solid #dbe4ef;
   }
 
   .recruit-meta-item:last-child { border-right: 0; }
-  .meta-label { color: #64748b; font-size: 11px; font-weight: 500; }
-  .meta-value { margin-top: 2px; color: #0f172a; font-size: 13.5px; font-weight: 800; }
+  .meta-label { color: #64748b; font-size: 12px; }
+  .meta-value { margin-top: 3px; color: #0f172a; font-size: 14px; font-weight: 800; }
   .meta-value.deadline { color: #ef4444; }
 
   .action-panel {
+    min-height: 270px;
     padding: 16px;
     border-color: #ffc7c7;
     background: linear-gradient(180deg, #fff8f8 0%, #ffffff 100%);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
   }
 
   .deadline-box {
-    border: 1px solid #fecdd3;
-    border-radius: 8px;
-    padding: 8px 10px;
+    border: 1px solid #ffb9bd;
+    border-radius: 9px;
+    padding: 10px 12px;
     background: #fff1f2;
-    color: #e11d48;
-    font-size: 13px;
+    color: #ef3340;
+    font-size: 14px;
     font-weight: 800;
     display: flex;
     align-items: center;
-    gap: 7px;
+    gap: 8px;
   }
 
   .action-copy {
-    margin: 8px 0;
-    color: #64748b;
+    margin: 12px 0;
+    color: #667085;
     font-size: 12px;
-    line-height: 1.4;
+    line-height: 1.45;
   }
 
-  .action-stack { display: grid; gap: 8px; }
+  .action-stack { display: grid; gap: 9px; }
 
   .action-btn {
     width: 100%;
@@ -266,67 +265,71 @@ const PAGE_STYLES = `
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 7px;
+    gap: 8px;
     cursor: pointer;
-    transition: all .15s ease;
+    transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
   }
 
-  .action-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(15,23,42,.07); border-color: #bfd2ef; }
+  .action-btn:hover { transform: translateY(-1px); box-shadow: 0 5px 13px rgba(15,23,42,.08); border-color: #bfd2ef; }
   .action-btn.primary { background: #1463ff; border-color: #1463ff; color: #ffffff; }
-  .action-btn.primary:hover { background: #0b51de; }
   .action-btn.private-primary { background: #059669; border-color: #059669; color: #ffffff; }
   .action-btn.share { color: #1463ff; }
 
-  /* Summary Section: compact, sleek 5-grid */
-  .summary-shell { margin-top: 14px; padding: 12px 16px; }
-  .section-eyebrow { margin: 0 0 10px; font-size: 13px; font-weight: 800; color: #0f172a; }
+  .summary-shell { margin-top: 16px; padding: 13px 14px 14px; }
+  .section-eyebrow { margin: 0 0 11px; font-size: 12px; font-weight: 800; color: #0f172a; }
 
   .summary-grid {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 8px;
+    gap: 10px;
   }
 
   .summary-item {
-    min-height: 58px;
+    min-height: 73px;
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    border: 1px solid #eef2f6;
-    border-radius: 8px;
-    background: #f8fafc;
+    gap: 11px;
+    padding: 11px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
   }
 
-  .summary-icon { width: 36px; height: 36px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 8px; }
-  .icon-blue { background: #eff6ff; color: #1463ff; }
-  .icon-green { background: #f0fdf4; color: #16a34a; }
-  .icon-purple { background: #faf5ff; color: #7c3aed; }
-  .icon-orange { background: #fff7ed; color: #ea580c; }
-  .icon-rose { background: #fff1f2; color: #e11d48; }
-  .icon-indigo { background: #eef2ff; color: #4f46e5; }
-  .icon-teal { background: #f0fdfa; color: #0d9488; }
-
-  .summary-label { color: #64748b; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; }
-  .summary-value { color: #0f172a; font-size: 13px; font-weight: 800; line-height: 1.25; margin-top: 1px; }
-  .summary-helper { margin-top: 1px; color: #94a3b8; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-  /* Explorer: 2-pane on desktop, top-selector on tablet/mobile */
-  .explorer-shell {
-    margin-top: 14px;
+  .summary-icon, .detail-icon, .department-icon {
+    flex: 0 0 auto;
     display: grid;
-    grid-template-columns: 360px minmax(0, 1fr);
+    place-items: center;
+    border-radius: 10px;
+  }
+
+  .summary-icon { width: 44px; height: 44px; }
+  .icon-blue { background: #eef5ff; color: #1463ff; }
+  .icon-green { background: #edf9f1; color: #16a34a; }
+  .icon-purple { background: #f4edff; color: #7c3aed; }
+  .icon-orange { background: #fff3e8; color: #f97316; }
+  .icon-rose { background: #fff0f2; color: #fb4b5c; }
+  .icon-indigo { background: #eef2ff; color: #4f46e5; }
+  .icon-teal { background: #ecfdf8; color: #0f9f8f; }
+
+  .summary-label { color: #667085; font-size: 11px; }
+  .summary-value { color: #101828; font-size: 14px; font-weight: 800; line-height: 1.25; }
+  .summary-helper { margin-top: 2px; color: #7b8797; font-size: 10.5px; }
+
+  .explorer-shell {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: 480px minmax(0, 1fr);
     overflow: hidden;
   }
 
   .department-pane {
-    padding: 14px 16px;
+    padding: 13px 14px 14px;
     border-right: 1px solid #e2e8f0;
     background: #ffffff;
   }
 
-  .explore-title { font-size: 14px; font-weight: 800; color: #0f172a; }
-  .explore-subtitle { margin-top: 2px; font-size: 11px; color: #64748b; }
+  .explore-title { font-size: 14px; font-weight: 800; color: #101828; }
+  .explore-subtitle { margin-top: 2px; font-size: 11px; color: #7b8797; }
 
   .department-controls {
     margin-top: 10px;
@@ -336,208 +339,149 @@ const PAGE_STYLES = `
   }
 
   .search-wrap { position: relative; }
-  .search-wrap svg { position: absolute; left: 10px; top: 9px; color: #94a3b8; }
+  .search-wrap svg { position: absolute; left: 10px; top: 9px; color: #98a2b3; }
   .department-search, .post-select, .post-label {
     width: 100%;
     height: 34px;
     border: 1px solid #dbe4ef;
     border-radius: 7px;
     background: #ffffff;
-    color: #334155;
-    font-size: 11.5px;
+    color: #344054;
+    font-size: 11px;
     outline: none;
   }
-  .department-search { padding: 0 8px 0 30px; }
-  .post-select { padding: 0 6px; font-weight: 650; }
-  .post-label { display: grid; place-items: center; font-weight: 700; color: #64748b; }
-  .department-search:focus, .post-select:focus { border-color: #93c5fd; box-shadow: 0 0 0 2px rgba(20,99,255,.08); }
+  .department-search { padding: 0 9px 0 31px; }
+  .post-select { padding: 0 8px; font-weight: 650; }
+  .post-label { display: grid; place-items: center; font-weight: 700; }
+  .department-search:focus, .post-select:focus { border-color: #8ab4ff; box-shadow: 0 0 0 2px rgba(20,99,255,.09); }
 
   .department-list {
     margin-top: 10px;
     display: grid;
-    gap: 6px;
-    max-height: 480px;
+    gap: 7px;
+    max-height: 474px;
     overflow: auto;
-    padding-right: 2px;
+    padding-right: 3px;
   }
 
   .department-row {
     width: 100%;
-    min-height: 52px;
-    padding: 8px 10px;
+    min-height: 58px;
+    padding: 8px 9px;
     border: 1px solid #e2e8f0;
-    border-radius: 8px;
+    border-radius: 9px;
     background: #ffffff;
     display: flex;
     align-items: center;
-    gap: 9px;
+    gap: 10px;
     text-align: left;
     cursor: pointer;
-    transition: all .15s ease;
+    transition: border-color .16s ease, background .16s ease, box-shadow .16s ease, transform .16s ease;
   }
 
-  .department-row:hover { border-color: #93c5fd; background: #f8fafc; }
-  .department-row.selected { border: 1.5px solid #1463ff; background: #eff6ff; box-shadow: 0 2px 8px rgba(20,99,255,.08); }
+  .department-row:hover { border-color: #b8cdf5; transform: translateY(-1px); box-shadow: 0 3px 9px rgba(15,23,42,.05); }
+  .department-row.selected { border: 1.5px solid #1463ff; background: #f8fbff; box-shadow: 0 0 0 2px rgba(20,99,255,.06); }
 
-  .department-icon { width: 36px; height: 36px; flex-shrink: 0; display: grid; place-items: center; border-radius: 8px; }
+  .department-icon { width: 40px; height: 40px; }
   .department-text { min-width: 0; flex: 1; }
-  .department-name { font-size: 12.5px; font-weight: 800; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
-  .department-sub { margin-top: 1px; font-size: 10.5px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+  .department-name { font-size: 12.5px; font-weight: 800; color: #101828; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .department-sub { margin-top: 2px; font-size: 10.5px; color: #667085; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .department-count {
-    min-width: 24px;
-    height: 24px;
-    padding: 0 6px;
+    min-width: 25px;
+    height: 25px;
+    padding: 0 7px;
     border-radius: 999px;
     display: grid;
     place-items: center;
-    background: #eff6ff;
+    background: #edf4ff;
     color: #1463ff;
     font-size: 11px;
     font-weight: 800;
-    flex-shrink: 0;
   }
   .department-row.selected .department-count { background: #1463ff; color: #ffffff; }
 
-  /* Vacancy Details Pane: compact, space-efficient */
-  .vacancy-pane { padding: 16px 18px 20px; background: #ffffff; min-width: 0; }
+  .vacancy-pane { padding: 12px 14px 13px; background: #ffffff; min-width: 0; }
   .vacancy-head {
     display: grid;
-    grid-template-columns: 50px minmax(0, 1fr) auto;
-    gap: 12px;
+    grid-template-columns: 58px minmax(0, 1fr) 76px;
+    gap: 11px;
     align-items: center;
   }
 
   .vacancy-head-icon {
-    width: 50px;
-    height: 50px;
+    width: 58px;
+    height: 58px;
     border-radius: 10px;
     display: grid;
     place-items: center;
     background: #eff6ff;
-    border: 1px solid #bfdbfe;
+    border: 1px solid #cfe0ff;
     color: #1463ff;
-    flex-shrink: 0;
   }
 
-  .vacancy-title { margin: 0; color: #0f172a; font-size: 20px; font-weight: 850; line-height: 1.2; }
-  .vacancy-subtitle { margin-top: 2px; color: #475467; font-size: 12px; font-weight: 600; }
-  .vacancy-meta { margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px 12px; color: #64748b; font-size: 11px; }
+  .vacancy-title { margin: 0; color: #101828; font-size: 21px; font-weight: 850; line-height: 1.15; }
+  .vacancy-subtitle { margin-top: 2px; color: #344054; font-size: 12px; font-weight: 750; }
+  .vacancy-meta { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 6px 12px; color: #667085; font-size: 10.5px; }
   .vacancy-meta span { display: inline-flex; align-items: center; gap: 4px; }
 
   .vacancy-count-box {
-    min-height: 50px;
-    padding: 0 12px;
-    border: 1px solid #bfdbfe;
-    border-radius: 9px;
-    background: #eff6ff;
+    min-height: 58px;
+    border: 1px solid #c8dcff;
+    border-radius: 10px;
+    background: #eef5ff;
     color: #1463ff;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
   }
-  .vacancy-count-num { font-size: 20px; font-weight: 900; line-height: 1; }
-  .vacancy-count-label { margin-top: 1px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; }
+  .vacancy-count-num { font-size: 23px; font-weight: 900; line-height: 1; }
+  .vacancy-count-label { margin-top: 2px; font-size: 10px; }
 
-  .vacancy-chips { margin-top: 10px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
-  .tiny-chip { padding: 3px 8px; font-size: 10px; border-radius: 6px; border: 1px solid transparent; font-weight: 700; }
-  .chip-green { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
-  .chip-purple { background: #faf5ff; color: #7c3aed; border-color: #e9d5ff; }
-  .chip-orange { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+  .vacancy-chips { margin-top: 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+  .tiny-chip { padding: 4px 7px; font-size: 9.5px; border: 1px solid transparent; }
+  .chip-green { background: #effaf2; color: #15803d; border-color: #ccefd6; }
+  .chip-purple { background: #f6f0ff; color: #7c3aed; border-color: #e6d6ff; }
+  .chip-orange { background: #fff5e9; color: #e96508; border-color: #ffd9b0; }
 
-  /* Sleek Specifications Grid (Cuts height by >50%) */
-  .spec-grid {
-    margin-top: 12px;
+  .detail-grid {
+    margin-top: 10px;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 9px;
   }
 
-  .spec-box {
-    padding: 8px 10px;
-    border: 1px solid #eef2f6;
-    border-radius: 8px;
-    background: #f8fafc;
-    min-width: 0;
-  }
-
-  .spec-header {
+  .detail-card {
+    min-height: 91px;
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    background: #ffffff;
     display: flex;
-    align-items: center;
-    gap: 6px;
-    color: #64748b;
-    font-size: 10px;
-    font-weight: 750;
-    text-transform: uppercase;
-    letter-spacing: .4px;
+    gap: 9px;
+    align-items: flex-start;
   }
-  .spec-header svg { flex-shrink: 0; }
+  .detail-icon { width: 34px; height: 34px; }
+  .detail-label { color: #344054; font-size: 10px; font-weight: 800; }
+  .detail-value { margin-top: 4px; color: #475467; font-size: 10.2px; line-height: 1.4; }
 
-  .spec-value {
-    margin-top: 3px;
-    color: #0f172a;
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1.35;
-    word-break: break-word;
-  }
-
-  .spec-extra {
-    margin-top: 8px;
-    padding: 8px 10px;
-    border: 1px solid #eef2f6;
-    border-radius: 8px;
-    background: #f8fafc;
-  }
-  .spec-extra-title {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: #64748b;
-    font-size: 10px;
-    font-weight: 750;
-    text-transform: uppercase;
-    letter-spacing: .4px;
-  }
-  .spec-extra-content {
-    margin-top: 3px;
-    color: #334155;
-    font-size: 11.5px;
-    line-height: 1.4;
-  }
-
-  /* Compact Important Dates strip - NEVER clips text */
   .dates-strip {
-    margin-top: 12px;
-    padding: 8px 12px;
-    border: 1px solid #bfdbfe;
-    border-radius: 8px;
-    background: linear-gradient(180deg, #f8fbff 0%, #eff6ff 100%);
+    margin-top: 10px;
+    padding: 9px 11px 10px;
+    border: 1px solid #bed7ff;
+    border-radius: 9px;
+    background: linear-gradient(180deg, #f5f9ff 0%, #edf5ff 100%);
   }
-  .dates-title { display: flex; align-items: center; gap: 6px; color: #1e3a8a; font-size: 11.5px; font-weight: 800; }
+  .dates-title { display: flex; align-items: center; gap: 6px; color: #344054; font-size: 11px; font-weight: 800; }
   .dates-title svg { color: #1463ff; }
-  .dates-grid {
-    margin-top: 6px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 16px;
-    align-items: center;
-  }
-  .date-item { min-width: 110px; flex: 1; }
-  .date-label { color: #64748b; font-size: 9.5px; font-weight: 600; text-transform: uppercase; }
-  .date-value { margin-top: 1px; color: #0f172a; font-size: 11.5px; font-weight: 800; white-space: normal; }
-  .date-value.highlight { color: #dc2626; }
+  .dates-grid { margin-top: 7px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; text-align: center; }
+  .date-label { color: #667085; font-size: 9.5px; }
+  .date-value { margin-top: 2px; color: #101828; font-size: 10.5px; font-weight: 850; }
 
-  /* In-card vacancy actions: ALWAYS visible on all screen sizes! */
-  .vacancy-actions {
-    margin-top: 14px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
+  .vacancy-actions { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
   .vacancy-action {
-    min-height: 40px;
-    border-radius: 8px;
+    min-height: 38px;
+    border-radius: 7px;
     border: 1px solid #dbe4ef;
     background: #ffffff;
     color: #1463ff;
@@ -545,95 +489,77 @@ const PAGE_STYLES = `
     align-items: center;
     justify-content: center;
     gap: 7px;
-    font-size: 12.5px;
+    font-size: 12px;
     font-weight: 800;
     cursor: pointer;
-    transition: all .15s ease;
   }
-  .vacancy-action:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(15,23,42,.07); }
   .vacancy-action.primary { color: #ffffff; border-color: #1463ff; background: #1463ff; }
-  .vacancy-action.primary:hover { background: #0b51de; }
   .vacancy-action.private-primary { color: #ffffff; border-color: #059669; background: #059669; }
 
-  /* Floating mobile bar: refined, proper spacing, doesn't hide footer */
   .mobile-cta { display: none; }
 
-  /* Tablet / iPad responsive view (768px - 1024px) */
-  @media (max-width: 1024px) {
-    .recruit-shell { width: calc(100% - 24px); padding: 12px 0 32px; }
-    .recruit-top { grid-template-columns: 1fr; }
-    .action-panel { min-height: auto; }
+  @media (max-width: 1080px) {
+    .recruit-shell { width: min(100% - 28px, 980px); }
+    .recruit-top { grid-template-columns: 1fr 330px; }
+    .recruit-hero-main { grid-template-columns: 118px minmax(0, 1fr); }
+    .org-seal { width: 108px; height: 108px; }
+    .org-seal-inner { width: 88px; height: 88px; }
     .summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .explorer-shell { grid-template-columns: 1fr; }
-    .department-pane { border-right: 0; border-bottom: 1px solid #e2e8f0; padding: 12px 14px; }
-    .department-list {
-      display: flex;
-      flex-direction: row;
-      overflow-x: auto;
-      overflow-y: hidden;
-      max-height: none;
-      padding: 4px 2px 10px;
-      gap: 10px;
-      scroll-snap-type: x mandatory;
-      -webkit-overflow-scrolling: touch;
-    }
-    .department-row {
-      flex: 0 0 auto;
-      min-width: 220px;
-      max-width: 260px;
-      width: auto;
-      scroll-snap-align: start;
-    }
-    .department-icon { flex-shrink: 0; }
-    .vacancy-pane { padding: 14px 16px; }
-    .dates-grid { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+    .explorer-shell { grid-template-columns: 365px minmax(0, 1fr); }
+    .detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 
-  /* Mobile responsive view (<640px) */
-  @media (max-width: 640px) {
-    .recruit-page { padding-bottom: 90px; }
-    .recruit-shell { width: calc(100% - 16px); padding-top: 8px; }
-    .recruit-card { border-radius: 10px; }
-    .recruit-hero { padding: 12px 14px; }
-    .recruit-hero-main { grid-template-columns: 60px minmax(0, 1fr); gap: 10px; margin-top: 10px; }
-    .org-seal { width: 56px; height: 56px; border-width: 3px; }
-    .org-seal-inner { width: 46px; height: 46px; }
-    .seal-icon { width: 18px; height: 18px; }
-    .seal-name { font-size: 8px; }
-    .recruit-title { font-size: 18px; }
-    .recruit-org { font-size: 13px; }
-    .recruit-location { font-size: 11.5px; }
-    .recruit-meta-row { margin-top: 10px; gap: 8px; }
-    .recruit-meta-item { min-width: 0; flex: 1 1 110px; padding-right: 8px; }
+  @media (max-width: 820px) {
+    .recruit-shell { width: calc(100% - 24px); }
+    .recruit-top { grid-template-columns: 1fr; }
+    .action-panel { min-height: auto; }
     .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .explorer-shell { grid-template-columns: 1fr; }
+    .department-pane { border-right: 0; border-bottom: 1px solid #e2e8f0; }
+    .department-list { display: flex; overflow-x: auto; overflow-y: hidden; max-height: none; padding: 2px 1px 7px; }
+    .department-row { min-width: 250px; }
+    .vacancy-pane { padding-bottom: 16px; }
+  }
+
+  @media (max-width: 580px) {
+    .recruit-page { padding-bottom: 76px; }
+    .recruit-shell { width: calc(100% - 18px); padding-top: 10px; }
+    .recruit-card { border-radius: 12px; }
+    .recruit-hero { padding: 14px; min-height: auto; }
+    .recruit-hero-main { grid-template-columns: 72px minmax(0, 1fr); gap: 11px; margin-top: 12px; }
+    .org-seal { width: 68px; height: 68px; border-width: 3px; }
+    .org-seal-inner { width: 56px; height: 56px; }
+    .seal-icon { width: 22px; height: 22px; }
+    .seal-name { font-size: 9px; }
+    .recruit-title { font-size: 20px; }
+    .recruit-org { font-size: 13px; }
+    .recruit-location { font-size: 12px; }
+    .recruit-meta-row { margin-top: 12px; gap: 10px; }
+    .recruit-meta-item { min-width: 0; flex: 1 1 120px; padding-right: 10px; }
+    .summary-grid { grid-template-columns: 1fr; }
+    .summary-item { min-height: 64px; }
     .department-controls { grid-template-columns: 1fr; }
-    .department-row { min-width: 190px; max-width: 220px; }
-    .vacancy-head { grid-template-columns: 42px minmax(0, 1fr) auto; gap: 9px; }
-    .vacancy-head-icon { width: 42px; height: 42px; }
-    .vacancy-title { font-size: 17px; }
-    .spec-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
-    .spec-box { padding: 6px 8px; }
-    .dates-grid { display: flex; flex-direction: column; gap: 6px; }
-    .date-item { width: 100%; }
-
-    /* IN-CARD actions: Visible on mobile! */
-    .vacancy-actions { display: grid; grid-template-columns: 1fr; gap: 8px; }
-
-    /* Floating sticky action bar: sleek, blurred, safe */
+    .vacancy-head { grid-template-columns: 48px minmax(0, 1fr) 62px; }
+    .vacancy-head-icon { width: 48px; height: 48px; }
+    .vacancy-title { font-size: 19px; }
+    .detail-grid { grid-template-columns: 1fr; }
+    .detail-card { min-height: 76px; }
+    .dates-grid { grid-template-columns: 1fr; text-align: left; }
+    .vacancy-actions { display: none; }
     .mobile-cta {
       position: fixed;
       left: 0;
       right: 0;
       bottom: 0;
-      z-index: 40;
+      z-index: 50;
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
-      padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 8px));
-      background: rgba(255,255,255,0.95);
-      border-top: 1px solid #e2e8f0;
-      box-shadow: 0 -4px 16px rgba(15,23,42,0.09);
-      backdrop-filter: blur(12px);
+      padding: 10px;
+      background: rgba(255,255,255,.96);
+      border-top: 1px solid #dbe4ef;
+      box-shadow: 0 -8px 24px rgba(15,23,42,.12);
+      backdrop-filter: blur(10px);
     }
   }
 `;
@@ -898,161 +824,57 @@ function ApplicationPanel({ recruitment, isGovernment, daysLeft, onShare }: { re
   );
 }
 
-function VacancyPanel({
-  vacancy,
-  recruitment,
-  isGovernment,
-  onViewJob,
-}: {
-  vacancy: VacancyRecord;
-  recruitment: Recruitment;
-  isGovernment: boolean;
-  onViewJob: () => void;
-}) {
+function VacancyPanel({ vacancy, recruitment, isGovernment, onViewJob }: { vacancy: VacancyRecord; recruitment: Recruitment; isGovernment: boolean; onViewJob: () => void }) {
   const department = vacancy.department || vacancy.speciality || vacancy.postName;
   const DepartmentIcon = getDepartmentIcon(department);
+  const details: Array<{ icon: LucideIcon; label: string; value: string; tone: string }> = [
+    { icon: GraduationCap, label: 'Qualification', value: vacancy.qualification || 'See notification', tone: 'icon-blue' },
+    { icon: Stethoscope, label: 'Experience', value: vacancy.experience || 'As per notification', tone: 'icon-indigo' },
+    { icon: IndianRupee, label: 'Salary / Pay', value: vacancy.salary || vacancy.payScale || vacancy.payLevel || 'See notification', tone: 'icon-teal' },
+    { icon: Users, label: 'Age Limit', value: vacancy.ageLimit || 'As per notification', tone: 'icon-purple' },
+    { icon: ShieldCheck, label: 'Other Eligibility', value: vacancy.otherEligibilityRequirements || 'See official notification', tone: 'icon-orange' },
+    { icon: BriefcaseBusiness, label: 'Selection Process', value: recruitment.selectionProcess || 'As per notification', tone: 'icon-indigo' },
+  ];
 
   return (
     <div>
       <div className="vacancy-head">
-        <div className="vacancy-head-icon">
-          <DepartmentIcon size={26} strokeWidth={2} />
-        </div>
+        <div className="vacancy-head-icon"><DepartmentIcon size={31} strokeWidth={2} /></div>
         <div>
           <h2 className="vacancy-title">{department}</h2>
-          <div className="vacancy-subtitle">
-            {vacancy.qualification || vacancy.speciality || vacancy.postName}
-          </div>
+          <div className="vacancy-subtitle">{vacancy.qualification || vacancy.speciality || vacancy.postName}</div>
           <div className="vacancy-meta">
-            {vacancy.location && (
-              <span>
-                <MapPin size={12} />
-                {vacancy.location}
-              </span>
-            )}
-            {vacancy.jobType && (
-              <span>
-                <BriefcaseBusiness size={12} />
-                {vacancy.jobType}
-              </span>
-            )}
+            {vacancy.location && <span><MapPin size={13} />{vacancy.location}</span>}
+            {vacancy.jobType && <span><BriefcaseBusiness size={13} />{vacancy.jobType}</span>}
           </div>
         </div>
-        <div className="vacancy-count-box">
-          <div className="vacancy-count-num">{vacancy.numberOfVacancies}</div>
-          <div className="vacancy-count-label">Vacancies</div>
-        </div>
+        <div className="vacancy-count-box"><div className="vacancy-count-num">{vacancy.numberOfVacancies}</div><div className="vacancy-count-label">Vacancies</div></div>
       </div>
 
       <div className="vacancy-chips">
-        <span className="tiny-chip chip-green">
-          <Users size={11} />
-          {vacancy.postName} Role
-        </span>
-        <span className="tiny-chip chip-purple">
-          <Stethoscope size={11} />
-          Clinical Department
-        </span>
-        {vacancy.jobType && (
-          <span className="tiny-chip chip-orange">
-            <BriefcaseBusiness size={11} />
-            {vacancy.jobType}
-          </span>
-        )}
+        <span className="tiny-chip chip-green"><Users size={11} />{vacancy.postName} Role</span>
+        <span className="tiny-chip chip-purple"><Stethoscope size={11} />Clinical Department</span>
+        {vacancy.jobType && <span className="tiny-chip chip-orange"><BriefcaseBusiness size={11} />{vacancy.jobType}</span>}
       </div>
 
-      {/* Sleek 2-column key specifications grid (Cuts vertical height by >50%) */}
-      <div className="spec-grid">
-        <SpecBox
-          icon={GraduationCap}
-          label="Qualification"
-          value={vacancy.qualification || 'See notification'}
-          color="#1463ff"
-        />
-        <SpecBox
-          icon={IndianRupee}
-          label="Salary / Pay"
-          value={vacancy.salary || vacancy.payScale || vacancy.payLevel || 'See notification'}
-          color="#0d9488"
-        />
-        <SpecBox
-          icon={Stethoscope}
-          label="Experience"
-          value={vacancy.experience || 'As per notification'}
-          color="#4f46e5"
-        />
-        <SpecBox
-          icon={Users}
-          label="Age Limit"
-          value={vacancy.ageLimit || 'As per notification'}
-          color="#7c3aed"
-        />
+      <div className="detail-grid">
+        {details.map((item) => <DetailCard key={item.label} {...item} />)}
       </div>
 
-      {/* Other Eligibility & Selection Process: compact inline callouts */}
-      {(vacancy.otherEligibilityRequirements || recruitment.selectionProcess) && (
-        <div className="spec-extra">
-          {vacancy.otherEligibilityRequirements && (
-            <div style={{ marginBottom: recruitment.selectionProcess ? 6 : 0 }}>
-              <div className="spec-extra-title">
-                <ShieldCheck size={12} color="#ea580c" />
-                <span>Other Eligibility</span>
-              </div>
-              <div className="spec-extra-content">
-                {vacancy.otherEligibilityRequirements}
-              </div>
-            </div>
-          )}
-          {recruitment.selectionProcess && (
-            <div>
-              <div className="spec-extra-title">
-                <BriefcaseBusiness size={12} color="#4f46e5" />
-                <span>Selection Process</span>
-              </div>
-              <div className="spec-extra-content">
-                {recruitment.selectionProcess}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Compact Important Dates strip - NEVER clips on iPad or mobile */}
       <div className="dates-strip">
-        <div className="dates-title">
-          <CalendarDays size={14} />
-          <span>Important Dates</span>
-        </div>
+        <div className="dates-title"><CalendarDays size={15} />Important Dates</div>
         <div className="dates-grid">
-          <DateItem
-            label="Notification Date"
-            value={recruitment.verificationDate ? formatDate(recruitment.verificationDate) : 'Not specified'}
-          />
-          <DateItem
-            label="Application Start Date"
-            value={recruitment.applicationStartDate ? formatDate(recruitment.applicationStartDate) : 'Not specified'}
-          />
-          <DateItem
-            label="Last Date to Apply"
-            value={recruitment.applicationLastDate ? formatDate(recruitment.applicationLastDate) : 'Not specified'}
-            highlight={true}
-          />
+          <DateItem label="Notification Date" value={recruitment.verificationDate ? formatDate(recruitment.verificationDate) : 'Not specified'} />
+          <DateItem label="Application Start Date" value={recruitment.applicationStartDate ? formatDate(recruitment.applicationStartDate) : 'Not specified'} />
+          <DateItem label="Last Date to Apply" value={recruitment.applicationLastDate ? formatDate(recruitment.applicationLastDate) : 'Not specified'} />
         </div>
       </div>
 
-      {/* In-Card Action Buttons: ALWAYS directly visible on all screen sizes */}
       <div className="vacancy-actions">
-        <button className="vacancy-action" onClick={onViewJob}>
-          <BriefcaseBusiness size={15} />
-          {isGovernment ? 'View Vacancy Details' : 'View & Apply'}
-        </button>
+        <button className="vacancy-action" onClick={onViewJob}><BriefcaseBusiness size={15} />{isGovernment ? 'View Vacancy Details' : 'View & Apply'}</button>
         {recruitment.officialApplicationUrl && (
-          <button
-            className={`vacancy-action ${isGovernment ? 'primary' : 'private-primary'}`}
-            onClick={() => openExternal(recruitment.officialApplicationUrl)}
-          >
-            <ExternalLink size={15} />
-            {isGovernment ? 'Official Apply Link' : 'Apply Now'}
+          <button className={`vacancy-action ${isGovernment ? 'primary' : 'private-primary'}`} onClick={() => openExternal(recruitment.officialApplicationUrl)}>
+            <ExternalLink size={15} />{isGovernment ? 'Official Apply Link' : 'Apply Now'}
           </button>
         )}
       </div>
@@ -1063,7 +885,7 @@ function VacancyPanel({
 function SummaryCard({ icon: Icon, tone, label, value, helper }: { icon: LucideIcon; tone: 'blue' | 'green' | 'purple' | 'orange' | 'rose'; label: string; value: string; helper: string }) {
   return (
     <div className="summary-item">
-      <div className={`summary-icon icon-${tone}`}><Icon size={20} strokeWidth={2} /></div>
+      <div className={`summary-icon icon-${tone}`}><Icon size={21} strokeWidth={2} /></div>
       <div style={{ minWidth: 0 }}>
         <div className="summary-label">{label}</div>
         <div className="summary-value">{value}</div>
@@ -1073,43 +895,20 @@ function SummaryCard({ icon: Icon, tone, label, value, helper }: { icon: LucideI
   );
 }
 
-function SpecBox({
-  icon: Icon,
-  label,
-  value,
-  color,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value: string;
-  color: string;
-}) {
+function DetailCard({ icon: Icon, label, value, tone }: { icon: LucideIcon; label: string; value: string; tone: string }) {
   return (
-    <div className="spec-box">
-      <div className="spec-header" style={{ color }}>
-        <Icon size={13} strokeWidth={2.2} />
-        <span>{label}</span>
+    <div className="detail-card">
+      <div className={`detail-icon ${tone}`}><Icon size={18} strokeWidth={2} /></div>
+      <div>
+        <div className="detail-label">{label}</div>
+        <div className="detail-value">{value}</div>
       </div>
-      <div className="spec-value" title={value}>{value}</div>
     </div>
   );
 }
 
-function DateItem({
-  label,
-  value,
-  highlight,
-}: {
-  label: string;
-  value: string;
-  highlight?: boolean;
-}) {
-  return (
-    <div className="date-item">
-      <div className="date-label">{label}</div>
-      <div className={`date-value ${highlight ? 'highlight' : ''}`}>{value}</div>
-    </div>
-  );
+function DateItem({ label, value }: { label: string; value: string }) {
+  return <div><div className="date-label">{label}</div><div className="date-value">{value}</div></div>;
 }
 
 function OrganisationSeal({ name, isGovernment }: { name: string; isGovernment: boolean }) {

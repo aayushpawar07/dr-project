@@ -22,16 +22,7 @@ function basePostName(job: any) {
 }
 
 function organisation(job: any) {
-  const direct = clean(job?.organization || job?.companyName || job?.employer?.companyName || job?.employerName);
-  if (direct) return direct;
-  if (job?.description) {
-    const firstLine = clean(String(job.description).split('\n')[0]);
-    if (firstLine) {
-      const candidate = firstLine.replace(/\s+(recruitment|notification|vacancy|vacancies|posts?).*/i, '').trim();
-      if (candidate && candidate.length > 3) return candidate;
-    }
-  }
-  return '';
+  return clean(job?.organization || job?.companyName || job?.employer?.companyName || job?.employerName);
 }
 
 function searchTokens(query?: string) {
@@ -95,7 +86,7 @@ export function groupRecruitmentJobs(jobs: any[], query?: string) {
     const salaries = unique(items.map((item) => item.salary || item.salaryRange));
     const experiences = unique(items.map((item) => item.experience));
     const totalPosts = items.reduce((sum, item) => sum + Math.max(0, Number(item.numberOfPosts || 0)), 0);
-    const org = items.map(organisation).find(Boolean) || organisation(first);
+    const org = organisation(first);
     const searchText = unique([
       displayTitle, org, ...departments, ...specialities, ...locations, ...states,
       ...qualifications, ...salaries, ...experiences, ...items.map((item) => item.description),

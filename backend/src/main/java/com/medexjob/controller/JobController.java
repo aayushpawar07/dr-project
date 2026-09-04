@@ -54,7 +54,6 @@ public class JobController {
         this.fileUploadService = fileUploadService;
     }
 
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     @GetMapping
     public ResponseEntity<Map<String, Object>> list(
             @RequestParam(value = "search", required = false) String search,
@@ -272,7 +271,6 @@ public class JobController {
         return ResponseEntity.ok(body);
     }
 
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
     @GetMapping("/{id}")
     public ResponseEntity<Map<String, Object>> detail(@PathVariable("id") String id) {
         // Public job detail is candidate-facing. Admins use /api/admin/jobs/{id}.
@@ -1085,15 +1083,6 @@ public class JobController {
                 employerId = emp.getId();
             }
         } catch (Exception ignored) {}
-        if ((organization == null || organization.isBlank()) && j.getDescription() != null && !j.getDescription().isBlank()) {
-            String firstLine = j.getDescription().split("\\R")[0].trim();
-            if (!firstLine.isBlank()) {
-                String candidateOrg = firstLine.replaceAll("(?i)\\s+(recruitment|notification|vacancy|vacancies|posts?).*", "").trim();
-                if (!candidateOrg.isBlank()) {
-                    organization = candidateOrg;
-                }
-            }
-        }
         m.put("organization", organization);
         m.put("employerId", employerId != null ? employerId.toString() : null);
         m.put("sector", j.getSector() == Job.JobSector.GOVERNMENT ? "government" : "private");

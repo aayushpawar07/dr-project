@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class RecruitmentManagementService {
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(RecruitmentManagementService.class);
     private final RecruitmentExtractionService extractionService;
     private final RecruitmentRepository recruitmentRepository;
     private final VacancyRecordRepository vacancyRepository;
@@ -216,13 +217,22 @@ public class RecruitmentManagementService {
     public Recruitment verify(UUID recruitmentId, String verifiedBy) {
         Recruitment r = get(recruitmentId);
         if (requiresOfficialVerification(r)) {
+            boolean hasNotificationUrl = isHttpUrl(r.getOfficialNotificationUrl());
+            boolean hasApplicationUrl = isHttpUrl(r.getOfficialApplicationUrl());
+            boolean hasWebsite = isHttpUrl(r.getOfficialWebsite());
+
+            if (!hasNotificationUrl && !hasApplicationUrl && !hasWebsite) {
+                throw new IllegalStateException(
+                        "Official source verification requires at least one valid official URL (Organisation Website, Official Notification URL, or Official Application URL)");
+            }
+
             List<String> invalid = new ArrayList<>();
-            if (!isHttpUrl(r.getOfficialNotificationUrl())) invalid.add("officialNotificationUrl");
-            if (!isHttpUrl(r.getOfficialApplicationUrl())) invalid.add("officialApplicationUrl");
-            if (!isHttpUrl(r.getOfficialWebsite())) invalid.add("officialWebsite");
+            if (hasText(r.getOfficialNotificationUrl()) && !isHttpUrl(r.getOfficialNotificationUrl())) invalid.add("officialNotificationUrl");
+            if (hasText(r.getOfficialApplicationUrl()) && !isHttpUrl(r.getOfficialApplicationUrl())) invalid.add("officialApplicationUrl");
+            if (hasText(r.getOfficialWebsite()) && !isHttpUrl(r.getOfficialWebsite())) invalid.add("officialWebsite");
             if (!invalid.isEmpty()) {
                 throw new IllegalStateException(
-                        "Official source verification requires valid http/https URLs for: " + String.join(", ", invalid));
+                        "Invalid URL format (must start with http:// or https://) for: " + String.join(", ", invalid));
             }
         }
         r.setOfficialSourceVerified(true);
@@ -266,6 +276,7 @@ public class RecruitmentManagementService {
                 changed.add(v);
                 published++;
             } catch (Exception ex) {
+                logger.warn("Failed to publish vacancy {}: {}", v.getId(), ex.getMessage());
                 failures.add((hasText(v.getPostName()) ? v.getPostName() : String.valueOf(v.getId())) + ": " + safeMessage(ex));
             }
         }
@@ -356,8 +367,8 @@ public class RecruitmentManagementService {
         job.setLastDate(r.getApplicationLastDate() == null ? LocalDate.now().plusDays(30) : r.getApplicationLastDate());
         job.setContactEmail("jobs@medexjob.com");
         job.setContactPhone("0000000000");
-        job.setPdfUrl(clip(r.getOfficialNotificationUrl(), 500));
-        job.setApplyLink(clip(r.getOfficialApplicationUrl(), 500));
+        job.setPdfUrl(clip(firstNonBlank(r.getOfficialNotificationUrl(), r.getOfficialWebsite()), 500));
+        job.setApplyLink(clip(firstNonBlank(r.getOfficialApplicationUrl(), r.getOfficialWebsite(), r.getOfficialNotificationUrl()), 500));
         job.setStatus(job.getLastDate().isBefore(LocalDate.now()) ? Job.JobStatus.CLOSED : Job.JobStatus.ACTIVE);
         job.setIsFeatured(false);
         job.setViews(0);
@@ -383,30 +394,7 @@ public class RecruitmentManagementService {
     }
 
     private Employer resolveOrCreateEmployer(String organisation) {
-        String companyName = nonBlank(organisation, "MedExJob Recruitment");
-        return employerRepository.findByCompanyName(companyName).orElseGet(() -> {
-            String slug = slug(companyName);
-            String emailSlug = slug.isBlank() ? UUID.randomUUID().toString().substring(0, 8) : slug;
-            if (emailSlug.length() > 55) emailSlug = emailSlug.substring(0, 55);
-            String email = "bulk+" + emailSlug + "@medexjob.com";
-            User user = userRepository.findByEmail(email).orElseGet(() -> {
-                User u = new User();
-                u.setName(companyName + " Recruitment");
-                u.setEmail(email);
-                u.setPhone("0000000000");
-                u.setRole(User.UserRole.EMPLOYER);
-                u.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
-                u.setIsVerified(true);
-                return userRepository.save(u);
-            });
-            Employer e = new Employer();
-            e.setUser(user);
-            e.setCompanyName(companyName);
-            e.setCompanyType(Employer.CompanyType.HOSPITAL);
-            e.setIsVerified(true);
-            e.setVerificationStatus(Employer.VerificationStatus.APPROVED);
-            return employerRepository.save(e);
-        });
+        return vacancyJobPublisher.resolveOrCreateEmployer(organisation);
     }
 
     private VacancyRecord getVacancy(UUID recruitmentId, UUID vacancyId) {

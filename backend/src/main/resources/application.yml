@@ -39,8 +39,8 @@ spring:
 
   servlet:
     multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
+      max-file-size: 50MB
+      max-request-size: 50MB
 
   mvc:
     throw-exception-if-no-handler-found: false
@@ -62,7 +62,7 @@ razorpay:
 # File Upload Configuration
 file:
   upload-dir: uploads/
-  max-size: 10485760 # 10MB
+  max-size: 52428800 # 50MB
   base-url: http://localhost:8081
   use-ftp: false # FTP disabled for local development - files saved locally
 

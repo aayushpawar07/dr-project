@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { notifyAuthExpired } from '../utils/jwtUtils';
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || '/api';
 
@@ -39,6 +40,12 @@ apiClient.interceptors.response.use(
         data: error.response.data,
         url: error.config?.url
       });
+      if (error.response.status === 401) {
+        const url = error.config?.url || '';
+        if (!url.includes('/auth/login') && !url.includes('/auth/register')) {
+          notifyAuthExpired();
+        }
+      }
     } else if (error.request) {
       console.error('API Error Request:', error.request);
     } else {

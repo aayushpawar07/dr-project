@@ -52,14 +52,16 @@ public class AnalyticsController {
      * Upserts one row per (visitorToken, visitDate) — deduplicated per day.
      */
     @PostMapping("/track-visitor")
-    @Transactional
     public ResponseEntity<Map<String, Object>> trackVisitor(
-            @RequestBody Map<String, String> body,
+            @RequestBody(required = false) Map<String, String> body,
             HttpServletRequest request) {
         try {
+            if (body == null) {
+                return ResponseEntity.ok(Map.of("status", "skipped", "message", "No body provided"));
+            }
             String visitorToken = body.get("visitorToken");
             if (visitorToken == null || visitorToken.isBlank()) {
-                return ResponseEntity.badRequest().body(Map.of("error", "visitorToken is required"));
+                return ResponseEntity.ok(Map.of("status", "skipped", "message", "visitorToken is required"));
             }
             // Limit token length for safety
             if (visitorToken.length() > 64) {

@@ -1,3 +1,5 @@
+import { authFetch } from './authFetch';
+
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || '/api';
 
 export interface ApplicationPayload {
@@ -59,7 +61,7 @@ export async function applyForJob(payload: ApplicationPayload): Promise<Applicat
     formData.append('notes', payload.notes);
   }
 
-  const res = await fetch(`${API_BASE}/applications`, {
+  const res = await authFetch(`${API_BASE}/applications`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${payload.token}`,
@@ -89,7 +91,7 @@ export async function fetchApplications(params: ApplicationQuery = {}, token: st
   qs.set('size', String(params.size ?? 20));
   qs.set('sort', params.sort || 'appliedDate,desc');
 
-  const res = await fetch(`${API_BASE}/applications?${qs.toString()}`, {
+  const res = await authFetch(`${API_BASE}/applications?${qs.toString()}`, {
     cache: 'no-store',
     headers: {
       'Cache-Control': 'no-cache',
@@ -121,7 +123,7 @@ export async function fetchApplicationsByEmployee(employeeId: string, params: Ap
   qs.set('size', String(params.size ?? 20));
   qs.set('sort', params.sort || 'appliedDate,desc');
 
-  const res = await fetch(`${API_BASE}/applications/employee/${employeeId}?${qs.toString()}`, {
+  const res = await authFetch(`${API_BASE}/applications/employee/${employeeId}?${qs.toString()}`, {
     cache: 'no-store',
     headers: {
       'Cache-Control': 'no-cache',
@@ -145,7 +147,7 @@ export async function fetchApplicationsByCandidate(candidateId: string, params: 
   qs.set('size', String(params.size ?? 20));
   qs.set('sort', params.sort || 'appliedDate,desc');
 
-  const res = await fetch(`${API_BASE}/applications/candidate/${candidateId}?${qs.toString()}`, {
+  const res = await authFetch(`${API_BASE}/applications/candidate/${candidateId}?${qs.toString()}`, {
     cache: 'no-store',
     headers: {
       'Cache-Control': 'no-cache',
@@ -168,7 +170,7 @@ export async function updateApplicationStatus(id: string, status: string, token:
   if (notes) payload.notes = notes;
   if (interviewDate) payload.interviewDate = interviewDate;
 
-  const res = await fetch(`${API_BASE}/applications/${id}/status`, {
+  const res = await authFetch(`${API_BASE}/applications/${id}/status`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -181,7 +183,7 @@ export async function updateApplicationStatus(id: string, status: string, token:
 }
 
 export async function updateApplicationNotes(id: string, notes: string, token: string) {
-  const res = await fetch(`${API_BASE}/applications/${id}/notes`, {
+  const res = await authFetch(`${API_BASE}/applications/${id}/notes`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -197,7 +199,7 @@ export async function updateApplicationResume(applicationId: string, file: File,
   const formData = new FormData();
   formData.append('file', file);
 
-  const res = await fetch(`${API_BASE}/applications/${applicationId}/resume`, {
+  const res = await authFetch(`${API_BASE}/applications/${applicationId}/resume`, {
     method: 'PUT',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -212,7 +214,7 @@ export async function updateApplicationResume(applicationId: string, file: File,
 }
 
 export async function deleteApplication(id: string) {
-  const res = await fetch(`${API_BASE}/applications/${id}`, {
+  const res = await authFetch(`${API_BASE}/applications/${id}`, {
     method: 'DELETE',
   });
   if (!res.ok && res.status !== 204) throw new Error(`Failed to delete application (${res.status})`);

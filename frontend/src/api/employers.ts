@@ -1,3 +1,5 @@
+import { authFetch } from './authFetch';
+
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || '/api';
 
 export interface EmployerPayload {
@@ -47,7 +49,7 @@ export async function fetchEmployers(params: EmployerQuery = {}, token: string) 
   if (params.verificationStatus) qs.set('verificationStatus', params.verificationStatus);
   if (params.search) qs.set('search', params.search);
 
-  const res = await fetch(`${API_BASE}/employers?${qs.toString()}`, {
+  const res = await authFetch(`${API_BASE}/employers?${qs.toString()}`, {
     cache: 'no-store',
     headers: {
       'Cache-Control': 'no-cache',
@@ -60,7 +62,7 @@ export async function fetchEmployers(params: EmployerQuery = {}, token: string) 
 
 export async function fetchEmployer(id: string, token: string): Promise<EmployerResponse> {
   // First try to fetch by employer ID
-  let res = await fetch(`${API_BASE}/employers/${id}`, {
+  let res = await authFetch(`${API_BASE}/employers/${id}`, {
     headers: {
       'Authorization': `Bearer ${token}`,
     },
@@ -68,7 +70,7 @@ export async function fetchEmployer(id: string, token: string): Promise<Employer
   
   // If not found, try to fetch by user ID
   if (res.status === 404) {
-    res = await fetch(`${API_BASE}/employers/user/${id}`, {
+    res = await authFetch(`${API_BASE}/employers/user/${id}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -89,7 +91,7 @@ export async function updateEmployerVerificationStatus(
   qs.set('status', status);
   if (notes) qs.set('notes', notes);
 
-  const res = await fetch(`${API_BASE}/employers/${id}/verification?${qs.toString()}`, {
+  const res = await authFetch(`${API_BASE}/employers/${id}/verification?${qs.toString()}`, {
     method: 'PUT',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -103,7 +105,7 @@ export async function uploadEmployerDocument(id: string, document: File, token: 
   const formData = new FormData();
   formData.append('document', document);
 
-  const res = await fetch(`${API_BASE}/employers/${id}/documents`, {
+  const res = await authFetch(`${API_BASE}/employers/${id}/documents`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -118,7 +120,7 @@ export async function createEmployer(
   data: { companyName?: string; companyType?: 'hospital' | 'consultancy' | 'hr' },
   token: string
 ): Promise<EmployerResponse> {
-  const res = await fetch(`${API_BASE}/employers/create`, {
+  const res = await authFetch(`${API_BASE}/employers/create`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -138,7 +140,7 @@ export async function approveEmployer(
   const qs = new URLSearchParams();
   if (notes) qs.set('notes', notes);
 
-  const res = await fetch(`${API_BASE}/employers/${id}/approve?${qs.toString()}`, {
+  const res = await authFetch(`${API_BASE}/employers/${id}/approve?${qs.toString()}`, {
     method: 'PUT',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -156,7 +158,7 @@ export async function rejectEmployer(
   const qs = new URLSearchParams();
   if (notes) qs.set('notes', notes);
 
-  const res = await fetch(`${API_BASE}/employers/${id}/reject?${qs.toString()}`, {
+  const res = await authFetch(`${API_BASE}/employers/${id}/reject?${qs.toString()}`, {
     method: 'PUT',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -170,7 +172,7 @@ export async function discontinueEmployer(
   id: string,
   token: string
 ): Promise<EmployerResponse> {
-  const res = await fetch(`${API_BASE}/employers/${id}/discontinue`, {
+  const res = await authFetch(`${API_BASE}/employers/${id}/discontinue`, {
     method: 'PUT',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -184,7 +186,7 @@ export async function continueEmployer(
   id: string,
   token: string
 ): Promise<EmployerResponse> {
-  const res = await fetch(`${API_BASE}/employers/${id}/continue`, {
+  const res = await authFetch(`${API_BASE}/employers/${id}/continue`, {
     method: 'PUT',
     headers: {
       'Authorization': `Bearer ${token}`,

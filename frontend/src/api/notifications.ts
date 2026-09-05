@@ -1,4 +1,7 @@
 // AI assisted development
+import { notifyAuthExpired } from '../utils/jwtUtils';
+import { authFetch } from './authFetch';
+
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || '/api';
 
 export interface NotificationResponse {
@@ -57,6 +60,9 @@ export async function fetchNotifications(params: NotificationQuery = {}, token: 
   });
 
   if (!res.ok) {
+    if (res.status === 401) {
+      notifyAuthExpired();
+    }
     const errorText = await res.text();
     console.error('❌ API Error:', res.status, errorText);
     throw new Error(`Failed to fetch notifications (${res.status}): ${errorText}`);
@@ -79,6 +85,10 @@ export async function getUnreadCount(token: string): Promise<number> {
   });
 
   if (!res.ok) {
+    if (res.status === 401) {
+      notifyAuthExpired();
+      return 0;
+    }
     const errorText = await res.text();
     console.error('❌ API Error:', res.status, errorText);
     throw new Error(`Failed to fetch unread count (${res.status}): ${errorText}`);
@@ -100,7 +110,7 @@ export async function getUnreadCount(token: string): Promise<number> {
 }
 
 export async function markAsRead(notificationId: string, token: string): Promise<NotificationResponse> {
-  const res = await fetch(`${API_BASE}/notifications/${notificationId}/read`, {
+  const res = await authFetch(`${API_BASE}/notifications/${notificationId}/read`, {
     method: 'PUT',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -116,7 +126,7 @@ export async function markAsRead(notificationId: string, token: string): Promise
 }
 
 export async function markAllAsRead(token: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/notifications/read-all`, {
+  const res = await authFetch(`${API_BASE}/notifications/read-all`, {
     method: 'PUT',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -130,7 +140,7 @@ export async function markAllAsRead(token: string): Promise<void> {
 }
 
 export async function deleteNotification(notificationId: string, token: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/notifications/${notificationId}`, {
+  const res = await authFetch(`${API_BASE}/notifications/${notificationId}`, {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -144,7 +154,7 @@ export async function deleteNotification(notificationId: string, token: string):
 }
 
 export async function getNotificationPreferences(token: string): Promise<NotificationPreferencesResponse> {
-  const res = await fetch(`${API_BASE}/notifications/preferences`, {
+  const res = await authFetch(`${API_BASE}/notifications/preferences`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
@@ -162,7 +172,7 @@ export async function updateNotificationPreferences(
   preferences: Partial<NotificationPreferencesResponse>,
   token: string
 ): Promise<NotificationPreferencesResponse> {
-  const res = await fetch(`${API_BASE}/notifications/preferences`, {
+  const res = await authFetch(`${API_BASE}/notifications/preferences`, {
     method: 'PUT',
     headers: {
       'Authorization': `Bearer ${token}`,

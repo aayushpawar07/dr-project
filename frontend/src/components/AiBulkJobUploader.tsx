@@ -301,11 +301,27 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
     if (!recruitment) return;
     setActionLoading('verify');
     try {
+      await updateRecruitment(recruitment.id, {
+        organisationName: recruitment.organisationName,
+        title: recruitment.title,
+        advertisementNumber: recruitment.advertisementNumber,
+        recruitmentYear: recruitment.recruitmentYear,
+        location: recruitment.location,
+        applicationStartDate: recruitment.applicationStartDate,
+        applicationLastDate: recruitment.applicationLastDate,
+        applicationFee: recruitment.applicationFee,
+        sector: recruitment.sector,
+        officialNotificationUrl: recruitment.officialNotificationUrl,
+        officialApplicationUrl: recruitment.officialApplicationUrl,
+        officialWebsite: recruitment.officialWebsite,
+        selectionProcess: recruitment.selectionProcess,
+        importantInstructions: recruitment.importantInstructions,
+      });
       const saved = await verifyRecruitment(recruitment.id);
       setRecruitment(saved);
       toast.success('Official source verified.');
     } catch (error: any) {
-      toast.error(error?.response?.data?.error || 'Verification requirements are incomplete.');
+      toast.error(error?.response?.data?.error || error?.message || 'Verification requirements are incomplete.');
     } finally {
       setActionLoading(null);
     }
@@ -432,7 +448,11 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
               </div>
               <div className="mt-5 flex flex-wrap items-center gap-2">
                 <Button variant="outline" onClick={verify} disabled={recruitment.officialSourceVerified || actionLoading === 'verify'}>{actionLoading === 'verify' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}{recruitment.officialSourceVerified ? 'Official Source Verified' : 'Verify Official Source'}</Button>
-                {recruitment.sector === 'government' && !recruitment.officialSourceVerified && <span className="text-sm text-amber-700">Government jobs require official source verification before publishing.</span>}
+                {recruitment.sector === 'government' && !recruitment.officialSourceVerified && (
+                  <span className="text-sm text-amber-700">
+                    Government jobs require official source verification before publishing (at least one valid official URL: Organisation Website, Notification URL, or Application URL).
+                  </span>
+                )}
               </div>
             </Card>
 

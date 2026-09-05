@@ -1,4 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { toast } from 'sonner';
+import { isJwtExpired } from '../utils/jwtUtils';
 
 interface User {
   id: string;
@@ -35,26 +37,64 @@ interface AuthProviderProps {
 
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || '/api';
 
+const getInitialToken = (): string | null => {
+  try {
+    const stored = localStorage.getItem('token') || localStorage.getItem('authToken');
+    if (!stored || isJwtExpired(stored)) {
+      if (stored) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+      }
+      return null;
+    }
+    return stored;
+  } catch {
+    return null;
+  }
+};
+
+const getInitialUser = (): User | null => {
+  try {
+    const storedToken = localStorage.getItem('token') || localStorage.getItem('authToken');
+    if (!storedToken || isJwtExpired(storedToken)) return null;
+    const storedUser = localStorage.getItem('user');
+    if (!storedUser) return null;
+    const parsed = JSON.parse(storedUser);
+    return parsed && typeof parsed === 'object'
+      ? { ...parsed, role: typeof parsed.role === 'string' ? parsed.role.toLowerCase() : parsed.role }
+      : parsed;
+  } catch {
+    return null;
+  }
+};
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(getInitialUser);
+  const [token, setToken] = useState<string | null>(getInitialToken);
+
+  const logout = useCallback(() => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+  }, []);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-    if (storedToken && storedUser) {
-      setToken(storedToken);
+    const handleAuthExpired = (event?: any) => {
+      logout();
+      const message = event?.detail?.message || 'Your session has expired. Please log in again.';
       try {
-        const parsed = JSON.parse(storedUser);
-        const normalized = parsed && typeof parsed === 'object'
-          ? { ...parsed, role: typeof parsed.role === 'string' ? parsed.role.toLowerCase() : parsed.role }
-          : parsed;
-        setUser(normalized);
+        toast.error(message);
       } catch {
-        setUser(JSON.parse(storedUser));
+        console.warn(message);
       }
-    }
-  }, []);
+    };
+
+    window.addEventListener('auth:expired', handleAuthExpired);
+    return () => window.removeEventListener('auth:expired', handleAuthExpired);
+  }, [logout]);
 
   const login = async (email: string, password: string): Promise<User> => {
     try {
@@ -153,13 +193,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       throw error;
     }
-  };
-
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
   };
 
   const forgotPassword = async (email: string): Promise<void> => {

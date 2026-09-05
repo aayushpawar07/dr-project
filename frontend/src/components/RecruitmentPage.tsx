@@ -48,14 +48,14 @@ const PAGE_STYLES = `
   .recruit-shell {
     width: min(1400px, calc(100% - 36px));
     margin: 0 auto;
-    padding: 18px 0 40px;
+    padding: 14px 0 28px;
     min-width: 0;
   }
 
   .recruit-top {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 390px;
-    gap: 16px;
+    gap: 12px;
     align-items: stretch;
   }
 
@@ -67,8 +67,8 @@ const PAGE_STYLES = `
   }
 
   .recruit-hero {
-    min-height: 270px;
-    padding: 18px 20px 20px;
+    min-height: 210px;
+    padding: 16px 18px 16px;
     position: relative;
     overflow: hidden;
     border-color: #c9dcff;
@@ -141,7 +141,7 @@ const PAGE_STYLES = `
     grid-template-columns: 144px minmax(0, 1fr);
     gap: 20px;
     align-items: center;
-    margin-top: 15px;
+    margin-top: 12px;
   }
 
   .org-seal {
@@ -227,8 +227,8 @@ const PAGE_STYLES = `
   .meta-value.deadline { color: #ef4444; }
 
   .action-panel {
-    min-height: 270px;
-    padding: 16px;
+    min-height: 210px;
+    padding: 14px;
     border-color: #ffc7c7;
     background: linear-gradient(180deg, #fff8f8 0%, #ffffff 100%);
   }
@@ -278,7 +278,7 @@ const PAGE_STYLES = `
   .action-btn.private-primary { background: #059669; border-color: #059669; color: #ffffff; }
   .action-btn.share { color: #1463ff; }
 
-  .summary-shell { margin-top: 16px; padding: 13px 14px 14px; }
+  .summary-shell { margin-top: 12px; padding: 12px 14px; }
   .section-eyebrow { margin: 0 0 11px; font-size: 12px; font-weight: 800; color: #0f172a; }
 
   .summary-grid {
@@ -288,7 +288,7 @@ const PAGE_STYLES = `
   }
 
   .summary-item {
-    min-height: 73px;
+    min-height: 64px;
     display: flex;
     align-items: center;
     gap: 11px;
@@ -319,7 +319,7 @@ const PAGE_STYLES = `
   .summary-helper { margin-top: 2px; color: #7b8797; font-size: 10.5px; }
 
   .explorer-shell {
-    margin-top: 16px;
+    margin-top: 12px;
     display: grid;
     grid-template-columns: 480px minmax(0, 1fr);
     overflow: hidden;
@@ -475,8 +475,8 @@ const PAGE_STYLES = `
   }
 
   .detail-card {
-    min-height: 91px;
-    padding: 10px;
+    min-height: 74px;
+    padding: 9px;
     border: 1px solid #e2e8f0;
     border-radius: 9px;
     background: #ffffff;

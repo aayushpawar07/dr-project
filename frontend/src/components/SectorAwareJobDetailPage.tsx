@@ -118,12 +118,12 @@ function GovernmentJobDetail({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 job-detail-page" data-sector="government">
       <div className="container mx-auto px-4 py-8">
-        <div className="grid gap-6 md:grid-cols-3">
-          <div className="space-y-6 md:col-span-2">
+        <div className="job-detail-grid grid gap-6 md:grid-cols-3">
+          <div className="job-detail-main space-y-6 md:col-span-2">
             {/* Same visual hierarchy as the Private job header */}
-            <Card className="p-6">
+            <Card className="p-6 job-detail-hero">
               <div className="space-y-4">
                 <div className="flex flex-wrap items-start gap-3">
                   <span
@@ -200,7 +200,7 @@ function GovernmentJobDetail({
             </Card>
 
             {/* Same card/grid treatment as Private job details */}
-            <Card className="p-6">
+            <Card className="p-6 job-detail-facts">
               <h2 className="mb-4 text-xl text-gray-900">Job Details</h2>
               <div className="grid gap-4 md:grid-cols-2">
                 <PrivateStyleDetail icon={MapPin} label="Location" value={locationText || 'See notification'} />
@@ -232,7 +232,7 @@ function GovernmentJobDetail({
               </div>
             </Card>
 
-            <Card className="p-6">
+            <Card className="p-6 job-detail-description">
               <h2 className="mb-4 text-xl text-gray-900">Job Description</h2>
               <p className="whitespace-pre-wrap text-gray-700 leading-relaxed">
                 {job.description ||
@@ -241,7 +241,7 @@ function GovernmentJobDetail({
             </Card>
 
             {(notificationUrl || officialWebsite || applyLink) && (
-              <Card className="p-6">
+              <Card className="p-6 job-detail-docs">
                 <h2 className="mb-4 text-xl text-gray-900">Official Documents</h2>
                 <div className="space-y-3">
                   {notificationUrl && (
@@ -259,8 +259,8 @@ function GovernmentJobDetail({
           </div>
 
           {/* Same right-column composition as Private jobs */}
-          <div className="space-y-6 md:col-span-1">
-            <Card className="p-6 md:sticky md:top-20">
+          <div className="job-detail-aside space-y-6 md:col-span-1">
+            <Card className="p-6 md:sticky md:top-20 job-detail-apply">
               <div className="space-y-4">
                 {daysLeft != null && daysLeft > 0 && (
                   <div

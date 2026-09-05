@@ -449,13 +449,13 @@ export function JobDetailPage({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 job-detail-page" data-sector={isGovernment ? "government" : "private"}>
       <div className="container mx-auto px-4 py-8">
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="job-detail-grid grid md:grid-cols-3 gap-6">
           {/* Main Content */}
-          <div className="md:col-span-2 space-y-6">
+          <div className="job-detail-main md:col-span-2 space-y-6">
             {/* Job Header */}
-            <Card className="p-6">
+            <Card className="p-6 job-detail-hero">
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
                   <span
@@ -567,7 +567,7 @@ export function JobDetailPage({
             </Card>
 
             {/* Job Details */}
-            <Card className="p-6">
+            <Card className="p-6 job-detail-facts">
               <h2 className="text-xl text-gray-900 mb-4">Job Details</h2>
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="flex items-start gap-3">
@@ -631,14 +631,14 @@ export function JobDetailPage({
             </Card>
 
             {/* Job Description */}
-            <Card className="p-6">
+            <Card className="p-6 job-detail-description">
               <h2 className="text-xl text-gray-900 mb-4">Job Description</h2>
               <p className="text-gray-700 leading-relaxed">{job.description}</p>
             </Card>
 
             {/* Government Job Additional Info */}
             {isGovernment && job.pdfUrl && (
-              <Card className="p-6">
+              <Card className="p-6 job-detail-docs">
                 <h2 className="text-xl text-gray-900 mb-4">
                   Official Documents
                 </h2>
@@ -701,9 +701,9 @@ export function JobDetailPage({
           </div>
 
           {/* Sidebar */}
-          <div className="md:col-span-1 space-y-6">
+          <div className="job-detail-aside md:col-span-1 space-y-6">
             {/* Apply Card */}
-            <Card className="p-6 md:sticky md:top-20">
+            <Card className="p-6 md:sticky md:top-20 job-detail-apply">
               <div className="space-y-4">
                 {daysLeft > 0 && (
                   <Alert
@@ -739,7 +739,7 @@ export function JobDetailPage({
                     {isAuthenticated ? (
                       <>
                         <Button
-                          className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                           disabled={
                             hasApplied ||
                             !isAuthenticated ||
@@ -863,7 +863,7 @@ export function JobDetailPage({
                               const target = e.target as HTMLElement;
                               // Check if click is on the button that opened the dialog
                               if (
-                                target.closest('button[class*="bg-green-600"]')
+                                target.closest('button[class*="bg-blue-600"], button[class*="bg-green-600"]')
                               ) {
                                 console.log(
                                   "🖱️ Click detected on Apply Now button, preventing close",
@@ -914,7 +914,7 @@ export function JobDetailPage({
                               const target = e.target as HTMLElement;
                               // Check if click is on the button that opened the dialog
                               if (
-                                target.closest('button[class*="bg-green-600"]')
+                                target.closest('button[class*="bg-blue-600"], button[class*="bg-green-600"]')
                               ) {
                                 console.log(
                                   "🖱️ PointerDown detected on Apply Now button, preventing close",
@@ -1125,7 +1125,7 @@ export function JobDetailPage({
                     ) : (
                       <div className="space-y-3">
                         <Button
-                          className="w-full bg-green-600 hover:bg-green-700"
+                          className={`w-full ${isGovernment ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700"}`}
                           onClick={() => onNavigate("login")}
                         >
                           Login to Apply
@@ -1270,7 +1270,7 @@ export function JobDetailPage({
                               const target = e.target as HTMLElement;
                               // Check if click is on the button that opened the dialog
                               if (
-                                target.closest('button[class*="bg-green-600"]')
+                                target.closest('button[class*="bg-blue-600"], button[class*="bg-green-600"]')
                               ) {
                                 console.log(
                                   "🖱️ Click detected on Apply Now button, preventing close",
@@ -1321,7 +1321,7 @@ export function JobDetailPage({
                               const target = e.target as HTMLElement;
                               // Check if click is on the button that opened the dialog
                               if (
-                                target.closest('button[class*="bg-green-600"]')
+                                target.closest('button[class*="bg-blue-600"], button[class*="bg-green-600"]')
                               ) {
                                 console.log(
                                   "🖱️ PointerDown detected on Apply Now button, preventing close",
@@ -1530,7 +1530,7 @@ export function JobDetailPage({
                     ) : (
                       <div className="space-y-3">
                         <Button
-                          className="w-full bg-green-600 hover:bg-green-700"
+                          className={`w-full ${isGovernment ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700"}`}
                           onClick={() => onNavigate("login")}
                         >
                           Login to Apply

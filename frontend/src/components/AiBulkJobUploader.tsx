@@ -93,6 +93,10 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
       toast.error('Select a recruitment PDF first.');
       return;
     }
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error(`PDF file is too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). The maximum allowed file size is 50MB.`);
+      return;
+    }
     setProcessing(true);
     try {
       const result = await extractRecruitment(file, forceCreate);
@@ -103,7 +107,11 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
         ? 'Existing recruitment loaded for review.'
         : 'Gemini extraction complete. Review every vacancy before publishing.');
     } catch (error: any) {
-      toast.error(error?.response?.data?.error || error?.message || 'PDF extraction failed.');
+      if (error?.response?.status === 413) {
+        toast.error('Server rejected upload: 413 Payload Too Large. The file exceeds the server upload limit.');
+      } else {
+        toast.error(error?.response?.data?.error || error?.response?.data?.message || error?.message || 'PDF extraction failed.');
+      }
     } finally {
       setProcessing(false);
     }

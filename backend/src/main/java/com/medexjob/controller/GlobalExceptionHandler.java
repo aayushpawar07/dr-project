@@ -80,6 +80,15 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(Map.of("error", ex.getMessage()), HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<?> handleMaxUploadSizeExceeded(org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
+        logger.warn("Upload size exceeded: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(Map.of(
+            "error", "File too large. Maximum allowed upload size is 50MB.",
+            "message", "The uploaded file exceeds the maximum allowed size of 50MB. Please upload a smaller or compressed file."
+        ));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleGlobalException(Exception ex, WebRequest request) {
         // Log the exception for debugging purposes

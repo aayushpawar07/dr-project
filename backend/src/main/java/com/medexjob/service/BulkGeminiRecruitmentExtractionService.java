@@ -90,8 +90,8 @@ public class BulkGeminiRecruitmentExtractionService {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("PDF file is required");
         }
-        if (file.getSize() > 20L * 1024 * 1024) {
-            throw new IllegalArgumentException("PDF must be 20 MB or smaller");
+        if (file.getSize() > 50L * 1024 * 1024) {
+            throw new IllegalArgumentException("PDF must be 50 MB or smaller");
         }
 
         String name = Optional.ofNullable(file.getOriginalFilename())

@@ -1,6 +1,9 @@
 # AI assisted development
 server:
   port: 8081
+  tomcat:
+    max-swallow-size: 52428800
+    max-http-form-post-size: 52428800
 
 spring:
   application:

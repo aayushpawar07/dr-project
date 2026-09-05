@@ -305,7 +305,7 @@ public class RecruitmentExtractionService {
 
     private void validatePdf(MultipartFile file) {
         if (file == null || file.isEmpty()) throw new IllegalArgumentException("PDF file is required");
-        if (file.getSize() > 20L * 1024 * 1024) throw new IllegalArgumentException("PDF must be 20 MB or smaller");
+        if (file.getSize() > 50L * 1024 * 1024) throw new IllegalArgumentException("PDF must be 50 MB or smaller");
         String name = Optional.ofNullable(file.getOriginalFilename()).orElse("").toLowerCase(Locale.ROOT);
         String type = Optional.ofNullable(file.getContentType()).orElse("");
         if (!name.endsWith(".pdf") && !type.equalsIgnoreCase("application/pdf")) {

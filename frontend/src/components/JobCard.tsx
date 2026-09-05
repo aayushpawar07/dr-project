@@ -36,12 +36,15 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
   const sourceRecruitmentId = view.sourceRecruitmentId;
   const grouped = Boolean(view.recruitmentGrouped && sourceRecruitmentId);
   const locationText = job.location || [view.city, view.state].filter(Boolean).join(', ');
-  const organizationName =
-    job.organization ||
-    view.companyName ||
-    view.employer?.companyName ||
-    view.employerName ||
-    '';
+  const organizationName = [
+    job.organization,
+    view.organisationName,
+    view.organisation,
+    view.companyName,
+    view.employer?.companyName,
+    view.employerName,
+    view.hospitalName,
+  ].map((value) => String(value ?? '').trim()).find(Boolean) || '';
   const daysLeft = job.lastDate
     ? Math.ceil((new Date(job.lastDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
     : null;

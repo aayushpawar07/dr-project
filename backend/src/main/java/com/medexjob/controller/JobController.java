@@ -914,9 +914,9 @@ public class JobController {
 
     private Optional<Job> resolvePublicJob(String idOrSlug) {
         try {
-            return jobRepository.findById(UUID.fromString(idOrSlug));
+            return jobRepository.findByIdWithEmployer(UUID.fromString(idOrSlug));
         } catch (IllegalArgumentException ignored) {
-            return jobRepository.findBySlug(idOrSlug);
+            return jobRepository.findBySlugWithEmployer(idOrSlug);
         }
     }
 
@@ -1084,6 +1084,8 @@ public class JobController {
             }
         } catch (Exception ignored) {}
         m.put("organization", organization);
+        m.put("companyName", organization);
+        m.put("organisationName", organization);
         m.put("employerId", employerId != null ? employerId.toString() : null);
         m.put("sector", j.getSector() == Job.JobSector.GOVERNMENT ? "government" : "private");
         m.put("category", mapCategoryToLabel(j.getCategory()));

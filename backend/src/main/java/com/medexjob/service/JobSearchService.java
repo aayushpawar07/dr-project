@@ -66,7 +66,7 @@ public class JobSearchService {
                 featured
         );
 
-        return jobRepository.findAll(spec, pageable);
+        return withEmployerLoaded(jobRepository.findAll(spec, pageable));
     }
 
     @Transactional(readOnly = true)
@@ -109,7 +109,7 @@ public class JobSearchService {
                 openOnly
         );
 
-        return jobRepository.findAll(spec, pageable);
+        return withEmployerLoaded(jobRepository.findAll(spec, pageable));
     }
 
     @Transactional(readOnly = true)
@@ -117,7 +117,7 @@ public class JobSearchService {
         Specification<Job> spec = Specification
                 .where(titleMatchesAllTerms(sanitizeInput(title)))
                 .and(JobSpecifications.hasStatus(status));
-        return jobRepository.findAll(spec, pageable);
+        return withEmployerLoaded(jobRepository.findAll(spec, pageable));
     }
 
     @Transactional(readOnly = true)
@@ -125,7 +125,16 @@ public class JobSearchService {
         Specification<Job> spec = Specification
                 .where(JobSpecifications.companyNameContains(companyName))
                 .and(JobSpecifications.hasStatus(status));
-        return jobRepository.findAll(spec, pageable);
+        return withEmployerLoaded(jobRepository.findAll(spec, pageable));
+    }
+
+    private Page<Job> withEmployerLoaded(Page<Job> page) {
+        for (Job job : page.getContent()) {
+            if (job.getEmployer() != null) {
+                job.getEmployer().getCompanyName();
+            }
+        }
+        return page;
     }
 
     private Specification<Job> titleMatchesAllTerms(String searchQuery) {

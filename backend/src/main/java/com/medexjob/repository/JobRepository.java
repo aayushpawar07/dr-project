@@ -40,6 +40,12 @@ public interface JobRepository extends JpaRepository<Job, UUID>, JpaSpecificatio
     Optional<Job> findFirstBySourceVacancyId(UUID sourceVacancyId);
 
     Optional<Job> findBySlug(String slug);
+
+    @Query("SELECT j FROM Job j LEFT JOIN FETCH j.employer WHERE j.id = :id")
+    Optional<Job> findByIdWithEmployer(@Param("id") UUID id);
+
+    @Query("SELECT j FROM Job j LEFT JOIN FETCH j.employer WHERE j.slug = :slug")
+    Optional<Job> findBySlugWithEmployer(@Param("slug") String slug);
     
     // Find active jobs
     Page<Job> findByStatusAndLastDateAfter(Job.JobStatus status, LocalDate date, Pageable pageable);
@@ -190,13 +196,3 @@ public interface JobRepository extends JpaRepository<Job, UUID>, JpaSpecificatio
         return findDistinctCompanyNamesByStatus(Job.JobStatus.ACTIVE);
     }
 }
-
-
-
-
-
-
-
-
-
-

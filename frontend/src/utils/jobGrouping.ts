@@ -22,7 +22,15 @@ function basePostName(job: any) {
 }
 
 function organisation(job: any) {
-  return clean(job?.organization || job?.companyName || job?.employer?.companyName || job?.employerName);
+  return clean(
+    job?.organization ||
+    job?.organisationName ||
+    job?.organisation ||
+    job?.companyName ||
+    job?.employer?.companyName ||
+    job?.employerName ||
+    job?.hospitalName,
+  );
 }
 
 function searchTokens(query?: string) {

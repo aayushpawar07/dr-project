@@ -146,6 +146,28 @@ main h2 {
   z-index: 60;
 }
 
+/* Recruitment multi-job actions must stay on one line. */
+.recruit-page .vacancy-action,
+.recruit-page .action-btn,
+.recruit-page .sector-badge,
+.recruit-page .official-badge {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+/* iPad / small-tablet header: keep the desktop nav readable without clipping. */
+@media (min-width: 768px) and (max-width: 1100px) {
+  .medex-site-header nav {
+    gap: 10px;
+  }
+
+  .medex-site-header nav button {
+    font-size: 12px;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+  }
+}
+
 /* Search component safety at intermediate widths. */
 @media (min-width: 769px) and (max-width: 1100px) {
   .search-bar {

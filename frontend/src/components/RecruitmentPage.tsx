@@ -38,15 +38,18 @@ import {
 const PAGE_STYLES = `
   .recruit-page {
     min-height: 100vh;
+    min-width: 0;
     background: #f7f9fc;
     color: #111827;
-    padding-bottom: 82px;
+    padding-bottom: 28px;
+    overflow-x: clip;
   }
 
   .recruit-shell {
     width: min(1400px, calc(100% - 36px));
     margin: 0 auto;
     padding: 18px 0 40px;
+    min-width: 0;
   }
 
   .recruit-top {
@@ -320,12 +323,14 @@ const PAGE_STYLES = `
     display: grid;
     grid-template-columns: 480px minmax(0, 1fr);
     overflow: hidden;
+    min-width: 0;
   }
 
   .department-pane {
     padding: 13px 14px 14px;
     border-right: 1px solid #e2e8f0;
     background: #ffffff;
+    min-width: 0;
   }
 
   .explore-title { font-size: 14px; font-weight: 800; color: #101828; }
@@ -362,6 +367,7 @@ const PAGE_STYLES = `
     max-height: 474px;
     overflow: auto;
     padding-right: 3px;
+    min-width: 0;
   }
 
   .department-row {
@@ -401,6 +407,8 @@ const PAGE_STYLES = `
   .department-row.selected .department-count { background: #1463ff; color: #ffffff; }
 
   .vacancy-pane { padding: 12px 14px 13px; background: #ffffff; min-width: 0; }
+  .vacancy-panel { display: flex; flex-direction: column; min-width: 0; }
+  .vacancy-intro { min-width: 0; }
   .vacancy-head {
     display: grid;
     grid-template-columns: 58px minmax(0, 1fr) 76px;
@@ -419,10 +427,25 @@ const PAGE_STYLES = `
     color: #1463ff;
   }
 
-  .vacancy-title { margin: 0; color: #101828; font-size: 21px; font-weight: 850; line-height: 1.15; }
-  .vacancy-subtitle { margin-top: 2px; color: #344054; font-size: 12px; font-weight: 750; }
-  .vacancy-meta { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 6px 12px; color: #667085; font-size: 10.5px; }
-  .vacancy-meta span { display: inline-flex; align-items: center; gap: 4px; }
+  .vacancy-title {
+    margin: 0;
+    color: #101828;
+    font-size: 21px;
+    font-weight: 850;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .vacancy-subtitle {
+    margin-top: 2px;
+    color: #344054;
+    font-size: 12px;
+    font-weight: 750;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .vacancy-meta { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 6px 12px; color: #667085; font-size: 10.5px; min-width: 0; }
+  .vacancy-meta span { display: inline-flex; align-items: center; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
 
   .vacancy-count-box {
     min-height: 58px;
@@ -438,8 +461,8 @@ const PAGE_STYLES = `
   .vacancy-count-num { font-size: 23px; font-weight: 900; line-height: 1; }
   .vacancy-count-label { margin-top: 2px; font-size: 10px; }
 
-  .vacancy-chips { margin-top: 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
-  .tiny-chip { padding: 4px 7px; font-size: 9.5px; border: 1px solid transparent; }
+  .vacancy-chips { margin-top: 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-width: 0; }
+  .tiny-chip { padding: 4px 7px; font-size: 9.5px; border: 1px solid transparent; max-width: 100%; }
   .chip-green { background: #effaf2; color: #15803d; border-color: #ccefd6; }
   .chip-purple { background: #f6f0ff; color: #7c3aed; border-color: #e6d6ff; }
   .chip-orange { background: #fff5e9; color: #e96508; border-color: #ffd9b0; }
@@ -462,8 +485,17 @@ const PAGE_STYLES = `
     align-items: flex-start;
   }
   .detail-icon { width: 34px; height: 34px; }
+  .detail-copy { min-width: 0; flex: 1; }
   .detail-label { color: #344054; font-size: 10px; font-weight: 800; }
-  .detail-value { margin-top: 4px; color: #475467; font-size: 10.2px; line-height: 1.4; }
+  .detail-value {
+    margin-top: 4px;
+    color: #475467;
+    font-size: 10.2px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: normal;
+  }
 
   .dates-strip {
     margin-top: 10px;
@@ -475,8 +507,9 @@ const PAGE_STYLES = `
   .dates-title { display: flex; align-items: center; gap: 6px; color: #344054; font-size: 11px; font-weight: 800; }
   .dates-title svg { color: #1463ff; }
   .dates-grid { margin-top: 7px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; text-align: center; }
-  .date-label { color: #667085; font-size: 9.5px; }
-  .date-value { margin-top: 2px; color: #101828; font-size: 10.5px; font-weight: 850; }
+  .dates-grid > * { min-width: 0; }
+  .date-label { color: #667085; font-size: 9.5px; overflow-wrap: anywhere; }
+  .date-value { margin-top: 2px; color: #101828; font-size: 10.5px; font-weight: 850; overflow-wrap: anywhere; }
 
   .vacancy-actions { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
   .vacancy-action {
@@ -492,6 +525,8 @@ const PAGE_STYLES = `
     font-size: 12px;
     font-weight: 800;
     cursor: pointer;
+    overflow-wrap: normal;
+    word-break: normal;
   }
   .vacancy-action.primary { color: #ffffff; border-color: #1463ff; background: #1463ff; }
   .vacancy-action.private-primary { color: #ffffff; border-color: #059669; background: #059669; }
@@ -509,20 +544,59 @@ const PAGE_STYLES = `
     .detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 
-  @media (max-width: 820px) {
+  @media (max-width: 900px) {
+    .recruit-page { padding-bottom: 24px; }
     .recruit-shell { width: calc(100% - 24px); }
     .recruit-top { grid-template-columns: 1fr; }
     .action-panel { min-height: auto; }
     .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .explorer-shell { grid-template-columns: 1fr; }
+    .explorer-shell { grid-template-columns: minmax(0, 1fr); }
     .department-pane { border-right: 0; border-bottom: 1px solid #e2e8f0; }
-    .department-list { display: flex; overflow-x: auto; overflow-y: hidden; max-height: none; padding: 2px 1px 7px; }
-    .department-row { min-width: 250px; }
+    .department-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      max-height: none;
+      overflow: visible;
+      padding-right: 0;
+    }
+    .department-row { min-width: 0; }
+    .department-name, .department-sub {
+      white-space: normal;
+      overflow: visible;
+      text-overflow: unset;
+    }
     .vacancy-pane { padding-bottom: 16px; }
+    .detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); order: 3; }
+    .detail-card { min-height: 0; }
+    .dates-grid {
+      grid-template-columns: minmax(0, 1fr);
+      text-align: left;
+      gap: 6px;
+    }
+    .dates-grid > div {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+    }
+    .date-value { margin-top: 0; text-align: right; }
+    .vacancy-intro { order: 1; }
+    .vacancy-actions {
+      order: 2;
+      position: sticky;
+      top: 64px;
+      z-index: 20;
+      margin-top: 10px;
+      margin-bottom: 2px;
+      padding: 8px 0;
+      background: #ffffff;
+    }
+    .dates-strip { order: 4; }
+    .mobile-cta { display: none !important; }
   }
 
-  @media (max-width: 580px) {
-    .recruit-page { padding-bottom: 76px; }
+  @media (max-width: 640px) {
+    .recruit-page { padding-bottom: 20px; }
     .recruit-shell { width: calc(100% - 18px); padding-top: 10px; }
     .recruit-card { border-radius: 12px; }
     .recruit-hero { padding: 14px; min-height: auto; }
@@ -536,31 +610,44 @@ const PAGE_STYLES = `
     .recruit-location { font-size: 12px; }
     .recruit-meta-row { margin-top: 12px; gap: 10px; }
     .recruit-meta-item { min-width: 0; flex: 1 1 120px; padding-right: 10px; }
-    .summary-grid { grid-template-columns: 1fr; }
     .summary-item { min-height: 64px; }
     .department-controls { grid-template-columns: 1fr; }
+    .department-list {
+      display: flex;
+      width: 100%;
+      min-width: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+      max-height: none;
+      padding: 2px 2px 10px;
+      gap: 8px;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x proximity;
+    }
+    .department-row {
+      min-width: min(232px, 78vw);
+      flex: 0 0 auto;
+      scroll-snap-align: start;
+    }
+    .department-name, .department-sub {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .vacancy-head { grid-template-columns: 48px minmax(0, 1fr) 62px; }
     .vacancy-head-icon { width: 48px; height: 48px; }
-    .vacancy-title { font-size: 19px; }
-    .detail-grid { grid-template-columns: 1fr; }
-    .detail-card { min-height: 76px; }
-    .dates-grid { grid-template-columns: 1fr; text-align: left; }
-    .vacancy-actions { display: none; }
-    .mobile-cta {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 50;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      padding: 10px;
-      background: rgba(255,255,255,.96);
-      border-top: 1px solid #dbe4ef;
-      box-shadow: 0 -8px 24px rgba(15,23,42,.12);
-      backdrop-filter: blur(10px);
-    }
+    .vacancy-title { font-size: 18px; }
+    .detail-card { min-height: 0; padding: 8px; gap: 7px; }
+  }
+
+  @media (max-width: 639px) {
+    .vacancy-actions { top: 56px; }
+  }
+
+  @media (max-width: 420px) {
+    .summary-grid { grid-template-columns: minmax(0, 1fr); }
+    .detail-grid { grid-template-columns: minmax(0, 1fr); }
+    .vacancy-actions { grid-template-columns: 1fr; }
   }
 `;
 
@@ -753,16 +840,6 @@ export function RecruitmentPage() {
         </section>
       </div>
 
-      {selectedVacancy && (
-        <div className="mobile-cta">
-          <button className="vacancy-action" onClick={openSelectedJob}>{isGovernment ? 'View Details' : 'View & Apply'}</button>
-          {recruitment.officialApplicationUrl && (
-            <button className={`vacancy-action ${isGovernment ? 'primary' : 'private-primary'}`} onClick={() => openExternal(recruitment.officialApplicationUrl)}>
-              {isGovernment ? 'Official Apply' : 'Apply Now'} <ExternalLink size={15} />
-            </button>
-          )}
-        </div>
-      )}
     </div>
   );
 }
@@ -837,24 +914,26 @@ function VacancyPanel({ vacancy, recruitment, isGovernment, onViewJob }: { vacan
   ];
 
   return (
-    <div>
-      <div className="vacancy-head">
-        <div className="vacancy-head-icon"><DepartmentIcon size={31} strokeWidth={2} /></div>
-        <div>
-          <h2 className="vacancy-title">{department}</h2>
-          <div className="vacancy-subtitle">{vacancy.qualification || vacancy.speciality || vacancy.postName}</div>
-          <div className="vacancy-meta">
-            {vacancy.location && <span><MapPin size={13} />{vacancy.location}</span>}
-            {vacancy.jobType && <span><BriefcaseBusiness size={13} />{vacancy.jobType}</span>}
+    <div className="vacancy-panel">
+      <div className="vacancy-intro">
+        <div className="vacancy-head">
+          <div className="vacancy-head-icon"><DepartmentIcon size={31} strokeWidth={2} /></div>
+          <div style={{ minWidth: 0 }}>
+            <h2 className="vacancy-title">{department}</h2>
+            <div className="vacancy-subtitle">{vacancy.qualification || vacancy.speciality || vacancy.postName}</div>
+            <div className="vacancy-meta">
+              {vacancy.location && <span><MapPin size={13} />{vacancy.location}</span>}
+              {vacancy.jobType && <span><BriefcaseBusiness size={13} />{vacancy.jobType}</span>}
+            </div>
           </div>
+          <div className="vacancy-count-box"><div className="vacancy-count-num">{vacancy.numberOfVacancies}</div><div className="vacancy-count-label">Vacancies</div></div>
         </div>
-        <div className="vacancy-count-box"><div className="vacancy-count-num">{vacancy.numberOfVacancies}</div><div className="vacancy-count-label">Vacancies</div></div>
-      </div>
 
-      <div className="vacancy-chips">
-        <span className="tiny-chip chip-green"><Users size={11} />{vacancy.postName} Role</span>
-        <span className="tiny-chip chip-purple"><Stethoscope size={11} />Clinical Department</span>
-        {vacancy.jobType && <span className="tiny-chip chip-orange"><BriefcaseBusiness size={11} />{vacancy.jobType}</span>}
+        <div className="vacancy-chips">
+          <span className="tiny-chip chip-green"><Users size={11} />{vacancy.postName} Role</span>
+          <span className="tiny-chip chip-purple"><Stethoscope size={11} />Clinical Department</span>
+          {vacancy.jobType && <span className="tiny-chip chip-orange"><BriefcaseBusiness size={11} />{vacancy.jobType}</span>}
+        </div>
       </div>
 
       <div className="detail-grid">
@@ -871,10 +950,10 @@ function VacancyPanel({ vacancy, recruitment, isGovernment, onViewJob }: { vacan
       </div>
 
       <div className="vacancy-actions">
-        <button className="vacancy-action" onClick={onViewJob}><BriefcaseBusiness size={15} />{isGovernment ? 'View Vacancy Details' : 'View & Apply'}</button>
+        <button className="vacancy-action" onClick={onViewJob}><BriefcaseBusiness size={15} />{isGovernment ? 'View Details' : 'View & Apply'}</button>
         {recruitment.officialApplicationUrl && (
           <button className={`vacancy-action ${isGovernment ? 'primary' : 'private-primary'}`} onClick={() => openExternal(recruitment.officialApplicationUrl)}>
-            <ExternalLink size={15} />{isGovernment ? 'Official Apply Link' : 'Apply Now'}
+            <ExternalLink size={15} />{isGovernment ? 'Official Apply' : 'Apply Now'}
           </button>
         )}
       </div>
@@ -899,7 +978,7 @@ function DetailCard({ icon: Icon, label, value, tone }: { icon: LucideIcon; labe
   return (
     <div className="detail-card">
       <div className={`detail-icon ${tone}`}><Icon size={18} strokeWidth={2} /></div>
-      <div>
+      <div className="detail-copy">
         <div className="detail-label">{label}</div>
         <div className="detail-value">{value}</div>
       </div>

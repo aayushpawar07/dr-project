@@ -165,11 +165,21 @@
   }
 
   .job-detail-page .job-detail-hero { order: 1; }
-  .job-detail-page .job-detail-apply { order: 2; }
+  .job-detail-page .job-detail-apply {
+    order: 2;
+    position: static !important;
+    top: auto !important;
+    z-index: auto !important;
+  }
   .job-detail-page .job-detail-facts { order: 3; }
   .job-detail-page .job-detail-description { order: 4; }
   .job-detail-page .job-detail-docs,
   .job-detail-page .job-detail-aside > :not(.job-detail-apply) { order: 5; }
+
+  .job-detail-page .medex-description-tabs {
+    position: static !important;
+    top: auto !important;
+  }
 
   .job-detail-page .job-detail-facts .grid.md\:grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -213,16 +223,5 @@
   .job-detail-page .medex-kv-grid {
     grid-template-columns: minmax(0, 1fr) !important;
   }
-
-  .job-detail-page .job-detail-apply {
-    position: sticky;
-    top: 56px;
-    z-index: 20;
-  }
 }
 
-@media (max-width: 420px) {
-  .job-detail-page .job-detail-apply {
-    top: 56px;
-  }
-}

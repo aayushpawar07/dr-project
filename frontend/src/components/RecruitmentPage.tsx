@@ -583,13 +583,13 @@ const PAGE_STYLES = `
     .vacancy-intro { order: 1; }
     .vacancy-actions {
       order: 2;
-      position: sticky;
-      top: 64px;
-      z-index: 20;
+      position: static;
+      top: auto;
+      z-index: auto;
       margin-top: 10px;
       margin-bottom: 2px;
       padding: 8px 0;
-      background: #ffffff;
+      background: transparent;
     }
     .dates-strip { order: 4; }
     .mobile-cta { display: none !important; }
@@ -638,10 +638,6 @@ const PAGE_STYLES = `
     .vacancy-head-icon { width: 48px; height: 48px; }
     .vacancy-title { font-size: 18px; }
     .detail-card { min-height: 0; padding: 8px; gap: 7px; }
-  }
-
-  @media (max-width: 639px) {
-    .vacancy-actions { top: 56px; }
   }
 
   @media (max-width: 420px) {

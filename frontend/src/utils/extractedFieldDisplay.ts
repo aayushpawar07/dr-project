@@ -28,6 +28,14 @@ export function cardFieldText(value: unknown, fallback = '') {
   return raw.length > 90 ? `${raw.slice(0, 87).trim()}...` : raw;
 }
 
+export function detailFieldText(...values: unknown[]) {
+  for (const value of values) {
+    const raw = text(value);
+    if (raw) return raw;
+  }
+  return '';
+}
+
 export function cardSalaryText(value: unknown) {
   const raw = text(value);
   if (!raw || isRegulatoryDump(raw)) return '';

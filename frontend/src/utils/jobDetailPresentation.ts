@@ -596,17 +596,14 @@ function enhanceGovernmentLinks(root: ParentNode) {
 
   relabelExistingGovernmentLinks(root);
   const page = root.querySelector(".min-h-screen.bg-gray-50");
-  if (!page || page.querySelector(".medex-government-links")) return;
+  if (!page || page.querySelector(".medex-government-links") || page.querySelector(".job-detail-docs")) return;
 
   const websiteSource = findLinkByText(root, ["official website", "official apply link"]);
   const pdfSource = findLinkByText(root, ["notification pdf", "view notification", "official notification pdf"]);
   if (!websiteSource && !pdfSource) return;
 
-  const mainColumn = page.querySelector(".md\\:col-span-2.space-y-6");
+  const mainColumn = page.querySelector(".md\\:col-span-2.space-y-6") || page.querySelector(".job-detail-main");
   if (!mainColumn) return;
-  const jobDetailsCard = Array.from(mainColumn.children).find((element) =>
-    Array.from(element.querySelectorAll("h2")).some((heading) => heading.textContent?.trim().toLowerCase() === "job details"),
-  );
 
   const section = document.createElement("section");
   section.className = "medex-government-links";
@@ -649,8 +646,7 @@ function enhanceGovernmentLinks(root: ParentNode) {
   if (pdfSource) addOfficialLink(pdfSource, "pdf");
   section.append(grid);
 
-  if (jobDetailsCard?.nextSibling) mainColumn.insertBefore(section, jobDetailsCard.nextSibling);
-  else mainColumn.append(section);
+  mainColumn.append(section);
 
   Array.from(mainColumn.children).forEach((element) => {
     const headingNode = Array.from(element.querySelectorAll("h2")).find(

@@ -20,6 +20,7 @@ import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
+import { cardFieldText, cardSalaryText, displayJobDescription } from '../utils/extractedFieldDisplay';
 
 interface Props {
   onNavigate: (page: string, entityId?: string) => void;
@@ -160,8 +161,8 @@ function GovernmentJobDetail({
                 <div>
                   <h1 className="mb-2 text-3xl text-gray-900">{job.title}</h1>
                   <div className="flex items-center gap-2 text-gray-700">
-                    <Building2 className="h-5 w-5 shrink-0 text-blue-600" />
-                    <span className="text-lg font-medium">{organization}</span>
+                    <Building2 className="h-5 w-5 shrink-0 text-amber-700" />
+                    <span className="rounded-md bg-amber-100 px-2.5 py-0.5 text-lg font-semibold text-amber-900">{organization}</span>
                   </div>
 
                   {job.sourceRecruitmentId && (
@@ -212,15 +213,15 @@ function GovernmentJobDetail({
                 <PrivateStyleDetail
                   icon={GraduationCap}
                   label="Qualification"
-                  value={job.qualification || 'See notification'}
+                  value={cardFieldText(job.qualification, 'See job description')}
                 />
                 <PrivateStyleDetail
                   icon={BriefcaseIcon}
                   label="Experience"
-                  value={job.experience || 'As per notification'}
+                  value={cardFieldText(job.experience, 'See job description')}
                 />
-                {job.salary && (
-                  <PrivateStyleDetail icon={IndianRupee} label="Salary" value={job.salary} />
+                {cardSalaryText(job.salary) && (
+                  <PrivateStyleDetail icon={IndianRupee} label="Salary" value={cardSalaryText(job.salary)} />
                 )}
                 {job.lastDate && (
                   <PrivateStyleDetail
@@ -235,7 +236,7 @@ function GovernmentJobDetail({
             <Card className="p-6 job-detail-description">
               <h2 className="mb-4 text-xl text-gray-900">Job Description</h2>
               <p className="whitespace-pre-wrap text-gray-700 leading-relaxed">
-                {job.description ||
+                {displayJobDescription(job) ||
                   'Refer to the official notification for complete eligibility, selection process and application instructions.'}
               </p>
             </Card>
@@ -301,25 +302,6 @@ function GovernmentJobDetail({
                     </div>
                   )}
 
-                  {notificationUrl && (
-                    <Button variant="outline" className="w-full" asChild>
-                      <a href={notificationUrl} target="_blank" rel="noopener noreferrer">
-                        <FileText className="mr-2 h-4 w-4" />
-                        View Notification
-                      </a>
-                    </Button>
-                  )}
-
-                  {officialWebsite && (
-                    <Button variant="outline" className="w-full" asChild>
-                      <a href={officialWebsite} target="_blank" rel="noopener noreferrer">
-                        <Building2 className="mr-2 h-4 w-4" />
-                        Official Website
-                        <ExternalLink className="ml-auto h-4 w-4" />
-                      </a>
-                    </Button>
-                  )}
-
                   <Button variant="outline" className="w-full text-blue-600" onClick={handleShare}>
                     <Share2 className="mr-2 h-4 w-4" />
                     Share Job
@@ -343,32 +325,6 @@ function GovernmentJobDetail({
                 )}
               </div>
             </Card>
-
-            {notificationUrl && (
-              <Card className="p-6">
-                <h3 className="mb-4 flex items-center gap-2 font-semibold text-gray-900">
-                  <FileText className="h-5 w-5" />
-                  Job Documents
-                </h3>
-                <a
-                  href={notificationUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between rounded-md border border-gray-200 p-3 transition hover:border-blue-300 hover:bg-blue-50"
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="rounded-md bg-blue-50 p-2 text-blue-600">
-                      <FileText className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900">Official Notification</p>
-                      <p className="text-xs text-gray-500">PDF Document</p>
-                    </div>
-                  </div>
-                  <ExternalLink className="h-4 w-4 shrink-0 text-gray-500" />
-                </a>
-              </Card>
-            )}
           </div>
         </div>
       </div>

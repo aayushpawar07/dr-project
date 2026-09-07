@@ -736,6 +736,7 @@ public class AdminJobController {
         m.put("jobDocumentUrl", j.getJobDocumentUrl());
         m.put("jobImageUrl", j.getJobImageUrl());
         m.put("applyLink", j.getApplyLink());
+        m.put("officialWebsite", j.getOfficialWebsite());
         m.put("requirements", j.getRequirements());
         m.put("benefits", j.getBenefits());
         m.put("contactEmail", j.getContactEmail());

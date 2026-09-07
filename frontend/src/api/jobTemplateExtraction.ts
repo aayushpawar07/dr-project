@@ -17,6 +17,7 @@ export interface JobTemplateRecruitmentExtraction {
   officialApplicationUrl?: string | null;
   officialWebsite?: string | null;
   importantInstructions?: string | null;
+  jobDescription?: string | null;
 }
 
 export interface JobTemplateVacancyExtraction {

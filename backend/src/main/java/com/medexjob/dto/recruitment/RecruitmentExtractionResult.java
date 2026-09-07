@@ -32,6 +32,7 @@ public class RecruitmentExtractionResult {
         private String officialApplicationUrl;
         private String officialWebsite;
         private String importantInstructions;
+        private String jobDescription;
 
         public String getOrganisationName() { return organisationName; }
         public void setOrganisationName(String organisationName) { this.organisationName = organisationName; }
@@ -63,6 +64,8 @@ public class RecruitmentExtractionResult {
         public void setOfficialWebsite(String officialWebsite) { this.officialWebsite = officialWebsite; }
         public String getImportantInstructions() { return importantInstructions; }
         public void setImportantInstructions(String importantInstructions) { this.importantInstructions = importantInstructions; }
+        public String getJobDescription() { return jobDescription; }
+        public void setJobDescription(String jobDescription) { this.jobDescription = jobDescription; }
     }
 
     public static class VacancyData {

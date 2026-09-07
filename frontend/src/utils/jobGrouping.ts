@@ -1,3 +1,5 @@
+import { isGenericNotice, isRegulatoryDump } from './extractedFieldDisplay';
+
 const SEARCH_STOPWORDS = new Set([
   'a', 'an', 'and', 'at', 'for', 'in', 'of', 'on', 'the', 'to', 'with',
   'job', 'jobs', 'vacancy', 'vacancies', 'post', 'posts', 'recruitment',
@@ -77,7 +79,7 @@ export function groupRecruitmentJobs(jobs: any[], query?: string) {
     }
 
     const postName = basePostName(job) || clean(job?.title) || 'Vacancy';
-    const key = `${job.sourceRecruitmentId}::${postName.toLowerCase()}`;
+    const key = String(job.sourceRecruitmentId);
     const bucket = groups.get(key) || [];
     bucket.push({ ...job, _basePostName: postName });
     groups.set(key, bucket);
@@ -85,18 +87,21 @@ export function groupRecruitmentJobs(jobs: any[], query?: string) {
 
   const grouped = [...groups.values()].map((items) => {
     const first = items[0];
-    const displayTitle = first._basePostName || basePostName(first);
+    const postNames = unique(items.map((item) => item._basePostName || basePostName(item)));
+    const displayTitle = postNames.length <= 3
+      ? postNames.join(', ')
+      : `${postNames.slice(0, 2).join(', ')} + ${postNames.length - 2} more posts`;
     const departments = unique(items.map((item) => item.department || item.speciality));
     const specialities = unique(items.map((item) => item.speciality));
     const locations = unique(items.map((item) => item.location));
     const states = unique(items.map((item) => item.state));
-    const qualifications = unique(items.map((item) => item.qualification));
-    const salaries = unique(items.map((item) => item.salary || item.salaryRange));
-    const experiences = unique(items.map((item) => item.experience));
+    const qualifications = unique(items.map((item) => item.qualification)).filter((value) => !isRegulatoryDump(value) && !isGenericNotice(value));
+    const salaries = unique(items.map((item) => item.salary || item.salaryRange)).filter((value) => !isRegulatoryDump(value));
+    const experiences = unique(items.map((item) => item.experience)).filter((value) => !isRegulatoryDump(value) && !isGenericNotice(value));
     const totalPosts = items.reduce((sum, item) => sum + Math.max(0, Number(item.numberOfPosts || 0)), 0);
     const org = organisation(first);
     const searchText = unique([
-      displayTitle, org, ...departments, ...specialities, ...locations, ...states,
+      displayTitle, org, ...postNames, ...departments, ...specialities, ...locations, ...states,
       ...qualifications, ...salaries, ...experiences, ...items.map((item) => item.description),
     ]).join(' ');
 
@@ -107,6 +112,7 @@ export function groupRecruitmentJobs(jobs: any[], query?: string) {
       organization: org || first.organization,
       recruitmentGrouped: true,
       groupedVacancyRows: items.length,
+      postNames,
       departments,
       specialities,
       departmentCount: departments.length,
@@ -114,9 +120,10 @@ export function groupRecruitmentJobs(jobs: any[], query?: string) {
       numberOfPosts: totalPosts || first.numberOfPosts,
       location: locations.length > 1 ? 'Multiple Locations' : (locations[0] || first.location),
       state: states.length === 1 ? states[0] : first.state,
-      qualification: qualifications.length > 1 ? 'Varies by department' : (qualifications[0] || first.qualification),
-      salary: salaries.length > 1 ? 'Varies by department' : (salaries[0] || first.salary),
-      experience: experiences.length > 1 ? 'Varies by department' : (experiences[0] || first.experience),
+      qualification: qualifications.length > 1 ? 'Varies by post' : (qualifications[0] || first.qualification),
+      salary: salaries.length > 1 ? 'Varies by post' : (salaries[0] || first.salary),
+      experience: experiences.length > 1 ? 'Varies by post' : (experiences[0] || first.experience),
+      category: unique(items.map((item) => item.category)).length === 1 ? first.category : 'Multiple Roles',
       _groupSearchText: searchText,
     };
   });

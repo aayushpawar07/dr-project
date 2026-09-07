@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Activity,
@@ -9,6 +9,7 @@ import {
   BriefcaseBusiness,
   Building2,
   CalendarDays,
+  ChevronLeft,
   ChevronRight,
   Cross,
   Ear,
@@ -34,6 +35,14 @@ import {
   Recruitment,
   VacancyRecord,
 } from '../api/recruitments';
+import {
+  buildStructuredJobDescription,
+  cardFieldText,
+  cardSalaryText,
+  cleanExtractedName,
+  departmentSubtitle,
+  leftoverEligibilityNotes,
+} from '../utils/extractedFieldDisplay';
 
 const PAGE_STYLES = `
   .recruit-page {
@@ -191,9 +200,17 @@ const PAGE_STYLES = `
     display: flex;
     align-items: center;
     gap: 7px;
-    color: #1463ff;
+    color: #b45309;
     font-size: 16px;
     font-weight: 650;
+  }
+  .org-highlight {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 8px;
+    background: #fef3c7;
+    color: #92400e;
+    font-weight: 800;
   }
 
   .private .recruit-org { color: #059669; }
@@ -360,18 +377,68 @@ const PAGE_STYLES = `
   .post-label { display: grid; place-items: center; font-weight: 700; }
   .department-search:focus, .post-select:focus { border-color: #8ab4ff; box-shadow: 0 0 0 2px rgba(20,99,255,.09); }
 
-  .department-list {
+  .department-scroll-wrap {
+    position: relative;
     margin-top: 10px;
-    display: grid;
-    gap: 7px;
-    max-height: 474px;
-    overflow: auto;
-    padding-right: 3px;
     min-width: 0;
+  }
+  .department-scroll-hint {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+    color: #1463ff;
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .department-scroll-hint span { white-space: nowrap; }
+  .department-scroll-buttons { display: flex; gap: 6px; }
+  .department-scroll-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid #9dc0ff;
+    border-radius: 999px;
+    background: #1463ff;
+    color: #ffffff;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+  }
+  .department-scroll-btn:disabled {
+    background: #dbe7ff;
+    color: #8aa4d6;
+    cursor: default;
+  }
+  .department-list {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 2px 2px 12px;
+    min-width: 0;
+    scroll-snap-type: x proximity;
+    scrollbar-width: auto;
+    scrollbar-color: #1463ff #dbe7ff;
+  }
+  .department-list::-webkit-scrollbar { height: 10px; }
+  .department-list::-webkit-scrollbar-track { background: #dbe7ff; border-radius: 999px; }
+  .department-list::-webkit-scrollbar-thumb { background: #1463ff; border-radius: 999px; }
+  .department-fade-right {
+    pointer-events: none;
+    position: absolute;
+    top: 36px;
+    right: 0;
+    width: 42px;
+    height: calc(100% - 48px);
+    background: linear-gradient(90deg, rgba(255,255,255,0), #ffffff 88%);
   }
 
   .department-row {
-    width: 100%;
+    width: auto;
+    min-width: 240px;
+    flex: 0 0 auto;
+    scroll-snap-align: start;
     min-height: 58px;
     padding: 8px 9px;
     border: 1px solid #e2e8f0;
@@ -553,13 +620,12 @@ const PAGE_STYLES = `
     .explorer-shell { grid-template-columns: minmax(0, 1fr); }
     .department-pane { border-right: 0; border-bottom: 1px solid #e2e8f0; }
     .department-list {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      display: flex;
       max-height: none;
-      overflow: visible;
+      overflow-x: auto;
       padding-right: 0;
     }
-    .department-row { min-width: 0; }
+    .department-row { min-width: min(240px, 78vw); flex: 0 0 auto; }
     .department-name, .department-sub {
       white-space: normal;
       overflow: visible;
@@ -805,10 +871,11 @@ export function RecruitmentPage() {
               )}
             </div>
 
-            <div className="department-list">
+            <DepartmentScroller>
               {visibleVacancies.map((vacancy, index) => {
                 const selected = vacancy.id === selectedVacancy?.id;
-                const name = vacancy.department || vacancy.speciality || vacancy.postName;
+                const name = cleanExtractedName(vacancy.department || vacancy.speciality || vacancy.postName);
+                const subtitle = departmentSubtitle(vacancy);
                 const DepartmentIcon = getDepartmentIcon(name);
                 const tone = getDepartmentTone(index);
                 return (
@@ -816,14 +883,14 @@ export function RecruitmentPage() {
                     <span className={`department-icon ${tone}`}><DepartmentIcon size={20} strokeWidth={2} /></span>
                     <span className="department-text">
                       <span className="department-name">{name}</span>
-                      <span className="department-sub">{vacancy.qualification || vacancy.speciality || vacancy.postName}</span>
+                      {subtitle ? <span className="department-sub">{subtitle}</span> : null}
                     </span>
                     <span className="department-count">{vacancy.numberOfVacancies}</span>
                     <ChevronRight size={16} color={selected ? '#1463ff' : '#98a2b3'} />
                   </button>
                 );
               })}
-            </div>
+            </DepartmentScroller>
           </aside>
 
           <main className="vacancy-pane">
@@ -834,6 +901,15 @@ export function RecruitmentPage() {
             )}
           </main>
         </section>
+
+        <section className="recruit-card" style={{ padding: '18px 18px 16px', marginTop: 12 }}>
+          <h2 className="section-eyebrow">Job Description</h2>
+          <p style={{ whiteSpace: 'pre-wrap', color: '#334155', lineHeight: 1.7, margin: '8px 0 0', fontSize: 14 }}>
+            {buildRecruitmentDescription(recruitment, selectedVacancy)}
+          </p>
+        </section>
+
+        <OfficialSourcesFooter recruitment={recruitment} />
       </div>
 
     </div>
@@ -858,7 +934,7 @@ function RecruitmentHero({ recruitment, isGovernment }: { recruitment: Recruitme
         <OrganisationSeal name={recruitment.organisationName} isGovernment={isGovernment} />
         <div>
           <h1 className="recruit-title">{recruitment.title}</h1>
-          <div className="recruit-org"><Building2 size={19} />{recruitment.organisationName}</div>
+          <div className="recruit-org"><Building2 size={19} /><span className="org-highlight">{recruitment.organisationName}</span></div>
           {recruitment.location && <div className="recruit-location"><MapPin size={16} />{recruitment.location}</div>}
           <div className="recruit-meta-row">
             {recruitment.advertisementNumber && (
@@ -889,8 +965,6 @@ function ApplicationPanel({ recruitment, isGovernment, daysLeft, onShare }: { re
             <ExternalLink size={15} />{isGovernment ? 'Official Apply Link' : 'Apply Now'}
           </button>
         )}
-        {recruitment.officialNotificationUrl && <button className="action-btn" onClick={() => openExternal(recruitment.officialNotificationUrl)}><FileText size={15} />View Notification</button>}
-        {recruitment.officialWebsite && <button className="action-btn" onClick={() => openExternal(recruitment.officialWebsite)}><Building2 size={15} />Official Website</button>}
         <button className="action-btn share" onClick={onShare}><Share2 size={15} />Share Recruitment</button>
       </div>
     </aside>
@@ -898,14 +972,14 @@ function ApplicationPanel({ recruitment, isGovernment, daysLeft, onShare }: { re
 }
 
 function VacancyPanel({ vacancy, recruitment, isGovernment, onViewJob }: { vacancy: VacancyRecord; recruitment: Recruitment; isGovernment: boolean; onViewJob: () => void }) {
-  const department = vacancy.department || vacancy.speciality || vacancy.postName;
+  const department = cleanExtractedName(vacancy.department || vacancy.speciality || vacancy.postName);
   const DepartmentIcon = getDepartmentIcon(department);
   const details: Array<{ icon: LucideIcon; label: string; value: string; tone: string }> = [
-    { icon: GraduationCap, label: 'Qualification', value: vacancy.qualification || 'See notification', tone: 'icon-blue' },
-    { icon: Stethoscope, label: 'Experience', value: vacancy.experience || 'As per notification', tone: 'icon-indigo' },
-    { icon: IndianRupee, label: 'Salary / Pay', value: vacancy.salary || vacancy.payScale || vacancy.payLevel || 'See notification', tone: 'icon-teal' },
-    { icon: Users, label: 'Age Limit', value: vacancy.ageLimit || 'As per notification', tone: 'icon-purple' },
-    { icon: ShieldCheck, label: 'Other Eligibility', value: vacancy.otherEligibilityRequirements || 'See official notification', tone: 'icon-orange' },
+    { icon: GraduationCap, label: 'Qualification', value: cardFieldText(vacancy.qualification, 'See job description'), tone: 'icon-blue' },
+    { icon: Stethoscope, label: 'Experience', value: cardFieldText(vacancy.experience, 'See job description'), tone: 'icon-indigo' },
+    { icon: IndianRupee, label: 'Salary / Pay', value: cardSalaryText(vacancy.salary || vacancy.payScale || vacancy.payLevel) || 'See job description', tone: 'icon-teal' },
+    { icon: Users, label: 'Age Limit', value: cardFieldText(vacancy.ageLimit, 'As per notification'), tone: 'icon-purple' },
+    { icon: ShieldCheck, label: 'Other Eligibility', value: cardFieldText(vacancy.otherEligibilityRequirements, 'See job description'), tone: 'icon-orange' },
     { icon: BriefcaseBusiness, label: 'Selection Process', value: recruitment.selectionProcess || 'As per notification', tone: 'icon-indigo' },
   ];
 
@@ -916,7 +990,7 @@ function VacancyPanel({ vacancy, recruitment, isGovernment, onViewJob }: { vacan
           <div className="vacancy-head-icon"><DepartmentIcon size={31} strokeWidth={2} /></div>
           <div style={{ minWidth: 0 }}>
             <h2 className="vacancy-title">{department}</h2>
-            <div className="vacancy-subtitle">{vacancy.qualification || vacancy.speciality || vacancy.postName}</div>
+            {departmentSubtitle(vacancy) ? <div className="vacancy-subtitle">{departmentSubtitle(vacancy)}</div> : null}
             <div className="vacancy-meta">
               {vacancy.location && <span><MapPin size={13} />{vacancy.location}</span>}
               {vacancy.jobType && <span><BriefcaseBusiness size={13} />{vacancy.jobType}</span>}
@@ -1041,4 +1115,103 @@ function parseRecruitmentDate(value: string) {
 
 function openExternal(url?: string) {
   if (url) window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+function DepartmentScroller({ children }: { children: ReactNode }) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const [canLeft, setCanLeft] = useState(false);
+  const [canRight, setCanRight] = useState(false);
+
+  const refresh = () => {
+    const node = listRef.current;
+    if (!node) return;
+    setCanLeft(node.scrollLeft > 8);
+    setCanRight(node.scrollLeft + node.clientWidth < node.scrollWidth - 8);
+  };
+
+  useEffect(() => {
+    refresh();
+    const node = listRef.current;
+    if (!node) return;
+    node.addEventListener('scroll', refresh, { passive: true });
+    window.addEventListener('resize', refresh);
+    return () => {
+      node.removeEventListener('scroll', refresh);
+      window.removeEventListener('resize', refresh);
+    };
+  }, [children]);
+
+  const scrollByCards = (direction: number) => {
+    listRef.current?.scrollBy({ left: direction * 260, behavior: 'smooth' });
+  };
+
+  return (
+    <div className="department-scroll-wrap">
+      <div className="department-scroll-hint">
+        <span>{canRight || canLeft ? 'More vacancies → scroll right' : 'All vacancies visible'}</span>
+        <div className="department-scroll-buttons">
+          <button type="button" className="department-scroll-btn" disabled={!canLeft} onClick={() => scrollByCards(-1)} aria-label="Previous vacancies">
+            <ChevronLeft size={16} />
+          </button>
+          <button type="button" className="department-scroll-btn" disabled={!canRight} onClick={() => scrollByCards(1)} aria-label="More vacancies">
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      </div>
+      <div className="department-list" ref={listRef}>
+        {children}
+      </div>
+      {canRight ? <div className="department-fade-right" /> : null}
+    </div>
+  );
+}
+
+function OfficialSourcesFooter({ recruitment }: { recruitment: Recruitment }) {
+  if (!recruitment.officialWebsite && !recruitment.officialNotificationUrl) return null;
+  return (
+    <section className="recruit-card" style={{ padding: '18px', marginTop: 12 }}>
+      <h2 className="section-eyebrow">Official Sources</h2>
+      <p style={{ color: '#667085', fontSize: 13, margin: '6px 0 14px' }}>
+        Read the job description above first. Download or leave only after you have reviewed the vacancy details.
+      </p>
+      <div className="action-stack">
+        {recruitment.officialWebsite && (
+          <button className="action-btn" onClick={() => openExternal(recruitment.officialWebsite)}>
+            <Building2 size={15} />Official Website
+          </button>
+        )}
+        {recruitment.officialNotificationUrl && (
+          <button className="action-btn" onClick={() => openExternal(recruitment.officialNotificationUrl)}>
+            <FileText size={15} />Notification PDF
+          </button>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function buildRecruitmentDescription(recruitment: Recruitment, vacancy: VacancyRecord | null) {
+  if (recruitment.jobDescription && /JOB DETAILS/i.test(recruitment.jobDescription)) {
+    return recruitment.jobDescription;
+  }
+  return buildStructuredJobDescription({
+    postName: vacancy?.postName || recruitment.title,
+    organisationName: recruitment.organisationName,
+    department: cleanExtractedName(vacancy?.department),
+    speciality: cleanExtractedName(vacancy?.speciality),
+    location: vacancy?.location || recruitment.location,
+    numberOfPosts: vacancy?.numberOfVacancies || recruitment.totalVacancies,
+    jobType: vacancy?.jobType,
+    qualification: vacancy?.qualification,
+    experience: vacancy?.experience,
+    ageLimit: vacancy?.ageLimit,
+    otherEligibility: vacancy?.otherEligibilityRequirements,
+    salary: vacancy?.salary || vacancy?.payScale || vacancy?.payLevel,
+    applicationStartDate: recruitment.applicationStartDate,
+    applicationLastDate: recruitment.applicationLastDate,
+    applicationFee: recruitment.applicationFee,
+    selectionProcess: recruitment.selectionProcess,
+    importantInstructions: recruitment.importantInstructions,
+    extraNotes: leftoverEligibilityNotes(vacancy?.qualification, vacancy?.experience, vacancy?.otherEligibilityRequirements),
+  });
 }

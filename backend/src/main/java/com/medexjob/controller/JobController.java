@@ -1107,6 +1107,7 @@ public class JobController {
         m.put("jobDocumentUrl", j.getJobDocumentUrl());
         m.put("jobImageUrl", j.getJobImageUrl());
         m.put("applyLink", j.getApplyLink());
+        m.put("officialWebsite", j.getOfficialWebsite());
         m.put("status", j.getStatus().name().toLowerCase());
         m.put("featured", Boolean.TRUE.equals(j.getIsFeatured()));
         m.put("views", j.getViews());

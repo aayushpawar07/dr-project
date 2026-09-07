@@ -140,6 +140,10 @@ public class Job {
   @Column(name = "apply_link")
   private String applyLink;
 
+  @Size(max = 500)
+  @Column(name = "official_website")
+  private String officialWebsite;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false)
   private JobStatus status = JobStatus.PENDING;
@@ -277,6 +281,8 @@ public class Job {
   public void setJobImageUrl(String jobImageUrl) { this.jobImageUrl = jobImageUrl; }
   public String getApplyLink() { return applyLink; }
   public void setApplyLink(String applyLink) { this.applyLink = applyLink; }
+  public String getOfficialWebsite() { return officialWebsite; }
+  public void setOfficialWebsite(String officialWebsite) { this.officialWebsite = officialWebsite; }
   public JobStatus getStatus() { return status; }
   public void setStatus(JobStatus status) { this.status = status; }
   public Boolean getIsFeatured() { return isFeatured; }

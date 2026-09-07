@@ -45,6 +45,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { saveJob, unsaveJob, checkIfJobIsSaved } from "../api/savedJobs";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 import { ResumeUploadSection } from "./ResumeUploadSection";
+import { cardFieldText, cardSalaryText, displayJobDescription } from "../utils/extractedFieldDisplay";
 
 interface JobDetailPageProps {
   onNavigate: (page: string, entityId?: string) => void;
@@ -527,8 +528,8 @@ export function JobDetailPage({
                       '';
                     return orgName ? (
                       <div className="flex items-center gap-2 text-gray-700">
-                        <Building2 className="w-5 h-5 text-blue-600 shrink-0" />
-                        <span className="text-lg font-medium">{orgName}</span>
+                        <Building2 className="w-5 h-5 text-amber-700 shrink-0" />
+                        <span className="rounded-md bg-amber-100 px-2.5 py-0.5 text-lg font-semibold text-amber-900">{orgName}</span>
                       </div>
                     ) : null;
                   })()}
@@ -592,7 +593,7 @@ export function JobDetailPage({
                   <GraduationCap className="w-5 h-5 text-gray-400 mt-0.5" />
                   <div>
                     <p className="text-sm text-gray-500">Qualification</p>
-                    <p className="text-gray-900">{job.qualification}</p>
+                    <p className="text-gray-900">{cardFieldText(job.qualification, 'See job description')}</p>
                   </div>
                 </div>
 
@@ -600,16 +601,16 @@ export function JobDetailPage({
                   <Briefcase className="w-5 h-5 text-gray-400 mt-0.5" />
                   <div>
                     <p className="text-sm text-gray-500">Experience</p>
-                    <p className="text-gray-900">{job.experience}</p>
+                    <p className="text-gray-900">{cardFieldText(job.experience, 'See job description')}</p>
                   </div>
                 </div>
 
-                {job.salary && (
+                {cardSalaryText(job.salary) && (
                   <div className="flex items-start gap-3">
                     <DollarSign className="w-5 h-5 text-gray-400 mt-0.5" />
                     <div>
                       <p className="text-sm text-gray-500">Salary</p>
-                      <p className="text-gray-900">{job.salary}</p>
+                      <p className="text-gray-900">{cardSalaryText(job.salary)}</p>
                     </div>
                   </div>
                 )}
@@ -633,62 +634,39 @@ export function JobDetailPage({
             {/* Job Description */}
             <Card className="p-6 job-detail-description">
               <h2 className="text-xl text-gray-900 mb-4">Job Description</h2>
-              <p className="text-gray-700 leading-relaxed">{job.description}</p>
+              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{displayJobDescription(job)}</p>
             </Card>
 
-            {/* Government Job Additional Info */}
-            {isGovernment && job.pdfUrl && (
+            {(job.pdfUrl || job.officialWebsite || job.applyLink) && (
               <Card className="p-6 job-detail-docs">
                 <h2 className="text-xl text-gray-900 mb-4">
-                  Official Documents
+                  Official Sources
                 </h2>
+                <p className="mb-4 text-sm text-gray-500">
+                  Review the job description above before opening these links.
+                </p>
                 <div className="space-y-3">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    asChild
-                  >
-                    <a
-                      href={job.pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <FileText className="w-4 h-4 mr-2" />
-                      View Official Notification PDF
-                      <ExternalLink className="w-4 h-4 ml-auto" />
-                    </a>
-                  </Button>
-                  <div className="mt-4">
-                    <div className="text-sm text-gray-600 mb-2">
-                      Inline Preview
-                    </div>
-                    <div className="border rounded overflow-hidden">
-                      <object
-                        data={job.pdfUrl}
-                        type="application/pdf"
-                        width="100%"
-                        height="600px"
-                      >
-                        <iframe
-                          src={job.pdfUrl}
-                          title="PDF Preview"
-                          width="100%"
-                          height="600px"
-                        />
-                      </object>
-                    </div>
-                  </div>
+                  {job.officialWebsite && (
+                    <Button variant="outline" className="w-full justify-start" asChild>
+                      <a href={job.officialWebsite} target="_blank" rel="noopener noreferrer">
+                        <Building2 className="w-4 h-4 mr-2" />
+                        Official Website
+                        <ExternalLink className="w-4 h-4 ml-auto" />
+                      </a>
+                    </Button>
+                  )}
+                  {job.pdfUrl && (
+                    <Button variant="outline" className="w-full justify-start" asChild>
+                      <a href={job.pdfUrl} target="_blank" rel="noopener noreferrer">
+                        <FileText className="w-4 h-4 mr-2" />
+                        Notification PDF
+                        <ExternalLink className="w-4 h-4 ml-auto" />
+                      </a>
+                    </Button>
+                  )}
                   {job.applyLink && (
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start"
-                      asChild
-                    >
-                      <a
-                        href={job.applyLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
+                    <Button variant="outline" className="w-full justify-start" asChild>
+                      <a href={job.applyLink} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="w-4 h-4 mr-2" />
                         Official Apply Link
                         <ExternalLink className="w-4 h-4 ml-auto" />
@@ -1145,18 +1123,6 @@ export function JobDetailPage({
                           <ExternalLink className="w-4 h-4 mr-2" />
                           Official Apply Link
                           <ExternalLink className="w-4 h-4 ml-auto" />
-                        </a>
-                      </Button>
-                    )}
-                    {job.pdfUrl && (
-                      <Button variant="outline" className="w-full" asChild>
-                        <a
-                          href={job.pdfUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <FileText className="w-4 h-4 mr-2" />
-                          View Notification
                         </a>
                       </Button>
                     )}

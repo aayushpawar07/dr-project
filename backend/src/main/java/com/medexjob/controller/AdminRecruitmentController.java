@@ -256,6 +256,7 @@ public class AdminRecruitmentController {
         m.put("applicationFee", r.getApplicationFee()); m.put("selectionProcess", r.getSelectionProcess());
         m.put("officialNotificationUrl", r.getOfficialNotificationUrl()); m.put("officialApplicationUrl", r.getOfficialApplicationUrl());
         m.put("officialWebsite", r.getOfficialWebsite()); m.put("importantInstructions", r.getImportantInstructions());
+        m.put("jobDescription", r.getJobDescription());
         m.put("sourcePdfName", r.getSourcePdfName()); m.put("extractionMethod", r.getExtractionMethod()); m.put("status", r.getStatus().name());
         m.put("officialSourceVerified", r.getOfficialSourceVerified()); m.put("verificationDate", r.getVerificationDate()); m.put("verifiedBy", r.getVerifiedBy());
         m.put("duplicateOf", r.getDuplicateOf()); m.put("previousVersionId", r.getDuplicateOf()); m.put("revisionNumber", r.getRevisionNumber());

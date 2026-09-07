@@ -14,6 +14,7 @@ import { Progress } from './ui/progress';
 import { JobCategory, JobSector } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { extractJobTemplateFromPdf, JobTemplateExtractionResponse, JobTemplateVacancyExtraction } from '../api/jobTemplateExtraction';
+import { buildStructuredJobDescription, cardFieldText, cardSalaryText, leftoverEligibilityNotes } from '../utils/extractedFieldDisplay';
 
 interface JobPostingFormProps { onCancel: () => void; onSave: (jobData: JobFormData) => void; initialData?: Partial<JobFormData>; }
 interface JobFormData {
@@ -44,14 +45,30 @@ function inferState(location?: string | null) { const t=trim(location).toLowerCa
 function locationWithState(location:string,state:string){ const l=location.trim(),s=state.trim(); return !s||l.toLowerCase().includes(s.toLowerCase())?l:l?`${l}, ${s}`:s; }
 
 function formatExtractedDescription(extraction: JobTemplateExtractionResponse, vacancy?: JobTemplateVacancyExtraction) {
-  const r=extraction.recruitment||{}; const lines:string[]=[];
-  const add=(h:string,values:string[])=>{const p=values.filter(Boolean);if(!p.length)return;if(lines.length)lines.push('');lines.push(h,'',...p);};
-  add('JOB DETAILS',[trim(vacancy?.postName||r.title)&&`Post: ${trim(vacancy?.postName||r.title)}`,trim(r.organisationName)&&`Organisation: ${trim(r.organisationName)}`,trim(vacancy?.department)&&`Department: ${trim(vacancy?.department)}`,trim(vacancy?.speciality)&&`Speciality: ${trim(vacancy?.speciality)}`,trim(vacancy?.location||r.location)&&`Location: ${trim(vacancy?.location||r.location)}`,vacancy?.numberOfVacancies?`Number of Posts: ${vacancy.numberOfVacancies}`:'',trim(vacancy?.jobType)&&`Job Type: ${trim(vacancy?.jobType)}`]);
-  add('ELIGIBILITY',[trim(vacancy?.qualification)&&`Qualification: ${trim(vacancy?.qualification)}`,trim(vacancy?.experience)&&`Experience: ${trim(vacancy?.experience)}`,trim(vacancy?.ageLimit)&&`Age Limit: ${trim(vacancy?.ageLimit)}`,trim(vacancy?.otherEligibilityRequirements)]);
-  add('PAY / SALARY',[trim(vacancy?.salary||vacancy?.payScale||vacancy?.payLevel)]);
-  add('APPLICATION DETAILS',[trim(r.applicationStartDate)&&`Application Start Date: ${trim(r.applicationStartDate)}`,trim(r.applicationLastDate)&&`Last Date to Apply: ${trim(r.applicationLastDate)}`,trim(r.applicationFee)&&`Application Fee: ${trim(r.applicationFee)}`,trim(r.selectionProcess)&&`Selection Process: ${trim(r.selectionProcess)}`]);
-  add('OFFICIAL LINKS',[trim(r.officialWebsite)&&`Official Website: ${trim(r.officialWebsite)}`,trim(r.officialNotificationUrl)&&`Notification PDF / Notice: ${trim(r.officialNotificationUrl)}`,trim(r.officialApplicationUrl)&&`Apply Link (if online): ${trim(r.officialApplicationUrl)}`,extraction.sourcePdfName?`Attached Notification: ${extraction.sourcePdfName}`:'']);
-  add('IMPORTANT INSTRUCTIONS',[trim(r.importantInstructions)]); return lines.join('\n').trim();
+  const r = extraction.recruitment || {};
+  if (trim(r.jobDescription) && /JOB DETAILS/i.test(String(r.jobDescription))) {
+    return String(r.jobDescription).trim();
+  }
+  return buildStructuredJobDescription({
+    postName: trim(vacancy?.postName || r.title),
+    organisationName: trim(r.organisationName),
+    department: trim(vacancy?.department),
+    speciality: trim(vacancy?.speciality),
+    location: trim(vacancy?.location || r.location),
+    numberOfPosts: vacancy?.numberOfVacancies,
+    jobType: trim(vacancy?.jobType),
+    qualification: trim(vacancy?.qualification),
+    experience: trim(vacancy?.experience),
+    ageLimit: trim(vacancy?.ageLimit),
+    otherEligibility: trim(vacancy?.otherEligibilityRequirements),
+    salary: trim(vacancy?.salary || vacancy?.payScale || vacancy?.payLevel),
+    applicationStartDate: trim(r.applicationStartDate),
+    applicationLastDate: trim(r.applicationLastDate),
+    applicationFee: trim(r.applicationFee),
+    selectionProcess: trim(r.selectionProcess),
+    importantInstructions: trim(r.importantInstructions),
+    extraNotes: leftoverEligibilityNotes(vacancy?.qualification, vacancy?.experience, vacancy?.otherEligibilityRequirements),
+  });
 }
 
 const defaultData:JobFormData={title:'',organization:'',sector:'private',category:'Medical Officer',location:'',state:'',qualification:'',experience:'',experienceLevel:'entry',speciality:'',dutyType:'full_time',numberOfPosts:undefined,salary:'',description:'',lastDate:'',requirements:'',benefits:'',contactEmail:'',contactPhone:'',applyLink:''};
@@ -65,7 +82,7 @@ export function JobPostingForm({onCancel,onSave,initialData}:JobPostingFormProps
   const setField=<K extends keyof JobFormData>(field:K,value:JobFormData[K])=>setFormData((p)=>({...p,[field]:value}));
   const progress=(step/4)*100; const stepValid=step===1?Boolean(formData.title.trim()&&formData.organization.trim()&&formData.location.trim()&&formData.state.trim()):step===3?Boolean(formData.description.trim()&&formData.lastDate):true;
 
-  const applyExtractedVacancy=(extraction:JobTemplateExtractionResponse,index:number)=>{const vacancies=extraction.vacancies||[];const v=vacancies[index];const r=extraction.recruitment||{};const location=trim(v?.location)||trim(r.location);const title=trim(v?.postName)||trim(r.title);const posts=v?.numberOfVacancies&&v.numberOfVacancies>0?v.numberOfVacancies:vacancies.length<=1&&r.totalVacancies&&r.totalVacancies>0?r.totalVacancies:undefined;setSelectedVacancyIndex(index);setFormData((p)=>({...p,title:title||p.title,organization:trim(r.organisationName)||p.organization,sector:isEmployer?'private':(r.sector==='government'||r.sector==='private'?r.sector:p.sector),category:inferCategory(title||v?.department||p.title),location,state:inferState(location)||p.state,qualification:trim(v?.qualification),experience:trim(v?.experience),speciality:trim(v?.speciality||v?.department),dutyType:inferDutyType(v?.jobType),numberOfPosts:posts,salary:trim(v?.salary||v?.payScale||v?.payLevel),lastDate:trim(r.applicationLastDate),requirements:trim(v?.otherEligibilityRequirements),applyLink:trim(r.officialApplicationUrl)||p.applyLink,description:formatExtractedDescription(extraction,v)||p.description}));};
+  const applyExtractedVacancy=(extraction:JobTemplateExtractionResponse,index:number)=>{const vacancies=extraction.vacancies||[];const v=vacancies[index];const r=extraction.recruitment||{};const location=trim(v?.location)||trim(r.location);const title=trim(v?.postName)||trim(r.title);const posts=v?.numberOfVacancies&&v.numberOfVacancies>0?v.numberOfVacancies:vacancies.length<=1&&r.totalVacancies&&r.totalVacancies>0?r.totalVacancies:undefined;setSelectedVacancyIndex(index);setFormData((p)=>({...p,title:title||p.title,organization:trim(r.organisationName)||p.organization,sector:isEmployer?'private':(r.sector==='government'||r.sector==='private'?r.sector:p.sector),category:inferCategory(title||v?.department||p.title),location,state:inferState(location)||p.state,qualification:cardFieldText(v?.qualification),experience:cardFieldText(v?.experience),speciality:trim(v?.speciality||v?.department),dutyType:inferDutyType(v?.jobType),numberOfPosts:posts,salary:cardSalaryText(v?.salary||v?.payScale||v?.payLevel),lastDate:trim(r.applicationLastDate),requirements:trim(v?.otherEligibilityRequirements),applyLink:trim(r.officialApplicationUrl)||p.applyLink,description:formatExtractedDescription(extraction,v)||p.description}));};
   const handlePdf=async(file?:File)=>{setField('pdfFile',file);setPdfError('');setPdfMessage('');setPdfExtraction(null);setSelectedVacancyIndex(0);if(!file)return;if(file.type!=='application/pdf'&&!file.name.toLowerCase().endsWith('.pdf')){setPdfError('Please select a PDF file.');return;}setExtractingPdf(true);try{const extraction=await extractJobTemplateFromPdf(file);setPdfExtraction(extraction);applyExtractedVacancy(extraction,0);const count=extraction.vacancies?.length||0;setPdfMessage(count>1?`${count} vacancy rows extracted with Gemini. Select the vacancy you want to post.`:'Gemini extraction completed. Review the highlighted fields before saving.');}catch(error:any){setPdfError(error?.response?.data?.error||error?.response?.data?.message||'Unable to extract this PDF. You can still complete the form manually.');}finally{setExtractingPdf(false);}};
   const save=(status?:string)=>onSave({...formData,sector:isEmployer?'private':formData.sector,location:locationWithState(formData.location,formData.state),status});
 

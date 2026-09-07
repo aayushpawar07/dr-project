@@ -43,6 +43,7 @@ export interface Recruitment {
   officialApplicationUrl?: string;
   officialWebsite?: string;
   importantInstructions?: string;
+  jobDescription?: string;
   sourcePdfName?: string;
   extractionMethod?: string;
   status: 'REVIEW' | 'VERIFIED' | 'PUBLISHED' | 'REJECTED';

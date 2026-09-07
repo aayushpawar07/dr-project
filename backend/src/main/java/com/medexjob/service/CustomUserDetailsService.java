@@ -22,11 +22,13 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         // Note: The 'username' parameter here is the email extracted from the JWT 'sub' claim.
-        User user = userRepository.findByEmailAndIsActiveTrue(username)
-            .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + username));
+        String trimmed = username != null ? username.trim() : "";
+        User user = userRepository.findByEmailIgnoreCaseAndIsActiveTrue(trimmed)
+            .orElseGet(() -> userRepository.findByEmailAndIsActiveTrue(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + username)));
 
-        // Add a check to ensure the user is verified.
-        if (!user.getIsVerified()) {
+        // Admins are exempt from email verification; other users must have isVerified == true
+        if (user.getRole() != User.UserRole.ADMIN && !Boolean.TRUE.equals(user.getIsVerified())) {
             throw new UsernameNotFoundException("User email not verified: " + username);
         }
 

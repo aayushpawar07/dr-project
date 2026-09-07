@@ -28,23 +28,38 @@ export function Header({ currentPage, onNavigate, isAuthenticated }: HeaderProps
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
+    let isCancelled = false;
+    let intervalId: any = null;
+
     const fetchUnreadCount = async () => {
       if (isAuthenticated && user && token) {
         try {
           const count = await getUnreadCount(token);
-          setUnreadCount(count);
-        } catch (error) {
-          console.error('Error fetching unread count:', error);
-          setUnreadCount(0);
+          if (!isCancelled) {
+            setUnreadCount(count);
+          }
+        } catch (error: any) {
+          if (!isCancelled) {
+            setUnreadCount(0);
+          }
+          // Stop hammering the server if unauthorized or token expired
+          if (intervalId && error?.message?.includes('401')) {
+            clearInterval(intervalId);
+          }
         }
       } else {
-        setUnreadCount(0);
+        if (!isCancelled) {
+          setUnreadCount(0);
+        }
       }
     };
 
     fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(interval);
+    intervalId = setInterval(fetchUnreadCount, 30000);
+    return () => {
+      isCancelled = true;
+      if (intervalId) clearInterval(intervalId);
+    };
   }, [isAuthenticated, user, token]);
 
   useEffect(() => { setMobileMenuOpen(false); }, [currentPage]);

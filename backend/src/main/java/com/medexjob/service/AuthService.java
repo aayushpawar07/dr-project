@@ -85,10 +85,12 @@ public class AuthService {
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            User user = userRepository.findByEmailAndIsActiveTrue(loginRequest.getEmail())
-                    .orElseThrow(() -> new AuthException("User not found or inactive"));
+            String email = loginRequest.getEmail() != null ? loginRequest.getEmail().trim() : "";
+            User user = userRepository.findByEmailIgnoreCaseAndIsActiveTrue(email)
+                    .orElseGet(() -> userRepository.findByEmailAndIsActiveTrue(loginRequest.getEmail())
+                            .orElseThrow(() -> new AuthException("User not found or inactive")));
 
-            if (!user.getIsVerified()) {
+            if (user.getRole() != User.UserRole.ADMIN && !Boolean.TRUE.equals(user.getIsVerified())) {
                 throw new AuthException("Please verify your email before logging in.");
             }
 

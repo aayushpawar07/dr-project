@@ -914,9 +914,9 @@ public class JobController {
 
     private Optional<Job> resolvePublicJob(String idOrSlug) {
         try {
-            return jobRepository.findById(UUID.fromString(idOrSlug));
+            return jobRepository.findByIdWithEmployer(UUID.fromString(idOrSlug));
         } catch (IllegalArgumentException ignored) {
-            return jobRepository.findBySlug(idOrSlug);
+            return jobRepository.findBySlugWithEmployer(idOrSlug);
         }
     }
 

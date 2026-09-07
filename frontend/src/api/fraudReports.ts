@@ -1,4 +1,6 @@
 // AI assisted development
+import { authFetch } from './authFetch';
+
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || '/api';
 
 export interface FraudReportResponse {
@@ -63,7 +65,7 @@ export async function fetchFraudReports(params: FraudReportQuery = {}, token: st
   if (params.priority) qs.set('priority', params.priority);
   if (params.type) qs.set('type', params.type);
 
-  const res = await fetch(`${API_BASE}/fraud-reports?${qs.toString()}`, {
+  const res = await authFetch(`${API_BASE}/fraud-reports?${qs.toString()}`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
@@ -78,7 +80,7 @@ export async function fetchFraudReports(params: FraudReportQuery = {}, token: st
 }
 
 export async function getFraudReport(id: string, token: string): Promise<FraudReportResponse> {
-  const res = await fetch(`${API_BASE}/fraud-reports/${id}`, {
+  const res = await authFetch(`${API_BASE}/fraud-reports/${id}`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
@@ -93,7 +95,7 @@ export async function getFraudReport(id: string, token: string): Promise<FraudRe
 }
 
 export async function createFraudReport(payload: FraudReportPayload, token: string): Promise<FraudReportResponse> {
-  const res = await fetch(`${API_BASE}/fraud-reports`, {
+  const res = await authFetch(`${API_BASE}/fraud-reports`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -118,7 +120,7 @@ export async function updateReportStatus(
   const payload: any = { status };
   if (adminNotes) payload.adminNotes = adminNotes;
 
-  const res = await fetch(`${API_BASE}/fraud-reports/${id}/status`, {
+  const res = await authFetch(`${API_BASE}/fraud-reports/${id}/status`, {
     method: 'PUT',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -139,7 +141,7 @@ export async function updateReportPriority(
   priority: string,
   token: string
 ): Promise<FraudReportResponse> {
-  const res = await fetch(`${API_BASE}/fraud-reports/${id}/priority`, {
+  const res = await authFetch(`${API_BASE}/fraud-reports/${id}/priority`, {
     method: 'PUT',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -156,7 +158,7 @@ export async function updateReportPriority(
 }
 
 export async function deleteFraudReport(id: string, token: string): Promise<void> {
-  const res = await fetch(`${API_BASE}/fraud-reports/${id}`, {
+  const res = await authFetch(`${API_BASE}/fraud-reports/${id}`, {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -170,7 +172,7 @@ export async function deleteFraudReport(id: string, token: string): Promise<void
 }
 
 export async function getFraudReportStats(token: string): Promise<FraudReportStats> {
-  const res = await fetch(`${API_BASE}/fraud-reports/stats`, {
+  const res = await authFetch(`${API_BASE}/fraud-reports/stats`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',

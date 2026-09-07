@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import jakarta.annotation.PostConstruct;
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,11 +84,16 @@ public class NewsController {
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<Map<String, Object>>> getAllNews() {
-        List<NewsUpdate> updates = newsUpdateRepository.findAll(Sort.by(Sort.Direction.DESC, "date", "createdAt"));
-        List<Map<String, Object>> response = updates.stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(response);
+        try {
+            List<NewsUpdate> updates = newsUpdateRepository.findAll(Sort.by(Sort.Direction.DESC, "date", "createdAt"));
+            List<Map<String, Object>> response = updates.stream()
+                    .map(this::toResponse)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Error fetching all news", e);
+            return ResponseEntity.ok(Collections.emptyList());
+        }
     }
 
     // Admin: Create News
@@ -223,10 +229,10 @@ public class NewsController {
 
     private Map<String, Object> toResponse(NewsUpdate news) {
         Map<String, Object> map = new HashMap<>();
-        map.put("id", news.getId().toString());
-        map.put("title", news.getTitle());
-        map.put("type", news.getType().name());
-        map.put("date", news.getDate().toString());
+        map.put("id", news.getId() != null ? news.getId().toString() : "");
+        map.put("title", news.getTitle() != null ? news.getTitle() : "");
+        map.put("type", news.getType() != null ? news.getType().name() : "UPDATE");
+        map.put("date", news.getDate() != null ? news.getDate().toString() : LocalDate.now().toString());
         map.put("breaking", news.isBreaking());
         if (news.getFullStory() != null) {
             map.put("fullStory", news.getFullStory());

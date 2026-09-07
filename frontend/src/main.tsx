@@ -13,6 +13,7 @@ import "./styles/job-detail-presentation.css";
 import "./styles/job-detail-typography-polish.css";
 import "./styles/job-detail-premium-polish.css";
 import "./styles/job-detail-overview-polish.css";
+import "./styles/job-detail-density.css";
 import "./styles/homepage-mobile-stats.css";
 import "./styles/admin-application-modal-no-shadow.css";
 import "./styles/admin-application-modal-overlay-cleanup.css";

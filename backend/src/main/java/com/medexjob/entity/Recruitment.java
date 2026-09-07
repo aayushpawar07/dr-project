@@ -71,6 +71,9 @@ public class Recruitment {
     @Column(name = "important_instructions", columnDefinition = "TEXT")
     private String importantInstructions;
 
+    @Column(name = "job_description", columnDefinition = "TEXT")
+    private String jobDescription;
+
     @Column(name = "source_pdf_name", length = 255)
     private String sourcePdfName;
 
@@ -150,6 +153,8 @@ public class Recruitment {
     public void setOfficialWebsite(String officialWebsite) { this.officialWebsite = officialWebsite; }
     public String getImportantInstructions() { return importantInstructions; }
     public void setImportantInstructions(String importantInstructions) { this.importantInstructions = importantInstructions; }
+    public String getJobDescription() { return jobDescription; }
+    public void setJobDescription(String jobDescription) { this.jobDescription = jobDescription; }
     public String getSourcePdfName() { return sourcePdfName; }
     public void setSourcePdfName(String sourcePdfName) { this.sourcePdfName = sourcePdfName; }
     public String getPdfFingerprint() { return pdfFingerprint; }

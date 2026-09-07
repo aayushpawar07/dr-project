@@ -50,6 +50,7 @@ public class RecruitmentController {
         m.put("applicationStartDate", r.getApplicationStartDate()); m.put("applicationLastDate", r.getApplicationLastDate());
         m.put("applicationFee", r.getApplicationFee()); m.put("selectionProcess", r.getSelectionProcess());
         m.put("importantInstructions", r.getImportantInstructions());
+        m.put("jobDescription", r.getJobDescription());
         m.put("officialNotificationUrl", r.getOfficialNotificationUrl()); m.put("officialApplicationUrl", r.getOfficialApplicationUrl());
         m.put("officialWebsite", r.getOfficialWebsite()); m.put("officialSourceVerified", r.getOfficialSourceVerified());
         m.put("revisionNumber", r.getRevisionNumber()); m.put("previousVersionId", r.getDuplicateOf());

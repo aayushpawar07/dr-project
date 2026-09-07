@@ -81,6 +81,7 @@ public class BulkRecruitmentUploadService {
         recruitment.setOfficialApplicationUrl(blankToNull(source.getOfficialApplicationUrl()));
         recruitment.setOfficialWebsite(blankToNull(source.getOfficialWebsite()));
         recruitment.setImportantInstructions(blankToNull(source.getImportantInstructions()));
+        recruitment.setJobDescription(blankToNull(source.getJobDescription()));
         recruitment.setSourcePdfName(fileName);
         recruitment.setPdfFingerprint(fingerprint);
         recruitment.setExtractionMethod(result.getExtractionMethod());

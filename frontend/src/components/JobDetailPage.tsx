@@ -45,6 +45,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { saveJob, unsaveJob, checkIfJobIsSaved } from "../api/savedJobs";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 import { ResumeUploadSection } from "./ResumeUploadSection";
+import { cardFieldText, cardSalaryText, displayJobDescription } from "../utils/extractedFieldDisplay";
 
 interface JobDetailPageProps {
   onNavigate: (page: string, entityId?: string) => void;
@@ -449,13 +450,13 @@ export function JobDetailPage({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 job-detail-page" data-sector={isGovernment ? "government" : "private"}>
       <div className="container mx-auto px-4 py-8">
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="job-detail-grid grid md:grid-cols-3 gap-6">
           {/* Main Content */}
-          <div className="md:col-span-2 space-y-6">
+          <div className="job-detail-main md:col-span-2 space-y-6">
             {/* Job Header */}
-            <Card className="p-6">
+            <Card className="p-6 job-detail-hero">
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
                   <span
@@ -527,8 +528,8 @@ export function JobDetailPage({
                       '';
                     return orgName ? (
                       <div className="flex items-center gap-2 text-gray-700">
-                        <Building2 className="w-5 h-5 text-blue-600 shrink-0" />
-                        <span className="text-lg font-medium">{orgName}</span>
+                        <Building2 className="w-5 h-5 text-amber-700 shrink-0" />
+                        <span className="rounded-md bg-amber-100 px-2.5 py-0.5 text-lg font-semibold text-amber-900">{orgName}</span>
                       </div>
                     ) : null;
                   })()}
@@ -567,7 +568,7 @@ export function JobDetailPage({
             </Card>
 
             {/* Job Details */}
-            <Card className="p-6">
+            <Card className="p-6 job-detail-facts">
               <h2 className="text-xl text-gray-900 mb-4">Job Details</h2>
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="flex items-start gap-3">
@@ -592,7 +593,7 @@ export function JobDetailPage({
                   <GraduationCap className="w-5 h-5 text-gray-400 mt-0.5" />
                   <div>
                     <p className="text-sm text-gray-500">Qualification</p>
-                    <p className="text-gray-900">{job.qualification}</p>
+                    <p className="text-gray-900">{cardFieldText(job.qualification, 'See job description')}</p>
                   </div>
                 </div>
 
@@ -600,16 +601,16 @@ export function JobDetailPage({
                   <Briefcase className="w-5 h-5 text-gray-400 mt-0.5" />
                   <div>
                     <p className="text-sm text-gray-500">Experience</p>
-                    <p className="text-gray-900">{job.experience}</p>
+                    <p className="text-gray-900">{cardFieldText(job.experience, 'See job description')}</p>
                   </div>
                 </div>
 
-                {job.salary && (
+                {cardSalaryText(job.salary) && (
                   <div className="flex items-start gap-3">
                     <DollarSign className="w-5 h-5 text-gray-400 mt-0.5" />
                     <div>
                       <p className="text-sm text-gray-500">Salary</p>
-                      <p className="text-gray-900">{job.salary}</p>
+                      <p className="text-gray-900">{cardSalaryText(job.salary)}</p>
                     </div>
                   </div>
                 )}
@@ -631,64 +632,41 @@ export function JobDetailPage({
             </Card>
 
             {/* Job Description */}
-            <Card className="p-6">
+            <Card className="p-6 job-detail-description">
               <h2 className="text-xl text-gray-900 mb-4">Job Description</h2>
-              <p className="text-gray-700 leading-relaxed">{job.description}</p>
+              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{displayJobDescription(job)}</p>
             </Card>
 
-            {/* Government Job Additional Info */}
-            {isGovernment && job.pdfUrl && (
-              <Card className="p-6">
+            {(job.pdfUrl || job.officialWebsite || job.applyLink) && (
+              <Card className="p-6 job-detail-docs">
                 <h2 className="text-xl text-gray-900 mb-4">
-                  Official Documents
+                  Official Sources
                 </h2>
+                <p className="mb-4 text-sm text-gray-500">
+                  Review the job description above before opening these links.
+                </p>
                 <div className="space-y-3">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    asChild
-                  >
-                    <a
-                      href={job.pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <FileText className="w-4 h-4 mr-2" />
-                      View Official Notification PDF
-                      <ExternalLink className="w-4 h-4 ml-auto" />
-                    </a>
-                  </Button>
-                  <div className="mt-4">
-                    <div className="text-sm text-gray-600 mb-2">
-                      Inline Preview
-                    </div>
-                    <div className="border rounded overflow-hidden">
-                      <object
-                        data={job.pdfUrl}
-                        type="application/pdf"
-                        width="100%"
-                        height="600px"
-                      >
-                        <iframe
-                          src={job.pdfUrl}
-                          title="PDF Preview"
-                          width="100%"
-                          height="600px"
-                        />
-                      </object>
-                    </div>
-                  </div>
+                  {job.officialWebsite && (
+                    <Button variant="outline" className="w-full justify-start" asChild>
+                      <a href={job.officialWebsite} target="_blank" rel="noopener noreferrer">
+                        <Building2 className="w-4 h-4 mr-2" />
+                        Official Website
+                        <ExternalLink className="w-4 h-4 ml-auto" />
+                      </a>
+                    </Button>
+                  )}
+                  {job.pdfUrl && (
+                    <Button variant="outline" className="w-full justify-start" asChild>
+                      <a href={job.pdfUrl} target="_blank" rel="noopener noreferrer">
+                        <FileText className="w-4 h-4 mr-2" />
+                        Notification PDF
+                        <ExternalLink className="w-4 h-4 ml-auto" />
+                      </a>
+                    </Button>
+                  )}
                   {job.applyLink && (
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start"
-                      asChild
-                    >
-                      <a
-                        href={job.applyLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
+                    <Button variant="outline" className="w-full justify-start" asChild>
+                      <a href={job.applyLink} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="w-4 h-4 mr-2" />
                         Official Apply Link
                         <ExternalLink className="w-4 h-4 ml-auto" />
@@ -701,9 +679,9 @@ export function JobDetailPage({
           </div>
 
           {/* Sidebar */}
-          <div className="md:col-span-1 space-y-6">
+          <div className="job-detail-aside md:col-span-1 space-y-6">
             {/* Apply Card */}
-            <Card className="p-6 md:sticky md:top-20">
+            <Card className="p-6 md:sticky md:top-20 job-detail-apply">
               <div className="space-y-4">
                 {daysLeft > 0 && (
                   <Alert
@@ -739,7 +717,7 @@ export function JobDetailPage({
                     {isAuthenticated ? (
                       <>
                         <Button
-                          className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                           disabled={
                             hasApplied ||
                             !isAuthenticated ||
@@ -863,7 +841,7 @@ export function JobDetailPage({
                               const target = e.target as HTMLElement;
                               // Check if click is on the button that opened the dialog
                               if (
-                                target.closest('button[class*="bg-green-600"]')
+                                target.closest('button[class*="bg-blue-600"], button[class*="bg-green-600"]')
                               ) {
                                 console.log(
                                   "🖱️ Click detected on Apply Now button, preventing close",
@@ -914,7 +892,7 @@ export function JobDetailPage({
                               const target = e.target as HTMLElement;
                               // Check if click is on the button that opened the dialog
                               if (
-                                target.closest('button[class*="bg-green-600"]')
+                                target.closest('button[class*="bg-blue-600"], button[class*="bg-green-600"]')
                               ) {
                                 console.log(
                                   "🖱️ PointerDown detected on Apply Now button, preventing close",
@@ -1125,7 +1103,7 @@ export function JobDetailPage({
                     ) : (
                       <div className="space-y-3">
                         <Button
-                          className="w-full bg-green-600 hover:bg-green-700"
+                          className={`w-full ${isGovernment ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700"}`}
                           onClick={() => onNavigate("login")}
                         >
                           Login to Apply
@@ -1145,18 +1123,6 @@ export function JobDetailPage({
                           <ExternalLink className="w-4 h-4 mr-2" />
                           Official Apply Link
                           <ExternalLink className="w-4 h-4 ml-auto" />
-                        </a>
-                      </Button>
-                    )}
-                    {job.pdfUrl && (
-                      <Button variant="outline" className="w-full" asChild>
-                        <a
-                          href={job.pdfUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <FileText className="w-4 h-4 mr-2" />
-                          View Notification
                         </a>
                       </Button>
                     )}
@@ -1270,7 +1236,7 @@ export function JobDetailPage({
                               const target = e.target as HTMLElement;
                               // Check if click is on the button that opened the dialog
                               if (
-                                target.closest('button[class*="bg-green-600"]')
+                                target.closest('button[class*="bg-blue-600"], button[class*="bg-green-600"]')
                               ) {
                                 console.log(
                                   "🖱️ Click detected on Apply Now button, preventing close",
@@ -1321,7 +1287,7 @@ export function JobDetailPage({
                               const target = e.target as HTMLElement;
                               // Check if click is on the button that opened the dialog
                               if (
-                                target.closest('button[class*="bg-green-600"]')
+                                target.closest('button[class*="bg-blue-600"], button[class*="bg-green-600"]')
                               ) {
                                 console.log(
                                   "🖱️ PointerDown detected on Apply Now button, preventing close",
@@ -1530,7 +1496,7 @@ export function JobDetailPage({
                     ) : (
                       <div className="space-y-3">
                         <Button
-                          className="w-full bg-green-600 hover:bg-green-700"
+                          className={`w-full ${isGovernment ? "bg-blue-600 hover:bg-blue-700" : "bg-green-600 hover:bg-green-700"}`}
                           onClick={() => onNavigate("login")}
                         >
                           Login to Apply

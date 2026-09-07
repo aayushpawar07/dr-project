@@ -18,6 +18,7 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Job } from '../types';
 import { buildJobShareText, getJobShareUrl, shareTextWithoutUrl } from '../utils/shareContent';
+import { cardFieldText, cardSalaryText } from '../utils/extractedFieldDisplay';
 
 interface JobCardProps {
   job: Job;
@@ -36,12 +37,19 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
   const sourceRecruitmentId = view.sourceRecruitmentId;
   const grouped = Boolean(view.recruitmentGrouped && sourceRecruitmentId);
   const locationText = job.location || [view.city, view.state].filter(Boolean).join(', ');
-  const organizationName =
-    job.organization ||
-    view.companyName ||
-    view.employer?.companyName ||
-    view.employerName ||
-    '';
+  const organizationName = [
+    job.organization,
+    view.organisationName,
+    view.organisation,
+    view.companyName,
+    view.employer?.companyName,
+    view.employerName,
+    view.hospitalName,
+  ].map((value) => String(value ?? '').trim()).find(Boolean) || '';
+  const qualificationText = cardFieldText(job.qualification);
+  const experienceText = cardFieldText(job.experience);
+  const salaryText = cardSalaryText(job.salary || view.salaryRange);
+  const roleCount = Array.isArray(view.postNames) ? view.postNames.length : 0;
   const daysLeft = job.lastDate
     ? Math.ceil((new Date(job.lastDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
     : null;
@@ -164,9 +172,11 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
               {displayTitle}
             </h3>
             {organizationName && (
-              <div className="flex items-center gap-1.5 mt-1 text-sm text-gray-600">
-                <Building2 className="w-4 h-4 shrink-0 text-blue-600" />
-                <span className="font-medium text-gray-700 truncate">{organizationName}</span>
+              <div className="flex items-center gap-1.5 mt-2 min-w-0">
+                <Building2 className="w-4 h-4 shrink-0 text-amber-700" />
+                <span className="truncate rounded-md bg-amber-100 px-2 py-0.5 text-sm font-semibold text-amber-900">
+                  {organizationName}
+                </span>
               </div>
             )}
           </div>
@@ -184,27 +194,32 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
                 {job.numberOfPosts} Post{job.numberOfPosts > 1 ? 's' : ''}
               </span>
             )}
+            {grouped && roleCount > 1 && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-indigo-700">
+                {roleCount} roles in this recruitment
+              </span>
+            )}
           </div>
 
-          {job.qualification && (
+          {qualificationText && (
             <div>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-600">
                 <Gift className="w-3.5 h-3.5 text-gray-400" />
-                Qualification: {job.qualification}
+                Qualification: {qualificationText}
               </span>
             </div>
           )}
 
-          {(job.salary || job.experience) && (
+          {(salaryText || experienceText) && (
             <div className="flex flex-wrap gap-2 text-sm">
-              {job.salary && (
+              {salaryText && (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-3 py-1.5 text-green-700 font-medium">
-                  💰 {job.salary}
+                  💰 {salaryText}
                 </span>
               )}
-              {job.experience && (
+              {experienceText && (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-600">
-                  📊 Experience: {job.experience}
+                  📊 Experience: {experienceText}
                 </span>
               )}
             </div>

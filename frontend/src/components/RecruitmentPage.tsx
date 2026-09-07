@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Activity,
@@ -9,6 +9,7 @@ import {
   BriefcaseBusiness,
   Building2,
   CalendarDays,
+  ChevronLeft,
   ChevronRight,
   Cross,
   Ear,
@@ -34,25 +35,36 @@ import {
   Recruitment,
   VacancyRecord,
 } from '../api/recruitments';
+import {
+  buildStructuredJobDescription,
+  cardFieldText,
+  cardSalaryText,
+  cleanExtractedName,
+  departmentSubtitle,
+  leftoverEligibilityNotes,
+} from '../utils/extractedFieldDisplay';
 
 const PAGE_STYLES = `
   .recruit-page {
     min-height: 100vh;
+    min-width: 0;
     background: #f7f9fc;
     color: #111827;
-    padding-bottom: 82px;
+    padding-bottom: 28px;
+    overflow-x: clip;
   }
 
   .recruit-shell {
     width: min(1400px, calc(100% - 36px));
     margin: 0 auto;
-    padding: 18px 0 40px;
+    padding: 14px 0 28px;
+    min-width: 0;
   }
 
   .recruit-top {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 390px;
-    gap: 16px;
+    gap: 12px;
     align-items: stretch;
   }
 
@@ -64,8 +76,8 @@ const PAGE_STYLES = `
   }
 
   .recruit-hero {
-    min-height: 270px;
-    padding: 18px 20px 20px;
+    min-height: 210px;
+    padding: 16px 18px 16px;
     position: relative;
     overflow: hidden;
     border-color: #c9dcff;
@@ -138,7 +150,7 @@ const PAGE_STYLES = `
     grid-template-columns: 144px minmax(0, 1fr);
     gap: 20px;
     align-items: center;
-    margin-top: 15px;
+    margin-top: 12px;
   }
 
   .org-seal {
@@ -188,9 +200,17 @@ const PAGE_STYLES = `
     display: flex;
     align-items: center;
     gap: 7px;
-    color: #1463ff;
+    color: #b45309;
     font-size: 16px;
     font-weight: 650;
+  }
+  .org-highlight {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 8px;
+    background: #fef3c7;
+    color: #92400e;
+    font-weight: 800;
   }
 
   .private .recruit-org { color: #059669; }
@@ -224,8 +244,8 @@ const PAGE_STYLES = `
   .meta-value.deadline { color: #ef4444; }
 
   .action-panel {
-    min-height: 270px;
-    padding: 16px;
+    min-height: 210px;
+    padding: 14px;
     border-color: #ffc7c7;
     background: linear-gradient(180deg, #fff8f8 0%, #ffffff 100%);
   }
@@ -275,7 +295,7 @@ const PAGE_STYLES = `
   .action-btn.private-primary { background: #059669; border-color: #059669; color: #ffffff; }
   .action-btn.share { color: #1463ff; }
 
-  .summary-shell { margin-top: 16px; padding: 13px 14px 14px; }
+  .summary-shell { margin-top: 12px; padding: 12px 14px; }
   .section-eyebrow { margin: 0 0 11px; font-size: 12px; font-weight: 800; color: #0f172a; }
 
   .summary-grid {
@@ -285,7 +305,7 @@ const PAGE_STYLES = `
   }
 
   .summary-item {
-    min-height: 73px;
+    min-height: 64px;
     display: flex;
     align-items: center;
     gap: 11px;
@@ -316,16 +336,18 @@ const PAGE_STYLES = `
   .summary-helper { margin-top: 2px; color: #7b8797; font-size: 10.5px; }
 
   .explorer-shell {
-    margin-top: 16px;
+    margin-top: 12px;
     display: grid;
     grid-template-columns: 480px minmax(0, 1fr);
     overflow: hidden;
+    min-width: 0;
   }
 
   .department-pane {
     padding: 13px 14px 14px;
     border-right: 1px solid #e2e8f0;
     background: #ffffff;
+    min-width: 0;
   }
 
   .explore-title { font-size: 14px; font-weight: 800; color: #101828; }
@@ -355,17 +377,68 @@ const PAGE_STYLES = `
   .post-label { display: grid; place-items: center; font-weight: 700; }
   .department-search:focus, .post-select:focus { border-color: #8ab4ff; box-shadow: 0 0 0 2px rgba(20,99,255,.09); }
 
-  .department-list {
+  .department-scroll-wrap {
+    position: relative;
     margin-top: 10px;
+    min-width: 0;
+  }
+  .department-scroll-hint {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+    color: #1463ff;
+    font-size: 12px;
+    font-weight: 800;
+  }
+  .department-scroll-hint span { white-space: nowrap; }
+  .department-scroll-buttons { display: flex; gap: 6px; }
+  .department-scroll-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid #9dc0ff;
+    border-radius: 999px;
+    background: #1463ff;
+    color: #ffffff;
     display: grid;
-    gap: 7px;
-    max-height: 474px;
-    overflow: auto;
-    padding-right: 3px;
+    place-items: center;
+    cursor: pointer;
+  }
+  .department-scroll-btn:disabled {
+    background: #dbe7ff;
+    color: #8aa4d6;
+    cursor: default;
+  }
+  .department-list {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 2px 2px 12px;
+    min-width: 0;
+    scroll-snap-type: x proximity;
+    scrollbar-width: auto;
+    scrollbar-color: #1463ff #dbe7ff;
+  }
+  .department-list::-webkit-scrollbar { height: 10px; }
+  .department-list::-webkit-scrollbar-track { background: #dbe7ff; border-radius: 999px; }
+  .department-list::-webkit-scrollbar-thumb { background: #1463ff; border-radius: 999px; }
+  .department-fade-right {
+    pointer-events: none;
+    position: absolute;
+    top: 36px;
+    right: 0;
+    width: 42px;
+    height: calc(100% - 48px);
+    background: linear-gradient(90deg, rgba(255,255,255,0), #ffffff 88%);
   }
 
   .department-row {
-    width: 100%;
+    width: auto;
+    min-width: 240px;
+    flex: 0 0 auto;
+    scroll-snap-align: start;
     min-height: 58px;
     padding: 8px 9px;
     border: 1px solid #e2e8f0;
@@ -401,6 +474,8 @@ const PAGE_STYLES = `
   .department-row.selected .department-count { background: #1463ff; color: #ffffff; }
 
   .vacancy-pane { padding: 12px 14px 13px; background: #ffffff; min-width: 0; }
+  .vacancy-panel { display: flex; flex-direction: column; min-width: 0; }
+  .vacancy-intro { min-width: 0; }
   .vacancy-head {
     display: grid;
     grid-template-columns: 58px minmax(0, 1fr) 76px;
@@ -419,10 +494,25 @@ const PAGE_STYLES = `
     color: #1463ff;
   }
 
-  .vacancy-title { margin: 0; color: #101828; font-size: 21px; font-weight: 850; line-height: 1.15; }
-  .vacancy-subtitle { margin-top: 2px; color: #344054; font-size: 12px; font-weight: 750; }
-  .vacancy-meta { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 6px 12px; color: #667085; font-size: 10.5px; }
-  .vacancy-meta span { display: inline-flex; align-items: center; gap: 4px; }
+  .vacancy-title {
+    margin: 0;
+    color: #101828;
+    font-size: 21px;
+    font-weight: 850;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .vacancy-subtitle {
+    margin-top: 2px;
+    color: #344054;
+    font-size: 12px;
+    font-weight: 750;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .vacancy-meta { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 6px 12px; color: #667085; font-size: 10.5px; min-width: 0; }
+  .vacancy-meta span { display: inline-flex; align-items: center; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
 
   .vacancy-count-box {
     min-height: 58px;
@@ -438,8 +528,8 @@ const PAGE_STYLES = `
   .vacancy-count-num { font-size: 23px; font-weight: 900; line-height: 1; }
   .vacancy-count-label { margin-top: 2px; font-size: 10px; }
 
-  .vacancy-chips { margin-top: 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
-  .tiny-chip { padding: 4px 7px; font-size: 9.5px; border: 1px solid transparent; }
+  .vacancy-chips { margin-top: 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; min-width: 0; }
+  .tiny-chip { padding: 4px 7px; font-size: 9.5px; border: 1px solid transparent; max-width: 100%; }
   .chip-green { background: #effaf2; color: #15803d; border-color: #ccefd6; }
   .chip-purple { background: #f6f0ff; color: #7c3aed; border-color: #e6d6ff; }
   .chip-orange { background: #fff5e9; color: #e96508; border-color: #ffd9b0; }
@@ -452,8 +542,8 @@ const PAGE_STYLES = `
   }
 
   .detail-card {
-    min-height: 91px;
-    padding: 10px;
+    min-height: 74px;
+    padding: 9px;
     border: 1px solid #e2e8f0;
     border-radius: 9px;
     background: #ffffff;
@@ -462,8 +552,17 @@ const PAGE_STYLES = `
     align-items: flex-start;
   }
   .detail-icon { width: 34px; height: 34px; }
+  .detail-copy { min-width: 0; flex: 1; }
   .detail-label { color: #344054; font-size: 10px; font-weight: 800; }
-  .detail-value { margin-top: 4px; color: #475467; font-size: 10.2px; line-height: 1.4; }
+  .detail-value {
+    margin-top: 4px;
+    color: #475467;
+    font-size: 10.2px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: normal;
+  }
 
   .dates-strip {
     margin-top: 10px;
@@ -475,8 +574,9 @@ const PAGE_STYLES = `
   .dates-title { display: flex; align-items: center; gap: 6px; color: #344054; font-size: 11px; font-weight: 800; }
   .dates-title svg { color: #1463ff; }
   .dates-grid { margin-top: 7px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; text-align: center; }
-  .date-label { color: #667085; font-size: 9.5px; }
-  .date-value { margin-top: 2px; color: #101828; font-size: 10.5px; font-weight: 850; }
+  .dates-grid > * { min-width: 0; }
+  .date-label { color: #667085; font-size: 9.5px; overflow-wrap: anywhere; }
+  .date-value { margin-top: 2px; color: #101828; font-size: 10.5px; font-weight: 850; overflow-wrap: anywhere; }
 
   .vacancy-actions { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
   .vacancy-action {
@@ -492,6 +592,8 @@ const PAGE_STYLES = `
     font-size: 12px;
     font-weight: 800;
     cursor: pointer;
+    overflow-wrap: normal;
+    word-break: normal;
   }
   .vacancy-action.primary { color: #ffffff; border-color: #1463ff; background: #1463ff; }
   .vacancy-action.private-primary { color: #ffffff; border-color: #059669; background: #059669; }
@@ -509,20 +611,58 @@ const PAGE_STYLES = `
     .detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
 
-  @media (max-width: 820px) {
+  @media (max-width: 900px) {
+    .recruit-page { padding-bottom: 24px; }
     .recruit-shell { width: calc(100% - 24px); }
     .recruit-top { grid-template-columns: 1fr; }
     .action-panel { min-height: auto; }
     .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .explorer-shell { grid-template-columns: 1fr; }
+    .explorer-shell { grid-template-columns: minmax(0, 1fr); }
     .department-pane { border-right: 0; border-bottom: 1px solid #e2e8f0; }
-    .department-list { display: flex; overflow-x: auto; overflow-y: hidden; max-height: none; padding: 2px 1px 7px; }
-    .department-row { min-width: 250px; }
+    .department-list {
+      display: flex;
+      max-height: none;
+      overflow-x: auto;
+      padding-right: 0;
+    }
+    .department-row { min-width: min(240px, 78vw); flex: 0 0 auto; }
+    .department-name, .department-sub {
+      white-space: normal;
+      overflow: visible;
+      text-overflow: unset;
+    }
     .vacancy-pane { padding-bottom: 16px; }
+    .detail-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); order: 3; }
+    .detail-card { min-height: 0; }
+    .dates-grid {
+      grid-template-columns: minmax(0, 1fr);
+      text-align: left;
+      gap: 6px;
+    }
+    .dates-grid > div {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+    }
+    .date-value { margin-top: 0; text-align: right; }
+    .vacancy-intro { order: 1; }
+    .vacancy-actions {
+      order: 2;
+      position: static;
+      top: auto;
+      z-index: auto;
+      margin-top: 10px;
+      margin-bottom: 2px;
+      padding: 8px 0;
+      background: transparent;
+    }
+    .dates-strip { order: 4; }
+    .mobile-cta { display: none !important; }
   }
 
-  @media (max-width: 580px) {
-    .recruit-page { padding-bottom: 76px; }
+  @media (max-width: 640px) {
+    .recruit-page { padding-bottom: 20px; }
     .recruit-shell { width: calc(100% - 18px); padding-top: 10px; }
     .recruit-card { border-radius: 12px; }
     .recruit-hero { padding: 14px; min-height: auto; }
@@ -536,31 +676,40 @@ const PAGE_STYLES = `
     .recruit-location { font-size: 12px; }
     .recruit-meta-row { margin-top: 12px; gap: 10px; }
     .recruit-meta-item { min-width: 0; flex: 1 1 120px; padding-right: 10px; }
-    .summary-grid { grid-template-columns: 1fr; }
     .summary-item { min-height: 64px; }
     .department-controls { grid-template-columns: 1fr; }
+    .department-list {
+      display: flex;
+      width: 100%;
+      min-width: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+      max-height: none;
+      padding: 2px 2px 10px;
+      gap: 8px;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x proximity;
+    }
+    .department-row {
+      min-width: min(232px, 78vw);
+      flex: 0 0 auto;
+      scroll-snap-align: start;
+    }
+    .department-name, .department-sub {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .vacancy-head { grid-template-columns: 48px minmax(0, 1fr) 62px; }
     .vacancy-head-icon { width: 48px; height: 48px; }
-    .vacancy-title { font-size: 19px; }
-    .detail-grid { grid-template-columns: 1fr; }
-    .detail-card { min-height: 76px; }
-    .dates-grid { grid-template-columns: 1fr; text-align: left; }
-    .vacancy-actions { display: none; }
-    .mobile-cta {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 50;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      padding: 10px;
-      background: rgba(255,255,255,.96);
-      border-top: 1px solid #dbe4ef;
-      box-shadow: 0 -8px 24px rgba(15,23,42,.12);
-      backdrop-filter: blur(10px);
-    }
+    .vacancy-title { font-size: 18px; }
+    .detail-card { min-height: 0; padding: 8px; gap: 7px; }
+  }
+
+  @media (max-width: 420px) {
+    .summary-grid { grid-template-columns: minmax(0, 1fr); }
+    .detail-grid { grid-template-columns: minmax(0, 1fr); }
+    .vacancy-actions { grid-template-columns: 1fr; }
   }
 `;
 
@@ -722,10 +871,11 @@ export function RecruitmentPage() {
               )}
             </div>
 
-            <div className="department-list">
+            <DepartmentScroller>
               {visibleVacancies.map((vacancy, index) => {
                 const selected = vacancy.id === selectedVacancy?.id;
-                const name = vacancy.department || vacancy.speciality || vacancy.postName;
+                const name = cleanExtractedName(vacancy.department || vacancy.speciality || vacancy.postName);
+                const subtitle = departmentSubtitle(vacancy);
                 const DepartmentIcon = getDepartmentIcon(name);
                 const tone = getDepartmentTone(index);
                 return (
@@ -733,14 +883,14 @@ export function RecruitmentPage() {
                     <span className={`department-icon ${tone}`}><DepartmentIcon size={20} strokeWidth={2} /></span>
                     <span className="department-text">
                       <span className="department-name">{name}</span>
-                      <span className="department-sub">{vacancy.qualification || vacancy.speciality || vacancy.postName}</span>
+                      {subtitle ? <span className="department-sub">{subtitle}</span> : null}
                     </span>
                     <span className="department-count">{vacancy.numberOfVacancies}</span>
                     <ChevronRight size={16} color={selected ? '#1463ff' : '#98a2b3'} />
                   </button>
                 );
               })}
-            </div>
+            </DepartmentScroller>
           </aside>
 
           <main className="vacancy-pane">
@@ -751,18 +901,17 @@ export function RecruitmentPage() {
             )}
           </main>
         </section>
+
+        <section className="recruit-card" style={{ padding: '18px 18px 16px', marginTop: 12 }}>
+          <h2 className="section-eyebrow">Job Description</h2>
+          <p style={{ whiteSpace: 'pre-wrap', color: '#334155', lineHeight: 1.7, margin: '8px 0 0', fontSize: 14 }}>
+            {buildRecruitmentDescription(recruitment, selectedVacancy)}
+          </p>
+        </section>
+
+        <OfficialSourcesFooter recruitment={recruitment} />
       </div>
 
-      {selectedVacancy && (
-        <div className="mobile-cta">
-          <button className="vacancy-action" onClick={openSelectedJob}>{isGovernment ? 'View Details' : 'View & Apply'}</button>
-          {recruitment.officialApplicationUrl && (
-            <button className={`vacancy-action ${isGovernment ? 'primary' : 'private-primary'}`} onClick={() => openExternal(recruitment.officialApplicationUrl)}>
-              {isGovernment ? 'Official Apply' : 'Apply Now'} <ExternalLink size={15} />
-            </button>
-          )}
-        </div>
-      )}
     </div>
   );
 }
@@ -785,7 +934,7 @@ function RecruitmentHero({ recruitment, isGovernment }: { recruitment: Recruitme
         <OrganisationSeal name={recruitment.organisationName} isGovernment={isGovernment} />
         <div>
           <h1 className="recruit-title">{recruitment.title}</h1>
-          <div className="recruit-org"><Building2 size={19} />{recruitment.organisationName}</div>
+          <div className="recruit-org"><Building2 size={19} /><span className="org-highlight">{recruitment.organisationName}</span></div>
           {recruitment.location && <div className="recruit-location"><MapPin size={16} />{recruitment.location}</div>}
           <div className="recruit-meta-row">
             {recruitment.advertisementNumber && (
@@ -816,8 +965,6 @@ function ApplicationPanel({ recruitment, isGovernment, daysLeft, onShare }: { re
             <ExternalLink size={15} />{isGovernment ? 'Official Apply Link' : 'Apply Now'}
           </button>
         )}
-        {recruitment.officialNotificationUrl && <button className="action-btn" onClick={() => openExternal(recruitment.officialNotificationUrl)}><FileText size={15} />View Notification</button>}
-        {recruitment.officialWebsite && <button className="action-btn" onClick={() => openExternal(recruitment.officialWebsite)}><Building2 size={15} />Official Website</button>}
         <button className="action-btn share" onClick={onShare}><Share2 size={15} />Share Recruitment</button>
       </div>
     </aside>
@@ -825,36 +972,38 @@ function ApplicationPanel({ recruitment, isGovernment, daysLeft, onShare }: { re
 }
 
 function VacancyPanel({ vacancy, recruitment, isGovernment, onViewJob }: { vacancy: VacancyRecord; recruitment: Recruitment; isGovernment: boolean; onViewJob: () => void }) {
-  const department = vacancy.department || vacancy.speciality || vacancy.postName;
+  const department = cleanExtractedName(vacancy.department || vacancy.speciality || vacancy.postName);
   const DepartmentIcon = getDepartmentIcon(department);
   const details: Array<{ icon: LucideIcon; label: string; value: string; tone: string }> = [
-    { icon: GraduationCap, label: 'Qualification', value: vacancy.qualification || 'See notification', tone: 'icon-blue' },
-    { icon: Stethoscope, label: 'Experience', value: vacancy.experience || 'As per notification', tone: 'icon-indigo' },
-    { icon: IndianRupee, label: 'Salary / Pay', value: vacancy.salary || vacancy.payScale || vacancy.payLevel || 'See notification', tone: 'icon-teal' },
-    { icon: Users, label: 'Age Limit', value: vacancy.ageLimit || 'As per notification', tone: 'icon-purple' },
-    { icon: ShieldCheck, label: 'Other Eligibility', value: vacancy.otherEligibilityRequirements || 'See official notification', tone: 'icon-orange' },
+    { icon: GraduationCap, label: 'Qualification', value: cardFieldText(vacancy.qualification, 'See job description'), tone: 'icon-blue' },
+    { icon: Stethoscope, label: 'Experience', value: cardFieldText(vacancy.experience, 'See job description'), tone: 'icon-indigo' },
+    { icon: IndianRupee, label: 'Salary / Pay', value: cardSalaryText(vacancy.salary || vacancy.payScale || vacancy.payLevel) || 'See job description', tone: 'icon-teal' },
+    { icon: Users, label: 'Age Limit', value: cardFieldText(vacancy.ageLimit, 'As per notification'), tone: 'icon-purple' },
+    { icon: ShieldCheck, label: 'Other Eligibility', value: cardFieldText(vacancy.otherEligibilityRequirements, 'See job description'), tone: 'icon-orange' },
     { icon: BriefcaseBusiness, label: 'Selection Process', value: recruitment.selectionProcess || 'As per notification', tone: 'icon-indigo' },
   ];
 
   return (
-    <div>
-      <div className="vacancy-head">
-        <div className="vacancy-head-icon"><DepartmentIcon size={31} strokeWidth={2} /></div>
-        <div>
-          <h2 className="vacancy-title">{department}</h2>
-          <div className="vacancy-subtitle">{vacancy.qualification || vacancy.speciality || vacancy.postName}</div>
-          <div className="vacancy-meta">
-            {vacancy.location && <span><MapPin size={13} />{vacancy.location}</span>}
-            {vacancy.jobType && <span><BriefcaseBusiness size={13} />{vacancy.jobType}</span>}
+    <div className="vacancy-panel">
+      <div className="vacancy-intro">
+        <div className="vacancy-head">
+          <div className="vacancy-head-icon"><DepartmentIcon size={31} strokeWidth={2} /></div>
+          <div style={{ minWidth: 0 }}>
+            <h2 className="vacancy-title">{department}</h2>
+            {departmentSubtitle(vacancy) ? <div className="vacancy-subtitle">{departmentSubtitle(vacancy)}</div> : null}
+            <div className="vacancy-meta">
+              {vacancy.location && <span><MapPin size={13} />{vacancy.location}</span>}
+              {vacancy.jobType && <span><BriefcaseBusiness size={13} />{vacancy.jobType}</span>}
+            </div>
           </div>
+          <div className="vacancy-count-box"><div className="vacancy-count-num">{vacancy.numberOfVacancies}</div><div className="vacancy-count-label">Vacancies</div></div>
         </div>
-        <div className="vacancy-count-box"><div className="vacancy-count-num">{vacancy.numberOfVacancies}</div><div className="vacancy-count-label">Vacancies</div></div>
-      </div>
 
-      <div className="vacancy-chips">
-        <span className="tiny-chip chip-green"><Users size={11} />{vacancy.postName} Role</span>
-        <span className="tiny-chip chip-purple"><Stethoscope size={11} />Clinical Department</span>
-        {vacancy.jobType && <span className="tiny-chip chip-orange"><BriefcaseBusiness size={11} />{vacancy.jobType}</span>}
+        <div className="vacancy-chips">
+          <span className="tiny-chip chip-green"><Users size={11} />{vacancy.postName} Role</span>
+          <span className="tiny-chip chip-purple"><Stethoscope size={11} />Clinical Department</span>
+          {vacancy.jobType && <span className="tiny-chip chip-orange"><BriefcaseBusiness size={11} />{vacancy.jobType}</span>}
+        </div>
       </div>
 
       <div className="detail-grid">
@@ -871,10 +1020,10 @@ function VacancyPanel({ vacancy, recruitment, isGovernment, onViewJob }: { vacan
       </div>
 
       <div className="vacancy-actions">
-        <button className="vacancy-action" onClick={onViewJob}><BriefcaseBusiness size={15} />{isGovernment ? 'View Vacancy Details' : 'View & Apply'}</button>
+        <button className="vacancy-action" onClick={onViewJob}><BriefcaseBusiness size={15} />{isGovernment ? 'View Details' : 'View & Apply'}</button>
         {recruitment.officialApplicationUrl && (
           <button className={`vacancy-action ${isGovernment ? 'primary' : 'private-primary'}`} onClick={() => openExternal(recruitment.officialApplicationUrl)}>
-            <ExternalLink size={15} />{isGovernment ? 'Official Apply Link' : 'Apply Now'}
+            <ExternalLink size={15} />{isGovernment ? 'Official Apply' : 'Apply Now'}
           </button>
         )}
       </div>
@@ -899,7 +1048,7 @@ function DetailCard({ icon: Icon, label, value, tone }: { icon: LucideIcon; labe
   return (
     <div className="detail-card">
       <div className={`detail-icon ${tone}`}><Icon size={18} strokeWidth={2} /></div>
-      <div>
+      <div className="detail-copy">
         <div className="detail-label">{label}</div>
         <div className="detail-value">{value}</div>
       </div>
@@ -966,4 +1115,103 @@ function parseRecruitmentDate(value: string) {
 
 function openExternal(url?: string) {
   if (url) window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+function DepartmentScroller({ children }: { children: ReactNode }) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const [canLeft, setCanLeft] = useState(false);
+  const [canRight, setCanRight] = useState(false);
+
+  const refresh = () => {
+    const node = listRef.current;
+    if (!node) return;
+    setCanLeft(node.scrollLeft > 8);
+    setCanRight(node.scrollLeft + node.clientWidth < node.scrollWidth - 8);
+  };
+
+  useEffect(() => {
+    refresh();
+    const node = listRef.current;
+    if (!node) return;
+    node.addEventListener('scroll', refresh, { passive: true });
+    window.addEventListener('resize', refresh);
+    return () => {
+      node.removeEventListener('scroll', refresh);
+      window.removeEventListener('resize', refresh);
+    };
+  }, [children]);
+
+  const scrollByCards = (direction: number) => {
+    listRef.current?.scrollBy({ left: direction * 260, behavior: 'smooth' });
+  };
+
+  return (
+    <div className="department-scroll-wrap">
+      <div className="department-scroll-hint">
+        <span>{canRight || canLeft ? 'More vacancies → scroll right' : 'All vacancies visible'}</span>
+        <div className="department-scroll-buttons">
+          <button type="button" className="department-scroll-btn" disabled={!canLeft} onClick={() => scrollByCards(-1)} aria-label="Previous vacancies">
+            <ChevronLeft size={16} />
+          </button>
+          <button type="button" className="department-scroll-btn" disabled={!canRight} onClick={() => scrollByCards(1)} aria-label="More vacancies">
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      </div>
+      <div className="department-list" ref={listRef}>
+        {children}
+      </div>
+      {canRight ? <div className="department-fade-right" /> : null}
+    </div>
+  );
+}
+
+function OfficialSourcesFooter({ recruitment }: { recruitment: Recruitment }) {
+  if (!recruitment.officialWebsite && !recruitment.officialNotificationUrl) return null;
+  return (
+    <section className="recruit-card" style={{ padding: '18px', marginTop: 12 }}>
+      <h2 className="section-eyebrow">Official Sources</h2>
+      <p style={{ color: '#667085', fontSize: 13, margin: '6px 0 14px' }}>
+        Read the job description above first. Download or leave only after you have reviewed the vacancy details.
+      </p>
+      <div className="action-stack">
+        {recruitment.officialWebsite && (
+          <button className="action-btn" onClick={() => openExternal(recruitment.officialWebsite)}>
+            <Building2 size={15} />Official Website
+          </button>
+        )}
+        {recruitment.officialNotificationUrl && (
+          <button className="action-btn" onClick={() => openExternal(recruitment.officialNotificationUrl)}>
+            <FileText size={15} />Notification PDF
+          </button>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function buildRecruitmentDescription(recruitment: Recruitment, vacancy: VacancyRecord | null) {
+  if (recruitment.jobDescription && /JOB DETAILS/i.test(recruitment.jobDescription)) {
+    return recruitment.jobDescription;
+  }
+  return buildStructuredJobDescription({
+    postName: vacancy?.postName || recruitment.title,
+    organisationName: recruitment.organisationName,
+    department: cleanExtractedName(vacancy?.department),
+    speciality: cleanExtractedName(vacancy?.speciality),
+    location: vacancy?.location || recruitment.location,
+    numberOfPosts: vacancy?.numberOfVacancies || recruitment.totalVacancies,
+    jobType: vacancy?.jobType,
+    qualification: vacancy?.qualification,
+    experience: vacancy?.experience,
+    ageLimit: vacancy?.ageLimit,
+    otherEligibility: vacancy?.otherEligibilityRequirements,
+    salary: vacancy?.salary || vacancy?.payScale || vacancy?.payLevel,
+    applicationStartDate: recruitment.applicationStartDate,
+    applicationLastDate: recruitment.applicationLastDate,
+    applicationFee: recruitment.applicationFee,
+    selectionProcess: recruitment.selectionProcess,
+    importantInstructions: recruitment.importantInstructions,
+    extraNotes: leftoverEligibilityNotes(vacancy?.qualification, vacancy?.experience, vacancy?.otherEligibilityRequirements),
+  });
 }

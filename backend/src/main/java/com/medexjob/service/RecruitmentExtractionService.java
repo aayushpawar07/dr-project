@@ -50,6 +50,7 @@ public class RecruitmentExtractionService {
                     ? aiClient.extract(extractionText)
                     : Optional.empty();
             RecruitmentExtractionResult result = ai.orElseGet(() -> heuristic(document, extractionText, usedOcr, nativeTextSparse));
+            RecruitmentFieldSanitizer.sanitize(result);
             if (ai.isPresent()) {
                 result.setExtractionMethod(usedOcr ? "AI_OCR" : "AI");
             } else if (usedOcr) {

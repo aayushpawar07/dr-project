@@ -84,6 +84,7 @@ public class RecruitmentAiExtractionClient {
             }
             content = content.replaceFirst("^```(?:json)?\\s*", "").replaceFirst("\\s*```$", "");
             RecruitmentExtractionResult result = objectMapper.readValue(content, RecruitmentExtractionResult.class);
+            RecruitmentFieldSanitizer.sanitize(result);
             result.setExtractionMethod("AI");
             return Optional.of(result);
         } catch (Exception ex) {
@@ -96,7 +97,7 @@ public class RecruitmentAiExtractionClient {
         return """
                 You extract structured medical recruitment data from official recruitment notifications.
                 Return JSON only. Never invent, assume, copy from unrelated vacancies, or default missing values; use null instead.
-                Preserve wording from the notification and keep values tied to the vacancy/row they belong to.
+                Keep values tied to the vacancy/row they belong to.
                 Required JSON shape:
                 {
                   "recruitment": {
@@ -105,7 +106,8 @@ public class RecruitmentAiExtractionClient {
                     "totalVacancies": null, "applicationStartDate": "YYYY-MM-DD|null",
                     "applicationLastDate": "YYYY-MM-DD|null", "applicationFee": null,
                     "selectionProcess": null, "officialNotificationUrl": null,
-                    "officialApplicationUrl": null, "officialWebsite": null, "importantInstructions": null
+                    "officialApplicationUrl": null, "officialWebsite": null,
+                    "importantInstructions": null, "jobDescription": null
                   },
                   "vacancies": [{
                     "postName": null, "department": null, "speciality": null, "subSpeciality": null,
@@ -115,7 +117,37 @@ public class RecruitmentAiExtractionClient {
                     "confidenceScore": 0.0, "sourcePage": null
                   }]
                 }
-                Extraction rules:
+                Card-field rules — these values appear on listing cards, so keep them short and relevant:
+                - qualification: degree/diploma only (e.g. "MD/MS/DNB", "MBBS"). 3-80 characters. Never Gazette citations, NMC norms paragraphs, or "as per official notification".
+                - experience: years or a specific requirement only (e.g. "3 years teaching"). If the PDF only has a generic NMC/gazette rule, use null.
+                - salary: pay figure or pay level only (e.g. "Rs. 1,65,480 per month" or "Level-13"). Do not copy allowance paragraphs.
+                - department, speciality, postName: the name only. Never append eligibility, gazette, or NMC text.
+                - Put NMC norms, Gazette of India wording, long eligibility notes, and common rules into importantInstructions and jobDescription only.
+                Description rules — generate recruitment.jobDescription in this exact format for every PDF (single job or multi-job). Do not include website or PDF links:
+                JOB DETAILS
+                Post: ...
+                Organisation: ...
+                Department: ...
+                Location: ...
+                Number of Posts: ...
+                Job Type: ...
+
+                ELIGIBILITY
+                Qualification: ...
+                Experience: ...
+
+                PAY / SALARY
+                ...
+
+                APPLICATION DETAILS
+                Last Date to Apply: ...
+                Selection Process: ...
+
+                IMPORTANT INSTRUCTIONS
+                ...
+                - jobDescription must be useful and specific from THIS PDF: not a one-line stub, not a dump of the whole notice.
+                - For multi-post notices, write one shared description for the recruitment; vacancy-specific degree/pay stay in vacancy fields.
+                Other extraction rules:
                 - Extract every genuine vacancy row/post from the notification. Do not merge unrelated rows.
                 - Keep post, department, speciality, category, location and vacancy count associated with the exact row they came from.
                 - numberOfVacancies must come from the exact vacancy/row. If missing or ambiguous, return null, never 1.
@@ -124,7 +156,6 @@ public class RecruitmentAiExtractionClient {
                 - recruitment.location is only a recruitment-wide location when the document clearly states one location applies to all vacancies; otherwise use null.
                 - applicationLastDate must be the actual application closing/deadline date. Never infer or manufacture a date.
                 - Do not use advertisement dates, interview dates, reporting dates, exam dates, document-verification dates, or unrelated dates as applicationLastDate.
-                - Extract qualification, experience, age limit, salary/pay scale, job type and eligibility only when supported by the notification.
                 - Never fill missing fields from common knowledge, previous notices, examples, or another vacancy in the same PDF.
                 - totalVacancies should reflect the notification total only when explicitly stated or safely sum-able from extracted vacancy rows.
                 - confidenceScore is 0.0-1.0 and should be lower for ambiguous/OCR-damaged rows.

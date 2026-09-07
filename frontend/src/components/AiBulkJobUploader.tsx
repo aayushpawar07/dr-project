@@ -69,6 +69,15 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
   }, [recruitment, filter]);
 
   const selectedCount = selected.size;
+  const allVisibleSelected = rows.length > 0 && rows.every((row) => selected.has(row.id));
+
+  const toggleSelectAll = () => {
+    if (allVisibleSelected) {
+      setSelected(new Set());
+      return;
+    }
+    setSelected(new Set(rows.map((row) => row.id)));
+  };
   const approved = recruitment?.vacancies.filter((v) => v.status === 'APPROVED').length || 0;
   const needsReview = recruitment?.vacancies.filter((v) => v.status === 'NEEDS_REVIEW').length || 0;
   const published = recruitment?.vacancies.filter((v) => v.status === 'PUBLISHED').length || 0;
@@ -301,11 +310,27 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
     if (!recruitment) return;
     setActionLoading('verify');
     try {
+      await updateRecruitment(recruitment.id, {
+        organisationName: recruitment.organisationName,
+        title: recruitment.title,
+        advertisementNumber: recruitment.advertisementNumber,
+        recruitmentYear: recruitment.recruitmentYear,
+        location: recruitment.location,
+        applicationStartDate: recruitment.applicationStartDate,
+        applicationLastDate: recruitment.applicationLastDate,
+        applicationFee: recruitment.applicationFee,
+        sector: recruitment.sector,
+        officialNotificationUrl: recruitment.officialNotificationUrl,
+        officialApplicationUrl: recruitment.officialApplicationUrl,
+        officialWebsite: recruitment.officialWebsite,
+        selectionProcess: recruitment.selectionProcess,
+        importantInstructions: recruitment.importantInstructions,
+      });
       const saved = await verifyRecruitment(recruitment.id);
       setRecruitment(saved);
       toast.success('Official source verified.');
     } catch (error: any) {
-      toast.error(error?.response?.data?.error || 'Verification requirements are incomplete.');
+      toast.error(error?.response?.data?.error || error?.message || 'Verification requirements are incomplete.');
     } finally {
       setActionLoading(null);
     }
@@ -432,7 +457,11 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
               </div>
               <div className="mt-5 flex flex-wrap items-center gap-2">
                 <Button variant="outline" onClick={verify} disabled={recruitment.officialSourceVerified || actionLoading === 'verify'}>{actionLoading === 'verify' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}{recruitment.officialSourceVerified ? 'Official Source Verified' : 'Verify Official Source'}</Button>
-                {recruitment.sector === 'government' && !recruitment.officialSourceVerified && <span className="text-sm text-amber-700">Government jobs require official source verification before publishing.</span>}
+                {recruitment.sector === 'government' && !recruitment.officialSourceVerified && (
+                  <span className="text-sm text-amber-700">
+                    Government jobs require official source verification before publishing (at least one valid official URL: Organisation Website, Notification URL, or Application URL).
+                  </span>
+                )}
               </div>
             </Card>
 
@@ -460,10 +489,19 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
                 <div><h2 className="text-xl font-bold text-slate-950">AI Vacancy Review</h2><p className="text-sm text-slate-500">All extracted vacancy fields are visible and editable below.</p></div>
                 <div className="flex flex-wrap gap-2">
                   <div className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" /><input className="h-10 w-64 rounded-md border pl-9 pr-3" placeholder="Filter extracted vacancies" value={filter} onChange={(e) => setFilter(e.target.value)} /></div>
+                  <Button variant="outline" onClick={toggleSelectAll} disabled={!rows.length}>
+                    {allVisibleSelected ? 'Clear Selection' : `Select All (${rows.length})`}
+                  </Button>
                   <Button variant="outline" onClick={addBlankRow}><Plus className="mr-2 h-4 w-4" />Add Row</Button>
                 </div>
               </div>
 
+              {rows.length > 0 && (
+                <label className="mb-3 flex items-center gap-2 text-sm font-medium text-slate-700">
+                  <input type="checkbox" className="h-4 w-4" checked={allVisibleSelected} onChange={toggleSelectAll} />
+                  Select all vacancies ({rows.length})
+                </label>
+              )}
               <div className="space-y-4">
                 {rows.map((row, index) => (
                   <VacancyEditor

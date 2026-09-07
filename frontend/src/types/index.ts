@@ -64,6 +64,7 @@ export interface Job {
   postedDate: string;
   pdfUrl?: string;
   applyLink?: string;
+  officialWebsite?: string;
   employerId?: string;
   status: 'active' | 'closed' | 'pending';
   slug?: string;

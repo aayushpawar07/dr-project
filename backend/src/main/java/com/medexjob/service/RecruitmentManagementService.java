@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class RecruitmentManagementService {
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(RecruitmentManagementService.class);
     private final RecruitmentExtractionService extractionService;
     private final RecruitmentRepository recruitmentRepository;
     private final VacancyRecordRepository vacancyRepository;
@@ -105,6 +106,7 @@ public class RecruitmentManagementService {
         setIfPresent(updates, "officialApplicationUrl", r::setOfficialApplicationUrl);
         setIfPresent(updates, "officialWebsite", r::setOfficialWebsite);
         setIfPresent(updates, "importantInstructions", r::setImportantInstructions);
+        setIfPresent(updates, "jobDescription", r::setJobDescription);
         if (updates.containsKey("recruitmentYear")) r.setRecruitmentYear(asInteger(updates.get("recruitmentYear")));
         if (updates.containsKey("totalVacancies")) r.setTotalVacancies(asInteger(updates.get("totalVacancies")));
         if (updates.containsKey("applicationStartDate")) r.setApplicationStartDate(asDate(updates.get("applicationStartDate")));
@@ -216,13 +218,22 @@ public class RecruitmentManagementService {
     public Recruitment verify(UUID recruitmentId, String verifiedBy) {
         Recruitment r = get(recruitmentId);
         if (requiresOfficialVerification(r)) {
+            boolean hasNotificationUrl = isHttpUrl(r.getOfficialNotificationUrl());
+            boolean hasApplicationUrl = isHttpUrl(r.getOfficialApplicationUrl());
+            boolean hasWebsite = isHttpUrl(r.getOfficialWebsite());
+
+            if (!hasNotificationUrl && !hasApplicationUrl && !hasWebsite) {
+                throw new IllegalStateException(
+                        "Official source verification requires at least one valid official URL (Organisation Website, Official Notification URL, or Official Application URL)");
+            }
+
             List<String> invalid = new ArrayList<>();
-            if (!isHttpUrl(r.getOfficialNotificationUrl())) invalid.add("officialNotificationUrl");
-            if (!isHttpUrl(r.getOfficialApplicationUrl())) invalid.add("officialApplicationUrl");
-            if (!isHttpUrl(r.getOfficialWebsite())) invalid.add("officialWebsite");
+            if (hasText(r.getOfficialNotificationUrl()) && !isHttpUrl(r.getOfficialNotificationUrl())) invalid.add("officialNotificationUrl");
+            if (hasText(r.getOfficialApplicationUrl()) && !isHttpUrl(r.getOfficialApplicationUrl())) invalid.add("officialApplicationUrl");
+            if (hasText(r.getOfficialWebsite()) && !isHttpUrl(r.getOfficialWebsite())) invalid.add("officialWebsite");
             if (!invalid.isEmpty()) {
                 throw new IllegalStateException(
-                        "Official source verification requires valid http/https URLs for: " + String.join(", ", invalid));
+                        "Invalid URL format (must start with http:// or https://) for: " + String.join(", ", invalid));
             }
         }
         r.setOfficialSourceVerified(true);
@@ -266,6 +277,7 @@ public class RecruitmentManagementService {
                 changed.add(v);
                 published++;
             } catch (Exception ex) {
+                logger.warn("Failed to publish vacancy {}: {}", v.getId(), ex.getMessage());
                 failures.add((hasText(v.getPostName()) ? v.getPostName() : String.valueOf(v.getId())) + ": " + safeMessage(ex));
             }
         }
@@ -297,6 +309,7 @@ public class RecruitmentManagementService {
         r.setOfficialApplicationUrl(d.getOfficialApplicationUrl());
         r.setOfficialWebsite(d.getOfficialWebsite());
         r.setImportantInstructions(d.getImportantInstructions());
+        r.setJobDescription(d.getJobDescription());
         r.setSourcePdfName(fileName);
         r.setPdfFingerprint(fingerprint);
         String slugSuffix = fingerprint == null || fingerprint.length() < 8 ? UUID.randomUUID().toString().substring(0, 8) : fingerprint.substring(0, 8);
@@ -344,20 +357,25 @@ public class RecruitmentManagementService {
         job.setSector(r.getSector());
         job.setCategory(mapJobCategory(v.getPostName()));
         job.setLocation(clip(nonBlank(v.getLocation(), r.getLocation()), 200));
-        job.setQualification(nonBlank(v.getQualification(), "As per official recruitment notification"));
-        job.setExperience(clip(nonBlank(v.getExperience(), "As per official recruitment notification"), 100));
+        job.setQualification(RecruitmentFieldSanitizer.cardValue(v.getQualification(), "As per official notification"));
+        job.setExperience(RecruitmentFieldSanitizer.cardValue(v.getExperience(), "As per official notification"));
         job.setSpeciality(clip(speciality, 255));
         job.setDepartment(clip(v.getDepartment(), 220));
         job.setJobType(clip(nonBlank(v.getJobType(), "Full Time"), 100));
         job.setDutyType(mapDutyType(v.getJobType()));
         job.setNumberOfPosts(Math.max(1, v.getNumberOfVacancies()));
-        job.setSalaryRange(clip(firstNonBlank(v.getSalary(), v.getPayScale(), v.getPayLevel()), 100));
+        job.setSalaryRange(clip(firstNonBlank(
+                RecruitmentFieldSanitizer.shortSalary(v.getSalary()),
+                v.getPayScale(),
+                v.getPayLevel()
+        ), 100));
         job.setRequirements(v.getOtherEligibilityRequirements());
         job.setLastDate(r.getApplicationLastDate() == null ? LocalDate.now().plusDays(30) : r.getApplicationLastDate());
         job.setContactEmail("jobs@medexjob.com");
         job.setContactPhone("0000000000");
         job.setPdfUrl(clip(r.getOfficialNotificationUrl(), 500));
-        job.setApplyLink(clip(r.getOfficialApplicationUrl(), 500));
+        job.setApplyLink(clip(firstNonBlank(r.getOfficialApplicationUrl(), r.getOfficialWebsite()), 500));
+        job.setOfficialWebsite(clip(r.getOfficialWebsite(), 500));
         job.setStatus(job.getLastDate().isBefore(LocalDate.now()) ? Job.JobStatus.CLOSED : Job.JobStatus.ACTIVE);
         job.setIsFeatured(false);
         job.setViews(0);
@@ -371,42 +389,55 @@ public class RecruitmentManagementService {
     }
 
     private String buildDescription(Recruitment r, VacancyRecord v) {
+        if (looksStructured(r.getJobDescription())) {
+            return r.getJobDescription().trim();
+        }
         List<String> lines = new ArrayList<>();
-        lines.add(r.getTitle());
-        if (hasText(v.getDepartment())) lines.add("Department: " + v.getDepartment());
-        if (hasText(v.getSpeciality())) lines.add("Speciality: " + v.getSpeciality());
-        if (hasText(v.getSubSpeciality()) && !Objects.equals(v.getSubSpeciality(), v.getSpeciality())) lines.add("Sub-speciality: " + v.getSubSpeciality());
-        if (hasText(v.getCategory())) lines.add("Category: " + v.getCategory());
-        lines.add("Vacancies: " + v.getNumberOfVacancies());
-        if (hasText(r.getAdvertisementNumber())) lines.add("Advertisement: " + r.getAdvertisementNumber());
-        return String.join("\n", lines);
+        addDescriptionSection(lines, "JOB DETAILS", List.of(
+                hasText(v.getPostName()) ? "Post: " + v.getPostName() : null,
+                hasText(r.getOrganisationName()) ? "Organisation: " + r.getOrganisationName() : null,
+                hasText(v.getDepartment()) ? "Department: " + v.getDepartment() : null,
+                hasText(v.getSpeciality()) ? "Speciality: " + v.getSpeciality() : null,
+                hasText(v.getSubSpeciality()) && !Objects.equals(v.getSubSpeciality(), v.getSpeciality()) ? "Sub-speciality: " + v.getSubSpeciality() : null,
+                hasText(firstNonBlank(v.getLocation(), r.getLocation())) ? "Location: " + firstNonBlank(v.getLocation(), r.getLocation()) : null,
+                "Number of Posts: " + v.getNumberOfVacancies(),
+                hasText(v.getJobType()) ? "Job Type: " + v.getJobType() : null,
+                hasText(r.getAdvertisementNumber()) ? "Advertisement: " + r.getAdvertisementNumber() : null
+        ));
+        addDescriptionSection(lines, "ELIGIBILITY", List.of(
+                hasText(v.getQualification()) ? "Qualification: " + v.getQualification() : null,
+                hasText(v.getExperience()) ? "Experience: " + v.getExperience() : null,
+                hasText(v.getAgeLimit()) ? "Age Limit: " + v.getAgeLimit() : null,
+                v.getOtherEligibilityRequirements()
+        ));
+        addDescriptionSection(lines, "PAY / SALARY", List.of(
+                firstNonBlank(v.getSalary(), v.getPayScale(), v.getPayLevel())
+        ));
+        addDescriptionSection(lines, "APPLICATION DETAILS", List.of(
+                r.getApplicationStartDate() != null ? "Application Start Date: " + r.getApplicationStartDate() : null,
+                r.getApplicationLastDate() != null ? "Last Date to Apply: " + r.getApplicationLastDate() : null,
+                hasText(r.getApplicationFee()) ? "Application Fee: " + r.getApplicationFee() : null,
+                hasText(r.getSelectionProcess()) ? "Selection Process: " + r.getSelectionProcess() : null
+        ));
+        addDescriptionSection(lines, "IMPORTANT INSTRUCTIONS", List.of(r.getImportantInstructions()));
+        return String.join("\n", lines).trim();
+    }
+
+    private void addDescriptionSection(List<String> lines, String heading, List<String> values) {
+        List<String> parts = values.stream().filter(this::hasText).toList();
+        if (parts.isEmpty()) return;
+        if (!lines.isEmpty()) lines.add("");
+        lines.add(heading);
+        lines.add("");
+        lines.addAll(parts);
+    }
+
+    private boolean looksStructured(String value) {
+        return hasText(value) && value.toUpperCase(Locale.ROOT).contains("JOB DETAILS");
     }
 
     private Employer resolveOrCreateEmployer(String organisation) {
-        String companyName = nonBlank(organisation, "MedExJob Recruitment");
-        return employerRepository.findByCompanyName(companyName).orElseGet(() -> {
-            String slug = slug(companyName);
-            String emailSlug = slug.isBlank() ? UUID.randomUUID().toString().substring(0, 8) : slug;
-            if (emailSlug.length() > 55) emailSlug = emailSlug.substring(0, 55);
-            String email = "bulk+" + emailSlug + "@medexjob.com";
-            User user = userRepository.findByEmail(email).orElseGet(() -> {
-                User u = new User();
-                u.setName(companyName + " Recruitment");
-                u.setEmail(email);
-                u.setPhone("0000000000");
-                u.setRole(User.UserRole.EMPLOYER);
-                u.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
-                u.setIsVerified(true);
-                return userRepository.save(u);
-            });
-            Employer e = new Employer();
-            e.setUser(user);
-            e.setCompanyName(companyName);
-            e.setCompanyType(Employer.CompanyType.HOSPITAL);
-            e.setIsVerified(true);
-            e.setVerificationStatus(Employer.VerificationStatus.APPROVED);
-            return employerRepository.save(e);
-        });
+        return vacancyJobPublisher.resolveOrCreateEmployer(organisation);
     }
 
     private VacancyRecord getVacancy(UUID recruitmentId, UUID vacancyId) {

@@ -23,6 +23,7 @@ export interface VacancyRecord {
   slug?: string;
   sourcePage?: number;
   publishedJobId?: string;
+  lastDate?: string;
 }
 
 export interface Recruitment {

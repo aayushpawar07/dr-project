@@ -35,13 +35,11 @@ import {
   Recruitment,
   VacancyRecord,
 } from '../api/recruitments';
+import { fetchJob } from '../api/jobs';
 import {
-  buildStructuredJobDescription,
-  cardFieldText,
-  cardSalaryText,
   cleanExtractedName,
   departmentSubtitle,
-  leftoverEligibilityNotes,
+  detailFieldText,
 } from '../utils/extractedFieldDisplay';
 
 const PAGE_STYLES = `
@@ -383,7 +381,7 @@ const PAGE_STYLES = `
     min-width: 0;
   }
   .department-scroll-hint {
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
@@ -411,34 +409,18 @@ const PAGE_STYLES = `
     cursor: default;
   }
   .department-list {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 2px 2px 12px;
+    display: grid;
+    gap: 7px;
+    max-height: 474px;
+    overflow: auto;
+    padding-right: 3px;
     min-width: 0;
-    scroll-snap-type: x proximity;
-    scrollbar-width: auto;
-    scrollbar-color: #1463ff #dbe7ff;
   }
-  .department-list::-webkit-scrollbar { height: 10px; }
-  .department-list::-webkit-scrollbar-track { background: #dbe7ff; border-radius: 999px; }
-  .department-list::-webkit-scrollbar-thumb { background: #1463ff; border-radius: 999px; }
-  .department-fade-right {
-    pointer-events: none;
-    position: absolute;
-    top: 36px;
-    right: 0;
-    width: 42px;
-    height: calc(100% - 48px);
-    background: linear-gradient(90deg, rgba(255,255,255,0), #ffffff 88%);
-  }
+  .department-fade-right { display: none; }
 
   .department-row {
-    width: auto;
-    min-width: 240px;
-    flex: 0 0 auto;
-    scroll-snap-align: start;
+    width: 100%;
+    min-width: 0;
     min-height: 58px;
     padding: 8px 9px;
     border: 1px solid #e2e8f0;
@@ -578,9 +560,18 @@ const PAGE_STYLES = `
   .date-label { color: #667085; font-size: 9.5px; overflow-wrap: anywhere; }
   .date-value { margin-top: 2px; color: #101828; font-size: 10.5px; font-weight: 850; overflow-wrap: anywhere; }
 
-  .vacancy-actions { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .vacancy-actions {
+    margin-top: 14px;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 9px;
+  }
   .vacancy-action {
     min-height: 38px;
+    min-width: 220px;
+    max-width: 320px;
+    width: 100%;
     border-radius: 7px;
     border: 1px solid #dbe4ef;
     background: #ffffff;
@@ -620,12 +611,12 @@ const PAGE_STYLES = `
     .explorer-shell { grid-template-columns: minmax(0, 1fr); }
     .department-pane { border-right: 0; border-bottom: 1px solid #e2e8f0; }
     .department-list {
-      display: flex;
+      display: grid;
       max-height: none;
-      overflow-x: auto;
+      overflow: visible;
       padding-right: 0;
     }
-    .department-row { min-width: min(240px, 78vw); flex: 0 0 auto; }
+    .department-row { min-width: 0; width: 100%; }
     .department-name, .department-sub {
       white-space: normal;
       overflow: visible;
@@ -678,6 +669,17 @@ const PAGE_STYLES = `
     .recruit-meta-item { min-width: 0; flex: 1 1 120px; padding-right: 10px; }
     .summary-item { min-height: 64px; }
     .department-controls { grid-template-columns: 1fr; }
+    .department-scroll-hint { display: flex; }
+    .department-fade-right {
+      display: block;
+      pointer-events: none;
+      position: absolute;
+      top: 36px;
+      right: 0;
+      width: 42px;
+      height: calc(100% - 48px);
+      background: linear-gradient(90deg, rgba(255,255,255,0), #ffffff 88%);
+    }
     .department-list {
       display: flex;
       width: 100%;
@@ -689,7 +691,12 @@ const PAGE_STYLES = `
       gap: 8px;
       -webkit-overflow-scrolling: touch;
       scroll-snap-type: x proximity;
+      scrollbar-width: auto;
+      scrollbar-color: #1463ff #dbe7ff;
     }
+    .department-list::-webkit-scrollbar { height: 10px; }
+    .department-list::-webkit-scrollbar-track { background: #dbe7ff; border-radius: 999px; }
+    .department-list::-webkit-scrollbar-thumb { background: #1463ff; border-radius: 999px; }
     .department-row {
       min-width: min(232px, 78vw);
       flex: 0 0 auto;
@@ -709,7 +716,7 @@ const PAGE_STYLES = `
   @media (max-width: 420px) {
     .summary-grid { grid-template-columns: minmax(0, 1fr); }
     .detail-grid { grid-template-columns: minmax(0, 1fr); }
-    .vacancy-actions { grid-template-columns: 1fr; }
+    .vacancy-actions { justify-content: center; }
   }
 `;
 
@@ -721,6 +728,7 @@ export function RecruitmentPage() {
   const [query, setQuery] = useState('');
   const [activePost, setActivePost] = useState('');
   const [selectedVacancyId, setSelectedVacancyId] = useState('');
+  const [applyByDate, setApplyByDate] = useState('');
 
   useEffect(() => {
     if (!recruitmentId) return;
@@ -734,6 +742,27 @@ export function RecruitmentPage() {
       .catch(() => setRecruitment(null))
       .finally(() => setLoading(false));
   }, [recruitmentId]);
+
+  useEffect(() => {
+    if (!recruitment) {
+      setApplyByDate('');
+      return;
+    }
+    const direct = recruitment.applicationLastDate
+      || recruitment.vacancies.find((vacancy) => vacancy.lastDate)?.lastDate
+      || '';
+    if (direct) {
+      setApplyByDate(direct);
+      return;
+    }
+    const jobId = recruitment.vacancies.find((vacancy) => vacancy.publishedJobId)?.publishedJobId;
+    if (!jobId) return;
+    fetchJob(jobId)
+      .then((job) => {
+        if (job?.lastDate) setApplyByDate(job.lastDate);
+      })
+      .catch(() => undefined);
+  }, [recruitment]);
 
   const postGroups = useMemo(() => {
     const groups = new Map<string, VacancyRecord[]>();
@@ -803,8 +832,9 @@ export function RecruitmentPage() {
   }
 
   const isGovernment = recruitment.sector === 'government';
-  const daysLeft = recruitment.applicationLastDate
-    ? Math.ceil((parseRecruitmentDate(recruitment.applicationLastDate).getTime() - Date.now()) / 86400000)
+  const applyByLabel = applyByDate ? formatDate(applyByDate) : 'See Notification';
+  const daysLeft = applyByDate
+    ? Math.ceil((parseRecruitmentDate(applyByDate).getTime() - Date.now()) / 86400000)
     : null;
   const applicationMode = recruitment.officialApplicationUrl ? 'Online' : 'As notified';
   const primaryPost = activePost || postGroups[0]?.name || 'Multiple Posts';
@@ -832,7 +862,7 @@ export function RecruitmentPage() {
       <style>{PAGE_STYLES}</style>
       <div className="recruit-shell">
         <div className="recruit-top">
-          <RecruitmentHero recruitment={recruitment} isGovernment={isGovernment} />
+          <RecruitmentHero recruitment={recruitment} isGovernment={isGovernment} applyByLabel={applyByLabel} />
           <ApplicationPanel
             recruitment={recruitment}
             isGovernment={isGovernment}
@@ -848,7 +878,7 @@ export function RecruitmentPage() {
             <SummaryCard icon={Building2} tone="green" label="Departments" value={String(departmentCount)} helper="Medical Specialties" />
             <SummaryCard icon={BriefcaseBusiness} tone="purple" label="Job Role" value={primaryPost} helper={selectedVacancy?.jobType || 'Full Time'} />
             <SummaryCard icon={CalendarDays} tone="orange" label="Application Mode" value={applicationMode} helper="Through Official Portal" />
-            <SummaryCard icon={AlarmClock} tone="rose" label="Apply By" value={recruitment.applicationLastDate ? formatDate(recruitment.applicationLastDate) : 'See Notification'} helper={daysLeft != null && daysLeft > 0 ? `${daysLeft} days remaining` : 'Check dates'} />
+            <SummaryCard icon={AlarmClock} tone="rose" label="Apply By" value={applyByLabel} helper={daysLeft != null && daysLeft > 0 ? `${daysLeft} days remaining` : 'Check dates'} />
           </div>
         </section>
 
@@ -895,18 +925,11 @@ export function RecruitmentPage() {
 
           <main className="vacancy-pane">
             {selectedVacancy ? (
-              <VacancyPanel vacancy={selectedVacancy} recruitment={recruitment} isGovernment={isGovernment} onViewJob={openSelectedJob} />
+              <VacancyPanel vacancy={selectedVacancy} recruitment={recruitment} isGovernment={isGovernment} applyByLabel={applyByLabel} onViewJob={openSelectedJob} />
             ) : (
               <div style={{ minHeight: 420, display: 'grid', placeItems: 'center', color: '#667085' }}>Select a department to view details.</div>
             )}
           </main>
-        </section>
-
-        <section className="recruit-card" style={{ padding: '18px 18px 16px', marginTop: 12 }}>
-          <h2 className="section-eyebrow">Job Description</h2>
-          <p style={{ whiteSpace: 'pre-wrap', color: '#334155', lineHeight: 1.7, margin: '8px 0 0', fontSize: 14 }}>
-            {buildRecruitmentDescription(recruitment, selectedVacancy)}
-          </p>
         </section>
 
         <OfficialSourcesFooter recruitment={recruitment} />
@@ -916,7 +939,7 @@ export function RecruitmentPage() {
   );
 }
 
-function RecruitmentHero({ recruitment, isGovernment }: { recruitment: Recruitment; isGovernment: boolean }) {
+function RecruitmentHero({ recruitment, isGovernment, applyByLabel }: { recruitment: Recruitment; isGovernment: boolean; applyByLabel: string }) {
   return (
     <section className={`recruit-card recruit-hero ${isGovernment ? '' : 'private'}`}>
       <div className="recruit-badge-row">
@@ -937,15 +960,9 @@ function RecruitmentHero({ recruitment, isGovernment }: { recruitment: Recruitme
           <div className="recruit-org"><Building2 size={19} /><span className="org-highlight">{recruitment.organisationName}</span></div>
           {recruitment.location && <div className="recruit-location"><MapPin size={16} />{recruitment.location}</div>}
           <div className="recruit-meta-row">
-            {recruitment.advertisementNumber && (
-              <div className="recruit-meta-item">
-                <div className="meta-label">Advertisement No.</div>
-                <div className="meta-value">{recruitment.advertisementNumber}</div>
-              </div>
-            )}
             <div className="recruit-meta-item">
               <div className="meta-label">Apply by</div>
-              <div className="meta-value deadline">{recruitment.applicationLastDate ? formatDate(recruitment.applicationLastDate) : 'See Notification'}</div>
+              <div className="meta-value deadline">{applyByLabel}</div>
             </div>
           </div>
         </div>
@@ -971,16 +988,16 @@ function ApplicationPanel({ recruitment, isGovernment, daysLeft, onShare }: { re
   );
 }
 
-function VacancyPanel({ vacancy, recruitment, isGovernment, onViewJob }: { vacancy: VacancyRecord; recruitment: Recruitment; isGovernment: boolean; onViewJob: () => void }) {
+function VacancyPanel({ vacancy, recruitment, isGovernment, applyByLabel, onViewJob }: { vacancy: VacancyRecord; recruitment: Recruitment; isGovernment: boolean; applyByLabel: string; onViewJob: () => void }) {
   const department = cleanExtractedName(vacancy.department || vacancy.speciality || vacancy.postName);
   const DepartmentIcon = getDepartmentIcon(department);
   const details: Array<{ icon: LucideIcon; label: string; value: string; tone: string }> = [
-    { icon: GraduationCap, label: 'Qualification', value: cardFieldText(vacancy.qualification, 'See job description'), tone: 'icon-blue' },
-    { icon: Stethoscope, label: 'Experience', value: cardFieldText(vacancy.experience, 'See job description'), tone: 'icon-indigo' },
-    { icon: IndianRupee, label: 'Salary / Pay', value: cardSalaryText(vacancy.salary || vacancy.payScale || vacancy.payLevel) || 'See job description', tone: 'icon-teal' },
-    { icon: Users, label: 'Age Limit', value: cardFieldText(vacancy.ageLimit, 'As per notification'), tone: 'icon-purple' },
-    { icon: ShieldCheck, label: 'Other Eligibility', value: cardFieldText(vacancy.otherEligibilityRequirements, 'See job description'), tone: 'icon-orange' },
-    { icon: BriefcaseBusiness, label: 'Selection Process', value: recruitment.selectionProcess || 'As per notification', tone: 'icon-indigo' },
+    { icon: GraduationCap, label: 'Qualification', value: detailFieldText(vacancy.qualification) || 'As per official notification', tone: 'icon-blue' },
+    { icon: Stethoscope, label: 'Experience', value: detailFieldText(vacancy.experience) || 'As per official notification', tone: 'icon-indigo' },
+    { icon: IndianRupee, label: 'Salary / Pay', value: detailFieldText(vacancy.salary, vacancy.payScale, vacancy.payLevel) || 'As per official notification', tone: 'icon-teal' },
+    { icon: Users, label: 'Age Limit', value: detailFieldText(vacancy.ageLimit) || 'As per official notification', tone: 'icon-purple' },
+    { icon: ShieldCheck, label: 'Other Eligibility', value: detailFieldText(vacancy.otherEligibilityRequirements) || 'As per official notification', tone: 'icon-orange' },
+    { icon: BriefcaseBusiness, label: 'Selection Process', value: detailFieldText(recruitment.selectionProcess) || 'As per official notification', tone: 'icon-indigo' },
   ];
 
   return (
@@ -1015,7 +1032,7 @@ function VacancyPanel({ vacancy, recruitment, isGovernment, onViewJob }: { vacan
         <div className="dates-grid">
           <DateItem label="Notification Date" value={recruitment.verificationDate ? formatDate(recruitment.verificationDate) : 'Not specified'} />
           <DateItem label="Application Start Date" value={recruitment.applicationStartDate ? formatDate(recruitment.applicationStartDate) : 'Not specified'} />
-          <DateItem label="Last Date to Apply" value={recruitment.applicationLastDate ? formatDate(recruitment.applicationLastDate) : 'Not specified'} />
+          <DateItem label="Last Date to Apply" value={applyByLabel} />
         </div>
       </div>
 
@@ -1172,7 +1189,7 @@ function OfficialSourcesFooter({ recruitment }: { recruitment: Recruitment }) {
     <section className="recruit-card" style={{ padding: '18px', marginTop: 12 }}>
       <h2 className="section-eyebrow">Official Sources</h2>
       <p style={{ color: '#667085', fontSize: 13, margin: '6px 0 14px' }}>
-        Read the job description above first. Download or leave only after you have reviewed the vacancy details.
+        Review the vacancy details above before opening these official links.
       </p>
       <div className="action-stack">
         {recruitment.officialWebsite && (
@@ -1188,30 +1205,4 @@ function OfficialSourcesFooter({ recruitment }: { recruitment: Recruitment }) {
       </div>
     </section>
   );
-}
-
-function buildRecruitmentDescription(recruitment: Recruitment, vacancy: VacancyRecord | null) {
-  if (recruitment.jobDescription && /JOB DETAILS/i.test(recruitment.jobDescription)) {
-    return recruitment.jobDescription;
-  }
-  return buildStructuredJobDescription({
-    postName: vacancy?.postName || recruitment.title,
-    organisationName: recruitment.organisationName,
-    department: cleanExtractedName(vacancy?.department),
-    speciality: cleanExtractedName(vacancy?.speciality),
-    location: vacancy?.location || recruitment.location,
-    numberOfPosts: vacancy?.numberOfVacancies || recruitment.totalVacancies,
-    jobType: vacancy?.jobType,
-    qualification: vacancy?.qualification,
-    experience: vacancy?.experience,
-    ageLimit: vacancy?.ageLimit,
-    otherEligibility: vacancy?.otherEligibilityRequirements,
-    salary: vacancy?.salary || vacancy?.payScale || vacancy?.payLevel,
-    applicationStartDate: recruitment.applicationStartDate,
-    applicationLastDate: recruitment.applicationLastDate,
-    applicationFee: recruitment.applicationFee,
-    selectionProcess: recruitment.selectionProcess,
-    importantInstructions: recruitment.importantInstructions,
-    extraNotes: leftoverEligibilityNotes(vacancy?.qualification, vacancy?.experience, vacancy?.otherEligibilityRequirements),
-  });
 }

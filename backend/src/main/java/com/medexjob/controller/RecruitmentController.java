@@ -1,20 +1,25 @@
 package com.medexjob.controller;
 
+import com.medexjob.entity.Job;
 import com.medexjob.entity.Recruitment;
 import com.medexjob.entity.VacancyRecord;
+import com.medexjob.repository.JobRepository;
 import com.medexjob.repository.RecruitmentRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.*;
 
 @RestController
 @RequestMapping("/api/recruitments")
 public class RecruitmentController {
     private final RecruitmentRepository repository;
+    private final JobRepository jobRepository;
 
-    public RecruitmentController(RecruitmentRepository repository) {
+    public RecruitmentController(RecruitmentRepository repository, JobRepository jobRepository) {
         this.repository = repository;
+        this.jobRepository = jobRepository;
     }
 
     @GetMapping("/{id}")
@@ -47,7 +52,8 @@ public class RecruitmentController {
         m.put("advertisementNumber", r.getAdvertisementNumber()); m.put("recruitmentYear", r.getRecruitmentYear());
         m.put("sector", r.getSector().name().toLowerCase(Locale.ROOT));
         m.put("location", r.getLocation()); m.put("totalVacancies", r.getTotalVacancies());
-        m.put("applicationStartDate", r.getApplicationStartDate()); m.put("applicationLastDate", r.getApplicationLastDate());
+        m.put("applicationStartDate", r.getApplicationStartDate());
+        m.put("applicationLastDate", resolveLastDate(r));
         m.put("applicationFee", r.getApplicationFee()); m.put("selectionProcess", r.getSelectionProcess());
         m.put("importantInstructions", r.getImportantInstructions());
         m.put("jobDescription", r.getJobDescription());
@@ -67,6 +73,28 @@ public class RecruitmentController {
         m.put("jobType", v.getJobType()); m.put("location", v.getLocation());
         m.put("otherEligibilityRequirements", v.getOtherEligibilityRequirements()); m.put("sourcePage", v.getSourcePage());
         m.put("publishedJobId", v.getPublishedJobId());
+        if (v.getPublishedJobId() != null) {
+            jobRepository.findById(v.getPublishedJobId()).ifPresent(job -> {
+                if (job.getLastDate() != null) m.put("lastDate", job.getLastDate());
+                if (hasText(job.getQualification()) && !hasText(v.getQualification())) m.put("qualification", job.getQualification());
+                if (hasText(job.getExperience()) && !hasText(v.getExperience())) m.put("experience", job.getExperience());
+                if (hasText(job.getSalaryRange()) && !hasText(v.getSalary())) m.put("salary", job.getSalaryRange());
+                if (hasText(job.getRequirements()) && !hasText(v.getOtherEligibilityRequirements())) {
+                    m.put("otherEligibilityRequirements", job.getRequirements());
+                }
+            });
+        }
         return m;
+    }
+
+    private LocalDate resolveLastDate(Recruitment r) {
+        if (r.getApplicationLastDate() != null) return r.getApplicationLastDate();
+        return jobRepository.findFirstBySourceRecruitmentIdOrderByCreatedAtDesc(r.getId())
+                .map(Job::getLastDate)
+                .orElse(null);
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }

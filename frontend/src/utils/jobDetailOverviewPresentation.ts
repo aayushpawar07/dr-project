@@ -20,7 +20,6 @@ function findStructuredOrganization() {
     if (
       label.includes("organization/hospital name") ||
       label === "organization" ||
-      label === "organisation" ||
       label === "hospital name" ||
       label.includes("organisation/hospital name")
     ) {
@@ -32,7 +31,7 @@ function findStructuredOrganization() {
   const summaryItems = Array.from(document.querySelectorAll<HTMLElement>(".medex-summary-item"));
   for (const item of summaryItems) {
     const strong = cleanText(item.querySelector("strong")?.textContent).toLowerCase();
-    if (!strong.includes("organization") && !strong.includes("organisation") && !strong.includes("hospital name")) continue;
+    if (!strong.includes("organization") && !strong.includes("hospital name")) continue;
 
     const full = cleanText(item.textContent);
     const separator = full.indexOf(":");
@@ -74,8 +73,6 @@ function ensureOrganization(heroCard: HTMLElement, organization: string) {
 
   if (existingOrganization) {
     existingOrganization.classList.add("medex-job-organization-line");
-    const name = existingOrganization.querySelector("span");
-    if (name) name.classList.add("medex-job-organization-name");
     return;
   }
 
@@ -87,7 +84,6 @@ function ensureOrganization(heroCard: HTMLElement, organization: string) {
   line.append(createBuildingIcon());
 
   const text = document.createElement("span");
-  text.className = "medex-job-organization-name";
   text.textContent = organization;
   line.append(text);
 

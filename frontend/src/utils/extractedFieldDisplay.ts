@@ -62,83 +62,6 @@ export function leftoverEligibilityNotes(...values: unknown[]) {
   return [...new Set(values.map(text).filter((value) => isRegulatoryDump(value)))];
 }
 
-const SECTION_MARKERS: Array<{ key: string; label: string; pattern: RegExp }> = [
-  { key: 'details', label: 'Job Details', pattern: /^JOB DETAILS$/i },
-  { key: 'eligibility', label: 'Eligibility', pattern: /^ELIGIBILITY(?:\s+CRITERIA)?$/i },
-  { key: 'pay', label: 'Pay / Salary', pattern: /^PAY\s*\/\s*SALARY$/i },
-  { key: 'application', label: 'Application Details', pattern: /^APPLICATION DETAILS$/i },
-  { key: 'instructions', label: 'Important Instructions', pattern: /^IMPORTANT INSTRUCTIONS$/i },
-  { key: 'notes', label: 'Important Notes', pattern: /^IMPORTANT NOTES$/i },
-];
-
-export function preserveMultiline(value: unknown) {
-  return String(value ?? '').replace(/\r\n?/g, '\n').replace(/\u00a0/g, ' ').trim();
-}
-
-export function restoreStructuredDescription(raw: string) {
-  return preserveMultiline(raw)
-    .replace(
-      /\s*(JOB DETAILS|ELIGIBILITY(?:\s+CRITERIA)?|PAY\s*\/\s*SALARY|APPLICATION DETAILS|IMPORTANT INSTRUCTIONS|IMPORTANT NOTES)\b/gi,
-      '\n\n$1\n',
-    )
-    .replace(
-      /\s+(Post|Organisation|Organization|Department|Speciality|Specialty|Location|Number of Posts|Job Type|Advertisement|Qualification|Experience|Age Limit|Application Start Date|Last Date to Apply|Application Fee|Selection Process)\s*:/gi,
-      '\n$1:',
-    )
-    .replace(/[ \t]+\n/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-}
-
-export function isOrganisationLabel(label: string) {
-  return /organisation|organization|hospital name/i.test(label.trim());
-}
-
-export type StructuredDescriptionSection = {
-  key: string;
-  label: string;
-  rows: Array<{ label: string; value: string }>;
-  paragraphs: string[];
-};
-
-export function parseStructuredJobDescription(raw: string): StructuredDescriptionSection[] {
-  const restored = restoreStructuredDescription(raw);
-  if (!restored) return [];
-
-  const sections: StructuredDescriptionSection[] = [];
-  let current: StructuredDescriptionSection = { key: 'details', label: 'Job Details', rows: [], paragraphs: [] };
-  sections.push(current);
-
-  for (const line of restored.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-
-    const marker = SECTION_MARKERS.find((item) => item.pattern.test(trimmed));
-    if (marker) {
-      if (current.key === 'details' && !current.rows.length && !current.paragraphs.length && marker.key === 'details') {
-        current.label = marker.label;
-        continue;
-      }
-      current = { key: marker.key, label: marker.label, rows: [], paragraphs: [] };
-      sections.push(current);
-      continue;
-    }
-
-    const colon = trimmed.indexOf(':');
-    if (colon > 0 && colon <= 42 && trimmed.slice(colon + 1).trim()) {
-      current.rows.push({
-        label: trimmed.slice(0, colon).trim(),
-        value: trimmed.slice(colon + 1).trim(),
-      });
-      continue;
-    }
-
-    current.paragraphs.push(trimmed);
-  }
-
-  return sections.filter((section) => section.rows.length > 0 || section.paragraphs.length > 0);
-}
-
 export function buildStructuredJobDescription(input: {
   postName?: string;
   organisationName?: string;
@@ -195,12 +118,10 @@ export function buildStructuredJobDescription(input: {
 }
 
 export function displayJobDescription(job: any, extras: string[] = []) {
-  const raw = preserveMultiline(job?.description);
-  const collapsed = raw.replace(/\s+/g, ' ').trim();
-  if (/^JOB DETAILS/i.test(raw) || /^JOB DETAILS/i.test(collapsed)) {
-    const restored = restoreStructuredDescription(raw);
+  const raw = text(job?.description);
+  if (/^JOB DETAILS/i.test(raw)) {
     const notes = leftoverEligibilityNotes(job?.qualification, job?.experience, job?.requirements, ...extras);
-    return notes.length ? `${restored}\n\nIMPORTANT INSTRUCTIONS\n\n${notes.join('\n')}` : restored;
+    return notes.length ? `${raw}\n\nIMPORTANT INSTRUCTIONS\n\n${notes.join('\n')}` : raw;
   }
   return buildStructuredJobDescription({
     postName: job?.displayTitle || job?.title,

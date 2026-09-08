@@ -41,22 +41,10 @@
   align-items: center !important;
   gap: 8px !important;
   margin: 0 0 15px !important;
-  color: #b45309 !important;
+  color: #334155 !important;
   font-size: 1rem !important;
   font-weight: 600 !important;
   line-height: 1.4 !important;
-}
-
-.medex-job-organization-name,
-.medex-kv-value--org,
-.medex-about-organization-name {
-  display: inline-block !important;
-  max-width: 100% !important;
-  padding: 3px 10px !important;
-  border-radius: 8px !important;
-  background: #fef3c7 !important;
-  color: #92400e !important;
-  font-weight: 800 !important;
 }
 
 .medex-job-organization-icon {
@@ -206,8 +194,8 @@
 }
 
 .medex-about-organization-name {
-  color: #92400e !important;
-  font-weight: 800 !important;
+  color: #0f172a !important;
+  font-weight: 650 !important;
 }
 
 @media (max-width: 768px) {

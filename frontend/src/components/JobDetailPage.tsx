@@ -46,8 +46,6 @@ import { saveJob, unsaveJob, checkIfJobIsSaved } from "../api/savedJobs";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 import { ResumeUploadSection } from "./ResumeUploadSection";
 import { cardFieldText, cardSalaryText, displayJobDescription } from "../utils/extractedFieldDisplay";
-import { OrganisationHighlight } from "./OrganisationHighlight";
-import { StructuredJobDescription } from "./StructuredJobDescription";
 
 interface JobDetailPageProps {
   onNavigate: (page: string, entityId?: string) => void;
@@ -531,7 +529,7 @@ export function JobDetailPage({
                     return orgName ? (
                       <div className="flex items-center gap-2 text-gray-700">
                         <Building2 className="w-5 h-5 text-amber-700 shrink-0" />
-                        <OrganisationHighlight name={orgName} size="lg" />
+                        <span className="rounded-md bg-amber-100 px-2.5 py-0.5 text-lg font-semibold text-amber-900">{orgName}</span>
                       </div>
                     ) : null;
                   })()}
@@ -636,7 +634,7 @@ export function JobDetailPage({
             {/* Job Description */}
             <Card className="p-6 job-detail-description">
               <h2 className="text-xl text-gray-900 mb-4">Job Description</h2>
-              <StructuredJobDescription text={displayJobDescription(job)} />
+              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{displayJobDescription(job)}</p>
             </Card>
 
           </div>
@@ -1532,7 +1530,9 @@ export function JobDetailPage({
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Building2 className="w-5 h-5 text-gray-400" />
-                  <OrganisationHighlight name={job.organization} size="sm" />
+                  <span className="text-sm text-gray-700">
+                    {job.organization}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="w-5 h-5 text-gray-400" />

@@ -157,7 +157,7 @@ body:has(.admin-ui-shell) {
  * drawer (position:relative wins over position:fixed) and can zero-height
  * the main pane. Restore a normal scrollable page + off-canvas drawers.
  */
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   body:has(.admin-ui-shell),
   body:has(.employer-dashboard),
   body:has(.candidate-dashboard) {

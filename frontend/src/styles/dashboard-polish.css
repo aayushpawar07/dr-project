@@ -1439,7 +1439,7 @@
   }
 }
 
-@media (max-width: 860px) {
+@media (max-width: 1024px) {
   .employer-sidebar,
   .candidate-sidebar {
     display: none;

@@ -1,0 +1,685 @@
+/*
+ * Mobile + tablet layer for the candidate, employer and admin dashboards.
+ *
+ * Loaded last so it settles the conflicts between dashboard-polish.css,
+ * employer-dashboard.css, admin-dashboard.css and dashboard-fixed-layout.css,
+ * which each collapsed the sidebar at a different width (767 / 860 / 900).
+ * Everything below 1024px now uses one off-canvas drawer layout.
+ */
+
+/* The global site header is h-14 (56px) and h-16 (64px) from Tailwind's sm. */
+:root {
+  --medex-dashboard-header-height: 64px;
+}
+
+@media (max-width: 639.98px) {
+  :root {
+    --medex-dashboard-header-height: 56px;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * 1. Tablet and phone: one drawer layout below 1024px
+ * ------------------------------------------------------------------ */
+
+@media (max-width: 1024px) {
+  body:has(.candidate-dashboard),
+  body:has(.employer-dashboard),
+  body:has(.admin-ui-shell) {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  /* Shells stop being fixed-height grids and scroll with the page. */
+  .candidate-dashboard,
+  .employer-dashboard,
+  .admin-ui-shell {
+    display: block !important;
+    height: auto !important;
+    min-height: calc(100dvh - var(--medex-dashboard-header-height)) !important;
+    overflow: visible !important;
+  }
+
+  .candidate-dashboard__shell,
+  .employer-dashboard__shell {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .candidate-main,
+  .employer-main,
+  .admin-ui-main {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* Desktop rails are replaced by the drawer. */
+  .candidate-sidebar,
+  .employer-sidebar {
+    display: none !important;
+  }
+
+  .candidate-mobile-bar,
+  .employer-dashboard__mobile-bar {
+    position: sticky;
+    /* employer-dashboard.css pins this to 0, which hides it behind the
+       sticky site header. Force it to sit directly below the header. */
+    top: var(--medex-dashboard-header-height) !important;
+    z-index: 30;
+    display: flex;
+    min-height: 56px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid #dce5eb;
+    background: rgba(255, 255, 255, 0.97);
+    padding: 8px 14px;
+    backdrop-filter: blur(10px);
+  }
+
+  .candidate-mobile-bar > strong,
+  .employer-dashboard__mobile-bar > strong {
+    font-size: 15px;
+    font-weight: 750;
+    color: #1d3243;
+  }
+
+  .candidate-mobile-nav,
+  .employer-mobile-nav {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    display: block;
+  }
+
+  .candidate-mobile-nav__panel,
+  .employer-mobile-nav__panel {
+    width: min(86vw, 330px);
+    height: 100%;
+  }
+
+  /* Admin keeps its own off-canvas rail, now up to 1024px. */
+  .admin-ui-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    width: 288px !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    transform: translateX(-102%);
+    transition: transform 220ms ease;
+    z-index: 1102 !important;
+    overflow: hidden !important;
+  }
+
+  .admin-ui-sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  .admin-ui-nav {
+    overflow-y: auto !important;
+  }
+
+  /* Must repeat opacity/pointer-events: the closed overlay would otherwise
+     cover the whole viewport and swallow every click above 900px. */
+  .admin-ui-overlay {
+    position: fixed;
+    inset: 0;
+    display: block;
+    z-index: 1101;
+    background: rgba(15, 23, 42, 0.56);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease;
+  }
+
+  .admin-ui-overlay.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .admin-ui-mobile-menu {
+    display: grid;
+  }
+
+  /* The admin control bar must sit under the sticky site header, not behind it. */
+  .admin-ui-topbar {
+    position: sticky;
+    top: var(--medex-dashboard-header-height);
+    z-index: 30;
+  }
+
+  .admin-ui-two-column {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * 2. Touch sizing and readability below 1024px
+ * ------------------------------------------------------------------ */
+
+@media (max-width: 1024px) {
+  /* Sideways overflow is clipped on body only. Setting overflow-x here would
+     promote overflow-y to auto and turn the shell back into a nested
+     scroll container, which is what broke the mobile dashboards before. */
+  .candidate-dashboard,
+  .employer-dashboard,
+  .admin-ui-shell {
+    max-width: 100%;
+  }
+
+  .candidate-main,
+  .employer-main,
+  .admin-ui-content,
+  .dashboard-panel,
+  .candidate-content-panel,
+  .admin-ui-section {
+    min-width: 0;
+  }
+
+  /* The desktop build uses 8.5px–11px type. That is unreadable on a phone. */
+  .application-summary-grid article,
+  .application-job-group p,
+  .candidate-card__contact,
+  .candidate-card__contact a,
+  .candidate-card__contact span,
+  .candidate-card__notes,
+  .candidate-card__no-resume,
+  .candidate-card__profile {
+    font-size: 12px;
+  }
+
+  .application-job-group h3,
+  .candidate-card__profile strong {
+    font-size: 15px;
+  }
+
+  .application-summary-grid article strong {
+    font-size: 17px;
+  }
+
+  .candidate-card h4 {
+    font-size: 15px;
+  }
+
+  .dashboard-status {
+    font-size: 11px;
+    padding: 4px 9px;
+  }
+
+  /* 44px minimum touch targets. */
+  .candidate-action,
+  .candidate-card__actions button,
+  .dashboard-job-card__actions button,
+  .application-job-pills button,
+  .dashboard-section-switcher button,
+  .job-filter-tabs button,
+  .employer-nav-item,
+  .candidate-sidebar__group nav button,
+  .admin-ui-nav-button,
+  .admin-ui-quick-button {
+    min-height: 44px;
+  }
+
+  .candidate-action {
+    flex: 1 1 auto;
+    justify-content: center;
+    font-size: 12px;
+    padding: 10px 12px;
+  }
+
+  .admin-ui-table-icon-btn,
+  .employer-dashboard .icon-button,
+  .candidate-icon-button {
+    width: 42px;
+    height: 42px;
+  }
+
+  .admin-ui-table-icon-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .admin-ui-mini-button {
+    min-height: 40px;
+    padding: 9px 14px;
+    font-size: 12px;
+  }
+
+  /* Admin stat and table type. */
+  .admin-ui-stat-label {
+    font-size: 12px;
+  }
+
+  .admin-ui-stat-value {
+    font-size: 24px;
+  }
+
+  .admin-ui-table th {
+    font-size: 11px;
+  }
+
+  .admin-ui-table td,
+  .admin-ui-table-primary {
+    font-size: 13px;
+  }
+
+  .admin-ui-table-secondary {
+    font-size: 11px;
+  }
+
+  .admin-ui-bottom-item {
+    font-size: 10px;
+  }
+
+  .admin-ui-bottom-item svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .candidate-bottom-nav button {
+    font-size: 11px;
+  }
+
+  /* Room for the fixed bottom navigation plus the home indicator. */
+  .candidate-main {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .admin-ui-content {
+    padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .employer-main {
+    padding-bottom: calc(40px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+/* iOS zooms the page when a focused input is under 16px. */
+@media (max-width: 768px) {
+  .candidate-dashboard input,
+  .candidate-dashboard select,
+  .candidate-dashboard textarea,
+  .employer-dashboard input,
+  .employer-dashboard select,
+  .employer-dashboard textarea,
+  .employer-modal input,
+  .employer-modal select,
+  .admin-ui-shell input,
+  .admin-ui-shell select,
+  .admin-ui-shell textarea {
+    font-size: 16px;
+  }
+
+  .employer-modal__card input {
+    min-height: 48px;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * 3. Tablet grids (768px – 1024px)
+ * ------------------------------------------------------------------ */
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .dashboard-metrics,
+  .candidate-stats-grid,
+  .admin-ui-stats-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .candidate-grid,
+  .candidate-grid-list,
+  .application-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .candidate-profile-card__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .admin-ui-cluster-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .candidate-main,
+  .employer-main,
+  .admin-ui-content {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * 4. Phone (< 768px)
+ * ------------------------------------------------------------------ */
+
+@media (max-width: 767.98px) {
+  .dashboard-metrics,
+  .candidate-stats-grid,
+  .admin-ui-stats-grid,
+  .candidate-profile-card__grid,
+  .admin-ui-analytics-grid,
+  .admin-ui-cluster-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .candidate-grid,
+  .candidate-grid-list,
+  .application-summary-grid,
+  .candidate-application-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-ui-stat-card {
+    min-height: 0;
+    padding: 14px;
+  }
+
+  .admin-ui-stat-subtext {
+    display: block;
+    font-size: 10px;
+  }
+
+  /* Keep dashboard search reachable instead of hiding it. */
+  .admin-ui-search {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .admin-ui-topbar {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .admin-ui-topbar-right {
+    width: 100%;
+  }
+
+  .admin-ui-heading h1 {
+    font-size: 19px;
+  }
+
+  /* Horizontal chip rows scroll instead of wrapping into a tall block. */
+  .dashboard-section-switcher,
+  .job-filter-tabs,
+  .application-job-pills,
+  .admin-ui-quick-actions {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+  }
+
+  .dashboard-section-switcher::-webkit-scrollbar,
+  .job-filter-tabs::-webkit-scrollbar,
+  .application-job-pills::-webkit-scrollbar,
+  .admin-ui-quick-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dashboard-section-switcher > button,
+  .job-filter-tabs > button,
+  .application-job-pills > button,
+  .admin-ui-quick-actions > button {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+
+  .application-job-pills button {
+    max-width: 72vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Employer candidate cards: full-width stacked actions. */
+  .candidate-card__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .candidate-card__actions .candidate-action--resume {
+    grid-column: 1 / -1;
+  }
+
+  .candidate-card__no-resume {
+    grid-column: 1 / -1;
+  }
+
+  .employer-verification-card__buttons {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .employer-verification-card__buttons > button {
+    width: 100%;
+  }
+
+  .candidate-profile-card__actions .candidate-primary-button {
+    width: 100%;
+  }
+
+  .employer-modal__card {
+    width: 100%;
+    padding: 18px;
+  }
+
+  .employer-modal__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .employer-modal__actions > button {
+    width: 100%;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * 5. Admin tables become cards on phones
+ *    Replaces a 690px–900px horizontal scroll with readable rows.
+ * ------------------------------------------------------------------ */
+
+@media (max-width: 767.98px) {
+  .admin-ui-table-scroll {
+    overflow-x: visible;
+  }
+
+  .admin-ui-table,
+  .admin-ui-table tbody,
+  .admin-ui-table tr,
+  .admin-ui-table td {
+    display: block;
+    width: auto;
+    min-width: 0;
+  }
+
+  .admin-ui-table thead {
+    display: none;
+  }
+
+  .admin-ui-table tbody tr {
+    border-bottom: 1px solid #eef2f6;
+    padding: 14px;
+  }
+
+  .admin-ui-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .admin-ui-table td {
+    border-bottom: 0;
+    padding: 4px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    text-align: right;
+  }
+
+  .admin-ui-table td[data-label]::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 750;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-align: left;
+  }
+
+  .admin-ui-table td[data-cell='title'] {
+    display: block;
+    text-align: left;
+    padding-bottom: 8px;
+  }
+
+  .admin-ui-table td[data-cell='title'] .admin-ui-table-primary {
+    max-width: none;
+    white-space: normal;
+    font-size: 15px;
+  }
+
+  .admin-ui-table td[data-cell='title'] .admin-ui-table-secondary {
+    max-width: none;
+    white-space: normal;
+  }
+
+  .admin-ui-table td[data-label='Reason'] {
+    display: block;
+    text-align: left;
+  }
+
+  .admin-ui-table td[data-label='Reason'] .admin-ui-table-primary,
+  .admin-ui-table td[data-label='Reason'] .admin-ui-table-secondary {
+    max-width: none;
+    white-space: normal;
+  }
+
+  .admin-ui-table td[data-cell='actions'] {
+    justify-content: flex-start;
+    margin-top: 10px;
+  }
+
+  .admin-ui-table td[data-cell='actions'] .admin-ui-table-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .admin-ui-table td[colspan] {
+    display: block;
+    text-align: center;
+  }
+
+  .admin-ui-table-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  /* Admin staff table (AdminUsersPage) uses the same card treatment. */
+  .admin-users-table-scroll {
+    overflow-x: visible;
+  }
+
+  .admin-users-table,
+  .admin-users-table tbody,
+  .admin-users-table tr,
+  .admin-users-table td {
+    display: block;
+    width: auto;
+    min-width: 0;
+  }
+
+  .admin-users-table thead {
+    display: none;
+  }
+
+  .admin-users-table tbody tr {
+    padding: 12px 4px;
+  }
+
+  .admin-users-table td {
+    padding: 5px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    text-align: right;
+  }
+
+  .admin-users-table td[data-label]::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 750;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .admin-users-table td[data-cell='title'],
+  .admin-users-table td[data-cell='actions'] {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .admin-users-table td[data-cell='title'] {
+    font-size: 15px;
+  }
+
+  .admin-users-table td[data-cell='actions'] {
+    margin-top: 8px;
+  }
+}
+
+/* The staff table only needs a wide canvas once it is a real table again. */
+@media (min-width: 768px) {
+  .admin-users-table {
+    min-width: 900px;
+    table-layout: auto;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * 6. Small phones (< 400px)
+ * ------------------------------------------------------------------ */
+
+@media (max-width: 399.98px) {
+  .dashboard-metrics,
+  .candidate-stats-grid,
+  .admin-ui-stats-grid,
+  .candidate-profile-card__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .candidate-card__actions {
+    grid-template-columns: 1fr;
+  }
+
+  .candidate-main,
+  .employer-main,
+  .admin-ui-content {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-ui-sidebar,
+  .candidate-mobile-nav__panel,
+  .employer-mobile-nav__panel {
+    transition: none !important;
+    animation: none !important;
+  }
+}

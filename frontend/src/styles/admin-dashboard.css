@@ -1242,7 +1242,7 @@
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .admin-ui-shell {
     display: block;
     min-height: calc(100vh - 56px);

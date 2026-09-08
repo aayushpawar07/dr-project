@@ -986,16 +986,16 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                   <tbody>
                     {filteredJobs.length > 0 ? filteredJobs.map((job) => (
                       <tr key={job.id}>
-                        <td>
+                        <td data-cell="title">
                           <div className="admin-ui-table-primary">{job.title || 'Untitled job'}</div>
                           <div className="admin-ui-table-secondary">{job.location || 'Location not provided'}</div>
                         </td>
-                        <td>{job.organization || job.companyName || 'Not provided'}</td>
-                        <td>{job.category || job.sector || '—'}</td>
-                        <td>{formatNumber(job.applications)}</td>
-                        <td>{formatNumber(job.views)}</td>
-                        <td><span className={`admin-ui-status ${normalizeStatus(job.status)}`}>{job.status || 'Unknown'}</span></td>
-                        <td>
+                        <td data-label="Employer">{job.organization || job.companyName || 'Not provided'}</td>
+                        <td data-label="Category">{job.category || job.sector || '—'}</td>
+                        <td data-label="Applications">{formatNumber(job.applications)}</td>
+                        <td data-label="Views">{formatNumber(job.views)}</td>
+                        <td data-label="Status"><span className={`admin-ui-status ${normalizeStatus(job.status)}`}>{job.status || 'Unknown'}</span></td>
+                        <td data-cell="actions">
                           <div className="admin-ui-table-actions">
                             <button
                               type="button"
@@ -1057,19 +1057,19 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                   <tbody>
                     {filteredReports.length > 0 ? filteredReports.map((report) => (
                       <tr key={report.id}>
-                        <td>
+                        <td data-cell="title">
                           <div className="admin-ui-table-primary">{report.id}</div>
                           <div className="admin-ui-table-secondary">{companyTypeLabel(report.type)}</div>
                         </td>
-                        <td>{report.reporterName || 'Unknown'}</td>
-                        <td>
+                        <td data-label="Reporter">{report.reporterName || 'Unknown'}</td>
+                        <td data-label="Reason">
                           <div className="admin-ui-table-primary">{report.reason || 'No reason provided'}</div>
                           <div className="admin-ui-table-secondary">{report.description || ''}</div>
                         </td>
-                        <td><span className={`admin-ui-status ${normalizeStatus(report.priority)}`}>{report.priority}</span></td>
-                        <td>{formatDateTime(report.createdAt)}</td>
-                        <td><span className={`admin-ui-status ${normalizeStatus(report.status)}`}>{report.status.replace(/_/g, ' ')}</span></td>
-                        <td>
+                        <td data-label="Priority"><span className={`admin-ui-status ${normalizeStatus(report.priority)}`}>{report.priority}</span></td>
+                        <td data-label="Date">{formatDateTime(report.createdAt)}</td>
+                        <td data-label="Status"><span className={`admin-ui-status ${normalizeStatus(report.status)}`}>{report.status.replace(/_/g, ' ')}</span></td>
+                        <td data-cell="actions">
                           <div className="admin-ui-table-actions">
                             {!['resolved', 'dismissed'].includes(normalizeStatus(report.status)) && (
                               <button

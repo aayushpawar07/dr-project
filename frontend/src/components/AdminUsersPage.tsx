@@ -603,33 +603,33 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                 {searchTerm ? 'No admins found matching your search' : 'No admins found'}
               </div>
             ) : (
-              <div className="w-full overflow-x-auto" style={{ maxWidth: '100%' }}>
-                <table className="w-full border-collapse" style={{ minWidth: '900px', tableLayout: 'auto' }}>
+              <div className="admin-users-table-scroll w-full overflow-x-auto" style={{ maxWidth: '100%' }}>
+                <table className="admin-users-table w-full border-collapse">
                   <thead>
                     <tr className="border-b bg-gray-50">
-                      <th className="text-left p-3 font-semibold whitespace-nowrap" style={{ minWidth: '150px', width: '150px' }}>Name</th>
-                      <th className="text-left p-3 font-semibold whitespace-nowrap" style={{ minWidth: '200px', width: '200px' }}>Email</th>
-                      <th className="text-left p-3 font-semibold whitespace-nowrap" style={{ minWidth: '120px', width: '120px' }}>Phone</th>
-                      <th className="text-left p-3 font-semibold whitespace-nowrap" style={{ minWidth: '150px', width: '150px' }}>Status</th>
-                      <th className="text-left p-3 font-semibold whitespace-nowrap" style={{ minWidth: '150px', width: '150px' }}>Actions</th>
+                      <th className="text-left p-3 font-semibold whitespace-nowrap">Name</th>
+                      <th className="text-left p-3 font-semibold whitespace-nowrap">Email</th>
+                      <th className="text-left p-3 font-semibold whitespace-nowrap">Phone</th>
+                      <th className="text-left p-3 font-semibold whitespace-nowrap">Status</th>
+                      <th className="text-left p-3 font-semibold whitespace-nowrap">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredAdmins.map((admin, index) => (
                       <tr key={admin.id || `admin-${index}`} className="border-b hover:bg-gray-50">
-                        <td className="p-3 font-medium" style={{ minWidth: '150px', width: '150px' }}>
+                        <td className="p-3 font-medium" data-cell="title">
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-gray-900 whitespace-nowrap">{admin.name || 'N/A'}</span>
+                            <span className="font-semibold text-gray-900">{admin.name || 'N/A'}</span>
                             {isCurrentUser(admin) && (
                               <Badge className="bg-blue-100 text-blue-800 text-xs whitespace-nowrap">You</Badge>
                             )}
                           </div>
                         </td>
-                        <td className="p-3 text-gray-700 break-words" style={{ minWidth: '200px', width: '200px' }}>
+                        <td className="p-3 text-gray-700 break-words" data-label="Email">
                           <span className="break-all">{admin.email || 'N/A'}</span>
                         </td>
-                        <td className="p-3 text-gray-700 whitespace-nowrap" style={{ minWidth: '120px', width: '120px' }}>{admin.phone || 'N/A'}</td>
-                        <td className="p-3" style={{ minWidth: '150px', width: '150px' }}>
+                        <td className="p-3 text-gray-700" data-label="Phone">{admin.phone || 'N/A'}</td>
+                        <td className="p-3" data-label="Status">
                           <div className="flex gap-2 flex-wrap">
                             {admin.isActive !== false ? (
                               <Badge className="bg-green-100 text-green-800 whitespace-nowrap">Active</Badge>
@@ -641,7 +641,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                             )}
                           </div>
                         </td>
-                        <td className="p-3" style={{ minWidth: '150px', width: '150px' }}>
+                        <td className="p-3" data-cell="actions">
                           <div className="flex gap-2">
                             <Button
                               type="button"

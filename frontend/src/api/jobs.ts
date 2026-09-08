@@ -26,24 +26,40 @@ export interface JobsQuery {
 
 export async function fetchJobs(params: JobsQuery = {}) {
   try {
+    const page = Math.max(0, params.page ?? 0);
     const requestedSize = params.size ?? 20;
-    const requestSize = Math.min(Math.max(requestedSize * 4, requestedSize), 100);
-    const requestParams = {
-      ...params,
-      search: params.search?.trim() || undefined,
-      location: params.location?.trim() || undefined,
-      page: params.page ?? 0,
-      size: requestSize,
-      sort: params.sort || 'createdAt,desc',
-    };
-    Object.keys(requestParams).forEach((key) => {
-      if (requestParams[key as keyof typeof requestParams] === undefined) delete requestParams[key as keyof typeof requestParams];
-    });
-    const res = await apiClient.get('/jobs', { params: requestParams });
-    const data = res.data;
-    const rawContent = Array.isArray(data?.content) ? data.content : [];
-    const grouped = groupRecruitmentJobs(rawContent, params.search).slice(0, requestedSize);
-    return { content: grouped, totalElements: grouped.length, totalPages: grouped.length > 0 ? 1 : 0, number: Number(data?.page ?? params.page ?? 0), size: requestedSize };
+    const rawJobs: any[] = [];
+    const pageSize = 100;
+    let apiPage = 0;
+    let apiTotal = Number.POSITIVE_INFINITY;
+
+    while (rawJobs.length < Math.min(apiTotal, 400)) {
+      const requestParams: Record<string, unknown> = {
+        ...params,
+        search: params.search?.trim() || undefined,
+        location: params.location?.trim() || undefined,
+        page: apiPage,
+        size: pageSize,
+        sort: params.sort || 'createdAt,desc',
+      };
+      Object.keys(requestParams).forEach((key) => {
+        if (requestParams[key] === undefined) delete requestParams[key];
+      });
+      const res = await apiClient.get('/jobs', { params: requestParams });
+      const data = res.data;
+      const chunk = Array.isArray(data?.content) ? data.content : [];
+      rawJobs.push(...chunk);
+      apiTotal = Number(data?.totalElements ?? rawJobs.length);
+      if (chunk.length < pageSize || rawJobs.length >= apiTotal) break;
+      apiPage += 1;
+    }
+
+    const grouped = groupRecruitmentJobs(rawJobs, params.search);
+    const totalElements = grouped.length;
+    const totalPages = totalElements > 0 ? Math.ceil(totalElements / requestedSize) : 0;
+    const safePage = Math.min(page, Math.max(totalPages - 1, 0));
+    const content = grouped.slice(safePage * requestedSize, (safePage + 1) * requestedSize);
+    return { content, totalElements, totalPages, number: safePage, size: requestedSize };
   } catch (err) {
     console.error('Fetch jobs error:', err);
     return { content: [], totalElements: 0, totalPages: 0, number: params.page ?? 0, size: params.size ?? 20 };

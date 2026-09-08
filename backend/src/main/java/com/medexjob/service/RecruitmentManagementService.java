@@ -356,7 +356,10 @@ public class RecruitmentManagementService {
         job.setDescription(buildDescription(r, v));
         job.setSector(r.getSector());
         job.setCategory(mapJobCategory(v.getPostName()));
-        job.setLocation(clip(nonBlank(v.getLocation(), r.getLocation()), 200));
+        job.setLocation(clip(nonBlank(
+                RecruitmentFieldSanitizer.usableLocation(v.getLocation(), r.getLocation()),
+                "India"
+        ), 200));
         job.setQualification(RecruitmentFieldSanitizer.cardValue(v.getQualification(), "As per official notification"));
         job.setExperience(RecruitmentFieldSanitizer.cardValue(v.getExperience(), "As per official notification"));
         job.setSpeciality(clip(speciality, 255));

@@ -1,6 +1,7 @@
 const REGULATORY = /gazette of india|nmc norms|national medical commission|as per nmc|as per the nmc/i;
 const GENERIC_NOTICE = /^(as per (the )?(official )?(recruitment )?notification|as notified|see notification|as applicable)\.?$/i;
 const TRAILING_NORMS = /\s*(as per nmc.*|published in the gazette.*)$/i;
+const USELESS_LOCATION = /^(multiple( locations?)?|anywhere|any location|all locations|n\/?a|na|tbd|various|pan india|pan-india)$/i;
 
 function text(value: unknown) {
   return String(value ?? '').replace(/\s+/g, ' ').trim();
@@ -34,6 +35,28 @@ export function detailFieldText(...values: unknown[]) {
     if (raw) return raw;
   }
   return '';
+}
+
+export function isUselessLocation(value: unknown) {
+  const raw = text(value);
+  return !raw || USELESS_LOCATION.test(raw);
+}
+
+export function cardLocationText(...values: unknown[]) {
+  for (const value of values) {
+    const raw = text(value);
+    if (raw && !isUselessLocation(raw) && !isRegulatoryDump(raw)) return raw;
+  }
+  return '';
+}
+
+export function locationFromOrganisation(value: unknown) {
+  const parts = text(value).split(',').map((part) => part.trim()).filter(Boolean);
+  if (parts.length < 2) return '';
+  const last = parts[parts.length - 1];
+  if (last.length < 3 || last.length > 40) return '';
+  if (/limited|pvt|private|hospital|college|institute|university|trust/i.test(last)) return '';
+  return isUselessLocation(last) ? '' : last;
 }
 
 export function cardSalaryText(value: unknown) {
@@ -128,7 +151,7 @@ export function displayJobDescription(job: any, extras: string[] = []) {
     organisationName: job?.organization || job?.organisationName || job?.employer?.companyName,
     department: cleanExtractedName(job?.department),
     speciality: cleanExtractedName(job?.speciality),
-    location: job?.location,
+    location: cardLocationText(job?.location, job?.city, job?.state, locationFromOrganisation(job?.organization || job?.organisationName)),
     numberOfPosts: job?.numberOfPosts,
     jobType: job?.jobType,
     qualification: isRegulatoryDump(job?.qualification) ? job.qualification : cardFieldText(job?.qualification, job?.qualification),

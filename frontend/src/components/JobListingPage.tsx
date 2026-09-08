@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, SlidersHorizontal } from "lucide-react";
 import { Button } from "./ui/button";
 import { JobCard } from "./JobCard";
 import { FilterSidebar, FilterOptions, emptyJobFilters } from "./FilterSidebar";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "./ui/sheet";
 import SearchBar from "./SearchBar";
 import { fetchJobs, fetchJobsMeta } from "../api/jobs";
 import { trackSearch } from "../utils/searchUtils";
@@ -14,10 +15,6 @@ interface JobListingPageProps {
 }
 
 const GLOBAL_LOCATION_TERMS = new Set(["anywhere", "any location", "all locations", "any"]);
-const TITLE_SEARCH_STOPWORDS = new Set([
-  "a", "an", "and", "at", "for", "in", "of", "on", "the", "to", "with",
-  "job", "jobs", "vacancy", "vacancies", "post", "posts",
-]);
 
 function normalizeLocation(value?: string) {
   return (value || "").trim().toLowerCase().replace(/\s+/g, " ");
@@ -25,40 +22,6 @@ function normalizeLocation(value?: string) {
 
 function isGlobalLocation(value?: string) {
   return GLOBAL_LOCATION_TERMS.has(normalizeLocation(value));
-}
-
-function getTitleSearchTokens(value: string) {
-  const tokens = value
-    .toLowerCase()
-    .split(/[^\p{L}\p{N}]+/u)
-    .map((token) => token.trim())
-    .filter(Boolean);
-
-  if (tokens.length <= 1) return [...new Set(tokens)];
-  const meaningful = tokens.filter((token) => !TITLE_SEARCH_STOPWORDS.has(token));
-  return [...new Set(meaningful.length > 0 ? meaningful : tokens)].slice(0, 12);
-}
-
-function roleGroups(value: string) {
-  return value
-    .split(",")
-    .map((part) => getTitleSearchTokens(part.trim()))
-    .filter((tokens) => tokens.length > 0);
-}
-
-function matchesWhatTitle(job: any, keyword: string) {
-  const trimmedKeyword = keyword.trim();
-  if (!trimmedKeyword) return true;
-
-  const title = String(job?.title || job?.displayTitle || "").toLowerCase();
-  if (!title) return false;
-
-  const groups = roleGroups(trimmedKeyword);
-  return groups.some((tokens) => tokens.every((token) => title.includes(token)));
-}
-
-function filterByWhatTitle(content: any[], keyword: string) {
-  return keyword.trim() ? content.filter((job) => matchesWhatTitle(job, keyword)) : content;
 }
 
 export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
@@ -69,6 +32,10 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
   const [filters, setFilters] = useState<FilterOptions>(emptyJobFilters());
   const [jobs, setJobs] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const pageSize = 12;
   const [metaCategories, setMetaCategories] = useState<string[]>([]);
   const [metaLocations, setMetaLocations] = useState<string[]>([]);
   const [metaSpecialities, setMetaSpecialities] = useState<string[]>([]);
@@ -131,6 +98,7 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
       const currentParams = JSON.stringify({
         search: selectedJobOption,
         locationQuery,
+        page,
         sector: effectiveSector,
         category: filters.categories[0],
         location: activeLocation,
@@ -153,11 +121,9 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
 
       try {
         const keyword = selectedJobOption.trim();
-        const isMultiRole = keyword.includes(",");
-        const params: any = { status: "active", size: isMultiRole ? 100 : 50 };
+        const params: any = { status: "active", size: pageSize, page };
 
-        // For comma-separated role searches, fetch a broader result set and apply OR matching locally.
-        if (keyword && !isMultiRole) params.search = keyword;
+        if (keyword) params.search = keyword;
         if (effectiveSector) params.sector = effectiveSector;
         if (filters.categories[0]) params.category = filters.categories[0];
         if (activeLocation) params.location = activeLocation;
@@ -169,20 +135,18 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
         if (filters.state) params.state = filters.state;
         if (filters.city) params.city = filters.city;
 
-        const initialResponse = await fetchJobs(params);
-        const initialContent = Array.isArray(initialResponse?.content) ? initialResponse.content : [];
-        let content = filterByWhatTitle(initialContent, keyword);
+        let response = await fetchJobs(params);
+        let content = Array.isArray(response?.content) ? response.content : [];
 
         if (content.length === 0 && activeLocation) {
           const fallbackParams: any = { ...params };
           delete fallbackParams.location;
-
           const fallback = await fetchJobs(fallbackParams);
           const fallbackContent = Array.isArray(fallback?.content) ? fallback.content : [];
-          const titleMatchedFallback = filterByWhatTitle(fallbackContent, keyword);
 
-          if (titleMatchedFallback.length > 0) {
-            content = titleMatchedFallback;
+          if (fallbackContent.length > 0) {
+            response = fallback;
+            content = fallbackContent;
             setShowingFallback(true);
             setFallbackReason(
               keyword
@@ -198,7 +162,11 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
         }));
 
         setJobs(normalizedJobs);
-        setTotal(normalizedJobs.length);
+        setTotal(Number(response?.totalElements ?? normalizedJobs.length));
+        setTotalPages(Number(response?.totalPages ?? 0));
+        if (typeof response?.number === "number" && response.number !== page) {
+          setPage(response.number);
+        }
 
         if (keyword) {
           setHasSearched(true);
@@ -208,13 +176,14 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
         console.error("Error fetching jobs:", error);
         setJobs([]);
         setTotal(0);
+        setTotalPages(0);
       } finally {
         setLoading(false);
       }
     };
 
     fetchJobsData();
-  }, [selectedJobOption, locationQuery, filters, effectiveSector]);
+  }, [selectedJobOption, locationQuery, filters, effectiveSector, page]);
 
   const title = sector === "government" ? "Government Jobs" : sector === "private" ? "Private Jobs" : "All Jobs";
 
@@ -241,6 +210,7 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
 
     liveSearchTimerRef.current = setTimeout(() => {
       const keyword = query.trim();
+      setPage(0);
       setSelectedJobOption(query);
 
       if (locationVal !== undefined) {
@@ -269,6 +239,7 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
   const handleClearSearch = () => {
     setSelectedJobOption("");
     setLocationQuery("");
+    setPage(0);
     setHasSearched(false);
     setShowingFallback(false);
     setFallbackReason("");
@@ -277,6 +248,23 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
   };
 
   const keyword = selectedJobOption.trim();
+  const activeFilterCount = [
+    !sector && filters.sector,
+    filters.speciality,
+    filters.department,
+    filters.jobType,
+    filters.qualification,
+    filters.state,
+    filters.city,
+    filters.featured,
+    ...filters.categories,
+    ...filters.locations,
+  ].filter(Boolean).length;
+
+  const applyFilters = (next: FilterOptions) => {
+    setPage(0);
+    setFilters(next);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -296,9 +284,10 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
 
       <div className="container mx-auto px-3 sm:px-4 py-5 sm:py-8">
         <div className="grid md:grid-cols-4 gap-4 sm:gap-6">
-          <div className="md:col-span-1">
+          <div className="hidden md:block md:col-span-1">
             <FilterSidebar
-              onFilterChange={setFilters}
+              value={filters}
+              onFilterChange={applyFilters}
               showSector={!sector}
               categories={metaCategories}
               locations={metaLocations}
@@ -312,14 +301,46 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
           </div>
 
           <div className="md:col-span-3 min-w-0">
-            <div className="mb-4 sm:mb-6">
+            <div className="mb-4 sm:mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-gray-700 font-medium text-sm sm:text-base">{getCountLabel()}</p>
-              {showingFallback && fallbackReason && (
-                <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 px-3 sm:px-4 py-3 text-xs sm:text-sm text-blue-800 leading-relaxed">
-                  {fallbackReason}
-                </div>
-              )}
+              <Button
+                type="button"
+                variant="outline"
+                className="md:hidden w-full sm:w-auto"
+                onClick={() => setFiltersOpen(true)}
+              >
+                <SlidersHorizontal className="w-4 h-4 mr-2" />
+                Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+              </Button>
             </div>
+            <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+              <SheetContent side="bottom" className="max-h-[85dvh] overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle>Filters</SheetTitle>
+                </SheetHeader>
+                <div className="px-4 pb-6">
+                  <FilterSidebar
+                    embedded
+                    value={filters}
+                    onFilterChange={applyFilters}
+                    showSector={!sector}
+                    categories={metaCategories}
+                    locations={metaLocations}
+                    specialities={metaSpecialities}
+                    departments={metaDepartments}
+                    jobTypes={metaJobTypes}
+                    qualifications={metaQualifications}
+                    states={metaStates}
+                    cities={metaCities}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
+            {showingFallback && fallbackReason && (
+              <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50 px-3 sm:px-4 py-3 text-xs sm:text-sm text-blue-800 leading-relaxed">
+                {fallbackReason}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 items-stretch">
               {loading ? (
@@ -351,6 +372,19 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
                 </div>
               )}
             </div>
+            {totalPages > 1 && !loading && (
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+                <Button variant="outline" size="sm" disabled={page <= 0} onClick={() => setPage((current) => Math.max(0, current - 1))}>
+                  Previous
+                </Button>
+                <span className="text-sm text-gray-600 px-2">
+                  Page {page + 1} of {totalPages}
+                </span>
+                <Button variant="outline" size="sm" disabled={page + 1 >= totalPages} onClick={() => setPage((current) => current + 1)}>
+                  Next
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>

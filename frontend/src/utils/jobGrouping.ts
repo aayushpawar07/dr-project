@@ -1,4 +1,4 @@
-import { isGenericNotice, isRegulatoryDump } from './extractedFieldDisplay';
+import { cardLocationText, isGenericNotice, isRegulatoryDump, isUselessLocation, locationFromOrganisation } from './extractedFieldDisplay';
 
 const SEARCH_STOPWORDS = new Set([
   'a', 'an', 'and', 'at', 'for', 'in', 'of', 'on', 'the', 'to', 'with',
@@ -93,7 +93,12 @@ export function groupRecruitmentJobs(jobs: any[], query?: string) {
       : `${postNames.slice(0, 2).join(', ')} + ${postNames.length - 2} more posts`;
     const departments = unique(items.map((item) => item.department || item.speciality));
     const specialities = unique(items.map((item) => item.speciality));
-    const locations = unique(items.map((item) => item.location));
+    const locations = unique(items.map((item) => cardLocationText(
+      item.location,
+      item.city,
+      item.state,
+      locationFromOrganisation(organisation(item)),
+    ))).filter((value) => !isUselessLocation(value));
     const states = unique(items.map((item) => item.state));
     const qualifications = unique(items.map((item) => item.qualification)).filter((value) => !isRegulatoryDump(value) && !isGenericNotice(value));
     const salaries = unique(items.map((item) => item.salary || item.salaryRange)).filter((value) => !isRegulatoryDump(value));
@@ -118,7 +123,7 @@ export function groupRecruitmentJobs(jobs: any[], query?: string) {
       departmentCount: departments.length,
       childJobIds: items.map((item) => item.id).filter(Boolean),
       numberOfPosts: totalPosts || first.numberOfPosts,
-      location: locations.length > 1 ? 'Multiple Locations' : (locations[0] || first.location),
+      location: locations[0] || cardLocationText(first.location, first.city, first.state, locationFromOrganisation(org)),
       state: states.length === 1 ? states[0] : first.state,
       qualification: qualifications.length > 1 ? 'Varies by post' : (qualifications[0] || first.qualification),
       salary: salaries.length > 1 ? 'Varies by post' : (salaries[0] || first.salary),

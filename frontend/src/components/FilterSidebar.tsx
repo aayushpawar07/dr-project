@@ -1,11 +1,12 @@
-import { useState } from 'react';
 import { Card } from './ui/card';
 import { Label } from './ui/label';
 import { Checkbox } from './ui/checkbox';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
+import { isUselessLocation } from '../utils/extractedFieldDisplay';
 
 interface FilterSidebarProps {
+  value: FilterOptions;
   onFilterChange: (filters: FilterOptions) => void;
   categories: string[];
   locations: string[];
@@ -16,6 +17,7 @@ interface FilterSidebarProps {
   states?: string[];
   cities?: string[];
   showSector?: boolean;
+  embedded?: boolean;
 }
 
 export interface FilterOptions {
@@ -110,6 +112,7 @@ function getValidJobCities(cities: string[]) {
 }
 
 export function FilterSidebar({
+  value: filters,
   onFilterChange,
   categories,
   locations,
@@ -120,13 +123,13 @@ export function FilterSidebar({
   states = [],
   cities = [],
   showSector = true,
+  embedded = false,
 }: FilterSidebarProps) {
-  const [filters, setFilters] = useState<FilterOptions>(emptyJobFilters());
   const validStates = getValidJobStates(states);
   const validCities = getValidJobCities(cities);
+  const usableLocations = locations.filter((location) => !isUselessLocation(location));
 
   const emit = (next: FilterOptions) => {
-    setFilters(next);
     onFilterChange(next);
   };
 
@@ -151,8 +154,7 @@ export function FilterSidebar({
       })
     : validCities;
 
-  return (
-    <Card className="p-6 sticky top-20">
+  const body = (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h3 className="text-lg">Filters</h3>
@@ -203,12 +205,13 @@ export function FilterSidebar({
           </div>
         </div>
 
-        <Separator />
+        {usableLocations.length > 0 && <Separator />}
 
+        {usableLocations.length > 0 && (
         <div>
           <Label className="mb-3 block">Location</Label>
           <div className="space-y-2 max-h-48 overflow-y-auto">
-            {locations.map((location) => (
+            {usableLocations.map((location) => (
               <div key={location} className="flex items-center space-x-2">
                 <Checkbox
                   id={location}
@@ -220,6 +223,7 @@ export function FilterSidebar({
             ))}
           </div>
         </div>
+        )}
 
         <Separator />
 
@@ -234,8 +238,10 @@ export function FilterSidebar({
           </div>
         </div>
       </div>
-    </Card>
   );
+
+  if (embedded) return body;
+  return <Card className="p-6 sticky top-20">{body}</Card>;
 }
 
 function SelectBlock({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (value: string) => void }) {

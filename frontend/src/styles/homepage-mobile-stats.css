@@ -5,8 +5,8 @@
   }
 
   section.py-16.bg-white.border-b.relative.z-10.overflow-visible .grid.grid-cols-2 {
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    gap: 0.5rem !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 1rem !important;
   }
 
   section.py-16.bg-white.border-b.relative.z-10.overflow-visible .grid.grid-cols-2 > div {

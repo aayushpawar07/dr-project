@@ -18,7 +18,7 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Job } from '../types';
 import { buildJobShareText, getJobShareUrl, shareTextWithoutUrl } from '../utils/shareContent';
-import { cardFieldText, cardSalaryText } from '../utils/extractedFieldDisplay';
+import { cardFieldText, cardLocationText, cardSalaryText, locationFromOrganisation } from '../utils/extractedFieldDisplay';
 
 interface JobCardProps {
   job: Job;
@@ -36,7 +36,6 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
   const displayTitle = view.displayTitle || job.title;
   const sourceRecruitmentId = view.sourceRecruitmentId;
   const grouped = Boolean(view.recruitmentGrouped && sourceRecruitmentId);
-  const locationText = job.location || [view.city, view.state].filter(Boolean).join(', ');
   const organizationName = [
     job.organization,
     view.organisationName,
@@ -46,6 +45,12 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
     view.employerName,
     view.hospitalName,
   ].map((value) => String(value ?? '').trim()).find(Boolean) || '';
+  const locationText = cardLocationText(
+    job.location,
+    view.city,
+    view.state,
+    locationFromOrganisation(organizationName),
+  );
   const qualificationText = cardFieldText(job.qualification);
   const experienceText = cardFieldText(job.experience);
   const salaryText = cardSalaryText(job.salary || view.salaryRange);

@@ -97,16 +97,16 @@ function sectionConfig(key: DescriptionSectionKey) {
 function normalizeDescription(raw: string): string {
   let text = raw.replace(/\r\n?/g, "\n").replace(/\u00a0/g, " ").trim();
 
-  if (!text.includes("\n")) {
-    text = text
-      .replace(/\s+(STEP\s*[1-4]\s*:[^:]{2,80})/gi, "\n\n$1\n")
-      .replace(/\s+(Application Process\s*:)/gi, "\n\n$1\n")
-      .replace(/\s+(Selection Process\s*:)/gi, "\n\n$1\n")
-      .replace(/\s+(Important Documents Required\s*:|Documents Required\s*:)/gi, "\n\n$1\n")
-      .replace(/\s+(Important Notes\s*:)/gi, "\n\n$1\n")
-      .replace(/\s+(Contact Information\s*:|Contact\s*:)/gi, "\n\n$1\n")
-      .replace(/\s+[•●▪·]\s*/g, "\n· ");
-  }
+  text = text
+    .replace(/\s*(JOB DETAILS|ELIGIBILITY(?:\s+CRITERIA)?|PAY\s*\/\s*SALARY|APPLICATION DETAILS|IMPORTANT INSTRUCTIONS|IMPORTANT NOTES)\b/gi, "\n\n$1\n")
+    .replace(/\s+(STEP\s*[1-4]\s*:[^:]{2,80})/gi, "\n\n$1\n")
+    .replace(/\s+(Application Process\s*:)/gi, "\n\n$1\n")
+    .replace(/\s+(Selection Process\s*:)/gi, "\n\n$1\n")
+    .replace(/\s+(Important Documents Required\s*:|Documents Required\s*:)/gi, "\n\n$1\n")
+    .replace(/\s+(Important Notes\s*:)/gi, "\n\n$1\n")
+    .replace(/\s+(Contact Information\s*:|Contact\s*:)/gi, "\n\n$1\n")
+    .replace(/\s+(Post|Organisation|Organization|Department|Speciality|Specialty|Location|Number of Posts|Job Type|Advertisement|Qualification|Experience|Age Limit|Application Start Date|Last Date to Apply|Application Fee)\s*:/gi, "\n$1:")
+    .replace(/\s+[•●▪·]\s*/g, "\n· ");
 
   return text
     .split("\n")
@@ -123,10 +123,11 @@ function detectSection(line: string): DescriptionSectionKey | null {
   if (/^step\s*1\b/.test(value) || value.includes("basic job information") || value === "job details" || value === "job overview" || value === "about the role") return "details";
   if (/^step\s*2\b/.test(value) || value.includes("requirements & details") || value === "eligibility" || value === "eligibility criteria" || value === "additional requirements") return "eligibility";
   if (value === "key responsibilities" || value === "responsibilities") return "responsibilities";
-  if (/^step\s*3\b/.test(value) || /^step\s*4\b/.test(value) || value.includes("extra details") || value === "application process" || value === "walk-in interview" || value === "interview schedule" || value === "important dates") return "application";
+  if (/^step\s*3\b/.test(value) || /^step\s*4\b/.test(value) || value.includes("extra details") || value === "application process" || value === "application details" || value === "walk-in interview" || value === "interview schedule" || value === "important dates") return "application";
   if (value === "selection process") return "selection";
+  if (value === "pay / salary" || value === "pay/salary" || value === "salary") return "details";
   if (value === "documents required" || value === "important documents required") return "documents";
-  if (value === "important notes" || value === "benefits" || value === "benefits & perks") return "notes";
+  if (value === "important notes" || value === "important instructions" || value === "benefits" || value === "benefits & perks") return "notes";
   if (value === "contact" || value === "contact information") return "contact";
   return null;
 }
@@ -144,11 +145,15 @@ function isMainSectionHeading(line: string): boolean {
     "key responsibilities",
     "responsibilities",
     "application process",
+    "application details",
     "walk-in interview",
     "selection process",
+    "pay / salary",
+    "pay/salary",
     "documents required",
     "important documents required",
     "important notes",
+    "important instructions",
     "contact",
     "contact information",
   ].includes(normalized);
@@ -241,7 +246,8 @@ function createKeyValueRow(labelText: string, valueText: string): HTMLElement {
   label.textContent = labelText.replace(/[:：]+$/, "").trim();
 
   const value = document.createElement("span");
-  value.className = "medex-kv-value";
+  const isOrganisation = /organisation|organization|hospital name/i.test(labelText);
+  value.className = isOrganisation ? "medex-kv-value medex-kv-value--org" : "medex-kv-value";
   appendLinkifiedText(value, valueText.trim());
 
   copy.append(label, value);
@@ -457,6 +463,8 @@ function createPreviewCard(
 }
 
 function enhanceDescription(root: ParentNode) {
+  if (root.querySelector(".medex-structured-description")) return;
+
   const descriptionHeading = Array.from(root.querySelectorAll("h2")).find(
     (heading) => heading.textContent?.trim().toLowerCase() === "job description",
   );
@@ -534,13 +542,11 @@ function enhanceDescription(root: ParentNode) {
 
   shell.append(tabs, panels);
 
-  const details = sections.find((section) => section.key === "details");
   const documents = sections.find((section) => section.key === "documents");
   const notes = sections.find((section) => section.key === "notes");
   const summaryGrid = document.createElement("div");
   summaryGrid.className = "medex-description-summary-grid";
   [
-    createPreviewCard("Job Overview", details, "overview"),
     createPreviewCard("Documents Required", documents, "documents"),
     createPreviewCard("Important Notes", notes, "notes"),
   ].forEach((summaryCard) => {

@@ -943,9 +943,19 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #526477;
+  color: #b45309;
   font-size: 11px;
   font-weight: 650;
+}
+
+.candidate-job-card__org-name {
+  display: inline-block;
+  max-width: 100%;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #fef3c7;
+  color: #92400e;
+  font-weight: 800;
 }
 
 .candidate-job-card__org small {

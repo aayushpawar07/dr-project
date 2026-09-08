@@ -19,6 +19,7 @@ import { Button } from './ui/button';
 import { Job } from '../types';
 import { buildJobShareText, getJobShareUrl, shareTextWithoutUrl } from '../utils/shareContent';
 import { cardFieldText, cardSalaryText } from '../utils/extractedFieldDisplay';
+import { OrganisationHighlight } from './OrganisationHighlight';
 
 interface JobCardProps {
   job: Job;
@@ -174,9 +175,7 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
             {organizationName && (
               <div className="flex items-center gap-1.5 mt-2 min-w-0">
                 <Building2 className="w-4 h-4 shrink-0 text-amber-700" />
-                <span className="truncate rounded-md bg-amber-100 px-2 py-0.5 text-sm font-semibold text-amber-900">
-                  {organizationName}
-                </span>
+                <OrganisationHighlight name={organizationName} size="sm" className="truncate" />
               </div>
             )}
           </div>

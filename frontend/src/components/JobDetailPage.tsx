@@ -637,45 +637,6 @@ export function JobDetailPage({
               <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{displayJobDescription(job)}</p>
             </Card>
 
-            {(job.pdfUrl || job.officialWebsite || job.applyLink) && (
-              <Card className="p-6 job-detail-docs">
-                <h2 className="text-xl text-gray-900 mb-4">
-                  Official Sources
-                </h2>
-                <p className="mb-4 text-sm text-gray-500">
-                  Review the job description above before opening these links.
-                </p>
-                <div className="space-y-3">
-                  {job.officialWebsite && (
-                    <Button variant="outline" className="w-full justify-start" asChild>
-                      <a href={job.officialWebsite} target="_blank" rel="noopener noreferrer">
-                        <Building2 className="w-4 h-4 mr-2" />
-                        Official Website
-                        <ExternalLink className="w-4 h-4 ml-auto" />
-                      </a>
-                    </Button>
-                  )}
-                  {job.pdfUrl && (
-                    <Button variant="outline" className="w-full justify-start" asChild>
-                      <a href={job.pdfUrl} target="_blank" rel="noopener noreferrer">
-                        <FileText className="w-4 h-4 mr-2" />
-                        Notification PDF
-                        <ExternalLink className="w-4 h-4 ml-auto" />
-                      </a>
-                    </Button>
-                  )}
-                  {job.applyLink && (
-                    <Button variant="outline" className="w-full justify-start" asChild>
-                      <a href={job.applyLink} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        Official Apply Link
-                        <ExternalLink className="w-4 h-4 ml-auto" />
-                      </a>
-                    </Button>
-                  )}
-                </div>
-              </Card>
-            )}
           </div>
 
           {/* Sidebar */}
@@ -1579,6 +1540,42 @@ export function JobDetailPage({
                 </div>
               </div>
             </Card>
+
+            {(job.pdfUrl || job.officialWebsite) && (
+              <Card className="p-6 job-detail-docs">
+                <h3 className="mb-4 text-lg font-semibold text-gray-900">Official Documents</h3>
+                <div className="space-y-3">
+                  {job.pdfUrl && (
+                    <a
+                      href={job.pdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between rounded-lg border border-blue-300 bg-blue-50 px-3 py-3 text-sm font-semibold text-blue-800 transition-colors hover:bg-blue-100"
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Notification PDF
+                      </span>
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  )}
+                  {job.officialWebsite && (
+                    <a
+                      href={job.officialWebsite}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-3 text-sm font-semibold text-emerald-800 transition-colors hover:bg-emerald-100"
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        <Building2 className="h-4 w-4" />
+                        Official Website
+                      </span>
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  )}
+                </div>
+              </Card>
+            )}
 
             {/* Job Document Section - Direct PDF and Image attachments */}
             <Card className="p-6">

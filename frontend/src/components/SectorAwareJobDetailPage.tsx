@@ -241,22 +241,6 @@ function GovernmentJobDetail({
               </p>
             </Card>
 
-            {(notificationUrl || officialWebsite || applyLink) && (
-              <Card className="p-6 job-detail-docs">
-                <h2 className="mb-4 text-xl text-gray-900">Official Documents</h2>
-                <div className="space-y-3">
-                  {notificationUrl && (
-                    <DocumentButton href={notificationUrl} icon={FileText} label="View Official Notification PDF" />
-                  )}
-                  {officialWebsite && (
-                    <DocumentButton href={officialWebsite} icon={Building2} label="Official Website" />
-                  )}
-                  {applyLink && (
-                    <DocumentButton href={applyLink} icon={ExternalLink} label="Official Apply Link" />
-                  )}
-                </div>
-              </Card>
-            )}
           </div>
 
           {/* Same right-column composition as Private jobs */}
@@ -325,6 +309,20 @@ function GovernmentJobDetail({
                 )}
               </div>
             </Card>
+
+            {(notificationUrl || officialWebsite) && (
+              <Card className="p-6 job-detail-docs">
+                <h3 className="mb-4 font-semibold text-gray-900">Official Documents</h3>
+                <div className="space-y-3">
+                  {notificationUrl && (
+                    <OfficialLinkBox href={notificationUrl} icon={FileText} label="Notification PDF" tone="pdf" />
+                  )}
+                  {officialWebsite && (
+                    <OfficialLinkBox href={officialWebsite} icon={Building2} label="Official Website" tone="website" />
+                  )}
+                </div>
+              </Card>
+            )}
           </div>
         </div>
       </div>
@@ -354,23 +352,33 @@ function PrivateStyleDetail({
   );
 }
 
-function DocumentButton({
+function OfficialLinkBox({
   href,
   icon: Icon,
   label,
+  tone,
 }: {
   href: string;
   icon: any;
   label: string;
+  tone: 'pdf' | 'website';
 }) {
+  const styles = tone === 'pdf'
+    ? 'border-blue-300 bg-blue-50 text-blue-800 hover:bg-blue-100'
+    : 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100';
   return (
-    <Button variant="outline" className="w-full justify-start" asChild>
-      <a href={href} target="_blank" rel="noopener noreferrer">
-        <Icon className="mr-2 h-4 w-4" />
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`flex items-center justify-between rounded-lg border px-3 py-3 text-sm font-semibold transition-colors ${styles}`}
+    >
+      <span className="inline-flex items-center gap-2">
+        <Icon className="h-4 w-4" />
         {label}
-        <ExternalLink className="ml-auto h-4 w-4" />
-      </a>
-    </Button>
+      </span>
+      <ExternalLink className="h-4 w-4" />
+    </a>
   );
 }
 

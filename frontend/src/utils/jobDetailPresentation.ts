@@ -602,8 +602,8 @@ function enhanceGovernmentLinks(root: ParentNode) {
   const pdfSource = findLinkByText(root, ["notification pdf", "view notification", "official notification pdf"]);
   if (!websiteSource && !pdfSource) return;
 
-  const mainColumn = page.querySelector(".md\\:col-span-2.space-y-6") || page.querySelector(".job-detail-main");
-  if (!mainColumn) return;
+  const aside = page.querySelector(".job-detail-aside") || page.querySelector(".md\\:col-span-1");
+  if (!aside) return;
 
   const section = document.createElement("section");
   section.className = "medex-government-links";
@@ -646,14 +646,7 @@ function enhanceGovernmentLinks(root: ParentNode) {
   if (pdfSource) addOfficialLink(pdfSource, "pdf");
   section.append(grid);
 
-  mainColumn.append(section);
-
-  Array.from(mainColumn.children).forEach((element) => {
-    const headingNode = Array.from(element.querySelectorAll("h2")).find(
-      (item) => item.textContent?.trim().toLowerCase() === "official documents",
-    );
-    if (headingNode) element.classList.add("medex-official-docs-original");
-  });
+  aside.append(section);
 }
 
 function enhanceJobDetailPage() {

@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import "./styles/tailwind-missing-utilities.css";
 import "./styles/responsive.css";
 import "./styles/dashboard-polish.css";
 import "./styles/medex-brand-overrides.css";
@@ -17,6 +18,7 @@ import "./styles/job-detail-density.css";
 import "./styles/homepage-mobile-stats.css";
 import "./styles/admin-application-modal-no-shadow.css";
 import "./styles/admin-application-modal-overlay-cleanup.css";
+import "./styles/dashboard-theme-2026.css";
 import "./styles/dashboard-mobile-tablet.css";
 import "./utils/dashboardNavigation";
 import "./utils/jobDetailPresentation";

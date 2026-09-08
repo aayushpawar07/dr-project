@@ -1,0 +1,902 @@
+/*
+ * Shared visual theme for the employer and candidate dashboards.
+ *
+ * Loaded after dashboard-polish.css / employer-dashboard.css / medex-brand-overrides.css
+ * but before dashboard-mobile-tablet.css, so the responsive layer still owns layout.
+ * This file only owns colour, type, radius, shadow and spacing.
+ */
+
+.employer-dashboard,
+.candidate-dashboard {
+  /* medex-brand-overrides.css routes ~26 dashboard rules through --medex-blue.
+     Rebinding it here recolours all of them to the teal the admin area uses. */
+  --medex-blue: #0a6e79;
+  --medex-blue-dark: #06515a;
+
+  --dash-primary: #0a6e79;
+  --dash-primary-light: #1a8f9e;
+  --dash-primary-dark: #06515a;
+  --dash-secondary: #2d9b8e;
+  --dash-tint: rgba(10, 110, 121, 0.08);
+  --dash-tint-strong: rgba(10, 110, 121, 0.14);
+  --dash-success: #22c55e;
+  --dash-warning: #f59e0b;
+  --dash-danger: #ef4444;
+  --dash-surface: #ffffff;
+  --dash-canvas: #f8fafc;
+  --dash-border: #e2e8f0;
+  --dash-ink: #0f172a;
+  --dash-ink-soft: #475569;
+  --dash-muted: #64748b;
+  --dash-radius: 14px;
+  --dash-radius-sm: 8px;
+  --dash-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --dash-shadow: 0 4px 12px rgba(15, 23, 42, 0.07);
+}
+
+.employer-dashboard,
+.candidate-dashboard,
+.employer-main,
+.candidate-main {
+  background: var(--dash-canvas);
+}
+
+/* ------------------------------------------------------------------ *
+ * Sidebar navigation
+ * ------------------------------------------------------------------ */
+
+.employer-sidebar,
+.candidate-sidebar {
+  background: var(--dash-surface);
+  border-right: 1px solid var(--dash-border);
+}
+
+.employer-sidebar__brand-mark,
+.candidate-sidebar__brand-mark {
+  background: linear-gradient(135deg, var(--dash-primary), var(--dash-secondary));
+  color: #fff;
+}
+
+.employer-sidebar__section-title,
+.candidate-sidebar__group > span {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.employer-nav-item,
+.candidate-sidebar__group nav button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: 0;
+  border-radius: var(--dash-radius-sm);
+  background: transparent;
+  color: var(--dash-ink-soft);
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 550;
+  text-align: left;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.employer-nav-item svg,
+.candidate-sidebar__group nav button svg {
+  color: #94a3b8;
+  transition: color 160ms ease;
+}
+
+.employer-nav-item:hover,
+.candidate-sidebar__group nav button:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.employer-nav-item:hover svg,
+.candidate-sidebar__group nav button:hover svg {
+  color: var(--dash-primary);
+}
+
+.employer-nav-item.is-active,
+.candidate-sidebar__group nav button.is-active {
+  background: var(--dash-tint);
+  color: var(--dash-primary);
+  font-weight: 650;
+}
+
+.employer-nav-item.is-active svg,
+.candidate-sidebar__group nav button.is-active svg {
+  color: var(--dash-primary);
+}
+
+.employer-nav-item__badge {
+  margin-left: auto;
+  border-radius: 999px;
+  background: var(--dash-danger);
+  color: #fff;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* ------------------------------------------------------------------ *
+ * Page + section headings
+ * ------------------------------------------------------------------ */
+
+.dashboard-page-header__title h1,
+.candidate-page-header h1 {
+  color: var(--dash-ink);
+  font-size: clamp(20px, 2.4vw, 26px);
+  font-weight: 780;
+  letter-spacing: -0.03em;
+}
+
+.dashboard-page-header__title p,
+.candidate-page-header p {
+  color: var(--dash-muted);
+  font-size: 14px;
+}
+
+.candidate-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  background: var(--dash-tint);
+  color: var(--dash-primary);
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.dashboard-panel__heading h2,
+.dashboard-panel__title-row h2,
+.candidate-section-heading h2,
+.candidate-content-panel__header h2 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--dash-ink);
+  font-size: 17px;
+  font-weight: 720;
+  letter-spacing: -0.01em;
+}
+
+.dashboard-panel__heading h2 svg,
+.candidate-section-heading h2 svg,
+.candidate-content-panel__header h2 svg {
+  color: var(--dash-primary);
+}
+
+.dashboard-panel__heading p,
+.candidate-section-heading p,
+.candidate-content-panel__header p {
+  color: var(--dash-muted);
+  font-size: 13px;
+}
+
+.dashboard-panel,
+.candidate-content-panel,
+.candidate-dashboard-section {
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius);
+  background: var(--dash-surface);
+  box-shadow: var(--dash-shadow-sm);
+}
+
+.section-count {
+  border-radius: 999px;
+  background: var(--dash-tint);
+  color: var(--dash-primary);
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+/* ------------------------------------------------------------------ *
+ * Stat cards
+ * ------------------------------------------------------------------ */
+
+.employer-dashboard .dashboard-metric,
+.candidate-stat-card {
+  min-height: 0;
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius);
+  background: var(--dash-surface);
+  padding: 16px 18px;
+  box-shadow: var(--dash-shadow-sm);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.employer-dashboard .dashboard-metric:hover,
+.candidate-stat-card:hover {
+  border-color: var(--dash-primary-light);
+  box-shadow: var(--dash-shadow);
+  transform: translateY(-2px);
+}
+
+.dashboard-metric__icon,
+.candidate-stat-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--dash-radius-sm);
+  background: var(--dash-tint);
+  color: var(--dash-primary);
+}
+
+.dashboard-metric__icon svg,
+.candidate-stat-card__icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.employer-dashboard .dashboard-metric strong,
+.candidate-stat-card strong {
+  color: var(--dash-ink);
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+.dashboard-metric__top > span,
+.employer-dashboard .dashboard-metric small,
+.candidate-stat-card > span {
+  color: var(--dash-muted);
+  font-size: 13px;
+  font-weight: 550;
+}
+
+/* Tone accents keep the six candidate tiles readable at a glance. */
+.candidate-stat-card--blue .candidate-stat-card__icon { background: rgba(14, 165, 233, 0.1); color: #0284c7; }
+.candidate-stat-card--navy .candidate-stat-card__icon { background: rgba(10, 110, 121, 0.1); color: #0a6e79; }
+.candidate-stat-card--purple .candidate-stat-card__icon { background: rgba(139, 92, 246, 0.1); color: #7c4ddb; }
+.candidate-stat-card--green .candidate-stat-card__icon { background: rgba(34, 197, 94, 0.12); color: #16a34a; }
+.candidate-stat-card--sky .candidate-stat-card__icon { background: rgba(45, 155, 142, 0.12); color: #2d9b8e; }
+.candidate-stat-card--amber .candidate-stat-card__icon { background: rgba(245, 158, 11, 0.13); color: #d97706; }
+
+/* ------------------------------------------------------------------ *
+ * Buttons
+ * ------------------------------------------------------------------ */
+
+.dashboard-primary-button,
+.candidate-primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--dash-primary);
+  color: #fff;
+  padding: 11px 24px;
+  font-size: 14px;
+  font-weight: 650;
+  box-shadow: 0 4px 12px rgba(10, 110, 121, 0.24);
+  transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.dashboard-primary-button:hover,
+.candidate-primary-button:hover {
+  background: var(--dash-primary-dark);
+  box-shadow: 0 6px 18px rgba(10, 110, 121, 0.3);
+  transform: translateY(-1px);
+}
+
+.dashboard-primary-button--small,
+.candidate-primary-button--small {
+  padding: 9px 18px;
+  font-size: 13px;
+}
+
+.dashboard-outline-button,
+.candidate-outline-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--dash-ink-soft);
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: border-color 160ms ease, color 160ms ease, background 160ms ease;
+}
+
+.dashboard-outline-button:hover,
+.candidate-outline-button:hover {
+  border-color: var(--dash-primary);
+  background: var(--dash-tint);
+  color: var(--dash-primary);
+}
+
+.dashboard-panel__footer-action,
+.candidate-dashboard .text-action {
+  border: 0;
+  background: none;
+  color: var(--dash-primary);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.dashboard-panel__footer-action:hover,
+.candidate-dashboard .text-action:hover {
+  color: var(--dash-primary-dark);
+}
+
+.candidate-dashboard .text-action--danger {
+  color: var(--dash-danger);
+}
+
+/* ------------------------------------------------------------------ *
+ * Segmented tabs and filter pills
+ * ------------------------------------------------------------------ */
+
+/* Segmented control: a short, fixed set of sections. */
+.dashboard-section-switcher,
+.job-filter-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  padding: 4px;
+}
+
+.dashboard-section-switcher > button,
+.job-filter-tabs > button {
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--dash-muted);
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+
+.dashboard-section-switcher > button:hover,
+.job-filter-tabs > button:hover {
+  color: #334155;
+}
+
+.dashboard-section-switcher > button.is-active,
+.job-filter-tabs > button.is-active {
+  background: #fff;
+  color: var(--dash-primary);
+  box-shadow: var(--dash-shadow-sm);
+}
+
+/* Job pills are one per posting, so they stay a wrapping row of outline pills
+   inside the panel padding employer-dashboard.css already sets. */
+.application-job-pills > button {
+  border: 1px solid var(--dash-border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--dash-ink-soft);
+  padding: 8px 15px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.application-job-pills > button:hover {
+  border-color: var(--dash-primary-light);
+  color: var(--dash-primary);
+}
+
+.application-job-pills > button.is-active {
+  border-color: var(--dash-primary);
+  background: var(--dash-tint);
+  color: var(--dash-primary);
+}
+
+.candidate-application-filters button.is-active {
+  border-color: var(--dash-primary);
+  background: var(--dash-tint);
+  color: var(--dash-primary);
+}
+
+/* ------------------------------------------------------------------ *
+ * Status badges
+ * ------------------------------------------------------------------ */
+
+.dashboard-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+  color: var(--dash-muted);
+  padding: 3px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.dashboard-status--active,
+.dashboard-status--selected {
+  background: rgba(34, 197, 94, 0.13);
+  color: #15803d;
+}
+
+.dashboard-status--pending {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
+.dashboard-status--interview {
+  background: rgba(139, 92, 246, 0.13);
+  color: #6d28d9;
+}
+
+.dashboard-status--rejected {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+}
+
+.dashboard-status--draft,
+.dashboard-status--closed {
+  background: rgba(100, 116, 139, 0.14);
+  color: #475569;
+}
+
+/* ------------------------------------------------------------------ *
+ * Verification banner
+ * ------------------------------------------------------------------ */
+
+.employer-verification-card {
+  border: 1px solid var(--dash-border);
+  border-left: 5px solid var(--dash-success);
+  border-radius: var(--dash-radius);
+  background: #fff;
+  box-shadow: var(--dash-shadow-sm);
+}
+
+.employer-verification-card--unverified {
+  border-color: var(--dash-border);
+  border-left-color: var(--dash-warning);
+  background: #fff;
+}
+
+.employer-verification-card__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+  padding: 4px 13px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.employer-verification-card--unverified .employer-verification-card__status {
+  background: rgba(245, 158, 11, 0.13);
+  color: #b45309;
+}
+
+.employer-verification-card__identity strong {
+  color: var(--dash-ink);
+  font-size: 16px;
+  font-weight: 720;
+}
+
+.employer-verification-card__email,
+.employer-verification-card__plan {
+  color: var(--dash-muted);
+  font-size: 13px;
+}
+
+/* ------------------------------------------------------------------ *
+ * Job cards
+ * ------------------------------------------------------------------ */
+
+.dashboard-job-card,
+.candidate-job-card {
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius);
+  background: #fff;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.dashboard-job-card:hover,
+.candidate-job-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: var(--dash-shadow);
+  transform: translateY(-1px);
+}
+
+.dashboard-job-card__title-row strong,
+.candidate-job-card__head strong {
+  color: var(--dash-ink);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.dashboard-job-card__meta,
+.candidate-job-card__meta,
+.candidate-job-card__org {
+  color: var(--dash-muted);
+  font-size: 13px;
+}
+
+.dashboard-job-card__meta svg,
+.candidate-job-card__meta svg {
+  color: #94a3b8;
+}
+
+.dashboard-job-card__cta {
+  color: var(--dash-primary);
+  font-weight: 650;
+}
+
+.featured-signal {
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.13);
+  color: #b45309;
+  padding: 2px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* ------------------------------------------------------------------ *
+ * Employer candidate cards
+ * ------------------------------------------------------------------ */
+
+.candidate-card {
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius);
+  background: #fff;
+  box-shadow: var(--dash-shadow-sm);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.candidate-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: var(--dash-shadow);
+}
+
+.candidate-card h4 {
+  color: var(--dash-ink);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.candidate-avatar,
+.employer-avatar,
+.candidate-user-avatar {
+  background: linear-gradient(135deg, var(--dash-primary), var(--dash-secondary));
+  color: #fff;
+  font-weight: 750;
+}
+
+.candidate-card__profile {
+  border: 1px solid #eef2f6;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.candidate-card__profile span {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.candidate-card__profile strong {
+  color: #22364a;
+}
+
+.candidate-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 650;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.candidate-action--shortlist {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.1);
+  color: #15803d;
+}
+
+.candidate-action--shortlist:hover {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #fff;
+}
+
+.candidate-action--interview {
+  border-color: rgba(139, 92, 246, 0.35);
+  background: rgba(139, 92, 246, 0.1);
+  color: #6d28d9;
+}
+
+.candidate-action--interview:hover {
+  background: #7c3aed;
+  border-color: #7c3aed;
+  color: #fff;
+}
+
+.candidate-action--select {
+  border-color: rgba(10, 110, 121, 0.3);
+  background: var(--dash-tint);
+  color: var(--dash-primary);
+}
+
+.candidate-action--select:hover {
+  background: var(--dash-primary);
+  border-color: var(--dash-primary);
+  color: #fff;
+}
+
+.candidate-action--reject {
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.08);
+  color: #b91c1c;
+}
+
+.candidate-action--reject:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #fff;
+}
+
+.candidate-action--resume {
+  border-color: #cbd5e1;
+  background: #fff;
+  color: var(--dash-ink-soft);
+}
+
+.candidate-action--resume:hover {
+  border-color: var(--dash-primary);
+  color: var(--dash-primary);
+}
+
+.application-job-group__header h3 {
+  color: var(--dash-ink);
+  font-size: 15px;
+  font-weight: 720;
+}
+
+/* ------------------------------------------------------------------ *
+ * Candidate profile completion card
+ * ------------------------------------------------------------------ */
+
+.candidate-profile-card {
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius);
+  background: #fff;
+  box-shadow: var(--dash-shadow-sm);
+}
+
+.candidate-profile-card.is-incomplete {
+  border-left: 5px solid var(--dash-warning);
+}
+
+.candidate-profile-card.is-ready {
+  border-left: 5px solid var(--dash-success);
+}
+
+.candidate-profile-card__top > div > strong {
+  color: var(--dash-ink);
+  font-size: 17px;
+  font-weight: 750;
+}
+
+.candidate-profile-card__top > div > span {
+  color: var(--dash-muted);
+  font-size: 13px;
+}
+
+.candidate-profile-card__top {
+  flex-wrap: wrap;
+  row-gap: 14px;
+}
+
+.candidate-profile-card__progress {
+  flex: 1 1 200px;
+  min-width: 170px;
+  max-width: 320px;
+  margin-left: auto;
+}
+
+.candidate-profile-card__progress-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--dash-ink-soft);
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.candidate-profile-card__progress-label em {
+  color: var(--dash-primary);
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 780;
+}
+
+.candidate-profile-card__bar {
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.candidate-profile-card__bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--dash-primary-light), var(--dash-secondary));
+  transition: width 600ms ease;
+}
+
+.candidate-profile-card.is-incomplete .candidate-profile-card__bar > span {
+  background: linear-gradient(90deg, #fbbf24, var(--dash-warning));
+}
+
+.candidate-profile-card.is-incomplete .candidate-profile-card__progress-label em {
+  color: #b45309;
+}
+
+.candidate-profile-card__grid article {
+  border: 1px solid #eef2f6;
+  border-radius: 11px;
+  background: #f8fafc;
+  padding: 12px 13px;
+}
+
+.candidate-profile-card__grid article svg {
+  color: var(--dash-primary);
+}
+
+.candidate-profile-card__grid article span {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.candidate-profile-card__grid article strong {
+  color: #22364a;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.candidate-profile-card__summary {
+  color: var(--dash-ink-soft);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* ------------------------------------------------------------------ *
+ * Notifications, empty states, modal
+ * ------------------------------------------------------------------ */
+
+.notification-item,
+.candidate-notification-list > li {
+  border-radius: 11px;
+  transition: background 150ms ease;
+}
+
+.notification-item:hover,
+.candidate-notification-list > li:hover {
+  background: #f8fafc;
+}
+
+.notification-item__dot {
+  background: var(--dash-primary);
+}
+
+.dashboard-empty-state,
+.candidate-empty {
+  border: 1px dashed #cbd5e1;
+  border-radius: var(--dash-radius);
+  background: #f8fafc;
+  color: var(--dash-muted);
+}
+
+.dashboard-empty-state__icon,
+.candidate-empty svg {
+  color: #94a3b8;
+}
+
+.employer-modal__card {
+  border: 1px solid var(--dash-border);
+  border-radius: var(--dash-radius);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+}
+
+.employer-modal__card h3 {
+  color: var(--dash-ink);
+  font-size: 17px;
+  font-weight: 720;
+}
+
+.employer-modal__card input {
+  border: 1px solid #dbe3ea;
+  border-radius: 10px;
+  padding: 11px 12px;
+  font-size: 14px;
+}
+
+.employer-modal__card input:focus {
+  border-color: var(--dash-primary);
+  box-shadow: 0 0 0 3px rgba(10, 110, 121, 0.1);
+  outline: none;
+}
+
+.dashboard-post-cta {
+  border: 1px solid rgba(10, 110, 121, 0.15);
+  border-radius: var(--dash-radius);
+  background: linear-gradient(135deg, rgba(10, 110, 121, 0.06), rgba(45, 155, 142, 0.06));
+}
+
+.dashboard-post-cta__hint {
+  color: var(--dash-ink-soft);
+  font-size: 13px;
+}
+
+.employer-dashboard .icon-button,
+.candidate-icon-button {
+  border: 1px solid var(--dash-border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--dash-ink-soft);
+  transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
+}
+
+.employer-dashboard .icon-button:hover,
+.candidate-icon-button:hover {
+  border-color: var(--dash-primary);
+  background: var(--dash-tint);
+  color: var(--dash-primary);
+}
+
+/* Bottom navigation (phones) */
+.candidate-bottom-nav {
+  border-top: 1px solid var(--dash-border);
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(10px);
+}
+
+.candidate-bottom-nav button {
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.candidate-bottom-nav button.is-active {
+  color: var(--dash-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .employer-dashboard *,
+  .candidate-dashboard * {
+    transition: none !important;
+  }
+}

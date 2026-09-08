@@ -451,7 +451,21 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
                     <strong>{user?.name || 'Candidate'}</strong>
                     <span>{profile?.speciality || 'Speciality not added'}{profile?.subSpeciality ? ` · ${profile.subSpeciality}` : ''}</span>
                   </div>
-                  <em>{profilePercent}% complete</em>
+                  <div className="candidate-profile-card__progress">
+                    <div className="candidate-profile-card__progress-label">
+                      <span>Profile completion</span>
+                      <em>{profilePercent}%</em>
+                    </div>
+                    <div
+                      className="candidate-profile-card__bar"
+                      role="progressbar"
+                      aria-valuenow={profilePercent}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                    >
+                      <span style={{ width: `${profilePercent}%` }} />
+                    </div>
+                  </div>
                 </div>
                 <div className="candidate-profile-card__grid">
                   <article><Stethoscope size={16} /><span>Qualification</span><strong>{profile?.qualification || 'Not added'}</strong></article>

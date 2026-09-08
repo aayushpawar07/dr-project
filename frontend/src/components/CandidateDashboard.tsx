@@ -237,7 +237,7 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
           <div>
             <div className="candidate-job-card__org">
               <Building2 size={16} />
-              <span>{job.organization || 'Organisation not specified'}</span>
+              <span className="candidate-job-card__org-name">{job.organization || 'Organisation not specified'}</span>
               {job.sector && <small>{job.sector}</small>}
             </div>
             <h3 onClick={() => onNavigate('job-detail', job.id)}>{job.title || 'Untitled Job'}</h3>

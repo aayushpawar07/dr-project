@@ -73,6 +73,8 @@ function ensureOrganization(heroCard: HTMLElement, organization: string) {
 
   if (existingOrganization) {
     existingOrganization.classList.add("medex-job-organization-line");
+    const name = existingOrganization.querySelector("span");
+    if (name) name.classList.add("medex-org-highlight", "medex-job-organization-name");
     return;
   }
 
@@ -84,6 +86,7 @@ function ensureOrganization(heroCard: HTMLElement, organization: string) {
   line.append(createBuildingIcon());
 
   const text = document.createElement("span");
+  text.className = "medex-org-highlight medex-job-organization-name";
   text.textContent = organization;
   line.append(text);
 

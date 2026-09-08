@@ -1,5 +1,8 @@
 server:
   port: 8081
+  tomcat:
+    max-http-form-post-size: 50MB
+    max-swallow-size: 50MB
 
 spring:
   application:
@@ -96,6 +99,13 @@ logging:
   password: ''
   enabled: true
   scheme: http
+
+medex:
+  ocr:
+    enabled: ${MEDEX_OCR_ENABLED:true}
+    command: ${MEDEX_OCR_COMMAND:tesseract}
+    language: ${MEDEX_OCR_LANGUAGE:eng}
+    max-pages: ${MEDEX_OCR_MAX_PAGES:20}
 
 # Actuator
 management:

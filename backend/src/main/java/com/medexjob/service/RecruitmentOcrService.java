@@ -51,6 +51,11 @@ public class RecruitmentOcrService {
         this.maxPages = Math.max(1, Math.min(maxPages, 100));
         this.dpi = Math.max(120, Math.min(dpi, 300));
         this.pageTimeoutSeconds = Math.max(5, Math.min(pageTimeoutSeconds, 120));
+        if (this.enabled) {
+            log.info("Recruitment OCR is enabled using command '{}'", this.command);
+        } else {
+            log.warn("Recruitment OCR is disabled. Scanned PDFs will not extract vacancies. Set medex.ocr.enabled=true and install tesseract.");
+        }
     }
 
     public Optional<String> extract(PDDocument document) {

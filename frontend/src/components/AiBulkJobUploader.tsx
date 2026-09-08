@@ -102,6 +102,10 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
       toast.error('Select a recruitment PDF first.');
       return;
     }
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error('PDF must be 20 MB or smaller.');
+      return;
+    }
     setProcessing(true);
     try {
       const result = await extractRecruitment(file, forceCreate);

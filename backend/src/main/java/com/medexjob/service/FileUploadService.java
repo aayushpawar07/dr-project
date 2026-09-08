@@ -82,7 +82,7 @@ public class FileUploadService {
         "exe", "js", "zip", "rar", "sh", "bat", "cmd", "com", "scr", "vbs", "jar", "dll"
     );
 
-    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    private static final long MAX_FILE_SIZE = 50L * 1024 * 1024; // 50MB
 
     /**
      * Upload file to Hostinger FTP server and return public URL

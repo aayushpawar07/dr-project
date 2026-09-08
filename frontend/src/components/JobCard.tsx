@@ -174,7 +174,7 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
             {organizationName && (
               <div className="flex items-center gap-1.5 mt-2 min-w-0">
                 <Building2 className="w-4 h-4 shrink-0 text-amber-700" />
-                <span className="truncate rounded-md bg-amber-100 px-2 py-0.5 text-sm font-semibold text-amber-900">
+                <span className="medex-org-highlight truncate rounded-md bg-amber-100 px-2 py-0.5 text-sm font-semibold text-amber-900">
                   {organizationName}
                 </span>
               </div>

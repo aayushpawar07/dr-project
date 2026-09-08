@@ -83,7 +83,7 @@ export function Header({ currentPage, onNavigate, isAuthenticated }: HeaderProps
             </h1>
           </div>
 
-          <nav className="hidden lg:flex items-center gap-3 lg:gap-5 xl:gap-6 min-w-0">
+          <nav className="hidden md:flex items-center gap-3 lg:gap-5 xl:gap-6 min-w-0">
             {publicNavItems.map((item) => (
               <button key={item.page} onClick={() => onNavigate(item.page)} className={`text-[13px] lg:text-sm font-medium transition-colors whitespace-nowrap ${currentPage === item.page ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'}`}>{item.label}</button>
             ))}
@@ -108,15 +108,15 @@ export function Header({ currentPage, onNavigate, isAuthenticated }: HeaderProps
               <div className="hidden sm:flex items-center gap-2"><Button variant="outline" onClick={() => onNavigate('login')} className="h-9 px-3 lg:px-4 text-sm">Login</Button><Button onClick={() => onNavigate('register')} className="bg-blue-600 hover:bg-blue-700 h-9 px-3 lg:px-4 text-sm">Register</Button></div>
             )}
 
-            <Button type="button" variant="ghost" size="icon" className="lg:hidden h-9 w-9 sm:h-10 sm:w-10" onClick={() => setMobileMenuOpen((open) => !open)} aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'} aria-expanded={mobileMenuOpen}>{mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}</Button>
+            <Button type="button" variant="ghost" size="icon" className="md:hidden h-9 w-9 sm:h-10 sm:w-10" onClick={() => setMobileMenuOpen((open) => !open)} aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'} aria-expanded={mobileMenuOpen}>{mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}</Button>
           </div>
         </div>
       </div>
 
       {mobileMenuOpen && (
         <>
-          <button className="medex-mobile-nav-overlay fixed inset-x-0 bottom-0 top-14 sm:top-16 bg-slate-950/35 lg:hidden" onClick={() => setMobileMenuOpen(false)} aria-label="Close navigation menu" />
-          <div className="medex-mobile-nav absolute left-0 right-0 top-full lg:hidden bg-white border-t border-gray-100 shadow-xl max-h-[calc(100dvh-3.5rem)] sm:max-h-[calc(100dvh-4rem)] overflow-y-auto">
+          <button className="medex-mobile-nav-overlay fixed inset-x-0 bottom-0 top-14 sm:top-16 bg-slate-950/35 md:hidden" onClick={() => setMobileMenuOpen(false)} aria-label="Close navigation menu" />
+          <div className="medex-mobile-nav absolute left-0 right-0 top-full md:hidden bg-white border-t border-gray-100 shadow-xl max-h-[calc(100dvh-3.5rem)] sm:max-h-[calc(100dvh-4rem)] overflow-y-auto">
             <nav className="container mx-auto px-3 sm:px-4 py-3 grid grid-cols-1 gap-1">
               {publicNavItems.map((item) => <button key={item.page} onClick={() => navigateAndClose(item.page)} className={`w-full text-left rounded-lg px-4 py-3 text-sm font-medium transition-colors ${currentPage === item.page ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-blue-700'}`}>{item.label}</button>)}
               <div className="border-t border-gray-100 mt-2 pt-3 flex flex-col gap-2 sm:hidden">

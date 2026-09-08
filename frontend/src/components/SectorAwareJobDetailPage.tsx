@@ -20,7 +20,7 @@ import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
-import { cardFieldText, cardLocationText, cardSalaryText, displayJobDescription, locationFromOrganisation } from '../utils/extractedFieldDisplay';
+import { cardFieldText, cardSalaryText, displayJobDescription } from '../utils/extractedFieldDisplay';
 
 interface Props {
   onNavigate: (page: string, entityId?: string) => void;
@@ -85,12 +85,7 @@ function GovernmentJobDetail({
   job: any;
   onNavigate: Props['onNavigate'];
 }) {
-  const locationText = cardLocationText(
-    job.location,
-    job.city,
-    job.state,
-    locationFromOrganisation(job.organization || job.companyName || job.employer?.companyName),
-  );
+  const locationText = job.location || [job.city, job.state].filter(Boolean).join(', ');
   const organization =
     job.organization ||
     job.companyName ||

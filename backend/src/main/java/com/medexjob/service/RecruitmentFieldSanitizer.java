@@ -18,9 +18,6 @@ public final class RecruitmentFieldSanitizer {
     private static final Pattern TRAILING_NORMS = Pattern.compile(
             "(?i)\\s*(as per nmc.*|published in the gazette.*)$"
     );
-    private static final Pattern USELESS_LOCATION = Pattern.compile(
-            "(?i)^(multiple( locations?)?|anywhere|any location|all locations|n/?a|na|tbd|various|pan[- ]?india)$"
-    );
 
     private RecruitmentFieldSanitizer() {}
 
@@ -67,16 +64,7 @@ public final class RecruitmentFieldSanitizer {
         vacancy.setPayLevel(clip(vacancy.getPayLevel(), 40));
         vacancy.setAgeLimit(clip(vacancy.getAgeLimit(), 80));
         vacancy.setJobType(cleanName(vacancy.getJobType()));
-        vacancy.setLocation(usableLocation(vacancy.getLocation(), null));
-    }
-
-    public static String usableLocation(String value, String fallback) {
-        if (!hasText(value) || USELESS_LOCATION.matcher(value.trim()).matches()) {
-            return hasText(fallback) && !USELESS_LOCATION.matcher(fallback.trim()).matches()
-                    ? clip(fallback, 200)
-                    : null;
-        }
-        return clip(value, 200);
+        vacancy.setLocation(cleanName(vacancy.getLocation()));
     }
 
     public static String cardValue(String value, String fallback) {

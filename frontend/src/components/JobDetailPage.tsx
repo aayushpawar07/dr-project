@@ -45,7 +45,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { saveJob, unsaveJob, checkIfJobIsSaved } from "../api/savedJobs";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 import { ResumeUploadSection } from "./ResumeUploadSection";
-import { cardFieldText, cardLocationText, cardSalaryText, displayJobDescription, locationFromOrganisation } from "../utils/extractedFieldDisplay";
+import { cardFieldText, cardSalaryText, displayJobDescription } from "../utils/extractedFieldDisplay";
 
 interface JobDetailPageProps {
   onNavigate: (page: string, entityId?: string) => void;
@@ -81,12 +81,8 @@ export function JobDetailPage({
   const [userApplication, setUserApplication] = useState<any>(null);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-  const locationText = cardLocationText(
-    job?.location,
-    job?.city,
-    job?.state,
-    locationFromOrganisation(job?.organization || job?.organisationName || job?.companyName),
-  );
+  const locationText =
+    job?.location || [job?.city, job?.state].filter(Boolean).join(", ");
   const { jobId } = useParams<{ jobId: string }>();
 
   const getShareUrl = () => {
@@ -1540,7 +1536,7 @@ export function JobDetailPage({
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="w-5 h-5 text-gray-400" />
-                  <span className="text-sm text-gray-700">{locationText || "India"}</span>
+                  <span className="text-sm text-gray-700">{job.location}</span>
                 </div>
               </div>
             </Card>

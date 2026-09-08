@@ -62,6 +62,26 @@ export function leftoverEligibilityNotes(...values: unknown[]) {
   return [...new Set(values.map(text).filter((value) => isRegulatoryDump(value)))];
 }
 
+export function preserveMultiline(value: unknown) {
+  return String(value ?? '').replace(/\r\n?/g, '\n').replace(/\u00a0/g, ' ').trim();
+}
+
+export function restorePortalDescription(raw: string) {
+  return preserveMultiline(raw)
+    .replace(
+      /\s*(JOB DETAILS|ELIGIBILITY(?:\s+CRITERIA)?|KEY RESPONSIBILITIES|RESPONSIBILITIES|APPLICATION PROCESS|APPLICATION DETAILS|SELECTION PROCESS|DOCUMENTS REQUIRED|IMPORTANT DOCUMENTS REQUIRED|IMPORTANT NOTES|IMPORTANT INSTRUCTIONS|CONTACT INFORMATION|PAY\s*\/\s*SALARY)\b/gi,
+      '\n\n$1\n',
+    )
+    .replace(
+      /\s+(Post|Organisation|Organization|Department|Speciality|Specialty|Location|Number of Posts|Job Type|Advertisement|Qualification|Experience|Age Limit|Pay\/Salary|Application Start Date|Last Date to Apply|Application Fee|Mode of Application|Selection Process)\s*:/gi,
+      '\n$1:',
+    )
+    .replace(/\s+-\s+/g, '\n- ')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 export function buildStructuredJobDescription(input: {
   postName?: string;
   organisationName?: string;
@@ -98,6 +118,7 @@ export function buildStructuredJobDescription(input: {
     input.location && `Location: ${input.location}`,
     input.numberOfPosts != null && input.numberOfPosts !== '' && `Number of Posts: ${input.numberOfPosts}`,
     input.jobType && `Job Type: ${input.jobType}`,
+    input.salary && `Pay/Salary: ${input.salary}`,
   ]);
   add('ELIGIBILITY', [
     input.qualification && `Qualification: ${input.qualification}`,
@@ -106,22 +127,23 @@ export function buildStructuredJobDescription(input: {
     input.otherEligibility,
     ...(input.extraNotes || []),
   ]);
-  add('PAY / SALARY', [input.salary]);
-  add('APPLICATION DETAILS', [
+  add('APPLICATION PROCESS', [
     input.applicationStartDate && `Application Start Date: ${input.applicationStartDate}`,
     input.applicationLastDate && `Last Date to Apply: ${input.applicationLastDate}`,
     input.applicationFee && `Application Fee: ${input.applicationFee}`,
-    input.selectionProcess && `Selection Process: ${input.selectionProcess}`,
   ]);
-  add('IMPORTANT INSTRUCTIONS', [input.importantInstructions]);
+  add('SELECTION PROCESS', [input.selectionProcess]);
+  add('IMPORTANT NOTES', [input.importantInstructions]);
   return lines.join('\n').trim();
 }
 
 export function displayJobDescription(job: any, extras: string[] = []) {
-  const raw = text(job?.description);
-  if (/^JOB DETAILS/i.test(raw)) {
+  const raw = preserveMultiline(job?.description);
+  const collapsed = raw.replace(/\s+/g, ' ').trim();
+  if (/^JOB DETAILS/i.test(raw) || /^JOB DETAILS/i.test(collapsed)) {
+    const restored = restorePortalDescription(raw);
     const notes = leftoverEligibilityNotes(job?.qualification, job?.experience, job?.requirements, ...extras);
-    return notes.length ? `${raw}\n\nIMPORTANT INSTRUCTIONS\n\n${notes.join('\n')}` : raw;
+    return notes.length ? `${restored}\n\nIMPORTANT NOTES\n\n${notes.join('\n')}` : restored;
   }
   return buildStructuredJobDescription({
     postName: job?.displayTitle || job?.title,

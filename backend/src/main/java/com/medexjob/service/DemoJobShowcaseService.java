@@ -65,7 +65,9 @@ public class DemoJobShowcaseService {
     private Map<String, Object> publishSingleJob(SingleJobSpec spec) {
         Job existing = jobRepository.findBySlug(spec.slug()).orElse(null);
         if (existing != null && !existing.isDeleted()) {
-            return jobSummary(existing, "already_exists");
+            existing.setDescription(spec.description());
+            jobRepository.save(existing);
+            return jobSummary(existing, "updated");
         }
 
         Employer employer = vacancyJobPublisher.resolveOrCreateEmployer(spec.organisation());
@@ -109,11 +111,13 @@ public class DemoJobShowcaseService {
         var existing = recruitmentRepository.findFirstByPdfFingerprintOrderByCreatedAtDesc(MULTI_FINGERPRINT);
         if (existing.isPresent()) {
             Recruitment current = recruitmentManagementService.get(existing.get().getId());
+            current.setJobDescription(esicStructuredDescription());
+            recruitmentRepository.save(current);
             if (current.getStatus() != Recruitment.RecruitmentStatus.PUBLISHED) {
                 approveAndPublish(current.getId());
                 current = recruitmentManagementService.get(current.getId());
             }
-            return recruitmentSummary(current, "already_exists");
+            return recruitmentSummary(current, "updated");
         }
 
         Recruitment recruitment = new Recruitment();
@@ -310,28 +314,50 @@ public class DemoJobShowcaseService {
                 Location: New Delhi
                 Number of Posts: 12
                 Job Type: Full Time
+                Pay/Salary: Level-11, Rs 67,700-2,08,700 plus NPA
 
                 ELIGIBILITY
 
                 Qualification: MBBS with valid NMC or Delhi Medical Council registration. MD Emergency Medicine preferred.
                 Experience: 2-5 years of emergency, casualty, or critical-care duty after internship.
                 Age Limit: 40 years as on the last date. Age relaxation as per Government of India rules.
-                Candidates must be fit for night duty, trauma resuscitation, and disaster-response roster.
 
-                PAY / SALARY
+                RESPONSIBILITIES
 
-                Level-11, Rs 67,700-2,08,700 plus NPA and other central government allowances as admissible.
+                - Cover emergency, casualty, and trauma resuscitation on roster
+                - Attend night duty and disaster-response calls
+                - Maintain clinical notes and handover
 
-                APPLICATION DETAILS
+                APPLICATION PROCESS
 
+                Mode of Application: Online
                 Application Start Date: 2026-09-10
                 Last Date to Apply: 2026-10-20
                 Application Fee: UR/OBC/EWS Rs 1,000. SC/ST/PwBD/Women: Nil.
-                Selection Process: Online application, document verification, and interview.
 
-                IMPORTANT INSTRUCTIONS
+                SELECTION PROCESS
 
-                Apply only through the official AIIMS recruitment portal. Keep registration, MBBS/MD certificates, and category documents ready in PDF. Incomplete applications will be rejected. Official Website and Notification PDF are published separately on this listing.""";
+                - Online application
+                - Document verification
+                - Interview
+
+                DOCUMENTS REQUIRED
+
+                - MBBS/MD certificates
+                - Valid medical registration
+                - Category documents if claimed
+                - Photo ID
+
+                IMPORTANT NOTES
+
+                - Apply only through the official AIIMS recruitment portal
+                - Incomplete applications will be rejected
+                - Official Website and Notification PDF are published separately on this listing
+
+                CONTACT INFORMATION
+
+                Email: recruitment@aiims.edu
+                Phone: 01126588500""";
     }
 
     private String privateCardiologistDescription() {
@@ -345,28 +371,48 @@ public class DemoJobShowcaseService {
                 Location: Chennai, Tamil Nadu
                 Number of Posts: 2
                 Job Type: Full Time
+                Pay/Salary: Rs 3,50,000-4,50,000 per month plus procedure incentive
 
                 ELIGIBILITY
 
                 Qualification: DM or DNB Cardiology with valid Tamil Nadu Medical Council registration.
                 Experience: 5-8 years after super-speciality, with independent coronary intervention numbers.
                 Age Limit: Preferably below 50 years.
-                Must manage STEMI calls, cardiac ICU, and multidisciplinary cardiac meetings.
 
-                PAY / SALARY
+                RESPONSIBILITIES
 
-                Rs 3,50,000-4,50,000 per month plus procedure incentive as per hospital policy.
+                - Manage STEMI calls and cardiac ICU
+                - Perform independent coronary interventions
+                - Attend multidisciplinary cardiac meetings
 
-                APPLICATION DETAILS
+                APPLICATION PROCESS
 
+                Mode of Application: Online through hospital careers
                 Application Start Date: 2026-09-12
                 Last Date to Apply: 2026-11-05
-                Application Fee: No fee. Apply through hospital careers.
-                Selection Process: CV shortlisting, credentialing, and panel interview with Cardiac Sciences.
+                Application Fee: No fee
 
-                IMPORTANT INSTRUCTIONS
+                SELECTION PROCESS
 
-                Share procedure logbook, registration, and last 3 years experience letters. Night STEMI cover is rostered. Official Website and careers link are published separately on this listing.""";
+                - CV shortlisting
+                - Credentialing
+                - Panel interview with Cardiac Sciences
+
+                DOCUMENTS REQUIRED
+
+                - Procedure logbook
+                - Medical registration
+                - Last 3 years experience letters
+
+                IMPORTANT NOTES
+
+                - Night STEMI cover is rostered
+                - Official Website and careers link are published separately on this listing
+
+                CONTACT INFORMATION
+
+                Email: careers.chennai@apollohospitals.com
+                Phone: 04428290200""";
     }
 
     private String esicStructuredDescription() {
@@ -379,28 +425,46 @@ public class DemoJobShowcaseService {
                 Number of Posts: 22
                 Job Type: Tenure / Contract
                 Advertisement: ESIC/FBD/SR/09/2026
+                Pay/Salary: Level-11, Rs 1,23,100 per month plus NPA
 
                 ELIGIBILITY
 
                 Qualification: MD/MS/DNB in the concerned speciality with valid NMC or State Medical Council registration.
                 Experience: Fresh postgraduates are eligible. Prior Senior Resident tenure is desirable.
                 Age Limit: 45 years as on the last date, with government relaxation for reserved categories.
-                Reservation and roster apply as notified for each department.
 
-                PAY / SALARY
+                RESPONSIBILITIES
 
-                Level-11, Rs 1,23,100 per month plus NPA and other ESIC allowances as admissible.
+                - Clinical work in the allotted department
+                - Emergency and on-call cover as per roster
 
-                APPLICATION DETAILS
+                APPLICATION PROCESS
 
+                Mode of Application: Walk-in
                 Application Start Date: 2026-09-10
                 Last Date to Apply: 2026-10-15
                 Application Fee: UR/OBC/EWS Rs 500. SC/ST/PwBD/Female: Nil.
-                Selection Process: Walk-in document verification and interview.
 
-                IMPORTANT INSTRUCTIONS
+                SELECTION PROCESS
 
-                Report with original documents and one self-attested set. No TA/DA is payable. Tenure follows ESIC Senior Resident rules. Official Website and Notification PDF are published separately on this listing.""";
+                - Document verification
+                - Walk-in interview
+
+                DOCUMENTS REQUIRED
+
+                - Original registration and MBBS/MD/DNB mark sheets
+                - Caste/PwBD certificate if claimed
+                - One self-attested document set
+
+                IMPORTANT NOTES
+
+                - No TA/DA is payable
+                - Tenure follows ESIC Senior Resident rules
+                - Official Website and Notification PDF are published separately on this listing
+
+                CONTACT INFORMATION
+
+                Email: Not specified in this listing""";
     }
 
     private Map<String, Object> jobSummary(Job job, String status) {

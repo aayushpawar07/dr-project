@@ -438,6 +438,15 @@
   overflow-wrap: anywhere;
 }
 
+.medex-kv-value--org {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #fef3c7;
+  color: #92400e;
+  font-weight: 800;
+}
+
 .medex-description-summary-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

@@ -162,7 +162,7 @@ function GovernmentJobDetail({
                   <h1 className="mb-2 text-3xl text-gray-900">{job.title}</h1>
                   <div className="flex items-center gap-2 text-gray-700">
                     <Building2 className="h-5 w-5 shrink-0 text-amber-700" />
-                    <span className="rounded-md bg-amber-100 px-2.5 py-0.5 text-lg font-semibold text-amber-900">{organization}</span>
+                    <span className="medex-org-highlight rounded-md bg-amber-100 px-2.5 py-0.5 text-lg font-semibold text-amber-900">{organization}</span>
                   </div>
 
                   {job.sourceRecruitmentId && (
@@ -299,7 +299,7 @@ function GovernmentJobDetail({
               <div className="space-y-3 text-sm text-gray-700">
                 <div className="flex items-start gap-2">
                   <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
-                  <span>{organization}</span>
+                  <span className="medex-org-highlight">{organization}</span>
                 </div>
                 {locationText && (
                   <div className="flex items-start gap-2">

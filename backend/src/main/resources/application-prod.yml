@@ -1,6 +1,9 @@
 # AI assisted development
 server:
   port: 8081
+  tomcat:
+    max-http-form-post-size: 50MB
+    max-swallow-size: 50MB
 
 spring:
   application:
@@ -50,6 +53,11 @@ spring:
 # AI is attempted when MEDEX_AI_API_KEY is available. If the key/API is not
 # available, the existing deterministic PDF/OCR parser remains the fallback.
 medex:
+  ocr:
+    enabled: ${MEDEX_OCR_ENABLED:true}
+    command: ${MEDEX_OCR_COMMAND:tesseract}
+    language: ${MEDEX_OCR_LANGUAGE:eng}
+    max-pages: ${MEDEX_OCR_MAX_PAGES:20}
   ai:
     enabled: ${MEDEX_AI_ENABLED:true}
     chat-completions-url: ${MEDEX_AI_CHAT_COMPLETIONS_URL:https://api.deepseek.com/chat/completions}

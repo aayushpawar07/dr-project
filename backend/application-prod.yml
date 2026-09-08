@@ -37,8 +37,8 @@ spring:
 
   servlet:
     multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
+      max-file-size: 50MB
+      max-request-size: 50MB
 
 jwt:
   secret: ${JWT_SECRET:ThisIsMySuperSecretKeyForMedExJobComBackendApiWhichIsSecureAndLongEnoughForHS512}
@@ -50,7 +50,7 @@ razorpay:
 
 file:
   upload-dir: /opt/medexjob/backend/uploads
-  max-size: 10485760
+  max-size: 52428800
   base-url: https://medexjob.com
   use-ftp: false  # FTP DISABLED - files saved locally on VPS
 

@@ -46,6 +46,12 @@ public class RecruitmentExtractionService {
             String extractionText = ocrText.orElse(nativeText);
             boolean usedOcr = ocrText.isPresent();
 
+            if (nativeTextSparse && !usedOcr) {
+                throw new IllegalArgumentException(
+                    "This PDF looks scanned and OCR did not run. Install tesseract-ocr on the server and keep medex.ocr.enabled=true, then upload again."
+                );
+            }
+
             Optional<RecruitmentExtractionResult> ai = nonWhitespaceLength(extractionText) >= 50
                     ? aiClient.extract(extractionText)
                     : Optional.empty();

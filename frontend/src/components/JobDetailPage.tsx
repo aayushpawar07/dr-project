@@ -529,7 +529,7 @@ export function JobDetailPage({
                     return orgName ? (
                       <div className="flex items-center gap-2 text-gray-700">
                         <Building2 className="w-5 h-5 text-amber-700 shrink-0" />
-                        <span className="rounded-md bg-amber-100 px-2.5 py-0.5 text-lg font-semibold text-amber-900">{orgName}</span>
+                        <span className="medex-org-highlight rounded-md bg-amber-100 px-2.5 py-0.5 text-lg font-semibold text-amber-900">{orgName}</span>
                       </div>
                     ) : null;
                   })()}
@@ -1530,7 +1530,7 @@ export function JobDetailPage({
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Building2 className="w-5 h-5 text-gray-400" />
-                  <span className="text-sm text-gray-700">
+                  <span className="medex-org-highlight text-sm">
                     {job.organization}
                   </span>
                 </div>

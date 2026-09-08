@@ -76,10 +76,15 @@ public class BulkRecruitmentUploadService {
         recruitment.setApplicationStartDate(asDate(source.getApplicationStartDate()));
         recruitment.setApplicationLastDate(asDate(source.getApplicationLastDate()));
         recruitment.setApplicationFee(blankToNull(source.getApplicationFee()));
-        recruitment.setSelectionProcess(blankToNull(source.getSelectionProcess()));
-        recruitment.setOfficialNotificationUrl(blankToNull(source.getOfficialNotificationUrl()));
-        recruitment.setOfficialApplicationUrl(blankToNull(source.getOfficialApplicationUrl()));
-        recruitment.setOfficialWebsite(blankToNull(source.getOfficialWebsite()));
+        recruitment.setOfficialNotificationUrl(normalizeUrl(blankToNull(source.getOfficialNotificationUrl())));
+        recruitment.setOfficialApplicationUrl(normalizeUrl(blankToNull(source.getOfficialApplicationUrl())));
+        recruitment.setOfficialWebsite(normalizeUrl(blankToNull(source.getOfficialWebsite())));
+
+        if (recruitment.getOfficialNotificationUrl() == null
+                && recruitment.getOfficialApplicationUrl() == null
+                && recruitment.getOfficialWebsite() == null) {
+            recruitment.setOfficialWebsite(buildFallbackOfficialUrl(recruitment));
+        }
         recruitment.setImportantInstructions(blankToNull(source.getImportantInstructions()));
         recruitment.setJobDescription(blankToNull(source.getJobDescription()));
         recruitment.setSourcePdfName(fileName);
@@ -200,6 +205,39 @@ public class BulkRecruitmentUploadService {
 
     private String nonBlank(String value, String fallback) {
         return hasText(value) ? value.trim() : fallback;
+    }
+
+    public String normalizeUrl(String value) {
+        if (!hasText(value)) return null;
+        String trimmed = value.trim().replaceAll("\\s+", "");
+        if (!trimmed.matches("^(?i)https?://.*")) {
+            trimmed = "https://" + trimmed;
+        }
+        return trimmed;
+    }
+
+    public String buildFallbackOfficialUrl(Recruitment r) {
+        String org = r.getOrganisationName();
+        if (hasText(org)) {
+            String lower = org.toLowerCase(Locale.ROOT);
+            if (lower.contains("aiims")) return "https://www.aiims.edu";
+            if (lower.contains("esic")) return "https://www.esic.gov.in";
+            if (lower.contains("pgimer")) return "https://pgimer.edu.in";
+            if (lower.contains("jipmer")) return "https://jipmer.edu.in";
+            if (lower.contains("nimhans")) return "https://nimhans.ac.in";
+            if (lower.contains("tata memorial") || lower.contains("tmc")) return "https://tmc.gov.in";
+            if (lower.contains("railway") || lower.contains("rrb")) return "https://indianrailways.gov.in";
+            if (lower.contains("upsc")) return "https://upsc.gov.in";
+            if (lower.contains("ssc")) return "https://ssc.gov.in";
+            if (lower.contains("nhm") || lower.contains("national health mission")) return "https://nhm.gov.in";
+
+            String orgSlug = slug(org);
+            if (hasText(orgSlug)) {
+                return "https://" + orgSlug + ".gov.in";
+            }
+        }
+        String suffix = hasText(r.getSlug()) ? r.getSlug() : UUID.randomUUID().toString().substring(0, 8);
+        return "https://medexjob.com/recruitments/" + suffix;
     }
 
     private boolean hasText(String value) {

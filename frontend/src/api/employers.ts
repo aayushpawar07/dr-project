@@ -76,6 +76,24 @@ export async function fetchEmployer(id: string, token: string): Promise<Employer
       },
     });
   }
+
+  // If still not found, try /employers/me
+  if (res.status === 404) {
+    res = await authFetch(`${API_BASE}/employers/me`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  }
+
+  // If still not found, auto-create employer profile
+  if (res.status === 404) {
+    try {
+      return await createEmployer({}, token);
+    } catch (createErr) {
+      console.error('Failed to auto-create fallback employer profile', createErr);
+    }
+  }
   
   if (!res.ok) throw new Error(`Failed to fetch employer (${res.status})`);
   return res.json();

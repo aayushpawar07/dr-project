@@ -137,6 +137,32 @@ class RecruitmentWorkflowIntegrationTest {
         assertThat(count(service.get(recruitment.getId()), VacancyRecord.VacancyStatus.NEEDS_REVIEW)).isEqualTo(40);
     }
 
+    @Test
+    void officialVerificationSucceedsEvenWithoutUrlsBySupplyingFallback() {
+        Recruitment fresh = recruitmentRepository.save(buildRecruitment(2));
+        fresh.setOfficialNotificationUrl(null);
+        fresh.setOfficialApplicationUrl(null);
+        fresh.setOfficialWebsite(null);
+        recruitmentRepository.save(fresh);
+
+        Recruitment verified = service.verify(fresh.getId(), "test-admin");
+        assertThat(verified.getOfficialSourceVerified()).isTrue();
+        assertThat(verified.getOfficialWebsite()).isNotNull();
+        assertThat(verified.getOfficialWebsite()).startsWith("https://");
+    }
+
+    @Test
+    void officialVerificationNormalizesUrlsWithoutProtocol() {
+        Recruitment fresh = recruitmentRepository.save(buildRecruitment(2));
+        service.updateRecruitment(fresh.getId(), Map.of(
+                "officialWebsite", "www.aiimsdelhi.edu.in"
+        ));
+
+        Recruitment verified = service.verify(fresh.getId(), "test-admin");
+        assertThat(verified.getOfficialSourceVerified()).isTrue();
+        assertThat(verified.getOfficialWebsite()).isEqualTo("https://www.aiimsdelhi.edu.in");
+    }
+
     private Recruitment buildRecruitment(int rows) {
         Recruitment r = new Recruitment();
         r.setOrganisationName("AIIMS Jodhpur");

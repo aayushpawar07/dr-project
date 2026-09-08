@@ -122,6 +122,7 @@ public class RecruitmentAiExtractionClient {
                 - experience: years or a specific requirement only (e.g. "3 years teaching"). If the PDF only has a generic NMC/gazette rule, use null.
                 - salary: pay figure or pay level only (e.g. "Rs. 1,65,480 per month" or "Level-13"). Do not copy allowance paragraphs.
                 - department, speciality, postName: the name only. Never append eligibility, gazette, or NMC text.
+                - officialWebsite, officialNotificationUrl, officialApplicationUrl: extract any official website, notification link, or online application link found in the PDF. Normalize to start with https:// if possible.
                 - Put NMC norms, Gazette of India wording, long eligibility notes, and common rules into importantInstructions and jobDescription only.
                 Description rules — generate recruitment.jobDescription using exactly these section headings so the website can split them into tabs. Use a blank line between sections. Use "Label: Value" for facts. Use "- " bullets for lists. Do not use markdown tables, STEP 1/2/3, or long paragraphs. Do not invent facts that are not in THIS PDF. Omit a section only if the PDF has no information for it. Do not include website or PDF links:
                 JOB DETAILS

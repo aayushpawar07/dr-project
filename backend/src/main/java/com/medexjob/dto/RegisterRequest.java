@@ -28,6 +28,10 @@ public class RegisterRequest {
     @JsonDeserialize(using = UserRoleDeserializer.class)
     private User.UserRole role;
     
+    private String companyName;
+
+    private String companyType;
+    
     // Constructors
     public RegisterRequest() {}
     
@@ -37,6 +41,16 @@ public class RegisterRequest {
         this.phone = phone;
         this.password = password;
         this.role = role;
+    }
+
+    public RegisterRequest(String name, String email, String phone, String password, User.UserRole role, String companyName, String companyType) {
+        this.name = name;
+        this.email = email;
+        this.phone = phone;
+        this.password = password;
+        this.role = role;
+        this.companyName = companyName;
+        this.companyType = companyType;
     }
     
     // Getters and Setters
@@ -78,6 +92,22 @@ public class RegisterRequest {
     
     public void setRole(User.UserRole role) {
         this.role = role;
+    }
+
+    public String getCompanyName() {
+        return companyName;
+    }
+
+    public void setCompanyName(String companyName) {
+        this.companyName = companyName;
+    }
+
+    public String getCompanyType() {
+        return companyType;
+    }
+
+    public void setCompanyType(String companyType) {
+        this.companyType = companyType;
     }
 }
 

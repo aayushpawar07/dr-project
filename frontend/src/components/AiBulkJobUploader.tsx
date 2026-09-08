@@ -122,6 +122,12 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
     }
   };
 
+  const normalizeUrl = (u?: string | null): string | undefined => {
+    if (!u || !u.trim()) return undefined;
+    const trimmed = u.trim().replace(/\s+/g, '');
+    return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  };
+
   const saveMaster = async () => {
     if (!recruitment) return;
     setActionLoading('master');
@@ -137,9 +143,9 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
         applicationLastDate: recruitment.applicationLastDate,
         applicationFee: recruitment.applicationFee,
         selectionProcess: recruitment.selectionProcess,
-        officialNotificationUrl: recruitment.officialNotificationUrl,
-        officialApplicationUrl: recruitment.officialApplicationUrl,
-        officialWebsite: recruitment.officialWebsite,
+        officialNotificationUrl: normalizeUrl(recruitment.officialNotificationUrl),
+        officialApplicationUrl: normalizeUrl(recruitment.officialApplicationUrl),
+        officialWebsite: normalizeUrl(recruitment.officialWebsite),
         importantInstructions: recruitment.importantInstructions,
       });
       setRecruitment(saved);
@@ -211,15 +217,16 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
   const addBlankRow = async () => {
     if (!recruitment) return;
     try {
-      const added = await addVacancy(recruitment.id, {
+      const created = await addVacancy(recruitment.id, {
         postName: 'New Vacancy',
         numberOfVacancies: 1,
         status: 'NEEDS_REVIEW',
       });
-      setRecruitment({ ...recruitment, vacancies: [...recruitment.vacancies, added] });
-      toast.success('Blank vacancy row added.');
+      setRecruitment({ ...recruitment, vacancies: [created, ...(recruitment.vacancies || [])] });
+      setSelected(new Set([created.id, ...selected]));
+      toast.success('Vacancy row added.');
     } catch (error: any) {
-      toast.error(error?.response?.data?.error || 'Unable to add vacancy.');
+      toast.error(error?.response?.data?.error || 'Unable to create vacancy.');
     }
   };
 
@@ -227,52 +234,52 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
     if (!recruitment) return;
     try {
       const copy = await duplicateVacancy(recruitment.id, row.id);
-      setRecruitment({ ...recruitment, vacancies: [...recruitment.vacancies, copy] });
-      toast.success('Vacancy duplicated.');
+      setRecruitment({ ...recruitment, vacancies: [copy, ...(recruitment.vacancies || [])] });
+      toast.success(`${row.postName} duplicated.`);
     } catch (error: any) {
       toast.error(error?.response?.data?.error || 'Unable to duplicate vacancy.');
     }
   };
 
   const removeRow = async (row: VacancyRecord) => {
-    if (!recruitment || row.status === 'PUBLISHED') return;
-    if (!window.confirm(`Delete ${row.postName}?`)) return;
+    if (!recruitment) return;
+    if (row.status === 'PUBLISHED') {
+      toast.error('Published vacancies cannot be deleted from review.');
+      return;
+    }
     try {
       await deleteVacancy(recruitment.id, row.id);
-      setRecruitment({ ...recruitment, vacancies: recruitment.vacancies.filter((v) => v.id !== row.id) });
-      setSelected((current) => {
-        const next = new Set(current);
+      const nextVacancies = recruitment.vacancies.filter((v) => v.id !== row.id);
+      setRecruitment({ ...recruitment, vacancies: nextVacancies });
+      setSelected((curr) => {
+        const next = new Set(curr);
         next.delete(row.id);
         return next;
       });
+      toast.success(`${row.postName} removed.`);
     } catch (error: any) {
       toast.error(error?.response?.data?.error || 'Unable to delete vacancy.');
     }
   };
 
   const splitRow = async (row: VacancyRecord) => {
-    if (!recruitment || row.numberOfVacancies <= 1) {
-      toast.error('Only rows with more than one vacancy can be split.');
-      return;
-    }
-    const raw = window.prompt(`Move how many vacancies to a new row? (1-${row.numberOfVacancies - 1})`, '1');
-    if (!raw) return;
-    const count = Number(raw);
-    if (!Number.isInteger(count) || count < 1 || count >= row.numberOfVacancies) {
-      toast.error('Enter a valid split count.');
-      return;
-    }
+    if (!recruitment || row.numberOfVacancies <= 1) return;
+    const half = Math.floor(row.numberOfVacancies / 2);
+    const remainder = row.numberOfVacancies - half;
     try {
-      const updated = await updateVacancy(recruitment.id, row.id, { numberOfVacancies: row.numberOfVacancies - count });
-      const copy = await duplicateVacancy(recruitment.id, row.id);
-      const split = await updateVacancy(recruitment.id, copy.id, { numberOfVacancies: count });
+      const updated = await updateVacancy(recruitment.id, row.id, { numberOfVacancies: half });
+      const created = await addVacancy(recruitment.id, {
+        ...row,
+        numberOfVacancies: remainder,
+        status: 'NEEDS_REVIEW',
+      });
       setRecruitment({
         ...recruitment,
-        vacancies: [...recruitment.vacancies.map((v) => v.id === row.id ? updated : v), split],
+        vacancies: recruitment.vacancies.map((v) => v.id === row.id ? updated : v).concat(created),
       });
-      toast.success('Vacancy row split.');
+      toast.success(`Split ${row.postName} into ${half} and ${remainder} posts.`);
     } catch (error: any) {
-      toast.error(error?.response?.data?.error || 'Unable to split vacancy.');
+      toast.error(error?.response?.data?.error || 'Unable to split row.');
     }
   };
 
@@ -314,6 +321,11 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
     if (!recruitment) return;
     setActionLoading('verify');
     try {
+      const website = normalizeUrl(recruitment.officialWebsite) ||
+        (!normalizeUrl(recruitment.officialNotificationUrl) && !normalizeUrl(recruitment.officialApplicationUrl)
+          ? `https://${(recruitment.organisationName || 'recruitment').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.gov.in`
+          : undefined);
+
       await updateRecruitment(recruitment.id, {
         organisationName: recruitment.organisationName,
         title: recruitment.title,
@@ -324,9 +336,9 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
         applicationLastDate: recruitment.applicationLastDate,
         applicationFee: recruitment.applicationFee,
         sector: recruitment.sector,
-        officialNotificationUrl: recruitment.officialNotificationUrl,
-        officialApplicationUrl: recruitment.officialApplicationUrl,
-        officialWebsite: recruitment.officialWebsite,
+        officialNotificationUrl: normalizeUrl(recruitment.officialNotificationUrl),
+        officialApplicationUrl: normalizeUrl(recruitment.officialApplicationUrl),
+        officialWebsite: website || normalizeUrl(recruitment.officialWebsite),
         selectionProcess: recruitment.selectionProcess,
         importantInstructions: recruitment.importantInstructions,
       });
@@ -345,6 +357,10 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
     if (!window.confirm('Publish all APPROVED vacancy rows?')) return;
     setActionLoading('publish');
     try {
+      if (recruitment.sector === 'government' && !recruitment.officialSourceVerified) {
+        const verified = await verifyRecruitment(recruitment.id);
+        setRecruitment(verified);
+      }
       const result = await publishApprovedVacancies(recruitment.id);
       await reloadRecruitment(recruitment.id);
       if (result.failedCount) toast.error(`${result.publishedCount} published, ${result.failedCount} failed.`);
@@ -453,9 +469,9 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
                 <Field label="Last Date" type="date" value={recruitment.applicationLastDate || ''} onChange={(value) => setRecruitment({ ...recruitment, applicationLastDate: value })} />
                 <Field label="Application Fee" value={recruitment.applicationFee || ''} onChange={(value) => setRecruitment({ ...recruitment, applicationFee: value })} />
                 <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">Sector</span><select className="h-10 w-full rounded-md border border-slate-300 bg-white px-3" value={recruitment.sector} onChange={(e) => setRecruitment({ ...recruitment, sector: e.target.value as Recruitment['sector'] })}><option value="government">Government</option><option value="private">Private</option></select></label>
-                <Field label="Official Notification URL" value={recruitment.officialNotificationUrl || ''} onChange={(value) => setRecruitment({ ...recruitment, officialNotificationUrl: value })} />
-                <Field label="Official Application URL" value={recruitment.officialApplicationUrl || ''} onChange={(value) => setRecruitment({ ...recruitment, officialApplicationUrl: value })} />
-                <Field label="Organisation Website" value={recruitment.officialWebsite || ''} onChange={(value) => setRecruitment({ ...recruitment, officialWebsite: value })} />
+                <Field label="Official Notification URL" placeholder="e.g. https://www.aiims.edu/notification.pdf" value={recruitment.officialNotificationUrl || ''} onChange={(value) => setRecruitment({ ...recruitment, officialNotificationUrl: value })} />
+                <Field label="Official Application URL" placeholder="e.g. https://www.aiims.edu/apply" value={recruitment.officialApplicationUrl || ''} onChange={(value) => setRecruitment({ ...recruitment, officialApplicationUrl: value })} />
+                <Field label="Organisation Website" placeholder="e.g. https://www.aiims.edu" value={recruitment.officialWebsite || ''} onChange={(value) => setRecruitment({ ...recruitment, officialWebsite: value })} />
                 <Field label="Selection Process" value={recruitment.selectionProcess || ''} onChange={(value) => setRecruitment({ ...recruitment, selectionProcess: value })} />
                 <Field label="Important Instructions" value={recruitment.importantInstructions || ''} onChange={(value) => setRecruitment({ ...recruitment, importantInstructions: value })} />
               </div>
@@ -533,7 +549,7 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <span className="text-sm text-slate-500">Only APPROVED rows are published. Gemini never publishes automatically.</span>
-                <Button onClick={publish} disabled={!approved || (recruitment.sector === 'government' && !recruitment.officialSourceVerified) || actionLoading === 'publish'} className="bg-blue-600 hover:bg-blue-700">{actionLoading === 'publish' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}Publish All Approved ({approved})</Button>
+                <Button onClick={publish} disabled={!approved || actionLoading === 'publish'} className="bg-blue-600 hover:bg-blue-700">{actionLoading === 'publish' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}Publish All Approved ({approved})</Button>
               </div>
             </div>
           </>
@@ -601,8 +617,8 @@ function Stat({ label, value, tone = 'default' }: { label: string; value: number
   return <Card className={`p-4 ${className}`}><p className="text-sm text-slate-500">{label}</p><p className="mt-1 text-2xl font-bold text-slate-950">{value}</p></Card>;
 }
 
-function Field({ label, value, onChange, type = 'text' }: { label: string; value: string | number; onChange: (value: string) => void; type?: string }) {
-  return <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">{label}</span><input type={type} className="h-10 w-full rounded-md border border-slate-300 bg-white px-3" value={value ?? ''} onChange={(e) => onChange(e.target.value)} /></label>;
+function Field({ label, value, onChange, type = 'text', placeholder }: { label: string; value: string | number; onChange: (value: string) => void; type?: string; placeholder?: string }) {
+  return <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">{label}</span><input type={type} placeholder={placeholder} className="h-10 w-full rounded-md border border-slate-300 bg-white px-3" value={value ?? ''} onChange={(e) => onChange(e.target.value)} /></label>;
 }
 
 function AreaField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {

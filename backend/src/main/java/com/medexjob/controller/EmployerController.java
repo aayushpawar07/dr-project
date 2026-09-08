@@ -165,11 +165,54 @@ public class EmployerController {
             employer.setCompanyType(Employer.CompanyType.valueOf(companyTypeStr.toUpperCase()));
             employer.setIsVerified(false);
             employer.setVerificationStatus(Employer.VerificationStatus.PENDING);
+            employer.setEmployerStatus(Employer.EmployerStatus.ACTIVE);
 
             employer = employerRepository.save(employer);
             return ResponseEntity.ok(toResponse(employer));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("error", "Failed to create employer: " + e.getMessage()));
+        }
+    }
+
+    public synchronized Employer getOrCreateEmployerForUser(User user) {
+        return employerRepository.findByUserId(user.getId()).orElseGet(() -> {
+            Employer employer = new Employer();
+            employer.setUser(user);
+            String companyName = user.getName() != null && !user.getName().trim().isEmpty()
+                    ? user.getName()
+                    : "My Organization";
+            employer.setCompanyName(companyName);
+            employer.setCompanyType(Employer.CompanyType.HOSPITAL);
+            employer.setIsVerified(false);
+            employer.setVerificationStatus(Employer.VerificationStatus.PENDING);
+            employer.setEmployerStatus(Employer.EmployerStatus.ACTIVE);
+            return employerRepository.save(employer);
+        });
+    }
+
+    /**
+     * Get employer profile for current authenticated user
+     * GET /api/employers/me
+     */
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentEmployer() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+            }
+
+            String email = authentication.getName();
+            Optional<User> userOpt = userRepository.findByEmail(email);
+            if (userOpt.isEmpty()) {
+                return ResponseEntity.status(404).body(Map.of("error", "User not found"));
+            }
+
+            User user = userOpt.get();
+            Employer employer = getOrCreateEmployerForUser(user);
+            return ResponseEntity.ok(toResponse(employer));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to get employer: " + e.getMessage()));
         }
     }
 
@@ -183,6 +226,14 @@ public class EmployerController {
             employerOpt = employerRepository.findByUserId(id);
         }
 
+        // If still not found, check if this ID is a User with EMPLOYER role
+        if (employerOpt.isEmpty()) {
+            Optional<User> userOpt = userRepository.findById(id);
+            if (userOpt.isPresent() && userOpt.get().getRole() == User.UserRole.EMPLOYER) {
+                return ResponseEntity.ok(toResponse(getOrCreateEmployerForUser(userOpt.get())));
+            }
+        }
+
         return employerOpt
                 .map(employer -> ResponseEntity.ok(toResponse(employer)))
                 .orElse(ResponseEntity.notFound().build());
@@ -194,7 +245,14 @@ public class EmployerController {
      */
     @GetMapping("/user/{userId}")
     public ResponseEntity<?> getEmployerByUserId(@PathVariable UUID userId) {
-        return employerRepository.findByUserId(userId)
+        Optional<Employer> employerOpt = employerRepository.findByUserId(userId);
+        if (employerOpt.isEmpty()) {
+            Optional<User> userOpt = userRepository.findById(userId);
+            if (userOpt.isPresent() && userOpt.get().getRole() == User.UserRole.EMPLOYER) {
+                return ResponseEntity.ok(toResponse(getOrCreateEmployerForUser(userOpt.get())));
+            }
+        }
+        return employerOpt
                 .map(employer -> ResponseEntity.ok(toResponse(employer)))
                 .orElse(ResponseEntity.notFound().build());
     }

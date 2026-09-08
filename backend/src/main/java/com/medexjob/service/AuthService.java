@@ -3,8 +3,10 @@ package com.medexjob.service;
 import com.medexjob.dto.LoginRequest;
 import com.medexjob.dto.RegisterRequest;
 import com.medexjob.dto.AuthResponse;
+import com.medexjob.entity.Employer;
 import com.medexjob.entity.User;
 import com.medexjob.security.AuthException;
+import com.medexjob.repository.EmployerRepository;
 import com.medexjob.repository.UserRepository;
 import com.medexjob.security.JwtTokenProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,9 @@ public class AuthService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private EmployerRepository employerRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -70,7 +75,34 @@ public class AuthService {
         // Optional: keep email verification token for later
         user.setEmailVerificationToken(UUID.randomUUID().toString());
 
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
+
+        // If registered as an EMPLOYER, initialize the Employer profile record
+        if (savedUser.getRole() == User.UserRole.EMPLOYER) {
+            Employer employer = new Employer();
+            employer.setUser(savedUser);
+            String companyName = registerRequest.getCompanyName();
+            if (companyName == null || companyName.trim().isEmpty()) {
+                companyName = savedUser.getName() != null && !savedUser.getName().trim().isEmpty()
+                        ? savedUser.getName()
+                        : "Medical Organization";
+            }
+            employer.setCompanyName(companyName.trim());
+
+            if (registerRequest.getCompanyType() != null && !registerRequest.getCompanyType().trim().isEmpty()) {
+                try {
+                    employer.setCompanyType(Employer.CompanyType.valueOf(registerRequest.getCompanyType().trim().toUpperCase()));
+                } catch (IllegalArgumentException e) {
+                    employer.setCompanyType(Employer.CompanyType.HOSPITAL);
+                }
+            } else {
+                employer.setCompanyType(Employer.CompanyType.HOSPITAL);
+            }
+            employer.setIsVerified(false);
+            employer.setVerificationStatus(Employer.VerificationStatus.PENDING);
+            employer.setEmployerStatus(Employer.EmployerStatus.ACTIVE);
+            employerRepository.save(employer);
+        }
 
         // TODO: Send email verification email (for production)
     }

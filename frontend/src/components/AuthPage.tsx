@@ -163,12 +163,13 @@ export function AuthPage({ mode, onNavigate }: AuthPageProps) {
       return;
     }
     
-    const userData = {
+    const userData: any = {
       name,
       email,
       phone,
       password,
-      role: userRole
+      role: userRole,
+      ...(userRole === 'employer' && companyName ? { companyName } : {})
     };
 
     try {

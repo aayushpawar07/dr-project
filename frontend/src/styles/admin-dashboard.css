@@ -1534,6 +1534,45 @@
   }
 }
 
+.admin-ui-cluster-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.admin-ui-cluster-card {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  border: 1px solid var(--admin-border);
+  border-radius: 14px;
+  background: #fff;
+  padding: 14px 16px;
+  cursor: pointer;
+}
+
+.admin-ui-cluster-card span {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-ui-cluster-card strong {
+  color: #0f766e;
+  font-size: 26px;
+  letter-spacing: -0.03em;
+}
+
+.admin-ui-cluster-card small {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.admin-ui-cluster-card:hover {
+  border-color: #99d5cb;
+  background: #f3fbf9;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .admin-ui-shell *,
   .admin-ui-shell *::before,

@@ -40,12 +40,47 @@ export interface ApplicationResponse {
   candidateName: string;
   candidateEmail: string;
   candidatePhone: string;
+  candidateSpeciality?: string;
+  candidateSubSpeciality?: string;
+  candidateQualification?: string;
+  candidateYearsExperience?: number | null;
+  candidateRegistrationCouncil?: string;
+  candidateRegistrationNumber?: string;
+  candidateCity?: string;
+  candidateState?: string;
+  candidateSummary?: string;
   resumeUrl?: string;
   status: 'pending' | 'shortlisted' | 'interview' | 'hired' | 'rejected' | 'applied' | 'selected';
   notes?: string;
   interviewDate?: string;
   appliedDate: string;
   postedBy?: PostedByInfo; // Only included for candidate requests
+}
+
+export type NormalizedApplicationStatus = 'applied' | 'shortlisted' | 'interview' | 'selected' | 'rejected';
+
+export function normalizeApplicationStatus(status?: string): NormalizedApplicationStatus {
+  const value = (status || '').toLowerCase();
+  if (value === 'pending') return 'applied';
+  if (value === 'hired') return 'selected';
+  if (value === 'shortlisted' || value === 'interview' || value === 'selected' || value === 'rejected' || value === 'applied') {
+    return value;
+  }
+  return 'applied';
+}
+
+export function toInterviewDateTimeLocal(value?: string): string {
+  const source = value ? new Date(value) : new Date(Date.now() + 24 * 60 * 60 * 1000);
+  if (Number.isNaN(source.getTime())) {
+    return (value || '').slice(0, 16);
+  }
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${source.getFullYear()}-${pad(source.getMonth() + 1)}-${pad(source.getDate())}T${pad(source.getHours())}:${pad(source.getMinutes())}`;
+}
+
+async function readApiError(res: Response, fallback: string) {
+  const body = await res.json().catch(() => ({} as { error?: string; message?: string }));
+  return body.error || body.message || fallback;
 }
 
 export async function applyForJob(payload: ApplicationPayload): Promise<ApplicationResponse> {
@@ -168,7 +203,7 @@ export async function updateApplicationStatus(id: string, status: string, token:
   
   const payload: any = { status: backendStatus };
   if (notes) payload.notes = notes;
-  if (interviewDate) payload.interviewDate = interviewDate;
+  if (interviewDate) payload.interviewDate = toInterviewDateTimeLocal(interviewDate);
 
   const res = await authFetch(`${API_BASE}/applications/${id}/status`, {
     method: 'PUT',
@@ -178,7 +213,7 @@ export async function updateApplicationStatus(id: string, status: string, token:
     },
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error(`Failed to update application status (${res.status})`);
+  if (!res.ok) throw new Error(await readApiError(res, `Failed to update application status (${res.status})`));
   return res.json();
 }
 

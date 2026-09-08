@@ -113,11 +113,12 @@ body:has(.admin-ui-shell) {
   z-index: 40;
 }
 
-/* Mobile drawers are also fixed panels, never nested scroll areas. */
+/* Mobile drawers stay on top; the panel itself can scroll if the menu is long. */
 .candidate-mobile-nav__panel,
 .employer-mobile-nav__panel,
 .admin-ui-sidebar.is-open {
-  overflow: hidden !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
   overscroll-behavior: none;
 }
 
@@ -148,5 +149,66 @@ body:has(.admin-ui-shell) {
   /* The global header is slightly shorter on compact screens. */
   :root {
     --medex-dashboard-header-height: 60px;
+  }
+}
+
+/*
+ * Mobile: the desktop "fixed rail + locked overflow" rules hide the admin
+ * drawer (position:relative wins over position:fixed) and can zero-height
+ * the main pane. Restore a normal scrollable page + off-canvas drawers.
+ */
+@media (max-width: 900px) {
+  body:has(.admin-ui-shell),
+  body:has(.employer-dashboard),
+  body:has(.candidate-dashboard) {
+    overflow: auto;
+  }
+
+  .admin-ui-shell {
+    height: auto !important;
+    min-height: calc(100dvh - var(--medex-dashboard-header-height)) !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  .admin-ui-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    z-index: 1002 !important;
+    overflow: hidden !important;
+  }
+
+  .admin-ui-nav {
+    overflow-y: auto !important;
+  }
+
+  .admin-ui-main {
+    height: auto !important;
+    min-height: calc(100dvh - var(--medex-dashboard-header-height)) !important;
+    overflow: visible !important;
+  }
+
+  .employer-dashboard,
+  .candidate-dashboard {
+    height: auto !important;
+    min-height: calc(100dvh - var(--medex-dashboard-header-height)) !important;
+    overflow: visible !important;
+  }
+
+  .candidate-dashboard__shell,
+  .employer-dashboard__shell {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .candidate-main,
+  .employer-main {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
   }
 }

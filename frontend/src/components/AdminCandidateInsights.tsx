@@ -21,6 +21,14 @@ export function AdminCandidateInsights({ onNavigate }: Props) {
     finally { setLoading(false); }
   };
 
+  useEffect(() => {
+    const stored = sessionStorage.getItem('medex.adminInsightSpeciality');
+    if (stored) {
+      sessionStorage.removeItem('medex.adminInsightSpeciality');
+      setFilters((current) => ({ ...current, speciality: stored }));
+    }
+  }, []);
+
   useEffect(() => { const timer = window.setTimeout(() => void load(), 250); return () => window.clearTimeout(timer); }, [token, filters.speciality, filters.qualification, filters.state, filters.search]);
 
   const topSpecialities = useMemo(() => Object.entries(data.specialityCounts || {}).sort((a,b)=>b[1]-a[1]).slice(0,8), [data.specialityCounts]);

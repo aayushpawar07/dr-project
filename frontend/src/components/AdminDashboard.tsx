@@ -25,6 +25,7 @@ import {
   Settings,
   ShieldCheck,
   Sparkles,
+  Stethoscope,
   TrendingDown,
   TrendingUp,
   UserRound,
@@ -59,6 +60,7 @@ import {
   fetchNotifications,
   getUnreadCount,
 } from '../api/notifications';
+import { fetchCandidateInsights } from '../api/candidateProfiles';
 import { toast } from 'sonner';
 import '../styles/admin-dashboard.css';
 
@@ -127,6 +129,8 @@ interface DashboardState {
   notifications: NotificationItem[];
   unreadCount: number;
   visitors: { totalVisitors: number; todayVisitors: number };
+  specialityCounts: Record<string, number>;
+  totalCandidateProfiles: number;
 }
 
 const EMPTY_DASHBOARD: DashboardState = {
@@ -145,6 +149,8 @@ const EMPTY_DASHBOARD: DashboardState = {
   notifications: [],
   unreadCount: 0,
   visitors: { totalVisitors: 0, todayVisitors: 0 },
+  specialityCounts: {},
+  totalCandidateProfiles: 0,
 };
 
 function contentOf<T>(response: any): T[] {
@@ -218,6 +224,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       getFraudReportStats(token),
       fetchNotifications({ page: 0, size: 8 }, token),
       getUnreadCount(token),
+      fetchCandidateInsights({}, token),
     ]);
 
     const rejected = settled.filter((result) => result.status === 'rejected');
@@ -243,6 +250,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     const reportStatsResult = valueAt(9);
     const notificationsResult = valueAt(10);
     const unreadResult = valueAt(11);
+    const insightsResult = valueAt(12);
 
     setData({
       jobs: contentOf<AdminJob>(jobsResult),
@@ -275,6 +283,8 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
               totalVisitors: Number(visitorsResult?.totalVisitors || 0),
               todayVisitors: Number(visitorsResult?.todayVisitors || 0),
             },
+      specialityCounts: insightsResult?.specialityCounts || {},
+      totalCandidateProfiles: Number(insightsResult?.totalProfiles || 0),
     });
 
     if (rejected.length > 0) {
@@ -471,6 +481,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       label: 'People',
       items: [
         { label: 'Employer Verification', icon: ShieldCheck, action: () => onNavigate('admin-employer-verification'), badge: data.pendingEmployerCount, badgeTone: 'warning' },
+        { label: 'Candidate Insights', icon: Stethoscope, action: () => onNavigate('admin-candidate-insights'), badge: data.totalCandidateProfiles },
         { label: 'Applications', icon: FileText, action: () => onNavigate('admin-applications'), badge: totalApplications },
         { label: 'Admin Staff', icon: Users, action: () => onNavigate('admin-users') },
       ],
@@ -730,6 +741,9 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
             <button type="button" className="admin-ui-quick-button" onClick={() => onNavigate('admin-applications')}>
               <FileText /> Applications
             </button>
+            <button type="button" className="admin-ui-quick-button" onClick={() => onNavigate('admin-candidate-insights')}>
+              <Stethoscope /> Candidate Clusters
+            </button>
             <button type="button" className="admin-ui-quick-button" onClick={() => onNavigate('admin-ai-bulk-upload')}>
               <Sparkles /> AI Bulk Upload
             </button>
@@ -774,6 +788,43 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                 </article>
               );
             })}
+          </section>
+
+          <section className="admin-ui-section">
+            <div className="admin-ui-section-header">
+              <div className="admin-ui-section-title-wrap">
+                <h2 className="admin-ui-section-title"><Stethoscope /> Candidate speciality clusters</h2>
+                <p className="admin-ui-section-subtitle">
+                  {formatNumber(data.totalCandidateProfiles)} medical profiles · filter like General Surgeon / Anesthesia
+                </p>
+              </div>
+              <button type="button" className="admin-ui-section-link" onClick={() => onNavigate('admin-candidate-insights')}>
+                Open filters <ChevronRight />
+              </button>
+            </div>
+            <div className="admin-ui-cluster-grid">
+              {Object.entries(data.specialityCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 8)
+                .map(([name, count]) => (
+                  <button
+                    key={name}
+                    type="button"
+                    className="admin-ui-cluster-card"
+                    onClick={() => {
+                      sessionStorage.setItem('medex.adminInsightSpeciality', name);
+                      onNavigate('admin-candidate-insights');
+                    }}
+                  >
+                    <span>{name}</span>
+                    <strong>{formatNumber(count)}</strong>
+                    <small>profiles</small>
+                  </button>
+                ))}
+              {Object.keys(data.specialityCounts).length === 0 && (
+                <div className="admin-ui-empty">No speciality clusters yet. They appear after candidates complete their medical profile.</div>
+              )}
+            </div>
           </section>
 
           <section className="admin-ui-section">

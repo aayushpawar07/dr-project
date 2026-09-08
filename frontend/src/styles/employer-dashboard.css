@@ -354,6 +354,154 @@
   background: linear-gradient(135deg, #f5fffb 0%, #f9fffd 62%, #eefbf7 100%);
 }
 
+.employer-verification-card--unverified {
+  border-color: #f3c38a;
+  background: linear-gradient(135deg, #fff8ed 0%, #fff4e2 70%, #ffecd2 100%);
+}
+
+.employer-verification-card--unverified .employer-verification-card__status {
+  color: #b45309;
+}
+
+.employer-verification-card--unverified .employer-verification-card__plan {
+  border-left-color: #f0d3a8;
+}
+
+.employer-verification-card--verified .employer-verification-card__status {
+  color: #047857;
+}
+
+.dashboard-metric--clickable {
+  cursor: pointer;
+}
+
+.dashboard-job-card__cta {
+  background: #0f766e !important;
+  color: #fff !important;
+}
+
+.application-summary-grid article {
+  cursor: pointer;
+}
+
+.application-summary-grid article.is-active {
+  border-color: #0f766e;
+  background: #edf8f5;
+  color: #0f766e;
+}
+
+.application-job-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 16px 12px;
+}
+
+.application-job-pills button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #d7e0e7;
+  border-radius: 999px;
+  background: #fff;
+  color: #355066;
+  padding: 7px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.application-job-pills button span {
+  min-width: 18px;
+  border-radius: 999px;
+  background: #eef3f6;
+  padding: 1px 6px;
+  font-size: 10px;
+}
+
+.application-job-pills button.is-active {
+  border-color: #0f766e;
+  background: #0f766e;
+  color: #fff;
+}
+
+.application-job-pills button.is-active span {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+.candidate-card__profile {
+  display: grid;
+  gap: 2px;
+  margin: 10px 0 0;
+  color: #5d6b7a;
+  font-size: 10px;
+}
+
+.candidate-card__profile strong {
+  color: #164e63;
+  font-size: 12px;
+}
+
+.employer-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.employer-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(15, 23, 42, 0.48);
+}
+
+.employer-modal__card {
+  position: relative;
+  width: min(440px, 100%);
+  border-radius: 16px;
+  background: #fff;
+  padding: 22px;
+  box-shadow: 0 24px 50px rgba(15, 23, 42, 0.18);
+}
+
+.employer-modal__card h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.employer-modal__card p {
+  margin: 6px 0 16px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.employer-modal__card label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.employer-modal__card input {
+  min-height: 42px;
+  border: 1px solid #d5dee6;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.employer-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
 .employer-verification-card__content {
   display: flex;
   align-items: center;
@@ -788,6 +936,11 @@
   text-align: center;
 }
 
+.dashboard-empty-state--compact {
+  min-height: 120px;
+  padding: 18px;
+}
+
 .dashboard-empty-state__icon,
 .dashboard-feature-icon {
   display: grid;
@@ -935,10 +1088,14 @@
 }
 
 .candidate-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
   margin-top: 10px;
 }
 
-.candidate-card__actions button {
+.candidate-card__actions button,
+.candidate-action {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -950,6 +1107,19 @@
   font-size: 9px;
   font-weight: 750;
   cursor: pointer;
+}
+
+.candidate-action--shortlist { background: #fef3c7; color: #92400e; }
+.candidate-action--interview { background: #ede9fe; color: #5b21b6; }
+.candidate-action--select { background: #dcfce7; color: #166534; }
+.candidate-action--reject { background: #fee2e2; color: #991b1b; }
+.candidate-action--resume { background: #e0f2fe; color: #075985; }
+.candidate-action.is-current {
+  box-shadow: inset 0 0 0 2px currentColor;
+}
+.candidate-action:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .candidate-card__no-resume {
@@ -992,6 +1162,7 @@
 
 .dashboard-feature-icon--purple { background: #f0ebfb; color: #7654a7; }
 .dashboard-feature-icon--green { background: #e8f7ef; color: #24805a; }
+.dashboard-feature-icon--amber { background: #fff4de; color: #b45309; }
 
 .subscription-usage {
   width: min(100%, 340px);

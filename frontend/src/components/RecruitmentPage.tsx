@@ -37,8 +37,6 @@ import {
 } from '../api/recruitments';
 import { fetchJob } from '../api/jobs';
 import {
-  cardFieldText,
-  cardLocationText,
   cleanExtractedName,
   departmentSubtitle,
   detailFieldText,
@@ -991,12 +989,11 @@ function ApplicationPanel({ recruitment, isGovernment, daysLeft, onShare }: { re
 }
 
 function VacancyPanel({ vacancy, recruitment, isGovernment, applyByLabel, onViewJob }: { vacancy: VacancyRecord; recruitment: Recruitment; isGovernment: boolean; applyByLabel: string; onViewJob: () => void }) {
-  const vacancyLocation = cardLocationText(vacancy.location, recruitment.location);
   const department = cleanExtractedName(vacancy.department || vacancy.speciality || vacancy.postName);
   const DepartmentIcon = getDepartmentIcon(department);
   const details: Array<{ icon: LucideIcon; label: string; value: string; tone: string }> = [
-    { icon: GraduationCap, label: 'Qualification', value: cardFieldText(vacancy.qualification) || 'As per official notification', tone: 'icon-blue' },
-    { icon: Stethoscope, label: 'Experience', value: cardFieldText(vacancy.experience) || 'As per official notification', tone: 'icon-indigo' },
+    { icon: GraduationCap, label: 'Qualification', value: detailFieldText(vacancy.qualification) || 'As per official notification', tone: 'icon-blue' },
+    { icon: Stethoscope, label: 'Experience', value: detailFieldText(vacancy.experience) || 'As per official notification', tone: 'icon-indigo' },
     { icon: IndianRupee, label: 'Salary / Pay', value: detailFieldText(vacancy.salary, vacancy.payScale, vacancy.payLevel) || 'As per official notification', tone: 'icon-teal' },
     { icon: Users, label: 'Age Limit', value: detailFieldText(vacancy.ageLimit) || 'As per official notification', tone: 'icon-purple' },
     { icon: ShieldCheck, label: 'Other Eligibility', value: detailFieldText(vacancy.otherEligibilityRequirements) || 'As per official notification', tone: 'icon-orange' },
@@ -1012,7 +1009,7 @@ function VacancyPanel({ vacancy, recruitment, isGovernment, applyByLabel, onView
             <h2 className="vacancy-title">{department}</h2>
             {departmentSubtitle(vacancy) ? <div className="vacancy-subtitle">{departmentSubtitle(vacancy)}</div> : null}
             <div className="vacancy-meta">
-              {vacancyLocation && <span><MapPin size={13} />{vacancyLocation}</span>}
+              {vacancy.location && <span><MapPin size={13} />{vacancy.location}</span>}
               {vacancy.jobType && <span><BriefcaseBusiness size={13} />{vacancy.jobType}</span>}
             </div>
           </div>

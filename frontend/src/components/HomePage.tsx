@@ -21,7 +21,7 @@ import { Card } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { JobCard } from "./JobCard";
 import SearchBar from "./SearchBar";
-import { fetchJobs } from "../api/jobs";
+import { fetchJobs, fetchJobsMeta } from "../api/jobs";
 import { fetchHomepageNews, PulseUpdate } from "../api/news";
 import { fetchAnalyticsOverview } from "../api/analytics";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
@@ -83,6 +83,7 @@ function getNewsExcerpt(update: PulseUpdate, max = 220) {
 
 export function HomePage({ onNavigate }: HomePageProps) {
   const [featuredJobs, setFeaturedJobs] = useState<any[]>([]);
+  const [allJobs, setAllJobs] = useState<any[]>([]);
   const [governmentJobs, setGovernmentJobs] = useState<any[]>([]);
   const [privateJobs, setPrivateJobs] = useState<any[]>([]);
   const [newsUpdates, setNewsUpdates] = useState<PulseUpdate[]>([]);
@@ -119,11 +120,13 @@ export function HomePage({ onNavigate }: HomePageProps) {
   useEffect(() => {
     (async () => {
       try {
-        const [feat, latest, gov, priv, news, overview] = await Promise.all([
+        const [feat, latest, all, gov, priv, meta, news, overview] = await Promise.all([
           fetchJobs({ featured: true, size: 6, status: "active" }).then((r) => r.content ?? []),
           fetchJobs({ size: 6, sort: "createdAt,desc", status: "active" }).then((r) => r.content ?? []),
-          fetchJobs({ sector: "government", size: 3, status: "active" }).then((r) => r.content ?? []),
-          fetchJobs({ sector: "private", size: 3, status: "active" }).then((r) => r.content ?? []),
+          fetchJobs({ size: 10, sort: "createdAt,desc", status: "active" }).then((r) => r.content ?? []),
+          fetchJobs({ sector: "government", size: 10, status: "active" }).then((r) => r.content ?? []),
+          fetchJobs({ sector: "private", size: 10, status: "active" }).then((r) => r.content ?? []),
+          fetchJobsMeta(),
           fetchHomepageNews(),
           fetchAnalyticsOverview().catch(() => null),
         ]);
@@ -143,11 +146,13 @@ export function HomePage({ onNavigate }: HomePageProps) {
         featuredArray.forEach((job) => { if (job.id) jobMap.set(job.id, job); });
         latestArray.forEach((job) => { if (job.id && jobMap.size < 6) jobMap.set(job.id, job); });
         setFeaturedJobs(Array.from(jobMap.values()).slice(0, 6));
+        setAllJobs(Array.isArray(all) ? all.slice(0, 10) : []);
         setGovernmentJobs(Array.isArray(gov) ? gov.filter((job) => (job.sector?.toLowerCase() || "") === "government").slice(0, 3) : []);
         setPrivateJobs(Array.isArray(priv) ? priv.filter((job) => (job.sector?.toLowerCase() || "") === "private").slice(0, 3) : []);
         setNewsUpdates(Array.isArray(news) ? news.slice(0, 6) : []);
       } catch (e) {
         setFeaturedJobs([]);
+        setAllJobs([]);
         setGovernmentJobs([]);
         setPrivateJobs([]);
         setNewsUpdates([]);
@@ -165,7 +170,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
         <div className="absolute inset-0 overflow-hidden"><div className="absolute top-20 left-10 w-72 h-72 bg-white/5 rounded-full blur-3xl animate-pulse"></div><div className="absolute bottom-20 right-10 w-96 h-96 bg-white/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }}></div></div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-3xl sm:text-4xl md:text-6xl mb-6 animate-fade-in-up">Find Your Dream Medical Career</h1>
+            <h1 className="text-5xl md:text-6xl mb-6 animate-fade-in-up">Find Your Dream Medical Career</h1>
             <p className="text-xl text-blue-100 mb-10 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>India's Premier Job Portal for Doctors, Nurses & Paramedical Professionals</p>
             <div className="animate-fade-in-up max-w-4xl mx-auto relative z-30" style={{ animationDelay: "0.4s" }}><SearchBar showLabels={true} /></div>
           </div>
@@ -184,14 +189,16 @@ export function HomePage({ onNavigate }: HomePageProps) {
 
       <section className="py-16 relative">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col gap-3 mb-8 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-2xl sm:text-3xl text-gray-900 mb-2">Latest Jobs</h2><p className="text-gray-600">Latest job opportunities for you</p></div><Button variant="outline" onClick={() => onNavigate("jobs")} className="w-full sm:w-auto group hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all duration-300">View All<ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" /></Button></div>
+          <div className="flex items-center justify-between mb-8"><div><h2 className="text-3xl text-gray-900 mb-2">Latest Jobs</h2><p className="text-gray-600">Latest job opportunities for you</p></div><Button variant="outline" onClick={() => onNavigate("jobs")} className="group hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all duration-300">View All<ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" /></Button></div>
           {featuredJobs.length > 0 ? <div className="grid md:grid-cols-3 gap-6">{featuredJobs.map((job, index) => <div key={job.id} className="animate-fade-in-up h-full flex flex-col" style={{ animationDelay: `${index * 0.1}s` }}><JobCard job={job} onViewDetails={(jobId) => onNavigate("job-detail", jobId)} /></div>)}</div> : <Card className="p-12 text-center"><BriefcaseIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" /><h3 className="text-xl font-semibold text-gray-900 mb-2">No Jobs Available Yet</h3><p className="text-gray-600 mb-6">Check back soon for latest job opportunities</p><Button onClick={() => onNavigate("jobs")} variant="outline">Browse All Jobs</Button></Card>}
         </div>
       </section>
 
-      {governmentJobs.length > 0 && <section className="py-16 bg-gray-50 relative"><div className="container mx-auto px-4"><div className="flex flex-col gap-3 mb-8 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-2xl sm:text-3xl text-gray-900 mb-2 flex items-center"><span className="w-1.5 h-8 bg-blue-600 rounded-full mr-3 inline-block"></span>Government Jobs</h2><p className="text-gray-600 ml-5">Official government vacancies</p></div><Button variant="outline" onClick={() => onNavigate("govt-jobs")} className="w-full sm:w-auto group border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-300">View All<ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" /></Button></div><div className="grid md:grid-cols-3 gap-6">{governmentJobs.map((job, index) => <div key={job.id} className="animate-fade-in-up h-full flex flex-col" style={{ animationDelay: `${index * 0.1}s` }}><JobCard job={job} onViewDetails={(jobId) => onNavigate("job-detail", jobId)} /></div>)}</div></div></section>}
+      {allJobs.length > 0 && <section className="py-16 bg-white relative"><div className="container mx-auto px-4"><div className="flex items-center justify-between mb-8"><div><h2 className="text-3xl text-gray-900 mb-2">All Jobs</h2><p className="text-gray-600">Browse every open position across healthcare</p></div><Button variant="outline" onClick={() => onNavigate("jobs")} className="group hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all duration-300">View All<ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" /></Button></div><div className="grid md:grid-cols-3 gap-6">{allJobs.map((job, index) => <div key={job.id} className="animate-fade-in-up h-full flex flex-col" style={{ animationDelay: `${index * 0.08}s` }}><JobCard job={job} onViewDetails={(jobId) => onNavigate("job-detail", jobId)} /></div>)}</div></div></section>}
 
-      {privateJobs.length > 0 && <section className="py-16 bg-white relative"><div className="container mx-auto px-4"><div className="flex flex-col gap-3 mb-8 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-2xl sm:text-3xl text-gray-900 mb-2 flex items-center"><span className="w-1.5 h-8 bg-green-600 rounded-full mr-3 inline-block"></span>Private Jobs</h2><p className="text-gray-600 ml-5">Top hospitals & healthcare providers</p></div><Button variant="outline" onClick={() => onNavigate("private-jobs")} className="w-full sm:w-auto group border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-all duration-300">View All<ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" /></Button></div><div className="grid md:grid-cols-3 gap-6">{privateJobs.map((job, index) => <div key={job.id} className="animate-fade-in-up h-full flex flex-col" style={{ animationDelay: `${index * 0.1}s` }}><JobCard job={job} onViewDetails={(jobId) => onNavigate("job-detail", jobId)} /></div>)}</div></div></section>}
+      {governmentJobs.length > 0 && <section className="py-16 bg-gray-50 relative"><div className="container mx-auto px-4"><div className="flex items-center justify-between mb-8"><div><h2 className="text-3xl text-gray-900 mb-2 flex items-center"><span className="w-1.5 h-8 bg-blue-600 rounded-full mr-3 inline-block"></span>Government Jobs</h2><p className="text-gray-600 ml-5">Official government vacancies</p></div><Button variant="outline" onClick={() => onNavigate("govt-jobs")} className="group border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-300">View All<ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" /></Button></div><div className="grid md:grid-cols-3 gap-6">{governmentJobs.map((job, index) => <div key={job.id} className="animate-fade-in-up h-full flex flex-col" style={{ animationDelay: `${index * 0.1}s` }}><JobCard job={job} onViewDetails={(jobId) => onNavigate("job-detail", jobId)} /></div>)}</div></div></section>}
+
+      {privateJobs.length > 0 && <section className="py-16 bg-white relative"><div className="container mx-auto px-4"><div className="flex items-center justify-between mb-8"><div><h2 className="text-3xl text-gray-900 mb-2 flex items-center"><span className="w-1.5 h-8 bg-green-600 rounded-full mr-3 inline-block"></span>Private Jobs</h2><p className="text-gray-600 ml-5">Top hospitals & healthcare providers</p></div><Button variant="outline" onClick={() => onNavigate("private-jobs")} className="group border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-all duration-300">View All<ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" /></Button></div><div className="grid md:grid-cols-3 gap-6">{privateJobs.map((job, index) => <div key={job.id} className="animate-fade-in-up h-full flex flex-col" style={{ animationDelay: `${index * 0.1}s` }}><JobCard job={job} onViewDetails={(jobId) => onNavigate("job-detail", jobId)} /></div>)}</div></div></section>}
 
       {newsUpdates.length > 0 && (
         <section className="relative py-20 bg-gradient-to-br from-white via-gray-50/50 to-white overflow-hidden">

@@ -94,19 +94,18 @@ function sectionConfig(key: DescriptionSectionKey) {
   return SECTION_ORDER.find((item) => item.key === key) || SECTION_ORDER[0];
 }
 
+const SECTION_HEADING_PATTERN =
+  /^(JOB DETAILS|JOB OVERVIEW|ABOUT THE ROLE|ELIGIBILITY(?:\s+CRITERIA)?|KEY RESPONSIBILITIES|RESPONSIBILITIES|APPLICATION PROCESS|APPLICATION DETAILS|SELECTION PROCESS|DOCUMENTS REQUIRED|IMPORTANT DOCUMENTS REQUIRED|IMPORTANT NOTES|IMPORTANT INSTRUCTIONS|CONTACT INFORMATION|CONTACT|PAY\s*\/\s*SALARY)\s*:?\s*/i;
+
 function normalizeDescription(raw: string): string {
   let text = raw.replace(/\r\n?/g, "\n").replace(/\u00a0/g, " ").trim();
 
-  if (!text.includes("\n")) {
-    text = text
-      .replace(/\s+(STEP\s*[1-4]\s*:[^:]{2,80})/gi, "\n\n$1\n")
-      .replace(/\s+(Application Process\s*:)/gi, "\n\n$1\n")
-      .replace(/\s+(Selection Process\s*:)/gi, "\n\n$1\n")
-      .replace(/\s+(Important Documents Required\s*:|Documents Required\s*:)/gi, "\n\n$1\n")
-      .replace(/\s+(Important Notes\s*:)/gi, "\n\n$1\n")
-      .replace(/\s+(Contact Information\s*:|Contact\s*:)/gi, "\n\n$1\n")
-      .replace(/\s+[•●▪·]\s*/g, "\n· ");
-  }
+  text = text
+    .replace(/\s*(JOB DETAILS|ELIGIBILITY(?:\s+CRITERIA)?|KEY RESPONSIBILITIES|RESPONSIBILITIES|APPLICATION PROCESS|APPLICATION DETAILS|SELECTION PROCESS|DOCUMENTS REQUIRED|IMPORTANT DOCUMENTS REQUIRED|IMPORTANT NOTES|IMPORTANT INSTRUCTIONS|CONTACT INFORMATION|PAY\s*\/\s*SALARY)\b/gi, "\n\n$1\n")
+    .replace(/\s+(STEP\s*[1-4]\s*:[^:]{2,80})/gi, "\n\n$1\n")
+    .replace(/\s+(Post|Organisation|Organization|Department|Speciality|Specialty|Location|Number of Posts|Job Type|Advertisement|Qualification|Experience|Age Limit|Pay\/Salary|Application Start Date|Last Date to Apply|Application Fee|Mode of Application)\s*:/gi, "\n$1:")
+    .replace(/\s+-\s+/g, "\n- ")
+    .replace(/\s+[•●▪·]\s*/g, "\n· ");
 
   return text
     .split("\n")
@@ -120,38 +119,15 @@ function normalizeDescription(raw: string): string {
 function detectSection(line: string): DescriptionSectionKey | null {
   const value = line.replace(BULLET_PATTERN, "").replace(/[:：]+$/, "").trim().toLowerCase();
 
-  if (/^step\s*1\b/.test(value) || value.includes("basic job information") || value === "job details" || value === "job overview" || value === "about the role") return "details";
-  if (/^step\s*2\b/.test(value) || value.includes("requirements & details") || value === "eligibility" || value === "eligibility criteria" || value === "additional requirements") return "eligibility";
+  if (/^step\s*1\b/.test(value) || ["job details", "job overview", "about the role", "pay / salary", "pay/salary", "basic job information"].includes(value)) return "details";
+  if (/^step\s*2\b/.test(value) || ["eligibility", "eligibility criteria", "additional requirements", "requirements & details"].includes(value)) return "eligibility";
   if (value === "key responsibilities" || value === "responsibilities") return "responsibilities";
-  if (/^step\s*3\b/.test(value) || /^step\s*4\b/.test(value) || value.includes("extra details") || value === "application process" || value === "walk-in interview" || value === "interview schedule" || value === "important dates") return "application";
+  if (/^step\s*[34]\b/.test(value) || ["application process", "application details", "walk-in interview", "interview schedule", "important dates", "extra details"].includes(value)) return "application";
   if (value === "selection process") return "selection";
   if (value === "documents required" || value === "important documents required") return "documents";
-  if (value === "important notes" || value === "benefits" || value === "benefits & perks") return "notes";
-  if (value === "contact" || value === "contact information") return "contact";
+  if (["important notes", "important instructions", "benefits", "benefits & perks"].includes(value)) return "notes";
+  if (value === "contact information" || value === "contact") return "contact";
   return null;
-}
-
-function isMainSectionHeading(line: string): boolean {
-  const value = line.replace(BULLET_PATTERN, "").trim();
-  if (/^step\s*[1-4]\b/i.test(value)) return true;
-  const normalized = value.replace(/[:：]+$/, "").trim().toLowerCase();
-  return [
-    "job details",
-    "job overview",
-    "about the role",
-    "eligibility",
-    "eligibility criteria",
-    "key responsibilities",
-    "responsibilities",
-    "application process",
-    "walk-in interview",
-    "selection process",
-    "documents required",
-    "important documents required",
-    "important notes",
-    "contact",
-    "contact information",
-  ].includes(normalized);
 }
 
 function parseSections(raw: string): DescriptionSection[] {
@@ -164,10 +140,13 @@ function parseSections(raw: string): DescriptionSection[] {
     .forEach((line) => {
       const trimmed = line.trim();
       if (!trimmed || /^-{3,}$/.test(trimmed)) return;
-      const detected = detectSection(trimmed);
+      const headingMatch = trimmed.replace(BULLET_PATTERN, "").match(SECTION_HEADING_PATTERN);
+      const detected = detectSection(headingMatch ? headingMatch[1] : trimmed);
       if (detected) {
         current = detected;
-        if (isMainSectionHeading(trimmed)) return;
+        const rest = headingMatch ? trimmed.replace(BULLET_PATTERN, "").slice(headingMatch[0].length).trim() : "";
+        if (rest) buckets.get(current)?.push(rest);
+        return;
       }
       buckets.get(current)?.push(trimmed);
     });
@@ -241,7 +220,8 @@ function createKeyValueRow(labelText: string, valueText: string): HTMLElement {
   label.textContent = labelText.replace(/[:：]+$/, "").trim();
 
   const value = document.createElement("span");
-  value.className = "medex-kv-value";
+  const isOrganisation = /organisation|organization|hospital name/i.test(labelText);
+  value.className = isOrganisation ? "medex-kv-value medex-kv-value--org" : "medex-kv-value";
   appendLinkifiedText(value, valueText.trim());
 
   copy.append(label, value);

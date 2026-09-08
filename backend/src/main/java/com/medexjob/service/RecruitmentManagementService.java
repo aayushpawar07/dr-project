@@ -402,7 +402,8 @@ public class RecruitmentManagementService {
                 hasText(firstNonBlank(v.getLocation(), r.getLocation())) ? "Location: " + firstNonBlank(v.getLocation(), r.getLocation()) : null,
                 "Number of Posts: " + v.getNumberOfVacancies(),
                 hasText(v.getJobType()) ? "Job Type: " + v.getJobType() : null,
-                hasText(r.getAdvertisementNumber()) ? "Advertisement: " + r.getAdvertisementNumber() : null
+                hasText(r.getAdvertisementNumber()) ? "Advertisement: " + r.getAdvertisementNumber() : null,
+                hasText(firstNonBlank(v.getSalary(), v.getPayScale(), v.getPayLevel())) ? "Pay/Salary: " + firstNonBlank(v.getSalary(), v.getPayScale(), v.getPayLevel()) : null
         ));
         addDescriptionSection(lines, "ELIGIBILITY", List.of(
                 hasText(v.getQualification()) ? "Qualification: " + v.getQualification() : null,
@@ -410,16 +411,13 @@ public class RecruitmentManagementService {
                 hasText(v.getAgeLimit()) ? "Age Limit: " + v.getAgeLimit() : null,
                 v.getOtherEligibilityRequirements()
         ));
-        addDescriptionSection(lines, "PAY / SALARY", List.of(
-                firstNonBlank(v.getSalary(), v.getPayScale(), v.getPayLevel())
-        ));
-        addDescriptionSection(lines, "APPLICATION DETAILS", List.of(
+        addDescriptionSection(lines, "APPLICATION PROCESS", List.of(
                 r.getApplicationStartDate() != null ? "Application Start Date: " + r.getApplicationStartDate() : null,
                 r.getApplicationLastDate() != null ? "Last Date to Apply: " + r.getApplicationLastDate() : null,
-                hasText(r.getApplicationFee()) ? "Application Fee: " + r.getApplicationFee() : null,
-                hasText(r.getSelectionProcess()) ? "Selection Process: " + r.getSelectionProcess() : null
+                hasText(r.getApplicationFee()) ? "Application Fee: " + r.getApplicationFee() : null
         ));
-        addDescriptionSection(lines, "IMPORTANT INSTRUCTIONS", List.of(r.getImportantInstructions()));
+        addDescriptionSection(lines, "SELECTION PROCESS", List.of(r.getSelectionProcess()));
+        addDescriptionSection(lines, "IMPORTANT NOTES", List.of(r.getImportantInstructions()));
         return String.join("\n", lines).trim();
     }
 

@@ -123,7 +123,7 @@ function AppContent() {
     if (user.role === "admin")
       return <AdminDashboard onNavigate={handleNavigate} />;
     if (user.role === "employer")
-      return <EmployerVerification onNavigate={handleNavigate} />;
+      return <EmployerDashboard onNavigate={handleNavigate} />;
     return <CandidateDashboard onNavigate={handleNavigate} />;
   };
 

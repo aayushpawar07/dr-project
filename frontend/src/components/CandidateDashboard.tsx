@@ -14,6 +14,7 @@ import {
   Menu,
   Search,
   Star,
+  Stethoscope,
   User,
   X,
 } from 'lucide-react';
@@ -24,6 +25,7 @@ import { fetchApplications, ApplicationResponse } from '../api/applications';
 import { fetchJobs } from '../api/jobs';
 import { getSavedJobs, saveJob, unsaveJob } from '../api/savedJobs';
 import { fetchNotifications } from '../api/notifications';
+import { fetchMyCandidateProfile, CandidateProfileData } from '../api/candidateProfiles';
 
 interface CandidateDashboardProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -84,6 +86,7 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
   const [activeSection, setActiveSection] = useState<CandidateSection>('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ApplicationStatusFilter>('all');
+  const [profile, setProfile] = useState<CandidateProfileData | null>(null);
 
   const loadDashboardData = useCallback(async () => {
     if (!user || !token) {
@@ -131,17 +134,25 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
         return [] as any[];
       });
 
-    const [fetchedApplications, fetchedSavedJobs, fetchedFeaturedJobs, fetchedNotifications] = await Promise.all([
+    const profilePromise = fetchMyCandidateProfile(token)
+      .catch((error) => {
+        console.error('Failed to fetch candidate profile:', error);
+        return null;
+      });
+
+    const [fetchedApplications, fetchedSavedJobs, fetchedFeaturedJobs, fetchedNotifications, fetchedProfile] = await Promise.all([
       applicationPromise,
       savedPromise,
       featuredPromise,
       notificationPromise,
+      profilePromise,
     ]);
 
     setApplications(fetchedApplications);
     setSavedJobs(fetchedSavedJobs);
     setRecommendedJobs(fetchedFeaturedJobs);
     setNotifications(fetchedNotifications);
+    setProfile(fetchedProfile);
     setLoading(false);
   }, [token, user]);
 
@@ -173,10 +184,25 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
         application.jobOrganization?.toLowerCase().includes(term) ||
         application.postedBy?.name?.toLowerCase().includes(term) ||
         application.postedBy?.company?.toLowerCase().includes(term);
-      const matchesStatus = statusFilter === 'all' || application.status === statusFilter;
+      const matchesStatus =
+        statusFilter === 'all' ||
+        (statusFilter === 'applied' && (application.status === 'applied' || application.status === 'pending')) ||
+        ((statusFilter === 'selected' || statusFilter === 'hired') && (application.status === 'selected' || application.status === 'hired')) ||
+        application.status === statusFilter;
       return matchesSearch && matchesStatus;
     });
   }, [applications, searchTerm, statusFilter]);
+
+  const profileFields = [
+    profile?.speciality,
+    profile?.qualification,
+    profile?.yearsExperience != null,
+    profile?.registrationNumber,
+    profile?.currentCity || profile?.state,
+    profile?.profileSummary,
+  ];
+  const profileFilled = profileFields.filter(Boolean).length;
+  const profilePercent = Math.round((profileFilled / profileFields.length) * 100);
 
   const interviewCount = applications.filter((application) => application.status === 'interview' || application.interviewDate).length;
   const shortlistedCount = applications.filter((application) => application.status === 'shortlisted').length;
@@ -387,7 +413,10 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
                 <ArrowLeft size={16} /> Back
               </button>
               <h1>Dashboard</h1>
-              <p>Welcome back, {user?.name || 'Candidate'}.</p>
+              <p>
+                Welcome back, {user?.name || 'Candidate'}
+                {profile?.speciality ? ` · ${profile.speciality}` : ''}.
+              </p>
             </div>
             <div className="candidate-page-header__actions">
               <button type="button" className="candidate-icon-button" onClick={() => openSection('notifications')} aria-label="Notifications">
@@ -402,13 +431,41 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
             <>
               <section className="candidate-greeting-card">
                 <div>
-                  <span className="candidate-eyebrow">MedExJob Dashboard</span>
-                  <h2>Manage your job search from one place.</h2>
-                  <p>Your dashboard uses your current applications, saved jobs, featured jobs and notifications.</p>
+                  <span className="candidate-eyebrow">Medical profile</span>
+                  <h2>{profile?.speciality || 'Complete your clinical profile'}</h2>
+                  <p>
+                    Employers and HR see this card first. Empty profiles look fake and get skipped.
+                    {profile?.qualification ? ` ${profile.qualification}` : ''}
+                    {profile?.yearsExperience != null ? ` · ${profile.yearsExperience} years` : ''}
+                  </p>
                 </div>
                 <button type="button" className="candidate-primary-button" onClick={() => onNavigate('jobs')}>
                   <Search size={17} /> Find Jobs
                 </button>
+              </section>
+
+              <section className={`candidate-profile-card ${profilePercent >= 70 ? 'is-ready' : 'is-incomplete'}`}>
+                <div className="candidate-profile-card__top">
+                  <div className="candidate-user-avatar candidate-user-avatar--large">{getInitials(user?.name)}</div>
+                  <div>
+                    <strong>{user?.name || 'Candidate'}</strong>
+                    <span>{profile?.speciality || 'Speciality not added'}{profile?.subSpeciality ? ` · ${profile.subSpeciality}` : ''}</span>
+                  </div>
+                  <em>{profilePercent}% complete</em>
+                </div>
+                <div className="candidate-profile-card__grid">
+                  <article><Stethoscope size={16} /><span>Qualification</span><strong>{profile?.qualification || 'Not added'}</strong></article>
+                  <article><Briefcase size={16} /><span>Experience</span><strong>{profile?.yearsExperience != null ? `${profile.yearsExperience} years` : 'Not added'}</strong></article>
+                  <article><User size={16} /><span>Registration</span><strong>{profile?.registrationNumber || 'Not added'}</strong></article>
+                  <article><MapPin size={16} /><span>Location</span><strong>{[profile?.currentCity, profile?.state].filter(Boolean).join(', ') || 'Not added'}</strong></article>
+                </div>
+                {profile?.profileSummary && <p className="candidate-profile-card__summary">{profile.profileSummary}</p>}
+                <div className="candidate-profile-card__actions">
+                  <button type="button" className="candidate-primary-button candidate-primary-button--small" onClick={() => onNavigate('profile')}>
+                    {profilePercent >= 70 ? 'Edit Profile' : 'Complete Profile for HR'}
+                  </button>
+                  {!profile?.speciality && <small>Add speciality, qualification and registration so hospitals can shortlist you.</small>}
+                </div>
               </section>
 
               <section className="candidate-stats-grid" aria-label="Candidate statistics">

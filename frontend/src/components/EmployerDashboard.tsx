@@ -33,7 +33,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchEmployer, EmployerResponse } from '../api/employers';
-import { fetchApplications, updateApplicationStatus, ApplicationResponse } from '../api/applications';
+import {
+  fetchApplications,
+  updateApplicationStatus,
+  ApplicationResponse,
+  normalizeApplicationStatus,
+  toInterviewDateTimeLocal,
+} from '../api/applications';
 import { fetchJobsByEmployer } from '../api/jobs';
 import { getCurrentSubscription, SubscriptionResponse } from '../api/subscriptions';
 import { fetchNotifications } from '../api/notifications';
@@ -46,6 +52,7 @@ interface EmployerDashboardProps {
 
 type DashboardSection = 'jobs' | 'applications' | 'subscription' | 'notifications' | 'verification';
 type JobFilter = 'all' | 'active' | 'pending' | 'draft' | 'closed';
+type ApplicationFilter = 'all' | 'new' | 'shortlisted' | 'interview' | 'selected' | 'rejected';
 
 function formatDate(value?: string) {
   if (!value) return 'N/A';
@@ -80,8 +87,14 @@ function getJobStatusClass(status?: string) {
   }
 }
 
+function statusLabel(status?: string) {
+  const normalized = normalizeApplicationStatus(status);
+  if (normalized === 'applied') return 'New';
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
+
 function getApplicationStatusClass(status?: string) {
-  switch ((status || '').toLowerCase()) {
+  switch (normalizeApplicationStatus(status)) {
     case 'shortlisted':
       return 'dashboard-status dashboard-status--active';
     case 'interview':
@@ -92,7 +105,6 @@ function getApplicationStatusClass(status?: string) {
     case 'rejected':
       return 'dashboard-status dashboard-status--rejected';
     case 'applied':
-    case 'pending':
       return 'dashboard-status dashboard-status--pending';
     default:
       return 'dashboard-status';
@@ -113,6 +125,9 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
   const [jobFilter, setJobFilter] = useState<JobFilter>('all');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [updatingApplicationId, setUpdatingApplicationId] = useState<string | null>(null);
+  const [selectedJobId, setSelectedJobId] = useState<string>('all');
+  const [applicationFilter, setApplicationFilter] = useState<ApplicationFilter>('all');
+  const [interviewDraft, setInterviewDraft] = useState<{ application: ApplicationResponse; date: string } | null>(null);
 
   const fetchApplicationsForJobs = async (jobs: any[], authToken: string) => {
     if (jobs.length === 0) return [];
@@ -129,11 +144,19 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
           authToken,
         );
 
-        if (appsResponse?.content && Array.isArray(appsResponse.content)) {
-          allApplications.push(...appsResponse.content);
-        } else if (Array.isArray(appsResponse)) {
-          allApplications.push(...appsResponse);
-        }
+        const rows = Array.isArray(appsResponse?.content)
+          ? appsResponse.content
+          : Array.isArray(appsResponse)
+            ? appsResponse
+            : [];
+        allApplications.push(
+          ...rows.map((application: ApplicationResponse) => ({
+            ...application,
+            jobId: !application.jobId || application.jobId === 'N/A' ? job.id : application.jobId,
+            jobTitle: !application.jobTitle || application.jobTitle === 'N/A' ? job.title : application.jobTitle,
+            status: normalizeApplicationStatus(application.status),
+          })),
+        );
       } catch (applicationError) {
         console.error(`Failed to fetch applications for job ${job.id}:`, applicationError);
       }
@@ -214,10 +237,11 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
   const totalApplicationsFromJobs = myJobs.reduce((sum, job) => sum + (Number(job.applications) || 0), 0);
   const totalApplications = Math.max(totalApplicationsFromList, totalApplicationsFromJobs);
   const activeJobs = myJobs.filter((job) => job.status === 'active').length;
-  const shortlistedCount = myApplications.filter((application) => application.status === 'shortlisted').length;
-  const interviewCount = myApplications.filter((application) => application.status === 'interview').length;
+  const newApplicationCount = myApplications.filter((application) => normalizeApplicationStatus(application.status) === 'applied').length;
+  const shortlistedCount = myApplications.filter((application) => normalizeApplicationStatus(application.status) === 'shortlisted').length;
+  const interviewCount = myApplications.filter((application) => normalizeApplicationStatus(application.status) === 'interview').length;
   const filledPositionsCount = myApplications.filter(
-    (application) => application.status === 'selected' || application.status === 'hired',
+    (application) => normalizeApplicationStatus(application.status) === 'selected',
   ).length;
   const unreadNotifications = notifications.filter((notification: any) => !notification.read).length;
 
@@ -246,12 +270,39 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
   const applicationsByJob = useMemo(() => {
     const grouped = new Map<string, ApplicationResponse[]>();
     myApplications.forEach((application) => {
-      const jobId = application.jobId || 'unknown';
+      const jobId = application.jobId && application.jobId !== 'N/A'
+        ? application.jobId
+        : `unassigned-${application.id}`;
       if (!grouped.has(jobId)) grouped.set(jobId, []);
       grouped.get(jobId)!.push(application);
     });
     return Array.from(grouped.entries());
   }, [myApplications]);
+
+  const visibleApplicationsByJob = useMemo(() => {
+    const matchesFilter = (application: ApplicationResponse) => {
+      const status = normalizeApplicationStatus(application.status);
+      if (applicationFilter === 'all') return true;
+      if (applicationFilter === 'new') return status === 'applied';
+      return status === applicationFilter;
+    };
+
+    if (selectedJobId !== 'all') {
+      const jobApplications = myApplications.filter((application) => application.jobId === selectedJobId && matchesFilter(application));
+      return [[selectedJobId, jobApplications]] as Array<[string, ApplicationResponse[]]>;
+    }
+
+    return applicationsByJob
+      .map(([jobId, applications]) => [jobId, applications.filter(matchesFilter)] as [string, ApplicationResponse[]])
+      .filter(([, applications]) => applications.length > 0);
+  }, [applicationFilter, applicationsByJob, myApplications, selectedJobId]);
+
+  const openApplications = (filter: ApplicationFilter = 'all', jobId = 'all') => {
+    setApplicationFilter(filter);
+    setSelectedJobId(jobId);
+    setActiveSection('applications');
+    setMobileNavOpen(false);
+  };
 
   const handleLogout = () => {
     logout();
@@ -299,22 +350,41 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
     }
   };
 
-  const handleUpdateStatus = async (application: ApplicationResponse, newStatus: string) => {
+  const handleUpdateStatus = async (
+    application: ApplicationResponse,
+    newStatus: string,
+    interviewDate?: string,
+  ) => {
     if (!token) return;
-    let interviewDate: string | undefined;
-    if (newStatus === 'interview') {
-      const value = window.prompt(
-        'Interview date and time (YYYY-MM-DDTHH:mm)',
-        new Date(Date.now() + 86400000).toISOString().slice(0, 16),
-      );
-      if (!value) return;
-      interviewDate = value;
+    const status = normalizeApplicationStatus(newStatus);
+    if (status === 'interview' && !interviewDate) {
+      setInterviewDraft({ application, date: toInterviewDateTimeLocal() });
+      return;
     }
     setUpdatingApplicationId(application.id);
     try {
-      await updateApplicationStatus(application.id, newStatus, token, undefined, interviewDate);
-      toast.success(newStatus === 'interview' ? 'Interview scheduled' : `Application updated to ${newStatus}`);
-      await handleRefreshApplications();
+      const updated = await updateApplicationStatus(
+        application.id,
+        status,
+        token,
+        undefined,
+        interviewDate ? toInterviewDateTimeLocal(interviewDate) : undefined,
+      );
+      setMyApplications((previous) =>
+        previous.map((item) =>
+          item.id === application.id
+            ? {
+                ...item,
+                ...updated,
+                jobId: item.jobId,
+                jobTitle: item.jobTitle,
+                status: normalizeApplicationStatus(updated.status || status),
+              }
+            : item,
+        ),
+      );
+      setInterviewDraft(null);
+      toast.success(status === 'interview' ? 'Interview scheduled' : `Application marked ${statusLabel(status).toLowerCase()}`);
     } catch (err: any) {
       toast.error(err?.message || 'Unable to update application status.');
     } finally {
@@ -378,20 +448,22 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
       label: 'Applications',
       icon: Users,
       badge: totalApplications,
-      active: activeSection === 'applications',
-      action: () => openSection('applications'),
+      active: activeSection === 'applications' && applicationFilter === 'all',
+      action: () => openApplications('all'),
     },
     {
       label: 'Shortlisted',
       icon: Star,
       badge: shortlistedCount,
-      action: () => openSection('applications'),
+      active: activeSection === 'applications' && applicationFilter === 'shortlisted',
+      action: () => openApplications('shortlisted'),
     },
     {
       label: 'Interviews',
       icon: Calendar,
       badge: interviewCount,
-      action: () => openSection('applications'),
+      active: activeSection === 'applications' && applicationFilter === 'interview',
+      action: () => openApplications('interview'),
     },
   ];
 
@@ -618,7 +690,7 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
             </div>
           </div>
 
-          <section className="employer-verification-card">
+          <section className={`employer-verification-card ${verified ? 'employer-verification-card--verified' : 'employer-verification-card--unverified'}`}>
             <div className="employer-verification-card__content">
               <div className="employer-verification-card__status">
                 <ShieldCheck size={18} />
@@ -632,8 +704,8 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
               </div>
               <p className="text-xs text-slate-500 mt-1">
                 {verified
-                  ? 'Job posting and candidate management access are fully active.'
-                  : 'Business verification is required before publishing private jobs.'}
+                  ? 'Candidates can see this account as a verified hospital or clinic. Job posting is unlocked.'
+                  : 'Unverified accounts look like cheap listings. Complete business verification before posting, or applicants will treat this as a fraud risk.'}
               </p>
               <div className="employer-verification-card__buttons">
                 {!verified && (
@@ -665,7 +737,17 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
             {metricCards.map((metric) => {
               const Icon = metric.icon;
               return (
-                <article className={`dashboard-metric dashboard-metric--${metric.tone}`} key={metric.label}>
+                <article
+                  className={`dashboard-metric dashboard-metric--${metric.tone} dashboard-metric--clickable`}
+                  key={metric.label}
+                  onClick={() => {
+                    if (metric.label === 'Shortlisted') openApplications('shortlisted');
+                    else if (metric.label === 'Interviews') openApplications('interview');
+                    else if (metric.label === 'Total Applications') openApplications('all');
+                    else if (metric.label === 'Positions Filled') openApplications('selected');
+                    else openSection('jobs');
+                  }}
+                >
                   <div className="dashboard-metric__top">
                     <div className="dashboard-metric__icon"><Icon size={20} /></div>
                     <span>{metric.label}</span>
@@ -794,7 +876,7 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                       </div>
 
                       <div className="dashboard-job-card__actions">
-                        <button type="button" onClick={() => openSection('applications')} title="View applications">
+                        <button type="button" className="dashboard-job-card__cta" onClick={() => openApplications('all', job.id)} title="View applications for this job">
                           <Users size={16} /> <span>Applications</span>
                         </button>
                         <button type="button" onClick={() => onNavigate('edit-job', job.id)} title="Edit job">
@@ -816,7 +898,7 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                     <Users size={19} />
                     <h2>Applications</h2>
                   </div>
-                  <p>Review and manage candidate applications received for your jobs.</p>
+                  <p>Each job keeps its own inbox. Cardiologist applications stay on the Cardiologist post.</p>
                 </div>
                 <button
                   className="dashboard-outline-button"
@@ -830,21 +912,40 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
               </div>
 
               <div className="application-summary-grid">
-                <article><Users size={18} /><span>Total</span><strong>{myApplications.length}</strong></article>
-                <article><UserPlus size={18} /><span>New</span><strong>{myApplications.filter((app) => app.status === 'applied').length}</strong></article>
-                <article><Star size={18} /><span>Shortlisted</span><strong>{shortlistedCount}</strong></article>
-                <article><Calendar size={18} /><span>Interviews</span><strong>{interviewCount}</strong></article>
+                <article className={applicationFilter === 'all' ? 'is-active' : ''} onClick={() => setApplicationFilter('all')}><Users size={18} /><span>Total</span><strong>{myApplications.length}</strong></article>
+                <article className={applicationFilter === 'new' ? 'is-active' : ''} onClick={() => setApplicationFilter('new')}><UserPlus size={18} /><span>New</span><strong>{newApplicationCount}</strong></article>
+                <article className={applicationFilter === 'shortlisted' ? 'is-active' : ''} onClick={() => setApplicationFilter('shortlisted')}><Star size={18} /><span>Shortlisted</span><strong>{shortlistedCount}</strong></article>
+                <article className={applicationFilter === 'interview' ? 'is-active' : ''} onClick={() => setApplicationFilter('interview')}><Calendar size={18} /><span>Interviews</span><strong>{interviewCount}</strong></article>
               </div>
 
-              {applicationsByJob.length === 0 ? (
+              <div className="application-job-pills" role="tablist" aria-label="Applications by job">
+                <button type="button" className={selectedJobId === 'all' ? 'is-active' : ''} onClick={() => setSelectedJobId('all')}>
+                  All jobs <span>{myApplications.length}</span>
+                </button>
+                {myJobs.map((job) => {
+                  const count = myApplications.filter((application) => application.jobId === job.id).length;
+                  return (
+                    <button
+                      key={job.id}
+                      type="button"
+                      className={selectedJobId === job.id ? 'is-active' : ''}
+                      onClick={() => setSelectedJobId(job.id)}
+                    >
+                      {job.title || 'Untitled job'} <span>{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {visibleApplicationsByJob.length === 0 ? (
                 <div className="dashboard-empty-state">
                   <div className="dashboard-empty-state__icon"><Users size={26} /></div>
-                  <h3>No applications yet</h3>
-                  <p>Candidate applications will appear here when they apply to your jobs.</p>
+                  <h3>No applications in this view</h3>
+                  <p>Switch job or status filter, or wait for candidates to apply to that specific post.</p>
                 </div>
               ) : (
                 <div className="application-job-groups">
-                  {applicationsByJob.map(([jobId, applications]) => {
+                  {visibleApplicationsByJob.map(([jobId, applications]) => {
                     const job = myJobs.find((item) => item.id === jobId);
                     const jobTitle = job?.title || applications[0]?.jobTitle || 'Job';
                     return (
@@ -852,64 +953,81 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                         <div className="application-job-group__header">
                           <div>
                             <h3>{jobTitle}</h3>
-                            <p>{applications.length} application{applications.length === 1 ? '' : 's'}</p>
+                            <p>{applications.length} application{applications.length === 1 ? '' : 's'} for this post only</p>
                           </div>
                           {job?.status && <span className={getJobStatusClass(job.status)}>{job.status}</span>}
                         </div>
 
+                        {applications.length === 0 ? (
+                          <div className="dashboard-empty-state dashboard-empty-state--compact">
+                            <h3>No applications for this job yet</h3>
+                          </div>
+                        ) : (
                         <div className="candidate-grid">
-                          {applications.map((application) => (
+                          {applications.map((application) => {
+                            const status = normalizeApplicationStatus(application.status);
+                            const busy = updatingApplicationId === application.id;
+                            return (
                             <article className="candidate-card" key={application.id}>
                               <div className="candidate-card__top">
                                 <div className="candidate-avatar">{getInitials(application.candidateName)}</div>
                                 <div className="candidate-card__identity">
                                   <h4>{application.candidateName || 'Candidate'}</h4>
-                                  <span className={getApplicationStatusClass(application.status)}>{application.status}</span>
+                                  <span className={getApplicationStatusClass(status)}>{statusLabel(status)}</span>
                                 </div>
+                              </div>
+
+                              <div className="candidate-card__profile">
+                                <strong>{application.candidateSpeciality || 'Speciality not added'}</strong>
+                                <span>
+                                  {[application.candidateQualification, application.candidateYearsExperience != null ? `${application.candidateYearsExperience} yrs` : null]
+                                    .filter(Boolean)
+                                    .join(' · ') || 'Qualification not added'}
+                                </span>
+                                {(application.candidateRegistrationNumber || application.candidateCity || application.candidateState) && (
+                                  <span>
+                                    {[application.candidateRegistrationNumber, [application.candidateCity, application.candidateState].filter(Boolean).join(', ')]
+                                      .filter(Boolean)
+                                      .join(' · ')}
+                                  </span>
+                                )}
                               </div>
 
                               <div className="candidate-card__contact">
                                 <a href={`mailto:${application.candidateEmail}`}><Mail size={14} />{application.candidateEmail}</a>
                                 {application.candidatePhone && <a href={`tel:${application.candidatePhone}`}><Phone size={14} />{application.candidatePhone}</a>}
                                 <span><Calendar size={14} />Applied {formatDate(application.appliedDate)}</span>
+                                {application.interviewDate && <span><Calendar size={14} />Interview {formatDate(application.interviewDate)}</span>}
                               </div>
 
                               {application.notes && <p className="candidate-card__notes">{application.notes}</p>}
 
-                              <div className="candidate-card__actions" style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                                  {application.resumeUrl ? (
-                                    <button type="button" onClick={() => openFileInViewer(application.resumeUrl!)}>
-                                      <FileText size={15} /> View Resume
-                                    </button>
-                                  ) : (
-                                    <span className="candidate-card__no-resume">No resume uploaded</span>
-                                  )}
-
-                                  <select
-                                    disabled={updatingApplicationId === application.id}
-                                    value={application.status || 'applied'}
-                                    onChange={(e) => handleUpdateStatus(application, e.target.value)}
-                                    style={{
-                                      fontSize: '12px',
-                                      padding: '4px 8px',
-                                      borderRadius: '6px',
-                                      border: '1px solid #cbd5e1',
-                                      backgroundColor: '#fff',
-                                      cursor: 'pointer',
-                                    }}
-                                  >
-                                    <option value="applied">Applied</option>
-                                    <option value="shortlisted">Shortlist</option>
-                                    <option value="interview">Interview</option>
-                                    <option value="selected">Select</option>
-                                    <option value="rejected">Reject</option>
-                                  </select>
-                                </div>
+                              <div className="candidate-card__actions">
+                                {application.resumeUrl ? (
+                                  <button type="button" className="candidate-action candidate-action--resume" onClick={() => openFileInViewer(application.resumeUrl!)}>
+                                    <FileText size={15} /> Resume
+                                  </button>
+                                ) : (
+                                  <span className="candidate-card__no-resume">No resume</span>
+                                )}
+                                <button type="button" className={`candidate-action candidate-action--shortlist${status === 'shortlisted' ? ' is-current' : ''}`} disabled={busy} onClick={() => handleUpdateStatus(application, 'shortlisted')}>
+                                  <Star size={14} /> Shortlist
+                                </button>
+                                <button type="button" className={`candidate-action candidate-action--interview${status === 'interview' ? ' is-current' : ''}`} disabled={busy} onClick={() => handleUpdateStatus(application, 'interview')}>
+                                  <Calendar size={14} /> Interview
+                                </button>
+                                <button type="button" className={`candidate-action candidate-action--select${status === 'selected' ? ' is-current' : ''}`} disabled={busy} onClick={() => handleUpdateStatus(application, 'selected')}>
+                                  <CheckCircle size={14} /> Select
+                                </button>
+                                <button type="button" className={`candidate-action candidate-action--reject${status === 'rejected' ? ' is-current' : ''}`} disabled={busy} onClick={() => handleUpdateStatus(application, 'rejected')}>
+                                  <X size={14} /> Reject
+                                </button>
                               </div>
                             </article>
-                          ))}
+                            );
+                          })}
                         </div>
+                        )}
                       </section>
                     );
                   })}
@@ -983,20 +1101,53 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
 
           {activeSection === 'verification' && (
             <section className="dashboard-panel dashboard-panel--centered">
-              <div className="dashboard-feature-icon dashboard-feature-icon--green"><ShieldCheck size={28} /></div>
-              <h2>Employer Verification</h2>
+              <div className={`dashboard-feature-icon ${verified ? 'dashboard-feature-icon--green' : 'dashboard-feature-icon--amber'}`}><ShieldCheck size={28} /></div>
+              <h2>{verified ? 'Verified employer account' : 'Verification is required'}</h2>
               <p>
-                Your current verification status is <strong>{employer.verificationStatus}</strong>.
-                Verification helps candidates identify trusted employers.
+                Status: <strong>{employer.verificationStatus}</strong>.
+                {verified
+                  ? ' Candidates and admins can treat this hospital or clinic as a checked employer.'
+                  : ' Anyone can post a ₹100 listing. Upload registration documents so candidates can see this is a real institution, not a fake recruiter.'}
               </p>
               {employer.verifiedAt && <small>Verified on {formatDate(employer.verifiedAt)}</small>}
               <button className="dashboard-primary-button" type="button" onClick={() => onNavigate('verification')}>
-                View Verification
+                {verified ? 'View Verification' : 'Start Verification'}
               </button>
             </section>
           )}
         </main>
       </div>
+
+      {interviewDraft && (
+        <div className="employer-modal" role="dialog" aria-modal="true" aria-label="Schedule interview">
+          <button className="employer-modal__backdrop" type="button" onClick={() => setInterviewDraft(null)} aria-label="Close interview scheduler" />
+          <div className="employer-modal__card">
+            <h3>Schedule interview</h3>
+            <p>
+              {interviewDraft.application.candidateName} · {interviewDraft.application.jobTitle || 'this job'}
+            </p>
+            <label>
+              <span>Interview date and time</span>
+              <input
+                type="datetime-local"
+                value={interviewDraft.date}
+                onChange={(event) => setInterviewDraft({ ...interviewDraft, date: event.target.value })}
+              />
+            </label>
+            <div className="employer-modal__actions">
+              <button type="button" className="dashboard-outline-button" onClick={() => setInterviewDraft(null)}>Cancel</button>
+              <button
+                type="button"
+                className="dashboard-primary-button"
+                disabled={!interviewDraft.date || updatingApplicationId === interviewDraft.application.id}
+                onClick={() => handleUpdateStatus(interviewDraft.application, 'interview', interviewDraft.date)}
+              >
+                Confirm interview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

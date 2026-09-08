@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchApplications, updateApplicationStatus, ApplicationResponse } from '../api/applications';
+import { fetchApplications, updateApplicationStatus, ApplicationResponse, normalizeApplicationStatus, toInterviewDateTimeLocal } from '../api/applications';
 import { fetchJob } from '../api/jobs';
 import { ApplicationStatus } from '../types';
 
@@ -37,6 +37,7 @@ export function ApplicationTracking({ userRole, userId }: ApplicationTrackingPro
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('all');
+  const [jobFilter, setJobFilter] = useState('all');
 
   // Fetch applications from API
   useEffect(() => {
@@ -150,8 +151,7 @@ export function ApplicationTracking({ userRole, userId }: ApplicationTrackingPro
     }
 
     try {
-      // Format interview date for API (ISO string)
-      const interviewDateTime = new Date(interviewDate).toISOString();
+      const interviewDateTime = toInterviewDateTimeLocal(interviewDate);
       
       await updateApplicationStatus(applicationId, 'interview', token, notes, interviewDateTime);
       
@@ -174,17 +174,28 @@ export function ApplicationTracking({ userRole, userId }: ApplicationTrackingPro
   const getFilteredApplications = () => {
     switch (activeTab) {
       case 'active':
-        return applications.filter(app => ['applied', 'shortlisted'].includes(app.status));
+        return applications.filter(app => ['applied', 'shortlisted'].includes(normalizeApplicationStatus(app.status)));
       case 'interview':
-        return applications.filter(app => app.status === 'interview');
+        return applications.filter(app => normalizeApplicationStatus(app.status) === 'interview');
       case 'completed':
-        return applications.filter(app => ['selected', 'rejected'].includes(app.status));
+        return applications.filter(app => ['selected', 'rejected'].includes(normalizeApplicationStatus(app.status)));
       default:
         return applications;
     }
   };
 
-  const filteredApplications = getFilteredApplications();
+  const jobOptions = Array.from(
+    new Map(
+      applications
+        .filter((application) => application.jobId && application.jobId !== 'N/A')
+        .map((application) => [application.jobId, application.job?.title || application.jobTitle || 'Job']),
+    ).entries(),
+  );
+
+  const filteredApplications = getFilteredApplications().filter((application) => {
+    if (jobFilter === 'all') return true;
+    return application.jobId === jobFilter;
+  });
 
   // Render application card
   const renderApplicationCard = (application: ApplicationWithJob) => (
@@ -358,6 +369,13 @@ export function ApplicationTracking({ userRole, userId }: ApplicationTrackingPro
               <Phone className="w-4 h-4 text-gray-400" />
               <span>{application.candidatePhone}</span>
             </div>
+            {(application.candidateSpeciality || application.candidateQualification) && (
+              <div className="md:col-span-3 rounded-lg bg-slate-50 px-3 py-2 text-slate-700">
+                <strong>{application.candidateSpeciality || 'Speciality not added'}</strong>
+                {application.candidateQualification ? ` · ${application.candidateQualification}` : ''}
+                {application.candidateYearsExperience != null ? ` · ${application.candidateYearsExperience} yrs` : ''}
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 text-gray-400" />
               {application.resumeUrl && (
@@ -388,10 +406,32 @@ export function ApplicationTracking({ userRole, userId }: ApplicationTrackingPro
           <p className="text-gray-600">
             {userRole === 'candidate' 
               ? 'Track the status of your job applications'
-              : 'Manage and review candidate applications'
+              : 'Manage applications one job at a time. Cardiologist and Medicine posts stay separate.'
             }
           </p>
         </div>
+
+        {userRole === 'employer' && jobOptions.length > 0 && (
+          <div className="mb-6 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className={`rounded-full border px-3 py-1.5 text-sm font-semibold ${jobFilter === 'all' ? 'border-teal-700 bg-teal-700 text-white' : 'border-slate-200 bg-white text-slate-700'}`}
+              onClick={() => setJobFilter('all')}
+            >
+              All jobs
+            </button>
+            {jobOptions.map(([id, title]) => (
+              <button
+                key={id}
+                type="button"
+                className={`rounded-full border px-3 py-1.5 text-sm font-semibold ${jobFilter === id ? 'border-teal-700 bg-teal-700 text-white' : 'border-slate-200 bg-white text-slate-700'}`}
+                onClick={() => setJobFilter(id)}
+              >
+                {title}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Error Message */}
         {error && (
@@ -467,7 +507,7 @@ function getStatusIcon(status: ApplicationStatus) {
 }
 
 function getStatusColor(status: ApplicationStatus) {
-  switch (status) {
+  switch (normalizeApplicationStatus(status)) {
     case 'applied':
       return 'bg-blue-100 text-blue-700 border-blue-200';
     case 'shortlisted':
@@ -484,7 +524,7 @@ function getStatusColor(status: ApplicationStatus) {
 }
 
 function getStatusProgress(status: ApplicationStatus) {
-  switch (status) {
+  switch (normalizeApplicationStatus(status)) {
     case 'applied':
       return 25;
     case 'shortlisted':
@@ -501,11 +541,12 @@ function getStatusProgress(status: ApplicationStatus) {
 }
 
 function getStatusSteps(status: ApplicationStatus) {
+  const normalized = normalizeApplicationStatus(status);
   const steps = [
     { key: 'applied', label: 'Applied', completed: true },
-    { key: 'shortlisted', label: 'Shortlisted', completed: ['shortlisted', 'interview', 'selected'].includes(status) },
-    { key: 'interview', label: 'Interview', completed: ['interview', 'selected'].includes(status) },
-    { key: 'selected', label: 'Selected', completed: status === 'selected' }
+    { key: 'shortlisted', label: 'Shortlisted', completed: ['shortlisted', 'interview', 'selected'].includes(normalized) },
+    { key: 'interview', label: 'Interview', completed: ['interview', 'selected'].includes(normalized) },
+    { key: 'selected', label: 'Selected', completed: normalized === 'selected' }
   ];
   return steps;
 }
@@ -535,14 +576,14 @@ interface StatusUpdateFormProps {
 
 function StatusUpdateForm({ application, onUpdate, onCancel }: StatusUpdateFormProps) {
   const [status, setStatus] = useState<ApplicationStatus>(
-    (application?.status as ApplicationStatus) || 'applied'
+    normalizeApplicationStatus(application?.status)
   );
   const [notes, setNotes] = useState(application?.notes || '');
 
   // Update form when application changes
   useEffect(() => {
     if (application) {
-      setStatus((application.status as ApplicationStatus) || 'applied');
+      setStatus(normalizeApplicationStatus(application.status));
       setNotes(application.notes || '');
     }
   }, [application]);

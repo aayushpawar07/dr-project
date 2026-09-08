@@ -1,6 +1,7 @@
 package com.medexjob.controller;
 
 import com.medexjob.entity.Application;
+import com.medexjob.entity.CandidateProfile;
 import com.medexjob.entity.Job;
 import com.medexjob.entity.User;
 import com.medexjob.entity.Notification;
@@ -12,6 +13,7 @@ import com.medexjob.repository.UserRepository;
 import com.medexjob.repository.NotificationRepository;
 import com.medexjob.repository.EmployerRepository;
 import com.medexjob.repository.ResumeRepository;
+import com.medexjob.repository.CandidateProfileRepository;
 import com.medexjob.service.FileUploadService;
 import com.medexjob.service.NotificationService;
 import org.slf4j.Logger;
@@ -31,7 +33,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -48,10 +53,11 @@ public class ApplicationController {
     private final NotificationService notificationService;
     private final EmployerRepository employerRepository;
     private final ResumeRepository resumeRepository;
+    private final CandidateProfileRepository candidateProfileRepository;
     private final FileUploadService fileUploadService;
     private final Path uploadPath = Paths.get("uploads");
 
-    public ApplicationController(ApplicationRepository applicationRepository, JobRepository jobRepository, UserRepository userRepository, NotificationRepository notificationRepository, NotificationService notificationService, EmployerRepository employerRepository, ResumeRepository resumeRepository, FileUploadService fileUploadService) {
+    public ApplicationController(ApplicationRepository applicationRepository, JobRepository jobRepository, UserRepository userRepository, NotificationRepository notificationRepository, NotificationService notificationService, EmployerRepository employerRepository, ResumeRepository resumeRepository, CandidateProfileRepository candidateProfileRepository, FileUploadService fileUploadService) {
         this.applicationRepository = applicationRepository;
         this.jobRepository = jobRepository;
         this.userRepository = userRepository;
@@ -59,6 +65,7 @@ public class ApplicationController {
         this.notificationService = notificationService;
         this.employerRepository = employerRepository;
         this.resumeRepository = resumeRepository;
+        this.candidateProfileRepository = candidateProfileRepository;
         this.fileUploadService = fileUploadService;
         try {
             Files.createDirectories(uploadPath);
@@ -511,15 +518,22 @@ public class ApplicationController {
                         application.setNotes(notes);
                     }
 
-                    // Handle interview date for interview status
-                    String interviewDateStr = null;
-                    if ("interview".equals(statusStr) && request.containsKey("interviewDate")) {
-                        interviewDateStr = (String) request.get("interviewDate");
+                    String interviewDateStr = request.get("interviewDate") instanceof String
+                            ? ((String) request.get("interviewDate")).trim()
+                            : null;
+                    if ("interview".equalsIgnoreCase(statusStr)) {
+                        if (interviewDateStr == null || interviewDateStr.isBlank()) {
+                            Map<String, Object> error = new LinkedHashMap<>();
+                            error.put("error", "Interview date and time are required.");
+                            return ResponseEntity.badRequest().body(error);
+                        }
                         try {
-                            LocalDateTime interviewDate = LocalDateTime.parse(interviewDateStr);
-                            application.setInterviewDate(interviewDate);
+                            application.setInterviewDate(parseInterviewDateTime(interviewDateStr));
                         } catch (Exception e) {
-                            // Handle parsing error
+                            logger.warn("Invalid interview date '{}': {}", interviewDateStr, e.getMessage());
+                            Map<String, Object> error = new LinkedHashMap<>();
+                            error.put("error", "Invalid interview date. Use YYYY-MM-DDTHH:mm.");
+                            return ResponseEntity.badRequest().body(error);
                         }
                     }
 
@@ -810,6 +824,44 @@ public class ApplicationController {
         return ResponseEntity.noContent().build();
     }
 
+    private LocalDateTime parseInterviewDateTime(String value) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("Interview date is required");
+        }
+        String trimmed = value.trim();
+        try {
+            return LocalDateTime.parse(trimmed);
+        } catch (Exception ignored) {
+            // ISO-8601 with offset or Z, e.g. 2026-09-09T04:30:00.000Z
+        }
+        try {
+            return OffsetDateTime.parse(trimmed).toLocalDateTime();
+        } catch (Exception ignored) {
+            // Instant / Zulu
+        }
+        return Instant.parse(trimmed).atZone(ZoneId.systemDefault()).toLocalDateTime();
+    }
+
+    private void attachCandidateProfile(Map<String, Object> response, UUID candidateId) {
+        if (candidateId == null) return;
+        try {
+            Optional<CandidateProfile> profileOpt = candidateProfileRepository.findByCandidateId(candidateId);
+            if (profileOpt.isEmpty()) return;
+            CandidateProfile profile = profileOpt.get();
+            response.put("candidateSpeciality", profile.getSpeciality());
+            response.put("candidateSubSpeciality", profile.getSubSpeciality());
+            response.put("candidateQualification", profile.getQualification());
+            response.put("candidateYearsExperience", profile.getYearsExperience());
+            response.put("candidateRegistrationCouncil", profile.getRegistrationCouncil());
+            response.put("candidateRegistrationNumber", profile.getRegistrationNumber());
+            response.put("candidateCity", profile.getCurrentCity());
+            response.put("candidateState", profile.getState());
+            response.put("candidateSummary", profile.getProfileSummary());
+        } catch (Exception e) {
+            logger.warn("Unable to attach candidate profile for {}: {}", candidateId, e.getMessage());
+        }
+    }
+
     private Application.ApplicationStatus parseStatus(String status) {
         if (status == null) return null;
         try {
@@ -900,6 +952,7 @@ public class ApplicationController {
             m.put("candidateName", app.getCandidateName() != null ? app.getCandidateName() : "N/A");
             m.put("candidateEmail", app.getCandidateEmail() != null ? app.getCandidateEmail() : "N/A");
             m.put("candidatePhone", app.getCandidatePhone() != null ? app.getCandidatePhone() : "N/A");
+            attachCandidateProfile(m, app.getCandidateId());
             
             // Get resume URL - check both application resume and Resume entity
             String resumeUrl = app.getResumeUrl();

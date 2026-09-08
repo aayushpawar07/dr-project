@@ -7,6 +7,8 @@ import {
   Building2,
   Calendar,
   ChevronRight,
+  Clock,
+  FileText,
   Heart,
   LayoutDashboard,
   LogOut,
@@ -18,7 +20,7 @@ import {
   User,
   X,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { fetchApplications, ApplicationResponse } from '../api/applications';
@@ -55,6 +57,32 @@ function normalizeStatus(status?: string) {
   if (status === 'applied' || status === 'pending') return 'Under Review';
   if (status === 'hired' || status === 'selected') return 'Selected';
   return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function greetingForNow() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+/** Whole days from today to `value`. Negative once the date has passed. */
+function daysUntil(value?: string): number | null {
+  if (!value) return null;
+  const target = new Date(value);
+  if (Number.isNaN(target.getTime())) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  target.setHours(0, 0, 0, 0);
+  return Math.round((target.getTime() - today.getTime()) / 86400000);
+}
+
+function closingLabel(days: number | null) {
+  if (days === null) return null;
+  if (days < 0) return 'Closed';
+  if (days === 0) return 'Closes today';
+  if (days === 1) return 'Closes tomorrow';
+  return `Closes in ${days} days`;
 }
 
 function getStatusClass(status?: string) {
@@ -207,7 +235,34 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
   const interviewCount = applications.filter((application) => application.status === 'interview' || application.interviewDate).length;
   const shortlistedCount = applications.filter((application) => application.status === 'shortlisted').length;
   const selectedCount = applications.filter((application) => application.status === 'selected' || application.status === 'hired').length;
+  const reviewCount = applications.filter((application) => application.status === 'applied' || application.status === 'pending').length;
+  const rejectedCount = applications.filter((application) => application.status === 'rejected').length;
   const unreadNotifications = notifications.filter((notification: any) => !notification.read).length;
+
+  // Jobs the candidate can still act on, soonest deadline first. Drawn from the
+  // jobs already loaded for this dashboard, so it needs no extra request.
+  const closingSoonJobs = useMemo(() => {
+    const seen = new Set<string>();
+    return [...recommendedJobs, ...savedJobs]
+      .filter((job) => {
+        if (!job?.id || seen.has(job.id)) return false;
+        const days = daysUntil(job.lastDate);
+        if (days === null || days < 0 || days > 14) return false;
+        seen.add(job.id);
+        return true;
+      })
+      .sort((a, b) => (daysUntil(a.lastDate) ?? 0) - (daysUntil(b.lastDate) ?? 0))
+      .slice(0, 8);
+  }, [recommendedJobs, savedJobs]);
+
+  const trackerSteps: Array<{ label: string; count: number; filter: ApplicationStatusFilter; tone?: string }> = [
+    { label: 'Applied', count: applications.length, filter: 'all' },
+    { label: 'Under Review', count: reviewCount, filter: 'applied' },
+    { label: 'Shortlisted', count: shortlistedCount, filter: 'shortlisted' },
+    { label: 'Interview', count: interviewCount, filter: 'interview' },
+    { label: 'Selected', count: selectedCount, filter: 'selected' },
+    { label: 'Rejected', count: rejectedCount, filter: 'rejected', tone: 'danger' },
+  ];
 
   const handleLogout = () => {
     logout();
@@ -256,41 +311,46 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
 
   const renderJobCard = (job: any, mode: 'recommended' | 'saved' = 'recommended') => {
     const isSaved = savedJobs.some((saved) => saved.id === job.id);
+    const days = daysUntil(job.lastDate);
+    const urgency = days === null || days > 7 ? '' : days <= 1 ? ' mx-jobcard--critical' : ' mx-jobcard--urgent';
 
     return (
-      <article className="candidate-job-card" key={job.id}>
-        <div className="candidate-job-card__head">
-          <div>
-            <div className="candidate-job-card__org">
-              <Building2 size={16} />
-              <span>{job.organization || 'Organisation not specified'}</span>
-              {job.sector && <small>{job.sector}</small>}
-            </div>
-            <h3 onClick={() => onNavigate('job-detail', job.id)}>{job.title || 'Untitled Job'}</h3>
-          </div>
+      <article className={`mx-jobcard${urgency}`} key={job.id}>
+        <div className="mx-jobcard__head">
+          <span className="mx-jobcard__org">
+            <Building2 size={15} />
+            <span>{job.organization || 'Organisation not specified'}</span>
+            {job.sector && <small>· {job.sector}</small>}
+          </span>
+          {job.featured && <span className="mx-tag mx-tag--featured"><Star size={12} /> Featured</span>}
         </div>
 
-        <div className="candidate-job-card__meta">
-          {job.location && <span><MapPin size={14} />{job.location}</span>}
-          {job.salary && <span>{job.salary}</span>}
-          {job.lastDate && <span>Last date {formatDate(job.lastDate)}</span>}
+        <h3 className="mx-jobcard__title" onClick={() => onNavigate('job-detail', job.id)}>
+          {job.title || 'Untitled Job'}
+        </h3>
+
+        <div className="mx-jobcard__meta">
+          {job.location && <span><MapPin size={13} />{job.location}</span>}
+          {job.salary && <span><Briefcase size={13} />{job.salary}</span>}
         </div>
 
-        <div className="candidate-job-card__footer">
-          <div className="candidate-job-card__signals">
-            {job.featured && <span className="featured-signal"><Star size={14} />Featured</span>}
-          </div>
-          <div className="candidate-job-card__actions">
+        <div className="mx-jobcard__footer">
+          {days !== null && (
+            <span className={`mx-jobcard__closing${days <= 1 ? ' is-critical' : days <= 7 ? ' is-urgent' : ''}`}>
+              <Clock size={13} />{closingLabel(days)}
+            </span>
+          )}
+          <div className="mx-jobcard__actions">
             {mode === 'saved' ? (
-              <button type="button" className="text-action text-action--danger" onClick={() => handleRemoveSavedJob(job.id)}>
-                <Heart size={15} fill="currentColor" /> Remove
+              <button type="button" className="mx-linkbtn mx-linkbtn--danger" onClick={() => handleRemoveSavedJob(job.id)}>
+                <Heart size={14} fill="currentColor" /> Remove
               </button>
             ) : (
-              <button type="button" className="text-action" onClick={() => handleSaveJob(job)}>
-                <Heart size={15} fill={isSaved ? 'currentColor' : 'none'} /> {isSaved ? 'Saved' : 'Save'}
+              <button type="button" className="mx-linkbtn" onClick={() => handleSaveJob(job)}>
+                <Heart size={14} fill={isSaved ? 'currentColor' : 'none'} /> {isSaved ? 'Saved' : 'Save'}
               </button>
             )}
-            <button type="button" className="candidate-primary-button candidate-primary-button--small" onClick={() => onNavigate('job-detail', job.id)}>
+            <button type="button" className="mx-btn mx-btn--sm" onClick={() => onNavigate('job-detail', job.id)}>
               View Job
             </button>
           </div>
@@ -429,35 +489,25 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
 
           {activeSection === 'overview' && (
             <>
-              <section className="candidate-greeting-card">
-                <div>
-                  <span className="candidate-eyebrow">Medical profile</span>
-                  <h2>{profile?.speciality || 'Complete your clinical profile'}</h2>
-                  <p>
-                    Employers and HR see this card first. Empty profiles look fake and get skipped.
-                    {profile?.qualification ? ` ${profile.qualification}` : ''}
-                    {profile?.yearsExperience != null ? ` · ${profile.yearsExperience} years` : ''}
-                  </p>
-                </div>
-                <button type="button" className="candidate-primary-button" onClick={() => onNavigate('jobs')}>
-                  <Search size={17} /> Find Jobs
-                </button>
+              <section className="mx-greeting">
+                <h2>{greetingForNow()}, {user?.name || 'Doctor'} 👋</h2>
+                <p>Find the right healthcare opportunity for your career.</p>
               </section>
 
-              <section className={`candidate-profile-card ${profilePercent >= 70 ? 'is-ready' : 'is-incomplete'}`}>
-                <div className="candidate-profile-card__top">
-                  <div className="candidate-user-avatar candidate-user-avatar--large">{getInitials(user?.name)}</div>
-                  <div>
+              <section className={`mx-profile ${profilePercent >= 70 ? 'is-ready' : 'is-incomplete'}`}>
+                <div className="mx-profile__top">
+                  <div className="mx-avatar mx-avatar--lg">{getInitials(user?.name)}</div>
+                  <div className="mx-profile__identity">
                     <strong>{user?.name || 'Candidate'}</strong>
                     <span>{profile?.speciality || 'Speciality not added'}{profile?.subSpeciality ? ` · ${profile.subSpeciality}` : ''}</span>
                   </div>
-                  <div className="candidate-profile-card__progress">
-                    <div className="candidate-profile-card__progress-label">
-                      <span>Profile completion</span>
+                  <div className="mx-progress">
+                    <div className="mx-progress__label">
+                      <span>Profile Completion</span>
                       <em>{profilePercent}%</em>
                     </div>
                     <div
-                      className="candidate-profile-card__bar"
+                      className="mx-progress__bar"
                       role="progressbar"
                       aria-valuenow={profilePercent}
                       aria-valuemin={0}
@@ -466,90 +516,135 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
                       <span style={{ width: `${profilePercent}%` }} />
                     </div>
                   </div>
-                </div>
-                <div className="candidate-profile-card__grid">
-                  <article><Stethoscope size={16} /><span>Qualification</span><strong>{profile?.qualification || 'Not added'}</strong></article>
-                  <article><Briefcase size={16} /><span>Experience</span><strong>{profile?.yearsExperience != null ? `${profile.yearsExperience} years` : 'Not added'}</strong></article>
-                  <article><User size={16} /><span>Registration</span><strong>{profile?.registrationNumber || 'Not added'}</strong></article>
-                  <article><MapPin size={16} /><span>Location</span><strong>{[profile?.currentCity, profile?.state].filter(Boolean).join(', ') || 'Not added'}</strong></article>
-                </div>
-                {profile?.profileSummary && <p className="candidate-profile-card__summary">{profile.profileSummary}</p>}
-                <div className="candidate-profile-card__actions">
-                  <button type="button" className="candidate-primary-button candidate-primary-button--small" onClick={() => onNavigate('profile')}>
-                    {profilePercent >= 70 ? 'Edit Profile' : 'Complete Profile for HR'}
+                  <button type="button" className="mx-btn" onClick={() => onNavigate('profile')}>
+                    <User size={16} /> {profilePercent >= 70 ? 'Edit Profile' : 'Complete Profile'}
                   </button>
-                  {!profile?.speciality && <small>Add speciality, qualification and registration so hospitals can shortlist you.</small>}
                 </div>
+
+                <div className="mx-profile__grid">
+                  <article><Stethoscope size={15} /><span>Qualification</span><strong>{profile?.qualification || 'Not added'}</strong></article>
+                  <article><Briefcase size={15} /><span>Experience</span><strong>{profile?.yearsExperience != null ? `${profile.yearsExperience} years` : 'Not added'}</strong></article>
+                  <article><User size={15} /><span>Registration</span><strong>{profile?.registrationNumber || 'Not added'}</strong></article>
+                  <article><MapPin size={15} /><span>Location</span><strong>{[profile?.currentCity, profile?.state].filter(Boolean).join(', ') || 'Not added'}</strong></article>
+                </div>
+
+                {profile?.profileSummary && <p className="mx-profile__summary">{profile.profileSummary}</p>}
+                {!profile?.speciality && (
+                  <p className="mx-profile__hint">
+                    Add speciality, qualification and registration so hospitals can shortlist you.
+                  </p>
+                )}
               </section>
 
-              <section className="candidate-stats-grid" aria-label="Candidate statistics">
+              <section className="mx-stats" aria-label="Candidate statistics">
                 {stats.map((stat) => {
                   const Icon = stat.icon;
                   return (
-                    <button type="button" className={`candidate-stat-card candidate-stat-card--${stat.tone}`} key={stat.label} onClick={stat.action}>
-                      <span className="candidate-stat-card__icon"><Icon size={22} /></span>
-                      <strong>{stat.value}</strong>
-                      <span>{stat.label}</span>
+                    <button type="button" className={`mx-stat mx-stat--${stat.tone}`} key={stat.label} onClick={stat.action}>
+                      <span className="mx-stat__icon"><Icon size={18} /></span>
+                      <strong className="mx-stat__value">{stat.value}</strong>
+                      <span className="mx-stat__label">{stat.label}</span>
                     </button>
                   );
                 })}
               </section>
 
-              <section className="candidate-dashboard-section">
-                <div className="candidate-section-heading">
-                  <div><Star size={20} /><h2>Recommended Jobs</h2></div>
-                  <button type="button" onClick={() => openSection('recommended')}>See All <ChevronRight size={15} /></button>
-                </div>
-                {recommendedJobs.length === 0 ? (
-                  <div className="candidate-empty"><Star size={28} /><h3>No recommended jobs available</h3><p>Featured jobs from the portal will appear here when available.</p></div>
-                ) : (
-                  <div className="candidate-job-scroll">{recommendedJobs.slice(0, 5).map((job) => renderJobCard(job, 'recommended'))}</div>
-                )}
-              </section>
+              <div className="mx-section-header">
+                <h2><Star size={18} /> Recommended For You</h2>
+                <button type="button" className="mx-seeall" onClick={() => openSection('recommended')}>
+                  See All <ChevronRight size={14} />
+                </button>
+              </div>
+              {recommendedJobs.length === 0 ? (
+                <div className="mx-empty"><Star size={26} /><h3>No recommended jobs available</h3><p>Featured jobs from the portal will appear here when available.</p></div>
+              ) : (
+                <div className="mx-jobscroll">{recommendedJobs.slice(0, 6).map((job) => renderJobCard(job, 'recommended'))}</div>
+              )}
 
-              <section className="candidate-dashboard-section">
-                <div className="candidate-section-heading">
-                  <div><Briefcase size={20} /><h2>Recent Applications</h2></div>
-                  <button type="button" onClick={() => openSection('applications')}>View All</button>
-                </div>
-                {applications.length === 0 ? (
-                  <div className="candidate-empty candidate-empty--compact"><Briefcase size={26} /><h3>No applications yet</h3><p>Applications submitted from MedExJob will appear here.</p></div>
-                ) : (
-                  <div className="candidate-application-list candidate-application-list--preview">
-                    {applications.slice(0, 4).map((application) => (
-                      <article key={application.id}>
-                        <div className="candidate-application-list__head">
-                          <div>
-                            <span className={getStatusClass(application.status)}>{normalizeStatus(application.status)}</span>
-                            <h3 onClick={() => onNavigate('job-detail', application.jobId)}>{application.jobTitle}</h3>
-                            <p>{application.jobOrganization}</p>
-                          </div>
-                          <small>Applied {formatDate(application.appliedDate)}</small>
-                        </div>
-                      </article>
-                    ))}
+              {closingSoonJobs.length > 0 && (
+                <>
+                  <div className="mx-section-header">
+                    <h2 className="mx-section-header--warn"><Clock size={18} /> Closing Soon</h2>
+                    <button type="button" className="mx-seeall" onClick={() => onNavigate('jobs')}>
+                      View All <ChevronRight size={14} />
+                    </button>
                   </div>
-                )}
-              </section>
+                  <div className="mx-jobscroll">{closingSoonJobs.map((job) => renderJobCard(job, 'recommended'))}</div>
+                </>
+              )}
 
-              <section className="candidate-dashboard-section">
-                <div className="candidate-section-heading">
-                  <div><Bell size={20} /><h2>Recent Notifications</h2></div>
-                  <button type="button" onClick={() => openSection('notifications')}>View All</button>
+              <div className="mx-section-header">
+                <h2><Briefcase size={18} /> Application Tracker</h2>
+                <button type="button" className="mx-seeall" onClick={() => openSection('applications')}>
+                  {applications.length} Applied
+                </button>
+              </div>
+              {applications.length === 0 ? (
+                <div className="mx-empty"><Briefcase size={26} /><h3>No applications yet</h3><p>Applications submitted from MedExJob will appear here.</p></div>
+              ) : (
+                <div className="mx-tracker">
+                  {trackerSteps.map((step, index) => (
+                    <Fragment key={step.label}>
+                      {index > 0 && <span className="mx-tracker__arrow" aria-hidden="true"><ChevronRight size={14} /></span>}
+                      <button
+                        type="button"
+                        className={`mx-tracker__step${step.count > 0 ? ' is-filled' : ''}${step.tone ? ` mx-tracker__step--${step.tone}` : ''}`}
+                        onClick={() => { setStatusFilter(step.filter); openSection('applications'); }}
+                      >
+                        <span className="mx-tracker__count">{step.count}</span>
+                        <span className="mx-tracker__label">{step.label}</span>
+                      </button>
+                    </Fragment>
+                  ))}
                 </div>
-                {notifications.length === 0 ? (
-                  <div className="candidate-empty candidate-empty--compact"><Bell size={26} /><h3>No notifications yet</h3></div>
-                ) : (
-                  <div className="candidate-notification-list">
-                    {notifications.slice(0, 4).map((notification: any) => (
-                      <article key={notification.id} className={notification.read ? '' : 'is-unread'}>
-                        <span><Bell size={16} /></span>
-                        <div><p>{notification.message}</p><small>{formatDate(notification.createdAt)}</small></div>
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </section>
+              )}
+
+              <div className="mx-section-header">
+                <h2><FileText size={18} /> Recent Applications</h2>
+                <button type="button" className="mx-seeall" onClick={() => openSection('applications')}>
+                  View All <ChevronRight size={14} />
+                </button>
+              </div>
+              {applications.length === 0 ? (
+                <div className="mx-empty"><Briefcase size={26} /><h3>No applications yet</h3></div>
+              ) : (
+                <div className="mx-applist">
+                  {applications.slice(0, 4).map((application) => (
+                    <article key={application.id} onClick={() => onNavigate('job-detail', application.jobId)}>
+                      <div>
+                        <h3>{application.jobTitle}</h3>
+                        <p>{application.jobOrganization}</p>
+                      </div>
+                      <div className="mx-applist__side">
+                        <span className={getStatusClass(application.status)}>{normalizeStatus(application.status)}</span>
+                        <small>Applied {formatDate(application.appliedDate)}</small>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+
+              <div className="mx-section-header">
+                <h2><Bell size={18} /> Recent Notifications</h2>
+                <button type="button" className="mx-seeall" onClick={() => openSection('notifications')}>
+                  View All <ChevronRight size={14} />
+                </button>
+              </div>
+              {notifications.length === 0 ? (
+                <div className="mx-empty"><Bell size={26} /><h3>No notifications yet</h3></div>
+              ) : (
+                <div className="mx-notiflist">
+                  {notifications.slice(0, 5).map((notification: any) => (
+                    <article key={notification.id} className={notification.read ? '' : 'is-unread'}>
+                      <span className="mx-notiflist__icon"><Bell size={15} /></span>
+                      <div>
+                        <p>{notification.message}</p>
+                        <small>{formatDate(notification.createdAt)}</small>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
             </>
           )}
 
@@ -609,25 +704,21 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
               {filteredApplications.length === 0 ? (
                 <div className="candidate-empty"><Briefcase size={30} /><h3>{applications.length === 0 ? 'No applications yet' : 'No applications match your filters'}</h3>{applications.length === 0 && <button type="button" className="candidate-primary-button candidate-primary-button--small" onClick={() => onNavigate('jobs')}>Browse Jobs</button>}</div>
               ) : (
-                <div className="candidate-application-list">
+                <div className="mx-applist mx-applist--full">
                   {filteredApplications.map((application) => (
                     <article key={application.id}>
-                      <div className="candidate-application-list__head">
-                        <div>
-                          <span className={getStatusClass(application.status)}>{normalizeStatus(application.status)}</span>
-                          <h3 onClick={() => onNavigate('job-detail', application.jobId)}>{application.jobTitle}</h3>
-                          <p>{application.jobOrganization}</p>
+                      <div>
+                        <h3>{application.jobTitle}</h3>
+                        <p>{application.jobOrganization}</p>
+                        <div className="mx-applist__meta">
+                          {application.postedBy?.company && <span><Building2 size={13} />{application.postedBy.company}</span>}
+                          {application.interviewDate && <span><Calendar size={13} />Interview {formatDate(application.interviewDate)}</span>}
                         </div>
+                      </div>
+                      <div className="mx-applist__side">
+                        <span className={getStatusClass(application.status)}>{normalizeStatus(application.status)}</span>
                         <small>Applied {formatDate(application.appliedDate)}</small>
-                      </div>
-
-                      <div className="candidate-application-list__details">
-                        {application.postedBy?.company && <span><Building2 size={14} />{application.postedBy.company}</span>}
-                        {application.interviewDate && <span><Calendar size={14} />Interview {formatDate(application.interviewDate)}</span>}
-                      </div>
-
-                      <div className="candidate-application-list__actions">
-                        <button type="button" className="candidate-primary-button candidate-primary-button--small" onClick={() => onNavigate('job-detail', application.jobId)}>View Job</button>
+                        <button type="button" className="mx-btn mx-btn--sm" onClick={() => onNavigate('job-detail', application.jobId)}>View Job</button>
                       </div>
                     </article>
                   ))}
@@ -645,10 +736,10 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
               {notifications.length === 0 ? (
                 <div className="candidate-empty"><Bell size={30} /><h3>No notifications yet</h3></div>
               ) : (
-                <div className="candidate-notification-list candidate-notification-list--full">
+                <div className="mx-notiflist">
                   {notifications.map((notification: any) => (
                     <article key={notification.id} className={notification.read ? '' : 'is-unread'}>
-                      <span><Bell size={17} /></span>
+                      <span className="mx-notiflist__icon"><Bell size={15} /></span>
                       <div><p>{notification.message}</p><small>{formatDate(notification.createdAt)}</small></div>
                     </article>
                   ))}

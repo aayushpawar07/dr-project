@@ -20,6 +20,7 @@ import "./styles/admin-application-modal-no-shadow.css";
 import "./styles/admin-application-modal-overlay-cleanup.css";
 import "./styles/dashboard-theme-2026.css";
 import "./styles/dashboard-mobile-tablet.css";
+import "./styles/dashboard-mockup.css";
 import "./utils/dashboardNavigation";
 import "./utils/jobDetailPresentation";
 import "./utils/jobDetailSummaryLayout";

@@ -10,10 +10,12 @@ import {
   Calendar,
   CheckCircle,
   ChevronRight,
+  Clock,
   CreditCard,
   Edit,
   Eye,
   FileText,
+  Globe,
   LayoutDashboard,
   LogOut,
   Mail,
@@ -25,7 +27,6 @@ import {
   ShieldCheck,
   Star,
   UserCheck,
-  UserPlus,
   Users,
   X,
 } from 'lucide-react';
@@ -70,6 +71,17 @@ function getInitials(value?: string) {
   const parts = value.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return 'ME';
   return parts.slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('');
+}
+
+/** Whole days from today to `value`. Negative once the date has passed. */
+function daysUntil(value?: string): number | null {
+  if (!value) return null;
+  const target = new Date(value);
+  if (Number.isNaN(target.getTime())) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  target.setHours(0, 0, 0, 0);
+  return Math.round((target.getTime() - today.getTime()) / 86400000);
 }
 
 function getJobStatusClass(status?: string) {
@@ -243,6 +255,9 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
   const filledPositionsCount = myApplications.filter(
     (application) => normalizeApplicationStatus(application.status) === 'selected',
   ).length;
+  const rejectedCount = myApplications.filter(
+    (application) => normalizeApplicationStatus(application.status) === 'rejected',
+  ).length;
   const unreadNotifications = notifications.filter((notification: any) => !notification.read).length;
 
   const jobsClosingSoon = useMemo(() => {
@@ -261,6 +276,19 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
   }, [myJobs]);
 
   const totalViews = myJobs.reduce((sum, job) => sum + (Number(job.views) || 0), 0);
+
+  // Per-job counts for the job rows. job.applications from the API can lag
+  // behind, so the loaded applications win whenever they are higher.
+  const jobStats = useMemo(() => {
+    const map = new Map<string, { total: number; shortlisted: number }>();
+    myApplications.forEach((application) => {
+      const entry = map.get(application.jobId) || { total: 0, shortlisted: 0 };
+      entry.total += 1;
+      if (normalizeApplicationStatus(application.status) === 'shortlisted') entry.shortlisted += 1;
+      map.set(application.jobId, entry);
+    });
+    return map;
+  }, [myApplications]);
 
   const filteredJobs = useMemo(() => {
     if (jobFilter === 'all') return myJobs;
@@ -690,55 +718,50 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
             </div>
           </div>
 
-          <section className={`employer-verification-card ${verified ? 'employer-verification-card--verified' : 'employer-verification-card--unverified'}`}>
-            <div className="employer-verification-card__content">
-              <div className="employer-verification-card__status">
-                <ShieldCheck size={18} />
-                <span>{verified ? 'Verified Employer' : 'Verification Required'}</span>
-              </div>
-              <div className="employer-verification-card__identity">
+          <section className={`mx-banner ${verified ? 'mx-banner--ok' : 'mx-banner--warn'}`}>
+            <div className="mx-banner__left">
+              <span className={`mx-badge ${verified ? 'mx-badge--ok' : 'mx-badge--warn'}`}>
+                <ShieldCheck size={15} />
+                {verified ? 'Verified Employer' : 'Verification Required'}
+              </span>
+              <span className="mx-banner__detail">
                 <strong>{employer.companyName}</strong>
-                <span>{employer.companyType}</span>
-                {employer.city && <span>{employer.city}{employer.state ? `, ${employer.state}` : ''}</span>}
-                <span className="employer-verification-card__email">{employer.userEmail}</span>
-              </div>
-              <p className="text-xs text-slate-500 mt-1">
+                {employer.companyType ? ` · ${employer.companyType}` : ''}
+                {employer.city ? ` · ${employer.city}${employer.state ? `, ${employer.state}` : ''}` : ''}
+                {employer.userEmail ? ` · ${employer.userEmail}` : ''}
+              </span>
+              <p className="mx-banner__note">
                 {verified
-                  ? 'Candidates can see this account as a verified hospital or clinic. Job posting is unlocked.'
+                  ? 'Candidates see this account as a verified hospital or clinic. Job posting is unlocked.'
                   : 'Unverified accounts look like cheap listings. Complete business verification before posting, or applicants will treat this as a fraud risk.'}
               </p>
-              <div className="employer-verification-card__buttons">
-                {!verified && (
-                  <button className="dashboard-primary-button dashboard-primary-button--small" type="button" onClick={() => onNavigate('verification')}>
-                    Complete Verification
-                  </button>
-                )}
-                <button className="dashboard-outline-button" type="button" onClick={() => onNavigate('profile')}>
-                  <Edit size={15} />
-                  Company Profile
-                </button>
-                <button className="dashboard-outline-button" type="button" onClick={() => onNavigate('analytics')}>
-                  <BarChart3 size={15} />
-                  View Analytics
-                </button>
-              </div>
             </div>
-            <div className="employer-verification-card__plan" onClick={() => onNavigate('subscription')} style={{ cursor: 'pointer' }}>
-              <span className={`plan-dot${currentSubscription?.status === 'active' ? ' plan-dot--active' : ''}`} />
-              <div>
-                <small>Plan</small>
-                <strong>{currentSubscription?.status === 'active' ? currentSubscription.plan.name : 'No active subscription'}</strong>
-              </div>
-              <ChevronRight size={18} />
+            <div className="mx-banner__right">
+              {!verified && (
+                <button className="mx-btn mx-btn--sm" type="button" onClick={() => onNavigate('verification')}>
+                  Complete Verification
+                </button>
+              )}
+              <button className="mx-btn-outline" type="button" onClick={() => onNavigate('profile')}>
+                <Edit size={14} /> Edit Profile
+              </button>
+              <button className="mx-btn-outline" type="button" onClick={() => onNavigate('analytics')}>
+                <BarChart3 size={14} /> Analytics
+              </button>
+              <button className="mx-btn-outline" type="button" onClick={() => onNavigate('subscription')}>
+                <CreditCard size={14} />
+                {currentSubscription?.status === 'active' ? currentSubscription.plan.name : 'No active plan'}
+              </button>
             </div>
           </section>
 
-          <section className="dashboard-metrics" aria-label="Employer statistics">
+          <section className="mx-stats" aria-label="Employer statistics">
             {metricCards.map((metric) => {
               const Icon = metric.icon;
               return (
-                <article
-                  className={`dashboard-metric dashboard-metric--${metric.tone} dashboard-metric--clickable`}
+                <button
+                  type="button"
+                  className={`mx-stat mx-stat--${metric.tone}`}
                   key={metric.label}
                   onClick={() => {
                     if (metric.label === 'Shortlisted') openApplications('shortlisted');
@@ -748,44 +771,36 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                     else openSection('jobs');
                   }}
                 >
-                  <div className="dashboard-metric__top">
-                    <div className="dashboard-metric__icon"><Icon size={20} /></div>
-                    <span>{metric.label}</span>
-                  </div>
-                  <strong>{metric.value}</strong>
-                  <small>{metric.helper}</small>
-                </article>
+                  <span className="mx-stat__icon"><Icon size={18} /></span>
+                  <strong className="mx-stat__value">{metric.value}</strong>
+                  <span className="mx-stat__label">{metric.label}</span>
+                  <span className="mx-stat__change">{metric.helper}</span>
+                </button>
               );
             })}
           </section>
 
-          <section className="dashboard-post-cta">
+          <section className="mx-postcta">
             <button
-              className="dashboard-primary-button"
+              className="mx-btn mx-btn--lg"
               type="button"
               onClick={handlePostJob}
               disabled={!verified || currentSubscription?.status !== 'active'}
-              style={{
-                opacity: (!verified || currentSubscription?.status !== 'active') ? 0.6 : 1,
-                cursor: (!verified || currentSubscription?.status !== 'active') ? 'not-allowed' : 'pointer',
-              }}
             >
               <Plus size={18} />
               {!verified ? 'Verify Account to Post Jobs' : currentSubscription?.status === 'active' ? 'Post a New Job' : 'Choose a Plan to Post Jobs'}
             </button>
-            <div className="dashboard-post-cta__hint">
-              <CheckCircle size={17} />
-              <span>
-                {!verified
-                  ? 'Verification must be completed before posting'
-                  : currentSubscription?.status === 'active'
-                  ? `${currentSubscription.jobPostsUsed} of ${currentSubscription.jobPostsAllowed} job posts used`
-                  : 'An active subscription is required before posting a job'}
-              </span>
-            </div>
+            <span className="mx-postcta__hint">
+              <CheckCircle size={15} />
+              {!verified
+                ? 'Verification must be completed before posting'
+                : currentSubscription?.status === 'active'
+                ? `${currentSubscription.jobPostsUsed} of ${currentSubscription.jobPostsAllowed} job posts used`
+                : 'An active subscription is required before posting a job'}
+            </span>
           </section>
 
-          <div className="dashboard-section-switcher" role="tablist" aria-label="Employer dashboard sections">
+          <div className="mx-tabs mx-tabs--sections" role="tablist" aria-label="Employer dashboard sections">
             <button className={activeSection === 'jobs' ? 'is-active' : ''} onClick={() => openSection('jobs')} type="button">
               <Briefcase size={16} /> My Jobs
             </button>
@@ -822,7 +837,7 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                 </button>
               </div>
 
-              <div className="job-filter-tabs" role="tablist" aria-label="Filter jobs by status">
+              <div className="mx-tabs" role="tablist" aria-label="Filter jobs by status">
                 {jobFilters.map((filter) => {
                   const count = filter.value === 'all'
                     ? myJobs.length
@@ -851,40 +866,52 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                   </button>
                 </div>
               ) : (
-                <div className="dashboard-job-list">
-                  {filteredJobs.map((job) => (
-                    <article className="dashboard-job-card" key={job.id}>
-                      <div className="dashboard-job-card__main">
-                        <div className="dashboard-job-card__title-row">
-                          <div>
-                            <h3>{job.title}</h3>
-                            <div className="dashboard-job-card__meta">
-                              {job.location && <span><MapPin size={14} />{job.location}</span>}
-                              {job.numberOfPosts != null && <span><Users size={14} />{job.numberOfPosts} post{Number(job.numberOfPosts) === 1 ? '' : 's'}</span>}
-                              {job.category && <span><Building2 size={14} />{job.category}</span>}
-                            </div>
+                <div className="mx-joblist">
+                  {filteredJobs.map((job) => {
+                    const stats = jobStats.get(job.id);
+                    const applicationTotal = Math.max(stats?.total || 0, Number(job.applications) || 0);
+                    const days = daysUntil(job.lastDate);
+                    const expiring = job.status === 'active' && days !== null && days >= 0 && days <= 7;
+                    return (
+                      <article className={`mx-job${expiring ? ' mx-job--expiring' : ''}`} key={job.id}>
+                        <div className="mx-job__info">
+                          <h3>{job.title}</h3>
+                          <div className="mx-job__meta">
+                            {job.location && <span><MapPin size={13} />{job.location}</span>}
+                            {job.numberOfPosts != null && (
+                              <span><Users size={13} />{job.numberOfPosts} vacanc{Number(job.numberOfPosts) === 1 ? 'y' : 'ies'}</span>
+                            )}
+                            <span><Calendar size={13} />Posted {formatDate(job.postedDate || job.createdAt)}</span>
+                            <span><Clock size={13} />Last date {formatDate(job.lastDate)}</span>
+                            <span><Eye size={13} />{Number(job.views) || 0} views</span>
                           </div>
-                          <span className={getJobStatusClass(job.status)}>{job.status || 'N/A'}</span>
                         </div>
 
-                        <div className="dashboard-job-card__details">
-                          <span><Calendar size={14} />Posted: {formatDate(job.postedDate || job.createdAt)}</span>
-                          <span><Calendar size={14} />Last date: {formatDate(job.lastDate)}</span>
-                          <span><Users size={14} />{Number(job.applications) || 0} applications</span>
-                          <span><Eye size={14} />{Number(job.views) || 0} views</span>
+                        <div className="mx-job__status">
+                          <span className={getJobStatusClass(job.status)}>
+                            {expiring ? 'Expiring soon' : job.status || 'N/A'}
+                          </span>
+                          <button type="button" className="mx-job__count" onClick={() => openApplications('all', job.id)}>
+                            {applicationTotal} Apps
+                          </button>
+                          <button type="button" className="mx-job__count" onClick={() => openApplications('shortlisted', job.id)}>
+                            {stats?.shortlisted || 0} Shortlisted
+                          </button>
+                          <div className="mx-job__actions">
+                            <button type="button" onClick={() => onNavigate('job-detail', job.id)} title="View job" aria-label="View job">
+                              <Eye size={15} />
+                            </button>
+                            <button type="button" onClick={() => onNavigate('edit-job', job.id)} title="Edit job" aria-label="Edit job">
+                              <Edit size={15} />
+                            </button>
+                            <button type="button" className="is-primary" onClick={() => openApplications('all', job.id)} title="View applications" aria-label="View applications">
+                              <Users size={15} />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-
-                      <div className="dashboard-job-card__actions">
-                        <button type="button" className="dashboard-job-card__cta" onClick={() => openApplications('all', job.id)} title="View applications for this job">
-                          <Users size={16} /> <span>Applications</span>
-                        </button>
-                        <button type="button" onClick={() => onNavigate('edit-job', job.id)} title="Edit job">
-                          <Edit size={16} /> <span>Edit</span>
-                        </button>
-                      </div>
-                    </article>
-                  ))}
+                      </article>
+                    );
+                  })}
                 </div>
               )}
             </section>
@@ -911,11 +938,24 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                 </button>
               </div>
 
-              <div className="application-summary-grid">
-                <article className={applicationFilter === 'all' ? 'is-active' : ''} onClick={() => setApplicationFilter('all')}><Users size={18} /><span>Total</span><strong>{myApplications.length}</strong></article>
-                <article className={applicationFilter === 'new' ? 'is-active' : ''} onClick={() => setApplicationFilter('new')}><UserPlus size={18} /><span>New</span><strong>{newApplicationCount}</strong></article>
-                <article className={applicationFilter === 'shortlisted' ? 'is-active' : ''} onClick={() => setApplicationFilter('shortlisted')}><Star size={18} /><span>Shortlisted</span><strong>{shortlistedCount}</strong></article>
-                <article className={applicationFilter === 'interview' ? 'is-active' : ''} onClick={() => setApplicationFilter('interview')}><Calendar size={18} /><span>Interviews</span><strong>{interviewCount}</strong></article>
+              <div className="mx-tabs" role="tablist" aria-label="Filter applications by status">
+                {([
+                  { value: 'all', label: 'All', count: myApplications.length },
+                  { value: 'new', label: 'New', count: newApplicationCount },
+                  { value: 'shortlisted', label: 'Shortlisted', count: shortlistedCount },
+                  { value: 'interview', label: 'Interview', count: interviewCount },
+                  { value: 'selected', label: 'Selected', count: filledPositionsCount },
+                  { value: 'rejected', label: 'Rejected', count: rejectedCount },
+                ] as Array<{ value: ApplicationFilter; label: string; count: number }>).map((tab) => (
+                  <button
+                    key={tab.value}
+                    type="button"
+                    className={applicationFilter === tab.value ? 'is-active' : ''}
+                    onClick={() => setApplicationFilter(tab.value)}
+                  >
+                    {tab.label} <span>{tab.count}</span>
+                  </button>
+                ))}
               </div>
 
               <div className="application-job-pills" role="tablist" aria-label="Applications by job">
@@ -963,63 +1003,86 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                             <h3>No applications for this job yet</h3>
                           </div>
                         ) : (
-                        <div className="candidate-grid">
+                        <div className="mx-candidates">
                           {applications.map((application) => {
                             const status = normalizeApplicationStatus(application.status);
                             const busy = updatingApplicationId === application.id;
                             return (
-                            <article className="candidate-card" key={application.id}>
-                              <div className="candidate-card__top">
-                                <div className="candidate-avatar">{getInitials(application.candidateName)}</div>
-                                <div className="candidate-card__identity">
+                            <article className="mx-candidate" key={application.id}>
+                              <div className="mx-candidate__head">
+                                <div className="mx-avatar">{getInitials(application.candidateName)}</div>
+                                <div className="mx-candidate__identity">
                                   <h4>{application.candidateName || 'Candidate'}</h4>
-                                  <span className={getApplicationStatusClass(status)}>{statusLabel(status)}</span>
+                                  <span>
+                                    {[
+                                      application.candidateQualification,
+                                      application.candidateSpeciality,
+                                    ].filter(Boolean).join(' | ') || 'Qualification not added'}
+                                  </span>
                                 </div>
+                                <span className={getApplicationStatusClass(status)}>{statusLabel(status)}</span>
                               </div>
 
-                              <div className="candidate-card__profile">
-                                <strong>{application.candidateSpeciality || 'Speciality not added'}</strong>
+                              <div className="mx-candidate__details">
                                 <span>
-                                  {[application.candidateQualification, application.candidateYearsExperience != null ? `${application.candidateYearsExperience} yrs` : null]
-                                    .filter(Boolean)
-                                    .join(' · ') || 'Qualification not added'}
+                                  <MapPin size={13} />
+                                  {[application.candidateCity, application.candidateState].filter(Boolean).join(', ') || 'Location not added'}
                                 </span>
-                                {(application.candidateRegistrationNumber || application.candidateCity || application.candidateState) && (
-                                  <span>
-                                    {[application.candidateRegistrationNumber, [application.candidateCity, application.candidateState].filter(Boolean).join(', ')]
-                                      .filter(Boolean)
-                                      .join(' · ')}
-                                  </span>
+                                <span>
+                                  <Briefcase size={13} />
+                                  {application.candidateYearsExperience != null
+                                    ? `${application.candidateYearsExperience} year${application.candidateYearsExperience === 1 ? '' : 's'}`
+                                    : 'Experience not added'}
+                                </span>
+                                <span className={application.candidateRegistrationNumber ? 'is-verified' : 'is-missing'}>
+                                  {application.candidateRegistrationNumber ? <CheckCircle size={13} /> : <AlertTriangle size={13} />}
+                                  {application.candidateRegistrationNumber
+                                    ? `Reg. ${application.candidateRegistrationNumber}`
+                                    : 'Registration not provided'}
+                                </span>
+                              </div>
+
+                              {(application.candidateSpeciality || application.candidateSubSpeciality || application.candidateRegistrationCouncil) && (
+                                <div className="mx-candidate__skills">
+                                  {[
+                                    application.candidateSpeciality,
+                                    application.candidateSubSpeciality,
+                                    application.candidateRegistrationCouncil,
+                                  ]
+                                    .filter(Boolean)
+                                    .map((skill) => <span className="mx-skill" key={skill}>{skill}</span>)}
+                                </div>
+                              )}
+
+                              <div className="mx-candidate__contact">
+                                <a href={`mailto:${application.candidateEmail}`}><Mail size={13} />{application.candidateEmail}</a>
+                                {application.candidatePhone && <a href={`tel:${application.candidatePhone}`}><Phone size={13} />{application.candidatePhone}</a>}
+                                <span><Calendar size={13} />Applied {formatDate(application.appliedDate)}</span>
+                                {application.interviewDate && (
+                                  <span className="is-interview"><Calendar size={13} />Interview {formatDate(application.interviewDate)}</span>
                                 )}
                               </div>
 
-                              <div className="candidate-card__contact">
-                                <a href={`mailto:${application.candidateEmail}`}><Mail size={14} />{application.candidateEmail}</a>
-                                {application.candidatePhone && <a href={`tel:${application.candidatePhone}`}><Phone size={14} />{application.candidatePhone}</a>}
-                                <span><Calendar size={14} />Applied {formatDate(application.appliedDate)}</span>
-                                {application.interviewDate && <span><Calendar size={14} />Interview {formatDate(application.interviewDate)}</span>}
-                              </div>
+                              {application.notes && <p className="mx-candidate__notes">{application.notes}</p>}
 
-                              {application.notes && <p className="candidate-card__notes">{application.notes}</p>}
-
-                              <div className="candidate-card__actions">
+                              <div className="mx-candidate__actions">
                                 {application.resumeUrl ? (
-                                  <button type="button" className="candidate-action candidate-action--resume" onClick={() => openFileInViewer(application.resumeUrl!)}>
-                                    <FileText size={15} /> Resume
+                                  <button type="button" className="mx-action mx-action--resume" onClick={() => openFileInViewer(application.resumeUrl!)}>
+                                    <FileText size={14} /> Resume
                                   </button>
                                 ) : (
-                                  <span className="candidate-card__no-resume">No resume</span>
+                                  <span className="mx-candidate__no-resume">No resume</span>
                                 )}
-                                <button type="button" className={`candidate-action candidate-action--shortlist${status === 'shortlisted' ? ' is-current' : ''}`} disabled={busy} onClick={() => handleUpdateStatus(application, 'shortlisted')}>
+                                <button type="button" className={`mx-action mx-action--shortlist${status === 'shortlisted' ? ' is-current' : ''}`} disabled={busy} onClick={() => handleUpdateStatus(application, 'shortlisted')}>
                                   <Star size={14} /> Shortlist
                                 </button>
-                                <button type="button" className={`candidate-action candidate-action--interview${status === 'interview' ? ' is-current' : ''}`} disabled={busy} onClick={() => handleUpdateStatus(application, 'interview')}>
+                                <button type="button" className={`mx-action mx-action--interview${status === 'interview' ? ' is-current' : ''}`} disabled={busy} onClick={() => handleUpdateStatus(application, 'interview')}>
                                   <Calendar size={14} /> Interview
                                 </button>
-                                <button type="button" className={`candidate-action candidate-action--select${status === 'selected' ? ' is-current' : ''}`} disabled={busy} onClick={() => handleUpdateStatus(application, 'selected')}>
+                                <button type="button" className={`mx-action mx-action--select${status === 'selected' ? ' is-current' : ''}`} disabled={busy} onClick={() => handleUpdateStatus(application, 'selected')}>
                                   <CheckCircle size={14} /> Select
                                 </button>
-                                <button type="button" className={`candidate-action candidate-action--reject${status === 'rejected' ? ' is-current' : ''}`} disabled={busy} onClick={() => handleUpdateStatus(application, 'rejected')}>
+                                <button type="button" className={`mx-action mx-action--reject${status === 'rejected' ? ' is-current' : ''}`} disabled={busy} onClick={() => handleUpdateStatus(application, 'rejected')}>
                                   <X size={14} /> Reject
                                 </button>
                               </div>
@@ -1035,10 +1098,39 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
               )}
 
               <div className="dashboard-panel__footer-action">
-                <button className="dashboard-outline-button" type="button" onClick={() => onNavigate('employer-manage-applications')}>
+                <button className="mx-btn-outline" type="button" onClick={() => onNavigate('employer-manage-applications')}>
                   Open Application Management <ChevronRight size={16} />
                 </button>
               </div>
+            </section>
+          )}
+
+          {activeSection === 'jobs' && (
+            <section className="mx-company">
+              <div className="mx-company__logo"><Building2 size={26} /></div>
+              <div className="mx-company__info">
+                <h3>
+                  {employer.companyName}
+                  {verified && <span className="mx-company__verified"><CheckCircle size={13} /> Verified</span>}
+                </h3>
+                <p>
+                  {[employer.companyType, [employer.city, employer.state].filter(Boolean).join(', ')]
+                    .filter(Boolean)
+                    .join(' · ') || 'Company details not added'}
+                </p>
+                <p className="mx-company__contact">
+                  <Mail size={13} />{employer.userEmail}
+                  {employer.website && <><Globe size={13} />{employer.website}</>}
+                </p>
+              </div>
+              <div className="mx-company__tags">
+                <span>{myJobs.length} job{myJobs.length === 1 ? '' : 's'} posted</span>
+                <span>{activeJobs} active</span>
+                <span>{totalApplications} application{totalApplications === 1 ? '' : 's'}</span>
+              </div>
+              <button type="button" className="mx-btn-outline" onClick={() => onNavigate('profile')}>
+                <Edit size={14} /> Edit Profile
+              </button>
             </section>
           )}
 
@@ -1084,13 +1176,13 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                   <p>New account and job activity will appear here.</p>
                 </div>
               ) : (
-                <div className="notification-list">
+                <div className="mx-notiflist">
                   {notifications.slice(0, 8).map((notification: any) => (
-                    <article className={`notification-item${notification.read ? '' : ' notification-item--unread'}`} key={notification.id}>
-                      <div className="notification-item__dot" />
+                    <article className={notification.read ? '' : 'is-unread'} key={notification.id}>
+                      <span className="mx-notiflist__icon"><Bell size={15} /></span>
                       <div>
                         <p>{notification.message}</p>
-                        <span>{formatDate(notification.createdAt)}</span>
+                        <small>{formatDate(notification.createdAt)}</small>
                       </div>
                     </article>
                   ))}

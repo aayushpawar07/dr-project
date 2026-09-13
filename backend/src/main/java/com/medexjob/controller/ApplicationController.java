@@ -606,6 +606,44 @@ public class ApplicationController {
                                     saved.getId()
                                 );
                                 logger.info("🔔 Interview scheduled notification dispatched for candidate: {}", targetCandidateId);
+
+                                // Also notify employer if an admin or another user scheduled the interview
+                                try {
+                                    if (saved.getJob() != null && saved.getJob().getEmployer() != null) {
+                                        UUID employerId = saved.getJob().getEmployer().getId();
+                                        Optional<Employer> empOpt = employerRepository.findByIdWithUser(employerId);
+                                        if (empOpt.isPresent() && empOpt.get().getUser() != null) {
+                                            UUID employerUserId = empOpt.get().getUser().getId();
+                                            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+                                            String actorEmail = auth != null ? auth.getName() : null;
+                                            boolean isActorEmployer = actorEmail != null && empOpt.get().getUser().getEmail() != null
+                                                    && actorEmail.equalsIgnoreCase(empOpt.get().getUser().getEmail());
+
+                                            if (!isActorEmployer) {
+                                                String dateDisplay = interviewDateStr != null ? interviewDateStr :
+                                                        (saved.getInterviewDate() != null ? saved.getInterviewDate().toString() : "TBD");
+                                                StringBuilder empMsg = new StringBuilder();
+                                                empMsg.append(String.format("📅 Interview scheduled for '%s' (%s) on %s.",
+                                                        saved.getCandidateName(), jobTitle, dateDisplay));
+                                                if (saved.getInterviewLink() != null && !saved.getInterviewLink().isBlank()) {
+                                                    empMsg.append(" Meeting link: ").append(saved.getInterviewLink().trim()).append(".");
+                                                }
+                                                String finalEmpMsg = empMsg.toString();
+                                                if (finalEmpMsg.length() > 500) finalEmpMsg = finalEmpMsg.substring(0, 497) + "...";
+                                                notificationService.createNotification(
+                                                        employerUserId,
+                                                        "Interview Scheduled by Admin",
+                                                        finalEmpMsg,
+                                                        "interview_scheduled",
+                                                        saved.getId().toString()
+                                                );
+                                                logger.info("🔔 Interview notification sent to employer user: {}", employerUserId);
+                                            }
+                                        }
+                                    }
+                                } catch (Exception empEx) {
+                                    logger.error("❌ Error creating interview notification for employer: {}", empEx.getMessage(), empEx);
+                                }
                             } else {
                                 // Send status update notification
                                 notificationService.notifyCandidateApplicationStatus(

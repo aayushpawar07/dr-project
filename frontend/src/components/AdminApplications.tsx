@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, CheckCircle, XCircle, Calendar, FileText, Eye, MessageSquare, Phone, Mail, MapPin, Search, Filter, Users, Briefcase, MoreVertical, Loader2, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, Calendar, FileText, Eye, MessageSquare, Phone, Mail, MapPin, Search, Filter, Users, Briefcase, MoreVertical, Loader2, ArrowLeft, AlertCircle, Video, ExternalLink } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
@@ -211,14 +211,29 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
     return normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1);
   };
 
-  const updateApplicationStatusHandler = async (applicationId: string, newStatus: string, notes?: string, interviewDate?: string) => {
+  const updateApplicationStatusHandler = async (
+    applicationId: string,
+    newStatus: string,
+    notes?: string,
+    interviewDate?: string,
+    interviewLink?: string,
+    interviewNotes?: string
+  ) => {
     if (!token || !isAuthenticated) {
       navigate('/login');
       return;
     }
 
     try {
-      await updateApplicationStatus(applicationId, newStatus, token, notes, interviewDate);
+      await updateApplicationStatus(
+        applicationId,
+        newStatus,
+        token,
+        notes,
+        interviewDate,
+        interviewLink,
+        interviewNotes
+      );
       await loadApplications(); // Reload applications
       setIsStatusDialogOpen(false);
       setIsInterviewDialogOpen(false);
@@ -587,25 +602,48 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               </span>
             </div>
             {application.interviewDate && (
-              <div className="flex items-center gap-2">
-                <div 
-                  className="flex-shrink-0 rounded-md bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center"
-                  style={{
-                    width: 'clamp(1.75rem, 2.5vw, 2rem)',
-                    height: 'clamp(1.75rem, 2.5vw, 2rem)'
-                  }}
-                >
-                  <Clock 
-                    className="text-purple-600 dark:text-purple-400" 
-                    style={{ width: 'clamp(0.875rem, 1.2vw, 1rem)', height: 'clamp(0.875rem, 1.2vw, 1rem)' }}
-                  />
+              <div className="flex flex-col gap-1.5 p-2.5 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800/60">
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="flex-shrink-0 rounded-md bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center"
+                    style={{
+                      width: 'clamp(1.75rem, 2.5vw, 2rem)',
+                      height: 'clamp(1.75rem, 2.5vw, 2rem)'
+                    }}
+                  >
+                    <Calendar 
+                      className="text-purple-600 dark:text-purple-400" 
+                      style={{ width: 'clamp(0.875rem, 1.2vw, 1rem)', height: 'clamp(0.875rem, 1.2vw, 1rem)' }}
+                    />
+                  </div>
+                  <span 
+                    className="font-semibold text-purple-800 dark:text-purple-200"
+                    style={{ fontSize: 'clamp(0.75rem, 1vw, 0.875rem)' }}
+                  >
+                    Interview: {formatDateTime(application.interviewDate)}
+                  </span>
                 </div>
-                <span 
-                  className="font-medium text-purple-700 dark:text-purple-300"
-                  style={{ fontSize: 'clamp(0.75rem, 1vw, 0.875rem)' }}
-                >
-                  Interview: {formatDateTime(application.interviewDate)}
-                </span>
+                {application.interviewLink ? (
+                  <div className="flex items-center gap-2 pl-0.5 mt-0.5">
+                    <a
+                      href={application.interviewLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:underline bg-emerald-100/80 dark:bg-emerald-950/60 px-2 py-0.5 rounded"
+                    >
+                      <Video className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span>Join Meeting</span>
+                      <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                    </a>
+                    <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate max-w-[180px]">
+                      {application.interviewLink}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-xs text-amber-600 dark:text-amber-400 pl-0.5">
+                    Meeting link: Not added yet
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -796,11 +834,37 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                       </div>
                     </div>
                     {application.interviewDate && (
-                      <div>
-                        <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Interview Date</label>
-                        <p className="text-sm sm:text-base text-gray-900 dark:text-gray-100 break-words">
+                      <div className="sm:col-span-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                        <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Interview Scheduled</label>
+                        <p className="text-sm sm:text-base text-gray-900 dark:text-gray-100 font-semibold break-words mt-0.5">
                           {formatDateTime(application.interviewDate)}
                         </p>
+                        {application.interviewLink ? (
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <a
+                              href={application.interviewLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-md shadow-xs transition-colors"
+                            >
+                              <Video className="w-3.5 h-3.5" />
+                              Join Meeting
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                            <span className="text-xs text-gray-600 dark:text-gray-400 break-all">
+                              {application.interviewLink}
+                            </span>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                            No Zoom / Google Meet link attached yet.
+                          </p>
+                        )}
+                        {application.interviewNotes && (
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700">
+                            <span className="font-semibold text-gray-700 dark:text-gray-300">Instructions:</span> {application.interviewNotes}
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
@@ -918,9 +982,16 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               </DialogHeader>
               <InterviewSchedulingForm
                 application={selectedApplication}
-                onSchedule={(date, notes) => {
+                onSchedule={(date, notes, link) => {
                   if (selectedApplication) {
-                    updateApplicationStatusHandler(selectedApplication.id, 'interview', notes, date);
+                    updateApplicationStatusHandler(
+                      selectedApplication.id,
+                      'interview',
+                      notes,
+                      date,
+                      link,
+                      notes
+                    );
                   }
                 }}
                 onCancel={() => setIsInterviewDialogOpen(false)}
@@ -1251,19 +1322,38 @@ function StatusUpdateForm({ application, onUpdate, onCancel }: StatusUpdateFormP
 
 interface InterviewSchedulingFormProps {
   application: ApplicationResponse | null;
-  onSchedule: (date: string, notes?: string) => void;
+  onSchedule: (date: string, notes?: string, link?: string) => void;
   onCancel: () => void;
 }
 
 function InterviewSchedulingForm({ application, onSchedule, onCancel }: InterviewSchedulingFormProps) {
-  const [interviewDate, setInterviewDate] = useState('');
-  const [interviewTime, setInterviewTime] = useState('');
-  const [notes, setNotes] = useState('');
+  const [interviewDate, setInterviewDate] = useState(() => {
+    if (application?.interviewDate) {
+      const d = new Date(application.interviewDate);
+      if (!isNaN(d.getTime())) {
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      }
+    }
+    return '';
+  });
+  const [interviewTime, setInterviewTime] = useState(() => {
+    if (application?.interviewDate) {
+      const d = new Date(application.interviewDate);
+      if (!isNaN(d.getTime())) {
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      }
+    }
+    return '10:00';
+  });
+  const [interviewLink, setInterviewLink] = useState(application?.interviewLink || '');
+  const [notes, setNotes] = useState(application?.interviewNotes || application?.notes || '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const dateTime = `${interviewDate}T${interviewTime}`;
-    onSchedule(dateTime, notes);
+    onSchedule(dateTime, notes, interviewLink.trim());
   };
 
   return (
@@ -1276,7 +1366,7 @@ function InterviewSchedulingForm({ application, onSchedule, onCancel }: Intervie
             type="date"
             value={interviewDate}
             onChange={(e) => setInterviewDate(e.target.value)}
-            className="w-full mt-1 p-2 border border-gray-300 rounded-md"
+            className="w-full mt-1 p-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-md text-sm"
             required
           />
         </div>
@@ -1287,27 +1377,45 @@ function InterviewSchedulingForm({ application, onSchedule, onCancel }: Intervie
             type="time"
             value={interviewTime}
             onChange={(e) => setInterviewTime(e.target.value)}
-            className="w-full mt-1 p-2 border border-gray-300 rounded-md"
+            className="w-full mt-1 p-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-md text-sm"
             required
           />
         </div>
       </div>
 
       <div>
-        <Label htmlFor="notes">Interview Notes (Optional)</Label>
+        <Label htmlFor="interviewLink" className="flex items-center gap-1.5">
+          <Video className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+          <span>Meeting Link (Google Meet / Zoom URL)</span>
+        </Label>
+        <Input
+          id="interviewLink"
+          type="url"
+          value={interviewLink}
+          onChange={(e) => setInterviewLink(e.target.value)}
+          className="mt-1 text-sm"
+          placeholder="https://meet.google.com/xyz-abcd-efg or Zoom link"
+        />
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          This link will be sent to the candidate in an alert and shown as a direct Join button.
+        </p>
+      </div>
+
+      <div>
+        <Label htmlFor="notes">Interview Instructions / Notes (Optional)</Label>
         <Textarea
           id="notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          className="mt-1"
+          className="mt-1 text-sm"
           rows={3}
-          placeholder="Add any notes about the interview..."
+          placeholder="e.g. Round 1 Technical Interview. Please keep your camera on."
         />
       </div>
 
-      <div className="flex gap-3">
-        <Button type="submit" className="flex-1">
-          Schedule Interview
+      <div className="flex gap-3 pt-2">
+        <Button type="submit" className="flex-1 bg-purple-600 hover:bg-purple-700 text-white">
+          {application?.interviewDate ? 'Update & Save Interview' : 'Schedule Interview'}
         </Button>
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel

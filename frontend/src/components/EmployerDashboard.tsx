@@ -650,7 +650,7 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
       value: jobsClosingSoon,
       helper: 'Within the next 7 days',
       icon: AlertTriangle,
-      tone: jobsClosingSoon > 0 ? 'amber' : 'slate',
+      tone: 'amber',
     },
   ];
 
@@ -891,7 +891,7 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                     const days = daysUntil(job.lastDate);
                     const expiring = job.status === 'active' && days !== null && days >= 0 && days <= 7;
                     return (
-                      <article className={`mx-job${expiring ? ' mx-job--expiring' : ''}`} key={job.id}>
+                      <article className={`mx-job${expiring ? ' mx-job--expiring' : job.status === 'active' ? ' mx-job--active' : ''}`} key={job.id}>
                         <div className="mx-job__info">
                           <h3>{job.title}</h3>
                           <div className="mx-job__meta">
@@ -906,8 +906,20 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                         </div>
 
                         <div className="mx-job__status">
-                          <span className={getJobStatusClass(job.status)}>
-                            {expiring ? 'Expiring soon' : job.status || 'N/A'}
+                          <span className={expiring ? 'dashboard-status dashboard-status--expiring' : getJobStatusClass(job.status)}>
+                            {expiring ? (
+                              <>
+                                <Clock size={12} style={{ display: 'inline', marginRight: 4, verticalAlign: '-1px' }} />
+                                Expiring soon
+                              </>
+                            ) : job.status === 'active' ? (
+                              <>
+                                <CheckCircle size={12} style={{ display: 'inline', marginRight: 4, verticalAlign: '-1px' }} />
+                                Active
+                              </>
+                            ) : (
+                              job.status || 'N/A'
+                            )}
                           </span>
                           <button type="button" className="mx-job__count" onClick={() => openApplications('all', job.id)}>
                             {applicationTotal} Apps

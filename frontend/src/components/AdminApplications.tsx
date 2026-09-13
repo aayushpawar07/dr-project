@@ -32,6 +32,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
   const [applications, setApplications] = useState<ApplicationResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedApplication, setSelectedApplication] = useState<ApplicationResponse | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [isInterviewDialogOpen, setIsInterviewDialogOpen] = useState(false);
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
@@ -472,14 +473,14 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
   const renderApplicationCard = (application: ApplicationResponse) => (
     <Card 
       key={application.id} 
-      className="group relative overflow-hidden bg-white dark:bg-gray-800 border-l-4 border-l-blue-500 dark:border-l-blue-600 hover:border-l-blue-600 dark:hover:border-l-blue-500 hover:shadow-lg transition-all duration-200 ease-out hover:-translate-y-0.5 flex flex-col"
+      className="group relative overflow-hidden bg-white dark:bg-gray-800 border-l-4 border-l-blue-500 dark:border-l-blue-600 hover:border-l-blue-600 dark:hover:border-l-blue-500 hover:shadow-lg transition-all duration-200 ease-out hover:-translate-y-0.5 flex flex-col medex-applicant-card h-full"
       style={{
         borderRadius: 'clamp(0.5rem, 0.8vw, 0.75rem)',
         boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
       }}
     >
       <div 
-        className="flex flex-col flex-1"
+        className="flex flex-col flex-1 medex-applicant-card-content h-full"
         style={{
           padding: 'clamp(0.75rem, 1.5vw, 1.25rem)'
         }}
@@ -532,11 +533,11 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                   className="text-gray-600 dark:text-gray-400 truncate flex items-center gap-1.5 mt-0.5"
                   style={{ fontSize: 'clamp(0.75rem, 1vw, 0.875rem)' }}
                 >
-                  <Briefcase 
+                  <Mail 
                     className="flex-shrink-0 text-gray-400" 
                     style={{ width: 'clamp(0.75rem, 1vw, 0.875rem)', height: 'clamp(0.75rem, 1vw, 0.875rem)' }}
                   />
-                  <span className="truncate">{application.jobTitle}</span>
+                  <span className="truncate">{application.candidateEmail}</span>
                 </p>
               </div>
             </div>
@@ -761,270 +762,61 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
           data-slot="applicant-footer"
         >
           {/* 1. View Details */}
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setSelectedApplication(application)}
-                className="medex-app-btn medex-app-btn-view w-full h-9 sm:h-10 px-2 py-1 text-xs sm:text-sm font-semibold inline-flex items-center justify-center min-w-0"
-                title="View Details"
-              >
-                <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 flex-shrink-0" />
-                <span className="truncate">View</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="text-lg sm:text-xl">Application Details - {application.candidateName}</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                {/* Candidate Information */}
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2 text-sm sm:text-base">
-                    <Users className="w-4 h-4 sm:w-5 sm:h-5" />
-                    Candidate Information
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    <div>
-                      <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Full Name</label>
-                      <p className="text-sm sm:text-base text-gray-900 dark:text-gray-100 font-semibold break-words">
-                        {application.candidateName}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Email</label>
-                      <p className="text-sm sm:text-base text-gray-900 dark:text-gray-100 flex items-center gap-2 break-all">
-                        <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
-                        <a href={`mailto:${application.candidateEmail}`} className="text-blue-600 dark:text-blue-400 hover:underline">
-                          {application.candidateEmail}
-                        </a>
-                      </p>
-                      <p className="text-sm sm:text-base text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                        <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
-                        <a href={`tel:${application.candidatePhone}`} className="text-blue-600 dark:text-blue-400 hover:underline">
-                          {application.candidatePhone || 'N/A'}
-                        </a>
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Applied Date</label>
-                      <p className="text-sm sm:text-base text-gray-900 dark:text-gray-100">{formatDate(application.appliedDate)}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Job Information */}
-                <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2 text-sm sm:text-base">
-                    <Briefcase className="w-4 h-4 sm:w-5 sm:h-5" />
-                    Job Information
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    <div>
-                      <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Job Title</label>
-                      <p className="text-sm sm:text-base text-gray-900 dark:text-gray-100 break-words">
-                        {application.jobTitle}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Organization</label>
-                      <p className="text-sm sm:text-base text-gray-900 dark:text-gray-100 break-words">
-                        {application.jobOrganization}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Application Status</label>
-                      <div className="mt-1">
-                        <Badge className={getStatusColor(application.status)} variant="outline">
-                          {getStatusLabel(application.status)}
-                        </Badge>
-                      </div>
-                    </div>
-                    {application.interviewDate && (
-                      <div className="sm:col-span-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                        <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Interview Scheduled</label>
-                        <p className="text-sm sm:text-base text-gray-900 dark:text-gray-100 font-semibold break-words mt-0.5">
-                          {formatDateTime(application.interviewDate)}
-                        </p>
-                        {application.interviewLink ? (
-                          <div className="mt-2 flex flex-wrap items-center gap-2">
-                            <a
-                              href={application.interviewLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-md shadow-xs transition-colors"
-                            >
-                              <Video className="w-3.5 h-3.5" />
-                              Join Meeting
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                            <span className="text-xs text-gray-600 dark:text-gray-400 break-all">
-                              {application.interviewLink}
-                            </span>
-                          </div>
-                        ) : (
-                          <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
-                            No Zoom / Google Meet link attached yet.
-                          </p>
-                        )}
-                        {application.interviewNotes && (
-                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700">
-                            <span className="font-semibold text-gray-700 dark:text-gray-300">Instructions:</span> {application.interviewNotes}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Resume */}
-                <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2 text-sm sm:text-base">
-                    <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
-                    Resume
-                  </h3>
-                  {application.resumeUrl ? (
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                      <Button 
-                        variant="default" 
-                        onClick={() => openFileInViewer(application.resumeUrl!)}
-                        className="w-full sm:w-auto"
-                      >
-                        <FileText className="w-4 h-4 mr-2" />
-                        View Resume
-                      </Button>
-                      <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center sm:text-left">
-                        Click to view or download the candidate's resume
-                      </span>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-600 dark:text-gray-400">No resume uploaded by candidate</p>
-                  )}
-                </div>
-
-                {/* Notes */}
-                {application.notes && (
-                  <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2 text-sm sm:text-base">Application Notes</h3>
-                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
-                      {application.notes}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              setSelectedApplication(application);
+              setIsViewDialogOpen(true);
+            }}
+            className="medex-app-btn medex-app-btn-view w-full h-9 sm:h-10 px-2 py-1 text-xs sm:text-sm font-semibold inline-flex items-center justify-center min-w-0"
+            title="View Details"
+          >
+            <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 flex-shrink-0" />
+            <span className="truncate">View</span>
+          </Button>
 
           {/* 2. Update Status */}
-          <Dialog 
-            open={isStatusDialogOpen && selectedApplication?.id === application.id} 
-            onOpenChange={(open) => {
-              setIsStatusDialogOpen(open);
-              if (!open && selectedApplication?.id === application.id) {
-                setSelectedApplication(null);
-              }
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setSelectedApplication(application);
+              setIsStatusDialogOpen(true);
             }}
+            className="medex-app-btn medex-app-btn-status w-full h-9 sm:h-10 px-2 py-1 text-xs sm:text-sm font-semibold inline-flex items-center justify-center min-w-0"
+            title="Update Status"
           >
-            <DialogTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSelectedApplication(application);
-                  setIsStatusDialogOpen(true);
-                }}
-                className="medex-app-btn medex-app-btn-status w-full h-9 sm:h-10 px-2 py-1 text-xs sm:text-sm font-semibold inline-flex items-center justify-center min-w-0"
-                title="Update Status"
-              >
-                <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 flex-shrink-0" />
-                <span className="truncate">Update Status</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-[95vw] sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle className="text-base sm:text-lg">Update Application Status</DialogTitle>
-              </DialogHeader>
-              <StatusUpdateForm
-                application={selectedApplication}
-                onUpdate={(status, notes, interviewDate, interviewLink) => {
-                  if (selectedApplication) {
-                    updateApplicationStatusHandler(
-                      selectedApplication.id,
-                      status,
-                      notes,
-                      interviewDate,
-                      interviewLink,
-                      notes
-                    );
-                  }
-                }}
-                onCancel={() => setIsStatusDialogOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
+            <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 flex-shrink-0" />
+            <span className="truncate">Update Status</span>
+          </Button>
 
           {/* 3. View Interview / Interview */}
-          <Dialog 
-            open={isInterviewDialogOpen && selectedApplication?.id === application.id} 
-            onOpenChange={(open) => {
-              setIsInterviewDialogOpen(open);
-              if (!open && selectedApplication?.id === application.id) {
-                setSelectedApplication(null);
-              }
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setSelectedApplication(application);
+              setIsInterviewDialogOpen(true);
             }}
+            className={`medex-app-btn medex-app-btn-interview w-full h-9 sm:h-10 px-2 py-1 text-xs sm:text-sm font-semibold inline-flex items-center justify-center min-w-0 ${
+              application.interviewDate && !application.interviewLink
+                ? 'border-amber-400 bg-amber-50 text-amber-900 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700'
+                : ''
+            }`}
+            title={
+              application.interviewDate
+                ? (application.interviewLink ? 'Interview Details / Reschedule' : '+ Add Zoom / Meet Link')
+                : 'Schedule Interview'
+            }
           >
-            <DialogTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSelectedApplication(application);
-                  setIsInterviewDialogOpen(true);
-                }}
-                className={`medex-app-btn medex-app-btn-interview w-full h-9 sm:h-10 px-2 py-1 text-xs sm:text-sm font-semibold inline-flex items-center justify-center min-w-0 ${
-                  application.interviewDate && !application.interviewLink
-                    ? 'border-amber-400 bg-amber-50 text-amber-900 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700'
-                    : ''
-                }`}
-                title={
-                  application.interviewDate
-                    ? (application.interviewLink ? 'Interview Details / Reschedule' : '+ Add Zoom / Meet Link')
-                    : 'Schedule Interview'
-                }
-              >
-                <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 flex-shrink-0 text-purple-600 dark:text-purple-400" />
-                <span className="truncate">
-                  {application.interviewDate
-                    ? (application.interviewLink ? 'Interview Details' : '+ Add Meet Link')
-                    : 'Interview'}
-                </span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-[95vw] sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle className="text-base sm:text-lg">
-                  {application.interviewDate ? 'Interview Details / Reschedule' : 'Schedule Interview'}
-                </DialogTitle>
-              </DialogHeader>
-              <InterviewSchedulingForm
-                application={selectedApplication}
-                onSchedule={(date, notes, link) => {
-                  if (selectedApplication) {
-                    updateApplicationStatusHandler(
-                      selectedApplication.id,
-                      'interview',
-                      notes,
-                      date,
-                      link,
-                      notes
-                    );
-                  }
-                }}
-                onCancel={() => setIsInterviewDialogOpen(false)}
-              />
-            </DialogContent>
-          </Dialog>
+            <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 flex-shrink-0 text-purple-600 dark:text-purple-400" />
+            <span className="truncate">
+              {application.interviewDate
+                ? (application.interviewLink ? 'Interview Details' : '+ Add Meet Link')
+                : 'Interview'}
+            </span>
+          </Button>
 
           {/* 4. View Resume */}
           {application.resumeUrl ? (
@@ -1180,7 +972,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                   </Card>
                 ) : (
                   <div 
-                    className="grid gap-4 md:gap-5 lg:gap-6"
+                    className="grid gap-4 md:gap-5 lg:gap-6 medex-applicant-grid"
                     style={{
                       gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))'
                     }}
@@ -1209,7 +1001,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                   </Card>
                 ) : (
                   <div 
-                    className="grid gap-4 md:gap-5 lg:gap-6"
+                    className="grid gap-4 md:gap-5 lg:gap-6 medex-applicant-grid"
                     style={{
                       gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))'
                     }}
@@ -1240,7 +1032,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                   </Card>
                 ) : (
                   <div 
-                    className="grid gap-4 md:gap-5 lg:gap-6"
+                    className="grid gap-4 md:gap-5 lg:gap-6 medex-applicant-grid"
                     style={{
                       gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))'
                     }}
@@ -1271,7 +1063,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                   </Card>
                 ) : (
                   <div 
-                    className="grid gap-4 md:gap-5 lg:gap-6"
+                    className="grid gap-4 md:gap-5 lg:gap-6 medex-applicant-grid"
                     style={{
                       gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))'
                     }}
@@ -1286,6 +1078,238 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
           </main>
         </div>
       </div>
+
+      {/* 1. Root View Details Dialog */}
+      <Dialog 
+        open={isViewDialogOpen && !!selectedApplication} 
+        onOpenChange={(open) => {
+          setIsViewDialogOpen(open);
+          if (!open) setSelectedApplication(null);
+        }}
+      >
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          {selectedApplication && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-lg sm:text-xl">
+                  Application Details - {selectedApplication.candidateName}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                {/* Candidate Information */}
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2 text-sm sm:text-base">
+                    <Users className="w-4 h-4 sm:w-5 sm:h-5" />
+                    Candidate Information
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div>
+                      <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Full Name</label>
+                      <p className="text-sm sm:text-base text-gray-900 dark:text-gray-100 font-semibold break-words">
+                        {selectedApplication.candidateName}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Email</label>
+                      <p className="text-sm sm:text-base text-gray-900 dark:text-gray-100 flex items-center gap-2 break-all">
+                        <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                        <a href={`mailto:${selectedApplication.candidateEmail}`} className="text-blue-600 dark:text-blue-400 hover:underline">
+                          {selectedApplication.candidateEmail}
+                        </a>
+                      </p>
+                      <p className="text-sm sm:text-base text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                        <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                        <a href={`tel:${selectedApplication.candidatePhone}`} className="text-blue-600 dark:text-blue-400 hover:underline">
+                          {selectedApplication.candidatePhone || 'N/A'}
+                        </a>
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Applied Date</label>
+                      <p className="text-sm sm:text-base text-gray-900 dark:text-gray-100">{formatDate(selectedApplication.appliedDate)}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Job Information */}
+                <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2 text-sm sm:text-base">
+                    <Briefcase className="w-4 h-4 sm:w-5 sm:h-5" />
+                    Job Information
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div>
+                      <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Job Title</label>
+                      <p className="text-sm sm:text-base text-gray-900 dark:text-gray-100 break-words">
+                        {selectedApplication.jobTitle}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Organization</label>
+                      <p className="text-sm sm:text-base text-gray-900 dark:text-gray-100 break-words">
+                        {selectedApplication.jobOrganization}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Application Status</label>
+                      <div className="mt-1">
+                        <Badge className={getStatusColor(selectedApplication.status)} variant="outline">
+                          {getStatusLabel(selectedApplication.status)}
+                        </Badge>
+                      </div>
+                    </div>
+                    {selectedApplication.interviewDate && (
+                      <div className="sm:col-span-2 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                        <label className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-400">Interview Scheduled</label>
+                        <p className="text-sm sm:text-base text-gray-900 dark:text-gray-100 font-semibold break-words mt-0.5">
+                          {formatDateTime(selectedApplication.interviewDate)}
+                        </p>
+                        {selectedApplication.interviewLink ? (
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <a
+                              href={selectedApplication.interviewLink}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-md shadow-xs transition-colors"
+                            >
+                              <Video className="w-3.5 h-3.5" />
+                              Join Meeting
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                            <span className="text-xs text-gray-600 dark:text-gray-400 break-all">
+                              {selectedApplication.interviewLink}
+                            </span>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                            No Zoom / Google Meet link attached yet.
+                          </p>
+                        )}
+                        {selectedApplication.interviewNotes && (
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 bg-white dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700">
+                            <span className="font-semibold text-gray-700 dark:text-gray-300">Instructions:</span> {selectedApplication.interviewNotes}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Resume */}
+                <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2 text-sm sm:text-base">
+                    <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
+                    Resume
+                  </h3>
+                  {selectedApplication.resumeUrl ? (
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                      <Button 
+                        variant="default" 
+                        onClick={() => openFileInViewer(selectedApplication.resumeUrl!)}
+                        className="w-full sm:w-auto"
+                      >
+                        <FileText className="w-4 h-4 mr-2" />
+                        View Resume
+                      </Button>
+                      <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center sm:text-left">
+                        Click to view or download the candidate's resume
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-600 dark:text-gray-400">No resume uploaded by candidate</p>
+                  )}
+                </div>
+
+                {/* Notes */}
+                {selectedApplication.notes && (
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2 text-sm sm:text-base">Application Notes</h3>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
+                      {selectedApplication.notes}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* 2. Root Update Status Dialog */}
+      <Dialog 
+        open={isStatusDialogOpen && !!selectedApplication} 
+        onOpenChange={(open) => {
+          setIsStatusDialogOpen(open);
+          if (!open) setSelectedApplication(null);
+        }}
+      >
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base sm:text-lg">Update Application Status</DialogTitle>
+          </DialogHeader>
+          {selectedApplication && (
+            <StatusUpdateForm
+              key={selectedApplication.id}
+              application={selectedApplication}
+              onUpdate={(status, notes, interviewDate, interviewLink) => {
+                if (selectedApplication) {
+                  updateApplicationStatusHandler(
+                    selectedApplication.id,
+                    status,
+                    notes,
+                    interviewDate,
+                    interviewLink,
+                    notes
+                  );
+                }
+              }}
+              onCancel={() => {
+                setIsStatusDialogOpen(false);
+                setSelectedApplication(null);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* 3. Root Interview Scheduling Dialog */}
+      <Dialog 
+        open={isInterviewDialogOpen && !!selectedApplication} 
+        onOpenChange={(open) => {
+          setIsInterviewDialogOpen(open);
+          if (!open) setSelectedApplication(null);
+        }}
+      >
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base sm:text-lg">
+              {selectedApplication?.interviewDate ? 'Interview Details / Reschedule' : 'Schedule Interview'}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedApplication && (
+            <InterviewSchedulingForm
+              key={selectedApplication.id}
+              application={selectedApplication}
+              onSchedule={(date, notes, link) => {
+                if (selectedApplication) {
+                  updateApplicationStatusHandler(
+                    selectedApplication.id,
+                    'interview',
+                    notes,
+                    date,
+                    link,
+                    notes
+                  );
+                }
+              }}
+              onCancel={() => {
+                setIsInterviewDialogOpen(false);
+                setSelectedApplication(null);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

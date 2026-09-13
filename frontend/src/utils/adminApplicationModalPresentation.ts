@@ -158,12 +158,4 @@ if (typeof document !== "undefined") {
   } else {
     scheduleEnhancement();
   }
-
-  const observer = new MutationObserver(scheduleEnhancement);
-  observer.observe(document.documentElement, {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ["data-state"],
-  });
 }

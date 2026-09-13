@@ -1,18 +1,23 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap');
 
 .medex-applicant-grid {
-  align-items: start !important;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)) !important;
+  align-items: stretch !important;
+  gap: 1.25rem !important;
 }
 
 .medex-applicant-card {
-  align-self: start !important;
-  height: auto !important;
-  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  align-self: stretch !important;
   border: 1px solid #e5e7eb !important;
-  border-left: 1px solid #e5e7eb !important;
+  border-left: 4px solid #3b82f6 !important;
   border-radius: 16px !important;
   background: #ffffff !important;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06) !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05) !important;
   font-family: "DM Sans", "Segoe UI", Arial, sans-serif !important;
   overflow: hidden !important;
   transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease !important;
@@ -21,10 +26,14 @@
 .medex-applicant-card:hover {
   transform: translateY(-2px) !important;
   border-color: #cbd5e1 !important;
-  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.09) !important;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08) !important;
 }
 
 .medex-applicant-card-content {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  height: 100% !important;
   padding: 18px !important;
 }
 
@@ -233,8 +242,8 @@
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   align-items: stretch !important;
   gap: 8px !important;
-  margin-top: 14px !important;
-  padding-top: 12px !important;
+  margin-top: auto !important;
+  padding-top: 14px !important;
   border-top: 1px solid #e5e7eb !important;
 }
 

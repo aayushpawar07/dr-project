@@ -28,6 +28,8 @@ import {
   Star,
   UserCheck,
   Users,
+  Video,
+  ExternalLink,
   X,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -139,7 +141,12 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
   const [updatingApplicationId, setUpdatingApplicationId] = useState<string | null>(null);
   const [selectedJobId, setSelectedJobId] = useState<string>('all');
   const [applicationFilter, setApplicationFilter] = useState<ApplicationFilter>('all');
-  const [interviewDraft, setInterviewDraft] = useState<{ application: ApplicationResponse; date: string } | null>(null);
+  const [interviewDraft, setInterviewDraft] = useState<{
+    application: ApplicationResponse;
+    date: string;
+    link?: string;
+    notes?: string;
+  } | null>(null);
 
   const fetchApplicationsForJobs = async (jobs: any[], authToken: string) => {
     if (jobs.length === 0) return [];
@@ -382,11 +389,18 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
     application: ApplicationResponse,
     newStatus: string,
     interviewDate?: string,
+    interviewLink?: string,
+    interviewNotes?: string,
   ) => {
     if (!token) return;
     const status = normalizeApplicationStatus(newStatus);
     if (status === 'interview' && !interviewDate) {
-      setInterviewDraft({ application, date: toInterviewDateTimeLocal() });
+      setInterviewDraft({
+        application,
+        date: toInterviewDateTimeLocal(),
+        link: application.interviewLink || '',
+        notes: application.interviewNotes || '',
+      });
       return;
     }
     setUpdatingApplicationId(application.id);
@@ -397,6 +411,8 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
         token,
         undefined,
         interviewDate ? toInterviewDateTimeLocal(interviewDate) : undefined,
+        interviewLink,
+        interviewNotes,
       );
       setMyApplications((previous) =>
         previous.map((item) =>
@@ -406,13 +422,15 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                 ...updated,
                 jobId: item.jobId,
                 jobTitle: item.jobTitle,
+                interviewLink: interviewLink !== undefined ? interviewLink : item.interviewLink,
+                interviewNotes: interviewNotes !== undefined ? interviewNotes : item.interviewNotes,
                 status: normalizeApplicationStatus(updated.status || status),
               }
             : item,
         ),
       );
       setInterviewDraft(null);
-      toast.success(status === 'interview' ? 'Interview scheduled' : `Application marked ${statusLabel(status).toLowerCase()}`);
+      toast.success(status === 'interview' ? 'Interview scheduled & candidate notified' : `Application marked ${statusLabel(status).toLowerCase()}`);
     } catch (err: any) {
       toast.error(err?.message || 'Unable to update application status.');
     } finally {
@@ -1065,6 +1083,33 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
 
                               {application.notes && <p className="mx-candidate__notes">{application.notes}</p>}
 
+                              {(application.interviewDate || status === 'interview') && (
+                                <div className="mx-interview-badge">
+                                  <div className="mx-interview-badge__row">
+                                    <Calendar size={14} />
+                                    <span>Scheduled: {application.interviewDate ? new Date(application.interviewDate).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Date TBD'}</span>
+                                  </div>
+                                  {application.interviewLink && (
+                                    <div className="mx-interview-badge__row">
+                                      <Video size={14} />
+                                      <a
+                                        href={application.interviewLink.startsWith('http') ? application.interviewLink : `https://${application.interviewLink}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="mx-interview-badge__btn"
+                                      >
+                                        Join / Open Meeting Link <ExternalLink size={12} />
+                                      </a>
+                                    </div>
+                                  )}
+                                  {application.interviewNotes && (
+                                    <div className="mx-interview-badge__notes">
+                                      <strong>Instructions:</strong> {application.interviewNotes}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
                               <div className="mx-candidate__actions">
                                 {application.resumeUrl ? (
                                   <button type="button" className="mx-action mx-action--resume" onClick={() => openFileInViewer(application.resumeUrl!)}>
@@ -1214,16 +1259,34 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
         <div className="employer-modal" role="dialog" aria-modal="true" aria-label="Schedule interview">
           <button className="employer-modal__backdrop" type="button" onClick={() => setInterviewDraft(null)} aria-label="Close interview scheduler" />
           <div className="employer-modal__card">
-            <h3>Schedule interview</h3>
-            <p>
-              {interviewDraft.application.candidateName} · {interviewDraft.application.jobTitle || 'this job'}
+            <h3>Schedule Interview</h3>
+            <p className="employer-modal__candidate-info">
+              Candidate: <strong>{interviewDraft.application.candidateName}</strong> · Job: <strong>{interviewDraft.application.jobTitle || 'this job'}</strong>
             </p>
-            <label>
-              <span>Interview date and time</span>
+            <label className="employer-modal__field">
+              <span>Interview Date & Time *</span>
               <input
                 type="datetime-local"
                 value={interviewDraft.date}
                 onChange={(event) => setInterviewDraft({ ...interviewDraft, date: event.target.value })}
+                required
+              />
+            </label>
+            <label className="employer-modal__field">
+              <span>Meeting Link (Google Meet / Zoom / Location)</span>
+              <input
+                type="text"
+                placeholder="e.g. https://meet.google.com/xyz-abcd-efg or Zoom link"
+                value={interviewDraft.link || ''}
+                onChange={(event) => setInterviewDraft({ ...interviewDraft, link: event.target.value })}
+              />
+            </label>
+            <label className="employer-modal__field">
+              <span>Instructions / Notes for Candidate</span>
+              <textarea
+                placeholder="e.g. Please join 5 mins before time and keep your original certificates ready."
+                value={interviewDraft.notes || ''}
+                onChange={(event) => setInterviewDraft({ ...interviewDraft, notes: event.target.value })}
               />
             </label>
             <div className="employer-modal__actions">
@@ -1232,9 +1295,15 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                 type="button"
                 className="dashboard-primary-button"
                 disabled={!interviewDraft.date || updatingApplicationId === interviewDraft.application.id}
-                onClick={() => handleUpdateStatus(interviewDraft.application, 'interview', interviewDraft.date)}
+                onClick={() => handleUpdateStatus(
+                  interviewDraft.application,
+                  'interview',
+                  interviewDraft.date,
+                  interviewDraft.link,
+                  interviewDraft.notes
+                )}
               >
-                Confirm interview
+                Confirm & Send Invite
               </button>
             </div>
           </div>

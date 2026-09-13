@@ -53,6 +53,8 @@ export interface ApplicationResponse {
   status: 'pending' | 'shortlisted' | 'interview' | 'hired' | 'rejected' | 'applied' | 'selected';
   notes?: string;
   interviewDate?: string;
+  interviewLink?: string;
+  interviewNotes?: string;
   appliedDate: string;
   postedBy?: PostedByInfo; // Only included for candidate requests
 }
@@ -193,7 +195,15 @@ export async function fetchApplicationsByCandidate(candidateId: string, params: 
   return res.json();
 }
 
-export async function updateApplicationStatus(id: string, status: string, token: string, notes?: string, interviewDate?: string | null) {
+export async function updateApplicationStatus(
+  id: string,
+  status: string,
+  token: string,
+  notes?: string,
+  interviewDate?: string | null,
+  interviewLink?: string | null,
+  interviewNotes?: string | null,
+) {
   // Map UI status to backend status
   const statusMap: Record<string, string> = {
     'pending': 'applied',
@@ -204,6 +214,8 @@ export async function updateApplicationStatus(id: string, status: string, token:
   const payload: any = { status: backendStatus };
   if (notes) payload.notes = notes;
   if (interviewDate) payload.interviewDate = toInterviewDateTimeLocal(interviewDate);
+  if (interviewLink) payload.interviewLink = interviewLink;
+  if (interviewNotes) payload.interviewNotes = interviewNotes;
 
   const res = await authFetch(`${API_BASE}/applications/${id}/status`, {
     method: 'PUT',

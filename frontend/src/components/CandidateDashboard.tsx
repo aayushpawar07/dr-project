@@ -19,6 +19,8 @@ import {
   Star,
   Stethoscope,
   User,
+  Video,
+  ExternalLink,
   X,
 } from 'lucide-react';
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
@@ -46,6 +48,20 @@ function formatDate(value?: string) {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
+  });
+}
+
+function formatDateTime(value?: string) {
+  if (!value) return 'N/A';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'N/A';
+  return date.toLocaleString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
   });
 }
 
@@ -767,6 +783,32 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
                           {application.postedBy?.company && <span><Building2 size={13} />{application.postedBy.company}</span>}
                           {application.interviewDate && <span><Calendar size={13} />Interview {formatDate(application.interviewDate)}</span>}
                         </div>
+                        {(application.interviewDate || application.status === 'interview') && (
+                          <div className="mx-interview-badge">
+                            <div className="mx-interview-badge__row">
+                              <Calendar size={14} />
+                              <span>Interview: {application.interviewDate ? formatDateTime(application.interviewDate) : 'Date TBD'}</span>
+                            </div>
+                            {application.interviewLink && (
+                              <div className="mx-interview-badge__row">
+                                <Video size={14} />
+                                <a
+                                  href={application.interviewLink.startsWith('http') ? application.interviewLink : `https://${application.interviewLink}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="mx-interview-badge__btn"
+                                >
+                                  Join Meeting <ExternalLink size={12} />
+                                </a>
+                              </div>
+                            )}
+                            {application.interviewNotes && (
+                              <div className="mx-interview-badge__notes">
+                                <strong>Instructions:</strong> {application.interviewNotes}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <div className="mx-applist__side">
                         <span className={getStatusClass(application.status)}>{normalizeStatus(application.status)}</span>

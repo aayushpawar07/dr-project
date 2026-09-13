@@ -75,6 +75,7 @@ public class ApplicationController {
     }
 
     @PostMapping
+    @Transactional
     public ResponseEntity<Map<String, Object>> apply(
             @RequestParam("jobId") UUID jobId,
             @RequestParam("candidateName") String candidateName,
@@ -97,7 +98,6 @@ public class ApplicationController {
                                 if (userOpt.isPresent()) {
                                     User user = userOpt.get();
                                     logger.info("👤 User found: {} (Role: {})", user.getId(), user.getRole());
-                                    // Set candidateId if user is a candidate
                                     if (user.getRole() == User.UserRole.CANDIDATE) {
                                         candidateIdSet = user.getId();
                                         logger.info("✅ CandidateId set: {}", candidateIdSet);
@@ -112,8 +112,19 @@ public class ApplicationController {
                             }
                         } catch (Exception e) {
                             logger.error("❌ Error extracting candidateId: {}", e.getMessage(), e);
-                            // If authentication fails, continue without candidateId
-                            // This allows applications from non-authenticated users (if needed)
+                        }
+
+                        // Fallback: If no candidateId from security context, check if candidate email is a registered candidate
+                        if (candidateIdSet == null && candidateEmail != null && !candidateEmail.isBlank()) {
+                            try {
+                                Optional<User> registeredCand = userRepository.findByEmail(candidateEmail.trim().toLowerCase());
+                                if (registeredCand.isPresent()) {
+                                    candidateIdSet = registeredCand.get().getId();
+                                    logger.info("✅ Candidate matched by email: {}", candidateIdSet);
+                                }
+                            } catch (Exception ex) {
+                                logger.warn("Could not lookup user by email {}: {}", candidateEmail, ex.getMessage());
+                            }
                         }
 
                         // Check for duplicate application
@@ -121,14 +132,12 @@ public class ApplicationController {
                         String duplicateMessage = null;
                         
                         if (candidateIdSet != null) {
-                            // Check by candidateId (for authenticated users)
                             alreadyApplied = applicationRepository.existsByJobIdAndCandidateId(jobId, candidateIdSet);
                             if (alreadyApplied) {
                                 duplicateMessage = "You have already applied for this job.";
                                 logger.warn("🚫 Duplicate application attempt: Candidate {} already applied for job {}", candidateIdSet, jobId);
                             }
                         } else {
-                            // Check by email (for non-authenticated users or as fallback)
                             alreadyApplied = applicationRepository.existsByJobIdAndCandidateEmail(jobId, candidateEmail);
                             if (alreadyApplied) {
                                 duplicateMessage = "An application with this email already exists for this job.";
@@ -164,7 +173,6 @@ public class ApplicationController {
                                 logger.info("Resume uploaded successfully: {}", fileUrl);
                             } catch (IOException e) {
                                 logger.error("Failed to upload resume: {}", e.getMessage());
-                                // Fallback to local storage if FTP fails
                                 String fileName = UUID.randomUUID() + "_" + resume.getOriginalFilename();
                                 Path filePath = uploadPath.resolve(fileName);
                                 Files.copy(resume.getInputStream(), filePath);
@@ -178,15 +186,21 @@ public class ApplicationController {
                             saved.getId(), saved.getCandidateId(), saved.getJob().getId());
 
                         // Update job applications count
-                        job.setApplicationsCount(job.getApplicationsCount() + 1);
+                        job.setApplicationsCount((job.getApplicationsCount() != null ? job.getApplicationsCount() : 0) + 1);
                         jobRepository.save(job);
                         logger.info("📊 Updated job applications count: {}", job.getApplicationsCount());
 
-                        // Create notification for employer
+                        // Create notification for employer (reliably fetch employer user)
                         try {
-                            Employer employer = job.getEmployer();
-                            if (employer != null && employer.getUser() != null) {
-                                UUID employerUserId = employer.getUser().getId();
+                            UUID employerUserId = null;
+                            if (job.getEmployer() != null) {
+                                UUID employerId = job.getEmployer().getId();
+                                Optional<Employer> empOpt = employerRepository.findByIdWithUser(employerId);
+                                if (empOpt.isPresent() && empOpt.get().getUser() != null) {
+                                    employerUserId = empOpt.get().getUser().getId();
+                                }
+                            }
+                            if (employerUserId != null) {
                                 notificationService.notifyEmployerApplicationReceived(
                                     employerUserId,
                                     job.getTitle(),
@@ -195,12 +209,12 @@ public class ApplicationController {
                                     job.getId(),
                                     saved.getId()
                                 );
+                                logger.info("🔔 Application notification triggered for employer user: {}", employerUserId);
                             } else {
-                                logger.warn("⚠️ Could not create notification: Employer or User is null for job: {}", job.getId());
+                                logger.warn("⚠️ Could not find employer user ID for job: {}", job.getId());
                             }
                         } catch (Exception e) {
                             logger.error("❌ Error creating notification for employer: {}", e.getMessage(), e);
-                            // Don't fail the application submission if notification fails
                         }
 
                         // Create notification for candidate (application submission confirmation)
@@ -215,7 +229,6 @@ public class ApplicationController {
                             }
                         } catch (Exception e) {
                             logger.error("❌ Error creating notification for candidate: {}", e.getMessage(), e);
-                            // Don't fail the application submission if notification fails
                         }
 
                         Map<String, Object> response = new HashMap<>();
@@ -499,6 +512,7 @@ public class ApplicationController {
     }
 
     @PutMapping("/{id}/status")
+    @Transactional
     public ResponseEntity<Map<String, Object>> updateStatus(
             @PathVariable("id") UUID id,
             @RequestBody Map<String, Object> request
@@ -507,6 +521,12 @@ public class ApplicationController {
                 .map(application -> {
                     String statusStr = (String) request.get("status");
                     String notes = (String) request.get("notes");
+                    String interviewLink = request.get("interviewLink") instanceof String
+                            ? ((String) request.get("interviewLink")).trim()
+                            : null;
+                    String interviewNotes = request.get("interviewNotes") instanceof String
+                            ? ((String) request.get("interviewNotes")).trim()
+                            : null;
                     String oldStatus = application.getStatus() != null ? application.getStatus().name() : null;
 
                     if (statusStr != null) {
@@ -516,6 +536,14 @@ public class ApplicationController {
 
                     if (notes != null) {
                         application.setNotes(notes);
+                    }
+
+                    if (interviewLink != null) {
+                        application.setInterviewLink(interviewLink);
+                    }
+
+                    if (interviewNotes != null) {
+                        application.setInterviewNotes(interviewNotes);
                     }
 
                     String interviewDateStr = request.get("interviewDate") instanceof String
@@ -541,34 +569,59 @@ public class ApplicationController {
 
                     // Create notifications for candidate when status changes
                     try {
-                        if (statusStr != null && saved.getCandidateId() != null) {
-                            String jobTitle = saved.getJob() != null ? saved.getJob().getTitle() : "Job";
-                            UUID jobId = saved.getJob() != null ? saved.getJob().getId() : null;
+                        UUID targetCandidateId = saved.getCandidateId();
+                        // If candidateId is missing on the record, look up registered candidate user by email
+                        if (targetCandidateId == null && saved.getCandidateEmail() != null && !saved.getCandidateEmail().isBlank()) {
+                            try {
+                                Optional<User> candUser = userRepository.findByEmail(saved.getCandidateEmail().trim().toLowerCase());
+                                if (candUser.isPresent()) {
+                                    targetCandidateId = candUser.get().getId();
+                                    saved.setCandidateId(targetCandidateId);
+                                    applicationRepository.save(saved);
+                                    logger.info("✅ Linked application to candidate user: {}", targetCandidateId);
+                                }
+                            } catch (Exception ex) {
+                                logger.warn("Could not lookup candidate by email {}: {}", saved.getCandidateEmail(), ex.getMessage());
+                            }
+                        }
 
-                            // If status is INTERVIEW, send interview notification
+                        if (statusStr != null && targetCandidateId != null) {
+                            String jobTitle = "Job";
+                            UUID jobId = null;
+                            if (saved.getJob() != null) {
+                                jobTitle = saved.getJob().getTitle() != null ? saved.getJob().getTitle() : "Job";
+                                jobId = saved.getJob().getId();
+                            }
+
+                            // If status is INTERVIEW, send interview notification with meeting link & notes
                             if ("interview".equalsIgnoreCase(statusStr)) {
                                 notificationService.notifyCandidateInterviewScheduled(
-                                    saved.getCandidateId(),
+                                    targetCandidateId,
                                     jobTitle,
                                     interviewDateStr != null ? interviewDateStr : 
                                         (saved.getInterviewDate() != null ? saved.getInterviewDate().toString() : "TBD"),
+                                    saved.getInterviewLink(),
+                                    saved.getInterviewNotes(),
                                     jobId,
                                     saved.getId()
                                 );
+                                logger.info("🔔 Interview scheduled notification dispatched for candidate: {}", targetCandidateId);
                             } else {
                                 // Send status update notification
                                 notificationService.notifyCandidateApplicationStatus(
-                                    saved.getCandidateId(),
+                                    targetCandidateId,
                                     jobTitle,
                                     statusStr,
                                     jobId,
                                     saved.getId()
                                 );
+                                logger.info("🔔 Application status update notification dispatched for candidate: {}", targetCandidateId);
                             }
+                        } else {
+                            logger.warn("⚠️ Cannot send notification: statusStr={}, targetCandidateId={}", statusStr, targetCandidateId);
                         }
                     } catch (Exception e) {
                         logger.error("❌ Error creating notification for candidate on status update: {}", e.getMessage(), e);
-                        // Don't fail the status update if notification fails
                     }
 
                     return ResponseEntity.ok(toResponse(saved));
@@ -982,6 +1035,8 @@ public class ApplicationController {
             m.put("status", statusStr);
             m.put("notes", app.getNotes());
             m.put("interviewDate", app.getInterviewDate() != null ? app.getInterviewDate().toString() : null);
+            m.put("interviewLink", app.getInterviewLink());
+            m.put("interviewNotes", app.getInterviewNotes());
             m.put("appliedDate", app.getAppliedDate() != null ? app.getAppliedDate().toString() : null);
         } catch (Exception e) {
             logger.error("❌ Error creating application response for application {}: {}", app.getId(), e.getMessage(), e);

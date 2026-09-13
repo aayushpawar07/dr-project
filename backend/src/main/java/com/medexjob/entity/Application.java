@@ -58,6 +58,12 @@ public class Application {
     @Column(name = "interview_date")
     private LocalDateTime interviewDate;
 
+    @Column(name = "interview_link", length = 500)
+    private String interviewLink;
+
+    @Column(name = "interview_notes", columnDefinition = "TEXT")
+    private String interviewNotes;
+
     @CreatedDate
     @Column(name = "applied_date", nullable = false, updatable = false)
     private LocalDateTime appliedDate;
@@ -156,6 +162,22 @@ public class Application {
 
     public void setInterviewDate(LocalDateTime interviewDate) {
         this.interviewDate = interviewDate;
+    }
+
+    public String getInterviewLink() {
+        return interviewLink;
+    }
+
+    public void setInterviewLink(String interviewLink) {
+        this.interviewLink = interviewLink;
+    }
+
+    public String getInterviewNotes() {
+        return interviewNotes;
+    }
+
+    public void setInterviewNotes(String interviewNotes) {
+        this.interviewNotes = interviewNotes;
     }
 
     public LocalDateTime getAppliedDate() {

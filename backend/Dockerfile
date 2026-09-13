@@ -17,8 +17,10 @@ FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 
-# Create uploads directory
-RUN mkdir -p /app/uploads/verification
+# Create uploads directory and install OCR dependencies
+RUN mkdir -p /app/uploads/verification && \
+    apk update && \
+    apk add --no-cache tesseract-ocr tesseract-ocr-data-hin tesseract-ocr-data-eng
 
 # Copy JAR from build stage
 COPY --from=build /app/target/medexjob-backend-1.0.0.jar app.jar

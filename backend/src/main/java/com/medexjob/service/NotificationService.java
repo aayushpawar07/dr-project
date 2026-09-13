@@ -131,10 +131,10 @@ public class NotificationService {
     }
 
     /**
-     * Notify candidate about interview scheduled
+     * Notify candidate about interview scheduled (with meeting link and notes)
      */
     public void notifyCandidateInterviewScheduled(UUID candidateId, String jobTitle,
-            String interviewDate, UUID jobId, UUID applicationId) {
+            String interviewDate, String meetingLink, String notes, UUID jobId, UUID applicationId) {
         if (candidateId == null) {
             logger.warn("⚠️ Cannot notify: candidateId is null");
             return;
@@ -146,23 +146,41 @@ public class NotificationService {
         }
 
         try {
-            String message = String.format(
-                    "📅 Interview scheduled for job '%s' on %s",
-                    jobTitle,
-                    interviewDate != null ? interviewDate : "TBD");
+            StringBuilder message = new StringBuilder();
+            message.append(String.format("📅 Interview scheduled for '%s' on %s.", jobTitle, interviewDate != null ? interviewDate : "TBD"));
+            if (meetingLink != null && !meetingLink.isBlank()) {
+                message.append(" Meeting link: ").append(meetingLink.trim()).append(".");
+            }
+            if (notes != null && !notes.isBlank()) {
+                message.append(" Note: ").append(notes.trim());
+            }
+
+            // Truncate to 500 chars if exceeds DB column size
+            String finalMsg = message.toString();
+            if (finalMsg.length() > 500) {
+                finalMsg = finalMsg.substring(0, 497) + "...";
+            }
 
             String title = "Interview Scheduled";
-            Notification notification = new Notification(candidateId, "interview_scheduled", title, message);
+            Notification notification = new Notification(candidateId, "interview_scheduled", title, finalMsg);
             if (jobId != null)
                 notification.setRelatedJobId(jobId);
             if (applicationId != null)
                 notification.setRelatedApplicationId(applicationId);
 
             notificationRepository.save(notification);
-            logger.info("🔔 Interview notification sent to candidate: {}", candidateId);
+            logger.info("🔔 Interview notification sent to candidate: {} (job: {})", candidateId, jobTitle);
         } catch (Exception e) {
             logger.error("❌ Error creating interview notification: {}", e.getMessage(), e);
         }
+    }
+
+    /**
+     * Legacy overload for backwards compatibility
+     */
+    public void notifyCandidateInterviewScheduled(UUID candidateId, String jobTitle,
+            String interviewDate, UUID jobId, UUID applicationId) {
+        notifyCandidateInterviewScheduled(candidateId, jobTitle, interviewDate, null, null, jobId, applicationId);
     }
 
     /**

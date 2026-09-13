@@ -640,9 +640,17 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                     </span>
                   </div>
                 ) : (
-                  <span className="text-xs text-amber-600 dark:text-amber-400 pl-0.5">
-                    Meeting link: Not added yet
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedApplication(application);
+                      setIsInterviewDialogOpen(true);
+                    }}
+                    className="text-xs font-semibold text-amber-700 dark:text-amber-400 hover:underline inline-flex items-center gap-1 pl-0.5 mt-0.5 text-left cursor-pointer"
+                  >
+                    <Video className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span>+ Add Zoom / Google Meet Link</span>
+                  </button>
                 )}
               </div>
             )}
@@ -939,9 +947,16 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               </DialogHeader>
               <StatusUpdateForm
                 application={selectedApplication}
-                onUpdate={(status, notes) => {
+                onUpdate={(status, notes, interviewDate, interviewLink) => {
                   if (selectedApplication) {
-                    updateApplicationStatusHandler(selectedApplication.id, status, notes);
+                    updateApplicationStatusHandler(
+                      selectedApplication.id,
+                      status,
+                      notes,
+                      interviewDate,
+                      interviewLink,
+                      notes
+                    );
                   }
                 }}
                 onCancel={() => setIsStatusDialogOpen(false)}
@@ -967,11 +982,23 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                   setSelectedApplication(application);
                   setIsInterviewDialogOpen(true);
                 }}
-                className="medex-app-btn medex-app-btn-interview w-full h-9 sm:h-10 px-2 py-1 text-xs sm:text-sm font-semibold inline-flex items-center justify-center min-w-0"
-                title={application.interviewDate ? 'View Interview' : 'Schedule Interview'}
+                className={`medex-app-btn medex-app-btn-interview w-full h-9 sm:h-10 px-2 py-1 text-xs sm:text-sm font-semibold inline-flex items-center justify-center min-w-0 ${
+                  application.interviewDate && !application.interviewLink
+                    ? 'border-amber-400 bg-amber-50 text-amber-900 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700'
+                    : ''
+                }`}
+                title={
+                  application.interviewDate
+                    ? (application.interviewLink ? 'Interview Details / Reschedule' : '+ Add Zoom / Meet Link')
+                    : 'Schedule Interview'
+                }
               >
                 <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5 flex-shrink-0 text-purple-600 dark:text-purple-400" />
-                <span className="truncate">{application.interviewDate || application.status === 'interview' ? 'View Interview' : 'Interview'}</span>
+                <span className="truncate">
+                  {application.interviewDate
+                    ? (application.interviewLink ? 'Interview Details' : '+ Add Meet Link')
+                    : 'Interview'}
+                </span>
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-[95vw] sm:max-w-md">
@@ -1265,17 +1292,43 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
 
 interface StatusUpdateFormProps {
   application: ApplicationResponse | null;
-  onUpdate: (status: string, notes?: string) => void;
+  onUpdate: (status: string, notes?: string, interviewDate?: string, interviewLink?: string) => void;
   onCancel: () => void;
 }
 
 function StatusUpdateForm({ application, onUpdate, onCancel }: StatusUpdateFormProps) {
-  const [status, setStatus] = useState<string>('pending');
-  const [notes, setNotes] = useState('');
+  const [status, setStatus] = useState<string>(() => application?.status || 'pending');
+  const [notes, setNotes] = useState(application?.notes || '');
+  const [interviewDate, setInterviewDate] = useState(() => {
+    if (application?.interviewDate) {
+      const d = new Date(application.interviewDate);
+      if (!isNaN(d.getTime())) {
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      }
+    }
+    return '';
+  });
+  const [interviewTime, setInterviewTime] = useState(() => {
+    if (application?.interviewDate) {
+      const d = new Date(application.interviewDate);
+      if (!isNaN(d.getTime())) {
+        const pad = (n: number) => String(n).padStart(2, '0');
+        return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      }
+    }
+    return '10:00';
+  });
+  const [interviewLink, setInterviewLink] = useState(application?.interviewLink || '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onUpdate(status, notes);
+    if (status === 'interview') {
+      const dateTime = `${interviewDate}T${interviewTime}`;
+      onUpdate(status, notes, dateTime, interviewLink.trim());
+    } else {
+      onUpdate(status, notes);
+    }
   };
 
   return (
@@ -1286,7 +1339,7 @@ function StatusUpdateForm({ application, onUpdate, onCancel }: StatusUpdateFormP
           id="status"
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="w-full mt-1 p-2 border border-gray-300 rounded-md"
+          className="w-full mt-1 p-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-md text-sm"
         >
           <option value="pending">Pending</option>
           <option value="shortlisted">Shortlisted</option>
@@ -1296,20 +1349,64 @@ function StatusUpdateForm({ application, onUpdate, onCancel }: StatusUpdateFormP
         </select>
       </div>
 
+      {status === 'interview' && (
+        <div className="p-3 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="statusInterviewDate" className="text-xs">Interview Date</Label>
+              <input
+                id="statusInterviewDate"
+                type="date"
+                value={interviewDate}
+                onChange={(e) => setInterviewDate(e.target.value)}
+                className="w-full mt-1 p-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-md text-sm"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="statusInterviewTime" className="text-xs">Interview Time</Label>
+              <input
+                id="statusInterviewTime"
+                type="time"
+                value={interviewTime}
+                onChange={(e) => setInterviewTime(e.target.value)}
+                className="w-full mt-1 p-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-md text-sm"
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="statusInterviewLink" className="flex items-center gap-1.5 text-xs">
+              <Video className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+              <span>Meeting Link (Google Meet / Zoom URL)</span>
+            </Label>
+            <Input
+              id="statusInterviewLink"
+              type="url"
+              value={interviewLink}
+              onChange={(e) => setInterviewLink(e.target.value)}
+              className="mt-1 text-sm bg-white dark:bg-gray-800"
+              placeholder="https://meet.google.com/xyz-abcd-efg or Zoom link"
+            />
+          </div>
+        </div>
+      )}
+
       <div>
         <Label htmlFor="notes">Notes (Optional)</Label>
         <Textarea
           id="notes"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          className="mt-1"
+          className="mt-1 text-sm"
           rows={3}
           placeholder="Add any notes about this status update..."
         />
       </div>
 
       <div className="flex gap-3">
-        <Button type="submit" className="flex-1">
+        <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
           Update Status
         </Button>
         <Button type="button" variant="outline" onClick={onCancel}>

@@ -13,6 +13,9 @@ import {
   FileText,
   Mail,
   Phone,
+  Video,
+  ExternalLink,
+  Calendar,
 } from "lucide-react";
 import { Button, buttonVariants } from "./ui/button";
 import { Card } from "./ui/card";
@@ -94,6 +97,7 @@ export function AdminJobManagementPage({
   const [filterSector, setFilterSector] = useState<"all" | JobSector>("all");
   const [appLoading, setAppLoading] = useState(false);
   const [interviewDate, setInterviewDate] = useState("");
+  const [interviewLink, setInterviewLink] = useState("");
   const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
 
   const loadJobs = async () => {
@@ -245,8 +249,10 @@ export function AdminJobManagementPage({
     try {
       if (!token) throw new Error("Authentication token not found.");
       let finalInterviewDate = null;
+      let finalInterviewLink = null;
       if (newStatus === "interview" && selectedAppId === appId) {
         finalInterviewDate = interviewDate;
+        finalInterviewLink = interviewLink;
       }
       await updateApplicationStatus(
         appId,
@@ -254,6 +260,7 @@ export function AdminJobManagementPage({
         token,
         undefined,
         finalInterviewDate,
+        finalInterviewLink,
       );
       toast.success("Application status updated!");
       loadApplications();
@@ -607,10 +614,37 @@ export function AdminJobManagementPage({
                             </h3>
                             <Badge variant="outline">{app.status}</Badge>
                             {app.interviewDate && (
-                              <Badge className="bg-blue-100 text-blue-700">
-                                Interview:{" "}
-                                {new Date(app.interviewDate).toLocaleString()}
-                              </Badge>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Badge className="bg-purple-100 text-purple-700">
+                                  Interview:{" "}
+                                  {new Date(app.interviewDate).toLocaleString()}
+                                </Badge>
+                                {app.interviewLink ? (
+                                  <a
+                                    href={app.interviewLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs font-semibold text-emerald-700 hover:underline inline-flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200"
+                                  >
+                                    <Video className="w-3.5 h-3.5" />
+                                    <span>Join Meeting</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedAppId(app.id);
+                                      setInterviewDate(app.interviewDate ? app.interviewDate.slice(0, 16) : "");
+                                      setInterviewLink("");
+                                    }}
+                                    className="text-xs font-semibold text-amber-700 hover:underline inline-flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 cursor-pointer"
+                                  >
+                                    <Video className="w-3 h-3" />
+                                    <span>+ Add Zoom / Google Meet Link</span>
+                                  </button>
+                                )}
+                              </div>
                             )}
                           </div>
                           <div className="flex items-center gap-2 mt-3">
@@ -625,6 +659,8 @@ export function AdminJobManagementPage({
                               onValueChange={(value) => {
                                 if (value === "interview") {
                                   setSelectedAppId(app.id);
+                                  setInterviewDate(app.interviewDate ? app.interviewDate.slice(0, 16) : "");
+                                  setInterviewLink(app.interviewLink || "");
                                 } else {
                                   handleUpdateAppStatus(app.id, value);
                                 }
@@ -665,34 +701,62 @@ export function AdminJobManagementPage({
                             </div>
                           </div>
                           {selectedAppId === app.id && (
-                            <div className="mt-4 p-3 bg-gray-100 rounded-lg flex items-center gap-2">
-                              <Label htmlFor="interviewDate">
-                                Interview Date/Time:
-                              </Label>
-                              <Input
-                                id="interviewDate"
-                                type="datetime-local"
-                                value={interviewDate}
-                                onChange={(e) =>
-                                  setInterviewDate(e.target.value)
-                                }
-                                className="w-auto"
-                              />
-                              <Button
-                                size="sm"
-                                onClick={() =>
-                                  handleUpdateAppStatus(app.id, "interview")
-                                }
-                              >
-                                Set Interview
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => setSelectedAppId(null)}
-                              >
-                                Cancel
-                              </Button>
+                            <div className="mt-4 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg space-y-3">
+                              <h4 className="text-sm font-semibold text-purple-900 dark:text-purple-200 flex items-center gap-1.5">
+                                <Calendar className="w-4 h-4 text-purple-600" />
+                                Schedule / Update Interview
+                              </h4>
+                              <div className="grid sm:grid-cols-2 gap-3">
+                                <div>
+                                  <Label htmlFor="interviewDate" className="text-xs font-medium text-gray-700">
+                                    Interview Date & Time:
+                                  </Label>
+                                  <Input
+                                    id="interviewDate"
+                                    type="datetime-local"
+                                    value={interviewDate}
+                                    onChange={(e) =>
+                                      setInterviewDate(e.target.value)
+                                    }
+                                    className="mt-1 text-sm bg-white"
+                                    required
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="interviewLink" className="text-xs font-medium text-gray-700 flex items-center gap-1">
+                                    <Video className="w-3.5 h-3.5 text-purple-600" />
+                                    Meeting Link (Google Meet / Zoom URL):
+                                  </Label>
+                                  <Input
+                                    id="interviewLink"
+                                    type="url"
+                                    placeholder="https://meet.google.com/xyz-abcd-efg or Zoom link"
+                                    value={interviewLink}
+                                    onChange={(e) =>
+                                      setInterviewLink(e.target.value)
+                                    }
+                                    className="mt-1 text-sm bg-white"
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 pt-1">
+                                <Button
+                                  size="sm"
+                                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                                  onClick={() =>
+                                    handleUpdateAppStatus(app.id, "interview")
+                                  }
+                                >
+                                  Save & Send Invite
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setSelectedAppId(null)}
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
                             </div>
                           )}
 

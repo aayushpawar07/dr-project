@@ -510,17 +510,6 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                     {application.candidateName?.charAt(0)?.toUpperCase() || 'A'}
                   </span>
                 </div>
-                <Badge 
-                  className={`absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 ${getStatusColor(application.status)} border-2 border-white dark:border-gray-800 shadow-xs flex-shrink-0`}
-                  style={{
-                    padding: 'clamp(0.125rem, 0.3vw, 0.25rem) clamp(0.25rem, 0.5vw, 0.5rem)',
-                    fontSize: 'clamp(0.625rem, 0.8vw, 0.75rem)'
-                  }}
-                  variant="outline"
-                >
-                  <span className="hidden sm:inline">{getStatusLabel(application.status)}</span>
-                  <span className="sm:hidden">{getStatusLabel(application.status).charAt(0)}</span>
-                </Badge>
               </div>
               <div className="flex-1 min-w-0">
                 <h2 
@@ -542,7 +531,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               </div>
             </div>
             <Badge 
-              className={`${getStatusColor(application.status)} flex-shrink-0 shadow-xs hidden sm:inline-flex`}
+              className={`${getStatusColor(application.status)} flex-shrink-0 shadow-xs inline-flex`}
               style={{
                 padding: 'clamp(0.25rem, 0.5vw, 0.375rem) clamp(0.5rem, 0.8vw, 0.75rem)',
                 fontSize: 'clamp(0.6875rem, 0.9vw, 0.8125rem)'
@@ -603,56 +592,25 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               </span>
             </div>
             {application.interviewDate && (
-              <div className="flex flex-col gap-1.5 p-2.5 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800/60">
-                <div className="flex items-center gap-2">
-                  <div 
-                    className="flex-shrink-0 rounded-md bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center"
-                    style={{
-                      width: 'clamp(1.75rem, 2.5vw, 2rem)',
-                      height: 'clamp(1.75rem, 2.5vw, 2rem)'
-                    }}
-                  >
-                    <Calendar 
-                      className="text-purple-600 dark:text-purple-400" 
-                      style={{ width: 'clamp(0.875rem, 1.2vw, 1rem)', height: 'clamp(0.875rem, 1.2vw, 1rem)' }}
-                    />
-                  </div>
-                  <span 
-                    className="font-semibold text-purple-800 dark:text-purple-200"
-                    style={{ fontSize: 'clamp(0.75rem, 1vw, 0.875rem)' }}
-                  >
-                    Interview: {formatDateTime(application.interviewDate)}
-                  </span>
+              <div className="flex items-center gap-2 min-w-0 col-span-1 sm:col-span-2 p-2 bg-purple-50 dark:bg-purple-900/20 rounded-md border border-purple-200 dark:border-purple-800/60">
+                <div 
+                  className="flex-shrink-0 rounded-md bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center"
+                  style={{
+                    width: 'clamp(1.75rem, 2.5vw, 2rem)',
+                    height: 'clamp(1.75rem, 2.5vw, 2rem)'
+                  }}
+                >
+                  <Calendar 
+                    className="text-purple-600 dark:text-purple-400" 
+                    style={{ width: 'clamp(0.875rem, 1.2vw, 1rem)', height: 'clamp(0.875rem, 1.2vw, 1rem)' }}
+                  />
                 </div>
-                {application.interviewLink ? (
-                  <div className="flex items-center gap-2 pl-0.5 mt-0.5">
-                    <a
-                      href={application.interviewLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300 hover:underline bg-emerald-100/80 dark:bg-emerald-950/60 px-2 py-0.5 rounded"
-                    >
-                      <Video className="w-3.5 h-3.5 flex-shrink-0" />
-                      <span>Join Meeting</span>
-                      <ExternalLink className="w-3 h-3 flex-shrink-0" />
-                    </a>
-                    <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate max-w-[180px]">
-                      {application.interviewLink}
-                    </span>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedApplication(application);
-                      setIsInterviewDialogOpen(true);
-                    }}
-                    className="text-xs font-semibold text-amber-700 dark:text-amber-400 hover:underline inline-flex items-center gap-1 pl-0.5 mt-0.5 text-left cursor-pointer"
-                  >
-                    <Video className="w-3.5 h-3.5 flex-shrink-0" />
-                    <span>+ Add Zoom / Google Meet Link</span>
-                  </button>
-                )}
+                <span 
+                  className="font-semibold text-purple-800 dark:text-purple-200 truncate"
+                  style={{ fontSize: 'clamp(0.75rem, 1vw, 0.875rem)' }}
+                >
+                  Interview: {formatDateTime(application.interviewDate)}
+                </span>
               </div>
             )}
           </div>
@@ -1429,11 +1387,27 @@ function StatusUpdateForm({ application, onUpdate, onCancel }: StatusUpdateFormP
         />
       </div>
 
-      <div className="flex gap-3">
-        <Button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
-          Update Status
+      <div className="flex items-center gap-3 pt-3 mt-2 border-t border-gray-200 dark:border-gray-700">
+        <Button 
+          type="submit" 
+          className="flex-1 font-semibold flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer"
+          style={{
+            backgroundColor: '#2563eb',
+            color: '#ffffff',
+            minHeight: '42px',
+            border: 'none',
+          }}
+        >
+          <CheckCircle className="w-4 h-4 text-white flex-shrink-0" />
+          <span>Update Status</span>
         </Button>
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={onCancel}
+          className="px-5 font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+          style={{ minHeight: '42px' }}
+        >
           Cancel
         </Button>
       </div>
@@ -1534,11 +1508,27 @@ function InterviewSchedulingForm({ application, onSchedule, onCancel }: Intervie
         />
       </div>
 
-      <div className="flex gap-3 pt-2">
-        <Button type="submit" className="flex-1 bg-purple-600 hover:bg-purple-700 text-white">
-          {application?.interviewDate ? 'Update & Save Interview' : 'Schedule Interview'}
+      <div className="flex items-center gap-3 pt-3 mt-2 border-t border-gray-200 dark:border-gray-700">
+        <Button 
+          type="submit" 
+          className="flex-1 font-semibold flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer"
+          style={{
+            backgroundColor: '#7c3aed',
+            color: '#ffffff',
+            minHeight: '42px',
+            border: 'none',
+          }}
+        >
+          <CheckCircle className="w-4 h-4 text-white flex-shrink-0" />
+          <span>{application?.interviewDate ? 'Save & Update Interview' : 'Schedule Interview'}</span>
         </Button>
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={onCancel}
+          className="px-5 font-medium border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+          style={{ minHeight: '42px' }}
+        >
           Cancel
         </Button>
       </div>

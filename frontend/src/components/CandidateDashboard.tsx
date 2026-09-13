@@ -65,6 +65,29 @@ function formatDateTime(value?: string) {
   });
 }
 
+function renderMessageWithLinks(text?: string) {
+  if (!text) return null;
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  return parts.map((part, index) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: '#0d9488', textDecoration: 'underline', fontWeight: 600, wordBreak: 'break-all' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+}
+
 function getInitials(value?: string) {
   const parts = (value || 'User').trim().split(/\s+/).filter(Boolean);
   return parts.slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('') || 'U';
@@ -675,6 +698,11 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
                           <p className="mx-app-row__org">{application.jobOrganization || application.postedBy?.company || 'Organization'}</p>
                         </div>
                         <div className="mx-app-row__right">
+                          {application.interviewDate && (
+                            <span className="mx-app-row__interview" style={{ color: '#0d9488', fontWeight: 650, display: 'inline-flex', alignItems: 'center', gap: 4, marginRight: 8, fontSize: 12 }}>
+                              <Video size={13} /> Interview {formatDate(application.interviewDate)}
+                            </span>
+                          )}
                           <span className="mx-app-row__date"><Calendar size={13} /> Applied {formatDate(application.appliedDate)}</span>
                         </div>
                       </article>
@@ -704,7 +732,7 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
                         <div className="mx-notif-card__content">
                           <div className="mx-notif-card__message">
                             <span className="mx-check-badge"><Check size={10} /></span>
-                            <p>{notification.message}</p>
+                            <p>{renderMessageWithLinks(notification.message)}</p>
                           </div>
                           <small>{formatDate(notification.createdAt)}</small>
                         </div>
@@ -789,17 +817,34 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
                               <Calendar size={14} />
                               <span>Interview: {application.interviewDate ? formatDateTime(application.interviewDate) : 'Date TBD'}</span>
                             </div>
-                            {application.interviewLink && (
-                              <div className="mx-interview-badge__row">
+                            {application.interviewLink ? (
+                              <>
+                                <div className="mx-interview-badge__row">
+                                  <Video size={14} />
+                                  <a
+                                    href={application.interviewLink.startsWith('http') ? application.interviewLink : `https://${application.interviewLink}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="mx-interview-badge__btn"
+                                  >
+                                    Join Interview Meeting <ExternalLink size={12} />
+                                  </a>
+                                </div>
+                                <div className="mx-interview-badge__link-display">
+                                  <span>Meeting URL: </span>
+                                  <a
+                                    href={application.interviewLink.startsWith('http') ? application.interviewLink : `https://${application.interviewLink}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    {application.interviewLink}
+                                  </a>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="mx-interview-badge__row mx-interview-badge__row--missing">
                                 <Video size={14} />
-                                <a
-                                  href={application.interviewLink.startsWith('http') ? application.interviewLink : `https://${application.interviewLink}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="mx-interview-badge__btn"
-                                >
-                                  Join Meeting <ExternalLink size={12} />
-                                </a>
+                                <span>Online Meeting Link: Not shared yet by employer (Google Meet or Zoom link will be shared before your interview).</span>
                               </div>
                             )}
                             {application.interviewNotes && (
@@ -835,7 +880,7 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
                   {notifications.map((notification: any) => (
                     <article key={notification.id} className={notification.read ? '' : 'is-unread'}>
                       <span className="mx-notiflist__icon"><Bell size={15} /></span>
-                      <div><p>{notification.message}</p><small>{formatDate(notification.createdAt)}</small></div>
+                      <div><p>{renderMessageWithLinks(notification.message)}</p><small>{formatDate(notification.createdAt)}</small></div>
                     </article>
                   ))}
                 </div>

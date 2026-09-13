@@ -397,7 +397,7 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
     if (status === 'interview' && !interviewDate) {
       setInterviewDraft({
         application,
-        date: toInterviewDateTimeLocal(),
+        date: application.interviewDate ? toInterviewDateTimeLocal(application.interviewDate) : toInterviewDateTimeLocal(),
         link: application.interviewLink || '',
         notes: application.interviewNotes || '',
       });
@@ -1101,7 +1101,7 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                                     <Calendar size={14} />
                                     <span>Scheduled: {application.interviewDate ? new Date(application.interviewDate).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Date TBD'}</span>
                                   </div>
-                                  {application.interviewLink && (
+                                  {application.interviewLink ? (
                                     <div className="mx-interview-badge__row">
                                       <Video size={14} />
                                       <a
@@ -1113,12 +1113,24 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                                         Join / Open Meeting Link <ExternalLink size={12} />
                                       </a>
                                     </div>
+                                  ) : (
+                                    <div className="mx-interview-badge__row mx-interview-badge__row--missing">
+                                      <Video size={14} />
+                                      <span>No Zoom / Google Meet link added yet</span>
+                                    </div>
                                   )}
                                   {application.interviewNotes && (
                                     <div className="mx-interview-badge__notes">
                                       <strong>Instructions:</strong> {application.interviewNotes}
                                     </div>
                                   )}
+                                  <button
+                                    type="button"
+                                    className="mx-interview-badge__edit-btn"
+                                    onClick={() => handleUpdateStatus(application, 'interview')}
+                                  >
+                                    <Edit size={12} /> {application.interviewLink ? 'Reschedule or Edit Meeting Link' : '+ Add Zoom / Google Meet Link'}
+                                  </button>
                                 </div>
                               )}
 
@@ -1134,7 +1146,7 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                                   <Star size={14} /> Shortlist
                                 </button>
                                 <button type="button" className={`mx-action mx-action--interview${status === 'interview' ? ' is-current' : ''}`} disabled={busy} onClick={() => handleUpdateStatus(application, 'interview')}>
-                                  <Calendar size={14} /> Interview
+                                  <Calendar size={14} /> {status === 'interview' ? (application.interviewLink ? 'Update Interview' : '+ Add Meet Link') : 'Interview'}
                                 </button>
                                 <button type="button" className={`mx-action mx-action--select${status === 'selected' ? ' is-current' : ''}`} disabled={busy} onClick={() => handleUpdateStatus(application, 'selected')}>
                                   <CheckCircle size={14} /> Select

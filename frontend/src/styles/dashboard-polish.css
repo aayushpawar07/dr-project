@@ -529,6 +529,83 @@
   cursor: pointer;
 }
 
+/* Bottom sidebar drawer logout buttons: prominent red */
+.employer-sidebar__logout,
+.candidate-sidebar__logout,
+.employer-sidebar__profile .employer-sidebar__logout,
+.candidate-sidebar__user .candidate-sidebar__logout {
+  display: inline-grid !important;
+  width: 36px !important;
+  height: 36px !important;
+  place-items: center !important;
+  border: 1.5px solid #fecaca !important;
+  border-radius: 9px !important;
+  background: #fef2f2 !important;
+  color: #dc2626 !important;
+  cursor: pointer !important;
+  flex: 0 0 auto !important;
+  transition: all 180ms ease !important;
+  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.08) !important;
+}
+
+.employer-sidebar__logout svg,
+.candidate-sidebar__logout svg {
+  color: #dc2626 !important;
+  stroke: #dc2626 !important;
+}
+
+.employer-sidebar__logout:hover,
+.candidate-sidebar__logout:hover,
+.employer-sidebar__profile .employer-sidebar__logout:hover,
+.candidate-sidebar__user .candidate-sidebar__logout:hover {
+  border-color: #f87171 !important;
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2) !important;
+  transform: translateY(-1px);
+}
+
+.employer-sidebar__logout:hover svg,
+.candidate-sidebar__logout:hover svg {
+  color: #b91c1c !important;
+  stroke: #b91c1c !important;
+}
+
+/* Mobile / Tablet dashboard opening toggle button: attractive brand blue */
+.employer-mobile-toggle,
+.candidate-mobile-toggle,
+.employer-dashboard__mobile-bar .employer-mobile-toggle,
+.candidate-mobile-bar .candidate-mobile-toggle {
+  display: inline-grid !important;
+  width: 38px !important;
+  height: 38px !important;
+  place-items: center !important;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  border: 1px solid #1d4ed8 !important;
+  color: #ffffff !important;
+  border-radius: 9px !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28) !important;
+  cursor: pointer !important;
+  transition: all 180ms ease !important;
+  flex: 0 0 auto !important;
+}
+
+.employer-mobile-toggle svg,
+.candidate-mobile-toggle svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+.employer-mobile-toggle:hover,
+.candidate-mobile-toggle:hover,
+.employer-dashboard__mobile-bar .employer-mobile-toggle:hover,
+.candidate-mobile-bar .candidate-mobile-toggle:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+  border-color: #1e40af !important;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.38) !important;
+  transform: translateY(-1px);
+}
+
 .candidate-user-avatar {
   width: 36px;
   height: 36px;

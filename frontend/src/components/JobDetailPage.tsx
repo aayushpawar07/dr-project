@@ -1564,13 +1564,13 @@ export function JobDetailPage({
                       href={job.officialWebsite}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-between rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-3 text-sm font-semibold text-emerald-800 transition-colors hover:bg-emerald-100"
+                      className="flex items-center justify-between rounded-lg border border-blue-300 bg-blue-50 px-3 py-3 text-sm font-semibold text-blue-800 transition-colors hover:bg-blue-100 hover:border-blue-400"
                     >
                       <span className="inline-flex items-center gap-2">
-                        <Building2 className="h-4 w-4" />
+                        <Building2 className="h-4 w-4 text-blue-600" />
                         Official Website
                       </span>
-                      <ExternalLink className="h-4 w-4" />
+                      <ExternalLink className="h-4 w-4 text-blue-600" />
                     </a>
                   )}
                 </div>

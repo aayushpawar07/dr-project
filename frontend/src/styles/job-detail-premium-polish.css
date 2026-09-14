@@ -85,22 +85,36 @@
   position: relative;
   border: 1px solid #dce4ef !important;
   background: #ffffff !important;
-  color: #41516a !important;
+  color: #1e293b !important;
   box-shadow: 0 2px 7px rgba(15, 23, 42, 0.035);
 }
 
-.medex-description-tab:hover {
+.medex-description-tab:not([aria-selected="true"]):hover {
   border-color: #a9c7ff !important;
   background: #f8fbff !important;
   color: #1d4ed8 !important;
   box-shadow: 0 8px 18px rgba(37, 99, 235, 0.08);
 }
 
-.medex-description-tab[aria-selected="true"] {
+.medex-description-tab[aria-selected="true"],
+.medex-description-tab[aria-selected="true"]:hover,
+.medex-description-tab[aria-selected="true"]:focus {
   border-color: transparent !important;
   background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
   color: #ffffff !important;
   box-shadow: 0 10px 24px rgba(37, 99, 235, 0.22) !important;
+}
+
+.medex-description-tab[aria-selected="true"] *,
+.medex-description-tab[aria-selected="true"] .medex-tab-label,
+.medex-description-tab[aria-selected="true"] .medex-tab-icon,
+.medex-description-tab[aria-selected="true"] .medex-tab-count {
+  color: #ffffff !important;
+}
+
+.medex-description-tab[aria-selected="true"] .medex-tab-count {
+  background: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
 }
 
 .medex-description-tab:focus-visible {

@@ -136,13 +136,44 @@
   color: #059669 !important;
 }
 
-.job-detail-page[data-sector="private"] .medex-description-tab[aria-selected="true"] {
+.job-detail-page[data-sector="private"] .medex-description-tab[aria-selected="true"],
+.job-detail-page[data-sector="private"] .medex-description-tab[aria-selected="true"]:hover,
+.job-detail-page[data-sector="private"] .medex-description-tab[aria-selected="true"]:focus {
   background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  color: #ffffff !important;
   box-shadow: 0 10px 24px rgba(5, 150, 105, 0.2) !important;
 }
 
-.job-detail-page[data-sector="private"] .medex-description-tab:hover {
+.job-detail-page[data-sector="private"] .medex-description-tab[aria-selected="true"] *,
+.job-detail-page[data-sector="private"] .medex-description-tab[aria-selected="true"] .medex-tab-label,
+.job-detail-page[data-sector="private"] .medex-description-tab[aria-selected="true"] .medex-tab-icon,
+.job-detail-page[data-sector="private"] .medex-description-tab[aria-selected="true"] .medex-tab-count {
+  color: #ffffff !important;
+}
+
+.job-detail-page[data-sector="private"] .medex-description-tab[aria-selected="true"] .medex-tab-count {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+}
+
+.job-detail-page[data-sector="private"] .medex-description-tab:not([aria-selected="true"]) {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+.job-detail-page[data-sector="private"] .medex-description-tab:not([aria-selected="true"]) .medex-tab-label {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+.job-detail-page[data-sector="private"] .medex-description-tab:not([aria-selected="true"]) .medex-tab-icon {
+  color: #475569 !important;
+}
+
+.job-detail-page[data-sector="private"] .medex-description-tab:not([aria-selected="true"]):hover {
   border-color: #6ee7b7 !important;
+  background: #f0fdf4 !important;
   color: #047857 !important;
 }
 

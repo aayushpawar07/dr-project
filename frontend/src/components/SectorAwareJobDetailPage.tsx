@@ -363,9 +363,7 @@ function OfficialLinkBox({
   label: string;
   tone: 'pdf' | 'website';
 }) {
-  const styles = tone === 'pdf'
-    ? 'border-blue-300 bg-blue-50 text-blue-800 hover:bg-blue-100'
-    : 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100';
+  const styles = 'border-blue-300 bg-blue-50 text-blue-800 hover:bg-blue-100 hover:border-blue-400';
   return (
     <a
       href={href}
@@ -374,10 +372,10 @@ function OfficialLinkBox({
       className={`flex items-center justify-between rounded-lg border px-3 py-3 text-sm font-semibold transition-colors ${styles}`}
     >
       <span className="inline-flex items-center gap-2">
-        <Icon className="h-4 w-4" />
+        <Icon className="h-4 w-4 text-blue-600" />
         {label}
       </span>
-      <ExternalLink className="h-4 w-4" />
+      <ExternalLink className="h-4 w-4 text-blue-600" />
     </a>
   );
 }

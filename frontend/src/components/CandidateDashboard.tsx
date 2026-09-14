@@ -473,7 +473,15 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
           <strong>{user?.name || 'Candidate'}</strong>
           <span>{user?.email || 'Candidate account'}</span>
         </div>
-        <button type="button" onClick={handleLogout} aria-label="Logout" title="Logout"><LogOut size={17} /></button>
+        <button
+          type="button"
+          className="candidate-sidebar__logout"
+          onClick={handleLogout}
+          aria-label="Logout"
+          title="Logout"
+        >
+          <LogOut size={17} />
+        </button>
       </div>
     </>
   );
@@ -491,7 +499,14 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
   return (
     <div className="candidate-dashboard">
       <div className="candidate-mobile-bar">
-        <button type="button" onClick={() => setMobileNavOpen(true)} aria-label="Open dashboard menu"><Menu size={21} /></button>
+        <button
+          type="button"
+          className="candidate-mobile-toggle"
+          onClick={() => setMobileNavOpen(true)}
+          aria-label="Open dashboard menu"
+        >
+          <Menu size={21} />
+        </button>
         <strong>Candidate Dashboard</strong>
         <button type="button" onClick={() => openSection('notifications')} className="candidate-mobile-notification" aria-label="Notifications">
           <Bell size={20} />

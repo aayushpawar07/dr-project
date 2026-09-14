@@ -602,7 +602,13 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
           <strong>{employer.userName || employer.companyName}</strong>
           <span>{employer.userEmail}</span>
         </div>
-        <button type="button" className="icon-button" onClick={handleLogout} aria-label="Logout" title="Logout">
+        <button
+          type="button"
+          className="icon-button employer-sidebar__logout"
+          onClick={handleLogout}
+          aria-label="Logout"
+          title="Logout"
+        >
           <LogOut size={17} />
         </button>
       </div>
@@ -667,7 +673,7 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
       <div className="employer-dashboard__mobile-bar">
         <button
           type="button"
-          className="icon-button"
+          className="icon-button employer-mobile-toggle"
           onClick={() => setMobileNavOpen(true)}
           aria-label="Open employer navigation"
         >

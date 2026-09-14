@@ -237,7 +237,7 @@ export function PricingPage({ onNavigate }: PricingPageProps) {
         {!loading && !error && (
           <section className="mb-12 sm:mb-16 lg:mb-20">
             {plans.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 lg:gap-8 max-w-6xl mx-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 max-w-lg lg:max-w-6xl mx-auto">
                 {plans.map((plan, index) => {
                   const popular = isPopularPlan(plan, index);
                   const config = getPlanConfig(index, popular);
@@ -247,7 +247,7 @@ export function PricingPage({ onNavigate }: PricingPageProps) {
                       key={plan.id}
                       className={`relative bg-white rounded-xl border-2 transition-all duration-300 flex flex-col ${config.borderColor} ${config.hoverBorderColor} ${
                         popular
-                          ? 'ring-2 ring-green-200 shadow-lg md:scale-105'
+                          ? 'ring-2 ring-green-200 shadow-lg lg:scale-105'
                           : 'shadow-sm hover:shadow-md hover:-translate-y-0.5'
                       }`}
                     >

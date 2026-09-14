@@ -517,3 +517,59 @@
   background: #047857;
   transform: translateY(-1px);
 }
+
+@media (max-width: 640px) {
+  .jpf-header {
+    padding: 16px 14px;
+  }
+
+  .jpf-header-left {
+    gap: 12px;
+  }
+
+  .jpf-header-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .jpf-header-title {
+    font-size: 1.15rem;
+  }
+
+  .jpf-verified-badge {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .jpf-steps-nav {
+    padding: 10px 14px;
+  }
+
+  .jpf-body {
+    padding: 16px 14px;
+    gap: 16px;
+  }
+
+  .jpf-footer {
+    padding: 14px 14px;
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+
+  .jpf-footer > * {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .jpf-btn-cancel,
+  .jpf-btn-back,
+  .jpf-btn-continue,
+  .jpf-btn-submit {
+    width: 100%;
+    min-height: 44px;
+    justify-content: center;
+    margin-left: 0 !important;
+  }
+}
+

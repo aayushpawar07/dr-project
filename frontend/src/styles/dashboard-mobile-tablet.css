@@ -483,6 +483,64 @@
   .employer-modal__actions > button {
     width: 100%;
   }
+
+  /* Employer candidate cards in Mockup layout (.mx-candidate__actions) */
+  .mx-candidate__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
+  }
+
+  .mx-candidate__actions .mx-action--resume,
+  .mx-candidate__actions .mx-candidate__no-resume {
+    grid-column: 1 / -1;
+  }
+
+  .mx-action {
+    white-space: normal !important;
+    text-align: center;
+    line-height: 1.25;
+    padding: 8px 10px !important;
+    min-height: 42px;
+  }
+
+  /* Interview badge responsiveness */
+  .mx-interview-badge {
+    padding: 10px 12px !important;
+  }
+
+  .mx-interview-badge__btn {
+    white-space: normal !important;
+    text-align: center;
+    justify-content: center;
+    line-height: 1.3;
+    padding: 6px 12px !important;
+    min-height: 38px;
+  }
+
+  .mx-interview-badge__link-display {
+    padding-left: 0 !important;
+    overflow-wrap: anywhere;
+    word-break: break-all;
+  }
+
+  /* Employer banner responsiveness */
+  .mx-banner {
+    flex-wrap: wrap !important;
+    gap: 14px !important;
+  }
+
+  .mx-banner__left {
+    min-width: 0 !important;
+    width: 100%;
+  }
+
+  .mx-banner__right {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+  }
 }
 
 /* ------------------------------------------------------------------ *
@@ -663,8 +721,9 @@
     grid-template-columns: 1fr;
   }
 
-  .candidate-card__actions {
-    grid-template-columns: 1fr;
+  .candidate-card__actions,
+  .mx-candidate__actions {
+    grid-template-columns: 1fr !important;
   }
 
   .candidate-main,

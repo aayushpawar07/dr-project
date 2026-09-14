@@ -20,10 +20,11 @@
   line-height: 1.75;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .min-h-screen.bg-gray-50
     > .container.mx-auto.px-4.py-8
-    > .grid.md\:grid-cols-3.gap-6 {
+    > .grid.md\:grid-cols-3.gap-6,
+  .job-detail-page .job-detail-grid {
     grid-template-columns: minmax(0, 1fr) !important;
     gap: 16px !important;
   }
@@ -37,7 +38,9 @@
   .min-h-screen.bg-gray-50
     > .container.mx-auto.px-4.py-8
     > .grid.md\:grid-cols-3.gap-6
-    > .md\:col-span-2.space-y-6 {
+    > .md\:col-span-2.space-y-6,
+  .job-detail-page .job-detail-main,
+  .job-detail-page .job-detail-aside {
     min-width: 0;
     width: 100%;
   }

@@ -912,7 +912,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                   <div 
                     className="grid gap-4 md:gap-5 lg:gap-6"
                     style={{
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))'
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))'
                     }}
                   >
                     {[...Array(3)].map((_, i) => (
@@ -932,7 +932,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                   <div 
                     className="grid gap-4 md:gap-5 lg:gap-6 medex-applicant-grid"
                     style={{
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))'
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))'
                     }}
                   >
                     {filteredApplications.map(renderApplicationCard)}
@@ -945,7 +945,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                   <div 
                     className="grid gap-4 md:gap-5 lg:gap-6"
                     style={{
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))'
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))'
                     }}
                   >
                     {[...Array(3)].map((_, i) => (
@@ -961,7 +961,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                   <div 
                     className="grid gap-4 md:gap-5 lg:gap-6 medex-applicant-grid"
                     style={{
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))'
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))'
                     }}
                   >
                     {filteredApplications
@@ -976,7 +976,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                   <div 
                     className="grid gap-4 md:gap-5 lg:gap-6"
                     style={{
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))'
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))'
                     }}
                   >
                     {[...Array(3)].map((_, i) => (
@@ -992,7 +992,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                   <div 
                     className="grid gap-4 md:gap-5 lg:gap-6 medex-applicant-grid"
                     style={{
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))'
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))'
                     }}
                   >
                     {filteredApplications
@@ -1007,7 +1007,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                   <div 
                     className="grid gap-4 md:gap-5 lg:gap-6"
                     style={{
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))'
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))'
                     }}
                   >
                     {[...Array(3)].map((_, i) => (
@@ -1023,7 +1023,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                   <div 
                     className="grid gap-4 md:gap-5 lg:gap-6 medex-applicant-grid"
                     style={{
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 320px), 1fr))'
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))'
                     }}
                   >
                     {filteredApplications

@@ -61,7 +61,7 @@ const DialogContent = React.forwardRef<
         ref={ref}
         data-slot="dialog-content"
         className={cn(
-          "bg-white dark:bg-gray-800 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed z-[9999] grid w-[90vw] max-w-[500px] gap-4 rounded-lg border p-6 shadow-lg duration-200 relative",
+          "bg-white dark:bg-gray-800 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed z-[9999] grid w-[calc(100vw-24px)] sm:w-[90vw] max-w-[500px] gap-4 rounded-lg border p-4 sm:p-6 shadow-lg duration-200 relative",
           className,
         )}
         style={{
@@ -70,7 +70,8 @@ const DialogContent = React.forwardRef<
           left: '50%',
           transform: 'translate(-50%, -50%)',
           zIndex: 9999,
-          maxHeight: '85vh',
+          maxHeight: 'min(88vh, 88dvh)',
+          maxWidth: 'calc(100vw - 20px)',
           overflowY: 'auto',
           margin: '0',
         }}

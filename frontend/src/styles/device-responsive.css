@@ -103,7 +103,8 @@ h6 {
 /* Tables stay usable on touch screens rather than compressing text beyond readability. */
 .overflow-x-auto,
 [class*="table-scroll"],
-[class*="table-wrapper"] {
+[class*="table-wrapper"],
+[data-slot="table-container"] {
   max-width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -116,9 +117,10 @@ table {
 
 /* Modal/dialog safety for every device. */
 [role="dialog"] {
-  max-width: min(calc(100vw - 24px), 960px) !important;
-  max-height: calc(100dvh - 24px);
-  overflow-y: auto;
+  width: min(calc(100vw - 20px), 960px) !important;
+  max-width: min(calc(100vw - 20px), 960px) !important;
+  max-height: calc(100dvh - 20px) !important;
+  overflow-y: auto !important;
   overscroll-behavior: contain;
 }
 
@@ -253,6 +255,8 @@ main h2 {
 
   /* Common section heading/action pairs stack cleanly. */
   .min-h-screen section > .container > .flex.items-center.justify-between,
+  .min-h-screen > .container > .flex.items-center.justify-between,
+  .min-h-screen .container > .flex.items-center.justify-between,
   main > .container > .flex.items-center.justify-between,
   .min-h-screen .container > .flex.items-center.justify-between.mb-8,
   .min-h-screen .container > .flex.items-center.justify-between.mb-6 {
@@ -458,6 +462,16 @@ main h2 {
 
   .medex-job-card button {
     min-height: 36px;
+  }
+
+  .medex-job-card .flex.items-center.justify-between.border-t {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Auth / small card padding on narrow devices */
+  .min-h-screen .w-full.max-w-md.p-8 {
+    padding: 1.25rem 1rem !important;
   }
 }
 

@@ -2,7 +2,7 @@
 
 .medex-applicant-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)) !important;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)) !important;
   align-items: stretch !important;
   gap: 1.25rem !important;
 }

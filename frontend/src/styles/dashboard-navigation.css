@@ -30,11 +30,13 @@
   .candidate-content-panel,
   .candidate-dashboard-section,
   .candidate-greeting-card,
+  .mx-greeting-banner,
   .dashboard-page-header,
   .dashboard-panel,
   .dashboard-section-switcher,
-  .employer-verification-card {
-    scroll-margin-top: 82px;
+  .employer-verification-card,
+  .mx-banner {
+    scroll-margin-top: 118px;
   }
 }
 

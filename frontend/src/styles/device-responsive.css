@@ -138,14 +138,16 @@ main h2 {
 /* Site header mobile drawer. */
 .medex-site-header {
   isolation: isolate;
+  z-index: 1000 !important;
 }
 
 .medex-mobile-nav {
-  z-index: 70;
+  z-index: 1002 !important;
+  background-color: #ffffff !important;
 }
 
 .medex-mobile-nav-overlay {
-  z-index: 60;
+  z-index: 1001 !important;
 }
 
 /* Recruitment multi-job actions must stay on one line. */

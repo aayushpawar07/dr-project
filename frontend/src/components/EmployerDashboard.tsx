@@ -682,7 +682,7 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
         <strong>Employer Dashboard</strong>
         <button
           type="button"
-          className="icon-button icon-button--notification"
+          className="icon-button icon-button--notification employer-mobile-notification"
           onClick={() => openSection('notifications')}
           aria-label="Notifications"
         >

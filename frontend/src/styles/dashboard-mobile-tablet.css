@@ -64,27 +64,99 @@
 
   .candidate-mobile-bar,
   .employer-dashboard__mobile-bar {
-    position: sticky;
-    /* employer-dashboard.css pins this to 0, which hides it behind the
-       sticky site header. Force it to sit directly below the header. */
+    position: sticky !important;
     top: var(--medex-dashboard-header-height) !important;
-    z-index: 30;
-    display: flex;
-    min-height: 56px;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    border-bottom: 1px solid #dce5eb;
-    background: rgba(255, 255, 255, 0.97);
-    padding: 8px 14px;
-    backdrop-filter: blur(10px);
+    z-index: 45 !important;
+    display: grid !important;
+    grid-template-columns: 40px 1fr 40px !important;
+    align-items: center !important;
+    height: 52px !important;
+    min-height: 52px !important;
+    max-height: 52px !important;
+    padding: 0 12px !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    background: rgba(255, 255, 255, 0.98) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
   }
 
   .candidate-mobile-bar > strong,
   .employer-dashboard__mobile-bar > strong {
-    font-size: 15px;
-    font-weight: 750;
-    color: #1d3243;
+    font-size: 15px !important;
+    font-weight: 750 !important;
+    color: #0f172a !important;
+    text-align: center !important;
+    letter-spacing: -0.01em !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 1.2 !important;
+  }
+
+  .candidate-mobile-toggle,
+  .employer-mobile-toggle {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 10px !important;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+    border: 1px solid #1d4ed8 !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25) !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    justify-self: start !important;
+  }
+
+  .candidate-mobile-notification,
+  .employer-mobile-notification,
+  .employer-dashboard__mobile-bar .icon-button--notification {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 10px !important;
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #475569 !important;
+    position: relative !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    justify-self: end !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+  }
+
+  .candidate-mobile-notification > span,
+  .employer-mobile-notification > span,
+  .employer-dashboard__mobile-bar .icon-button--notification > span {
+    position: absolute !important;
+    top: -3px !important;
+    right: -3px !important;
+    min-width: 17px !important;
+    height: 17px !important;
+    border-radius: 999px !important;
+    background: #ef4444 !important;
+    color: #ffffff !important;
+    font-size: 10px !important;
+    font-weight: 750 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 4px !important;
+    border: 2px solid #ffffff !important;
+    line-height: 1 !important;
+    box-sizing: border-box !important;
   }
 
   .candidate-mobile-nav,
@@ -285,17 +357,17 @@
     font-size: 11px;
   }
 
-  /* Room for the fixed bottom navigation plus the home indicator. */
+  /* Room for the fixed bottom navigation, Chrome translate bar, plus home indicator. */
   .candidate-main {
-    padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important;
+    padding-bottom: calc(104px + env(safe-area-inset-bottom, 20px)) !important;
   }
 
   .admin-ui-content {
-    padding-bottom: calc(92px + env(safe-area-inset-bottom)) !important;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 20px)) !important;
   }
 
   .employer-main {
-    padding-bottom: calc(40px + env(safe-area-inset-bottom)) !important;
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 20px)) !important;
   }
 }
 

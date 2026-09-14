@@ -6,7 +6,7 @@
   margin: 0 auto;
   padding: 0 16px;
   position: relative;
-  z-index: 100;
+  z-index: 10;
 }
 
 .search-bar--compact {
@@ -20,7 +20,7 @@
   background: #ffffff;
   border-radius: 60px;
   position: relative;
-  z-index: 100;
+  z-index: 10;
   box-shadow: 
     0 4px 6px -1px rgba(0, 0, 0, 0.1),
     0 2px 4px -1px rgba(0, 0, 0, 0.06),

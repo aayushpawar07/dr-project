@@ -66,7 +66,8 @@ function scrollToTarget(target: HTMLElement) {
 
 function getCandidateTarget(dashboard: HTMLElement, label: string) {
   if (label === 'dashboard' || label === 'home') {
-    return dashboard.querySelector<HTMLElement>('.candidate-page-header') ||
+    return dashboard.querySelector<HTMLElement>('.mx-greeting-banner') ||
+      dashboard.querySelector<HTMLElement>('.candidate-page-header') ||
       dashboard.querySelector<HTMLElement>('.candidate-main');
   }
 
@@ -77,7 +78,8 @@ function getCandidateTarget(dashboard: HTMLElement, label: string) {
 
 function getEmployerTarget(dashboard: HTMLElement, label: string) {
   if (label === 'dashboard') {
-    return dashboard.querySelector<HTMLElement>('.dashboard-page-header') ||
+    return dashboard.querySelector<HTMLElement>('.mx-banner') ||
+      dashboard.querySelector<HTMLElement>('.dashboard-page-header') ||
       dashboard.querySelector<HTMLElement>('.employer-main');
   }
 

@@ -1305,22 +1305,38 @@
   }
 
   .employer-dashboard__mobile-bar {
-    position: sticky;
-    top: 0;
-    z-index: 35;
-    height: 56px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--dashboard-border);
-    background: rgba(255, 255, 255, 0.96);
-    backdrop-filter: blur(14px);
-    padding: 0 12px;
+    position: sticky !important;
+    top: 56px !important;
+    z-index: 45 !important;
+    height: 52px !important;
+    min-height: 52px !important;
+    max-height: 52px !important;
+    display: grid !important;
+    grid-template-columns: 40px 1fr 40px !important;
+    align-items: center !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    background: rgba(255, 255, 255, 0.98) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    padding: 0 12px !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
   }
 
   .employer-dashboard__mobile-bar > strong {
-    color: #233447;
-    font-size: 13px;
+    font-size: 15px !important;
+    font-weight: 750 !important;
+    color: #0f172a !important;
+    text-align: center !important;
+    letter-spacing: -0.01em !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 1.2 !important;
   }
 
   .employer-mobile-nav {
@@ -1372,25 +1388,37 @@
   }
 
   .employer-main {
-    padding: 16px 12px 34px;
+    padding: 12px 14px calc(96px + env(safe-area-inset-bottom, 20px)) !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .dashboard-page-header {
     align-items: flex-start;
+    margin-top: 0 !important;
+    margin-bottom: 12px !important;
   }
 
   .dashboard-page-header__actions,
-  .dashboard-desktop-notification {
-    display: none;
+  .dashboard-desktop-notification,
+  .dashboard-page-header h1 {
+    display: none !important;
   }
 
   .dashboard-page-header__title {
-    align-items: flex-start;
-    gap: 10px;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
   }
 
-  .dashboard-page-header h1 {
-    font-size: 22px;
+  .dashboard-page-header p {
+    font-size: 13.5px !important;
+    font-weight: 550 !important;
+    color: #475569 !important;
+    margin: 0 !important;
+    line-height: 1.35 !important;
   }
 
   .dashboard-back-link span {

@@ -122,28 +122,6 @@ body:has(.admin-ui-shell) {
   overscroll-behavior: none;
 }
 
-@media (max-width: 860px) {
-  /* Mobile dashboard bar stays fixed; the content below it owns scrolling. */
-  .candidate-mobile-bar,
-  .employer-dashboard__mobile-bar {
-    position: relative !important;
-    top: auto !important;
-    flex: 0 0 auto;
-  }
-
-  .candidate-dashboard__shell,
-  .employer-dashboard__shell {
-    flex: 1 1 auto;
-    min-height: 0 !important;
-    overflow: hidden !important;
-  }
-
-  .candidate-main,
-  .employer-main {
-    height: 100%;
-    max-height: 100%;
-  }
-}
 
 @media (max-width: 640px) {
   /* The global header is slightly shorter on compact screens. */

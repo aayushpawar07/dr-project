@@ -74,7 +74,7 @@ export function Header({ currentPage, onNavigate, isAuthenticated }: HeaderProps
   const handleLogout = () => { setMobileMenuOpen(false); logout(); onNavigate('logout'); };
 
   return (
-    <header className="medex-site-header sticky top-0 z-50 w-full border-b bg-white">
+    <header className="medex-site-header sticky top-0 z-[1000] w-full border-b bg-white">
       <div className="container mx-auto px-3 sm:px-4">
         <div className="flex h-14 sm:h-16 items-center justify-between gap-2">
           <div className="flex items-center cursor-pointer flex-shrink-0 px-1 sm:px-2 hover:opacity-95 transition-opacity" onClick={() => navigateAndClose('home')} aria-label="MedExJob Home">
@@ -115,8 +115,8 @@ export function Header({ currentPage, onNavigate, isAuthenticated }: HeaderProps
 
       {mobileMenuOpen && (
         <>
-          <button className="medex-mobile-nav-overlay fixed inset-x-0 bottom-0 top-14 sm:top-16 bg-slate-950/35 lg:hidden" onClick={() => setMobileMenuOpen(false)} aria-label="Close navigation menu" />
-          <div className="medex-mobile-nav absolute left-0 right-0 top-full lg:hidden bg-white border-t border-gray-100 shadow-xl max-h-[calc(100dvh-3.5rem)] sm:max-h-[calc(100dvh-4rem)] overflow-y-auto">
+          <button className="medex-mobile-nav-overlay fixed inset-x-0 bottom-0 top-14 sm:top-16 bg-slate-950/35 z-[1001] lg:hidden" onClick={() => setMobileMenuOpen(false)} aria-label="Close navigation menu" />
+          <div className="medex-mobile-nav absolute left-0 right-0 top-full z-[1002] lg:hidden bg-white border-t border-gray-100 shadow-xl max-h-[calc(100dvh-3.5rem)] sm:max-h-[calc(100dvh-4rem)] overflow-y-auto">
             <nav className="container mx-auto px-3 sm:px-4 py-3 grid grid-cols-1 gap-1">
               {publicNavItems.map((item) => <button key={item.page} onClick={() => navigateAndClose(item.page)} className={`w-full text-left rounded-lg px-4 py-3 text-sm font-medium transition-colors ${currentPage === item.page ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-blue-700'}`}>{item.label}</button>)}
               <div className="border-t border-gray-100 mt-2 pt-3 flex flex-col gap-2 sm:hidden">

@@ -190,6 +190,23 @@ public class JobController {
             
             List<Job> allJobs = jobRepository.findByEmployerId(employerId);
             
+            // If test account has no jobs yet, seed them on the fly
+            if (allJobs.isEmpty()) {
+                try {
+                    Optional<Employer> empOpt = employerRepository.findById(employerId);
+                    if (empOpt.isPresent()) {
+                        Employer emp = empOpt.get();
+                        String empEmail = emp.getUser() != null ? emp.getUser().getEmail() : "";
+                        if ("cricketloverayush9999@gmail.com".equalsIgnoreCase(empEmail)) {
+                            seedSampleJobsForEmployer(emp);
+                            allJobs = jobRepository.findByEmployerId(employerId);
+                        }
+                    }
+                } catch (Exception seedEx) {
+                    logger.warn("Could not auto-seed sample jobs for test account: {}", seedEx.getMessage());
+                }
+            }
+            
             // Filter by status if provided
             List<Job> filteredJobs = statusFilter != null 
                 ? allJobs.stream()
@@ -1163,5 +1180,121 @@ public class JobController {
             case HOSPITAL_ADMINISTRATION -> "Hospital Administration";
             case PUBLIC_HEALTH -> "Public Health";
         };
+    }
+
+    private void seedSampleJobsForEmployer(Employer employer) {
+        String contactEmail = employer.getUser() != null ? employer.getUser().getEmail() : "cricketloverayush9999@gmail.com";
+        String contactPhone = employer.getUser() != null && employer.getUser().getPhone() != null ? employer.getUser().getPhone() : "+916265561446";
+
+        List<Job> sampleList = List.of(
+            createSampleJob(
+                employer,
+                "Senior Consultant - Critical Care Medicine",
+                "Lead our advanced 24-bed multidisciplinary ICU and ECMO team. Manage critical patient admissions, ventilator protocols, and bedside echocardiography.",
+                Job.JobCategory.SPECIALIST,
+                "Bhopal, Madhya Pradesh",
+                "MD/DNB in Anaesthesia or Critical Care Medicine (IDCCM)",
+                "3-6 years",
+                Job.ExperienceLevel.SENIOR,
+                "Critical Care",
+                2,
+                "INR 2,20,000 - 3,00,000 per month",
+                true,
+                contactEmail,
+                contactPhone
+            ),
+            createSampleJob(
+                employer,
+                "Emergency Medical Officer (Casualty)",
+                "Handle emergency room triage, primary trauma stabilization, resuscitation, and prompt referral coordination in our Level-1 trauma unit.",
+                Job.JobCategory.MEDICAL_OFFICER,
+                "Bhopal, Madhya Pradesh",
+                "MBBS with valid MCI/State Council registration and ACLS/ATLS certification",
+                "1-3 years",
+                Job.ExperienceLevel.MID,
+                "Emergency Medicine",
+                4,
+                "INR 90,000 - 1,25,000 per month",
+                true,
+                contactEmail,
+                contactPhone
+            ),
+            createSampleJob(
+                employer,
+                "Consultant Pediatrician & Neonatologist",
+                "Provide comprehensive neonatal intensive care, pediatric inpatient care, developmental screening, and parent counseling.",
+                Job.JobCategory.SPECIALIST,
+                "Bhopal, Madhya Pradesh",
+                "MD/DNB in Pediatrics with NICU/PICU clinical exposure",
+                "2-5 years",
+                Job.ExperienceLevel.MID,
+                "Pediatrics",
+                2,
+                "INR 1,80,000 - 2,50,000 per month",
+                false,
+                contactEmail,
+                contactPhone
+            ),
+            createSampleJob(
+                employer,
+                "ICU Staff Nurse (In-Charge)",
+                "Supervise intensive care nursing stations, monitor patient hemodynamics, manage infusions, and ensure high infection control standards.",
+                Job.JobCategory.PARAMEDICAL_NURSING,
+                "Bhopal, Madhya Pradesh",
+                "B.Sc Nursing / GNM with State Nursing Council Registration",
+                "2-4 years",
+                Job.ExperienceLevel.MID,
+                "Critical Care Nursing",
+                6,
+                "INR 40,000 - 60,000 per month",
+                false,
+                contactEmail,
+                contactPhone
+            )
+        );
+
+        for (Job j : sampleList) {
+            jobRepository.save(j);
+        }
+    }
+
+    private Job createSampleJob(
+            Employer employer,
+            String title,
+            String desc,
+            Job.JobCategory category,
+            String location,
+            String qualification,
+            String experience,
+            Job.ExperienceLevel expLevel,
+            String speciality,
+            int posts,
+            String salary,
+            boolean featured,
+            String email,
+            String phone
+    ) {
+        Job job = new Job();
+        job.setEmployer(employer);
+        job.setTitle(title);
+        job.setDescription(desc);
+        job.setSector(Job.JobSector.PRIVATE);
+        job.setCategory(category);
+        job.setLocation(location);
+        job.setQualification(qualification);
+        job.setExperience(experience);
+        job.setExperienceLevel(expLevel);
+        job.setSpeciality(speciality);
+        job.setDutyType(Job.DutyType.FULL_TIME);
+        job.setNumberOfPosts(posts);
+        job.setSalaryRange(salary);
+        job.setRequirements("Valid registration, strong clinical communication, patient-first approach, and teamwork.");
+        job.setBenefits("Health insurance, paid annual leave, professional development support, and accommodation assistance.");
+        job.setLastDate(LocalDate.now().plusMonths(6));
+        job.setContactEmail(email);
+        job.setContactPhone(phone);
+        job.setStatus(Job.JobStatus.ACTIVE);
+        job.setIsFeatured(featured);
+        return job;
     }
 }

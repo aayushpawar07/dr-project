@@ -213,3 +213,79 @@ export async function continueEmployer(
   if (!res.ok) throw new Error(`Failed to continue employer (${res.status})`);
   return res.json();
 }
+
+export interface EmployerProfileUpdatePayload {
+  companyName?: string;
+  companyType?: 'hospital' | 'consultancy' | 'hr';
+  companyDescription?: string;
+  website?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  userName?: string;
+  name?: string;
+  phone?: string;
+  contactPhone?: string;
+}
+
+export async function updateEmployerProfile(
+  id: string,
+  data: EmployerProfileUpdatePayload,
+  token: string
+): Promise<EmployerResponse> {
+  const res = await authFetch(`${API_BASE}/employers/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    throw new Error(errBody.error || errBody.message || `Failed to update employer profile (${res.status})`);
+  }
+  return res.json();
+}
+
+export interface EmployerInsightsFilters {
+  companyType?: string;
+  verificationStatus?: string;
+  state?: string;
+  search?: string;
+}
+
+export interface EmployerInsightsResponse {
+  totalEmployers: number;
+  filteredEmployers: number;
+  verifiedEmployers: number;
+  companyTypeCounts: Record<string, number>;
+  verificationStatusCounts: Record<string, number>;
+  stateCounts: Record<string, number>;
+  employers: EmployerResponse[];
+}
+
+export async function fetchEmployerInsights(
+  filters: EmployerInsightsFilters = {},
+  token: string
+): Promise<EmployerInsightsResponse> {
+  const qs = new URLSearchParams();
+  if (filters.companyType) qs.set('companyType', filters.companyType);
+  if (filters.verificationStatus) qs.set('verificationStatus', filters.verificationStatus);
+  if (filters.state) qs.set('state', filters.state);
+  if (filters.search) qs.set('search', filters.search);
+
+  const res = await authFetch(`${API_BASE}/employers/insights?${qs.toString()}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Cache-Control': 'no-cache',
+    },
+  });
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    throw new Error(errBody.error || errBody.message || `Failed to fetch employer insights (${res.status})`);
+  }
+  return res.json();
+}
+

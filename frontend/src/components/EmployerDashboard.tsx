@@ -25,6 +25,7 @@ import {
   Plus,
   RefreshCw,
   ShieldCheck,
+  Sparkles,
   Star,
   UserCheck,
   Users,
@@ -43,7 +44,7 @@ import {
   normalizeApplicationStatus,
   toInterviewDateTimeLocal,
 } from '../api/applications';
-import { fetchJobsByEmployer } from '../api/jobs';
+import { fetchJobsByEmployer, createJob } from '../api/jobs';
 import { getCurrentSubscription, SubscriptionResponse } from '../api/subscriptions';
 import { fetchNotifications } from '../api/notifications';
 import { openFileInViewer } from '../utils/fileUtils';
@@ -125,6 +126,77 @@ function getApplicationStatusClass(status?: string) {
   }
 }
 
+const SAMPLE_TEST_JOBS = [
+  {
+    title: 'Senior Consultant - Critical Care Medicine',
+    sector: 'private' as const,
+    category: 'specialist',
+    location: 'Bhopal, Madhya Pradesh',
+    qualification: 'MD/DNB in Anaesthesia or Critical Care Medicine (IDCCM)',
+    experience: '3-6 years',
+    experienceLevel: 'senior' as const,
+    speciality: 'Critical Care',
+    dutyType: 'full_time' as const,
+    numberOfPosts: 2,
+    salary: 'INR 2,20,000 - 3,00,000 per month',
+    description: 'Lead our advanced 24-bed multidisciplinary ICU and ECMO team. Manage critical patient admissions, ventilator protocols, and bedside echocardiography.',
+    lastDate: '2027-12-31',
+    featured: true,
+    status: 'active' as const,
+  },
+  {
+    title: 'Emergency Medical Officer (Casualty)',
+    sector: 'private' as const,
+    category: 'medical officer',
+    location: 'Bhopal, Madhya Pradesh',
+    qualification: 'MBBS with valid MCI/State Council registration and ACLS/ATLS certification',
+    experience: '1-3 years',
+    experienceLevel: 'mid' as const,
+    speciality: 'Emergency Medicine',
+    dutyType: 'full_time' as const,
+    numberOfPosts: 4,
+    salary: 'INR 90,000 - 1,25,000 per month',
+    description: 'Handle emergency room triage, primary trauma stabilization, resuscitation, and prompt referral coordination in our Level-1 trauma unit.',
+    lastDate: '2027-12-31',
+    featured: true,
+    status: 'active' as const,
+  },
+  {
+    title: 'Consultant Pediatrician & Neonatologist',
+    sector: 'private' as const,
+    category: 'specialist',
+    location: 'Bhopal, Madhya Pradesh',
+    qualification: 'MD/DNB in Pediatrics with NICU/PICU clinical exposure',
+    experience: '2-5 years',
+    experienceLevel: 'mid' as const,
+    speciality: 'Pediatrics',
+    dutyType: 'full_time' as const,
+    numberOfPosts: 2,
+    salary: 'INR 1,80,000 - 2,50,000 per month',
+    description: 'Provide comprehensive neonatal intensive care, pediatric inpatient care, developmental screening, and parent counseling.',
+    lastDate: '2027-12-31',
+    featured: false,
+    status: 'active' as const,
+  },
+  {
+    title: 'ICU Staff Nurse (In-Charge)',
+    sector: 'private' as const,
+    category: 'paramedical',
+    location: 'Bhopal, Madhya Pradesh',
+    qualification: 'B.Sc Nursing / GNM with State Nursing Council Registration',
+    experience: '2-4 years',
+    experienceLevel: 'mid' as const,
+    speciality: 'Critical Care Nursing',
+    dutyType: 'full_time' as const,
+    numberOfPosts: 6,
+    salary: 'INR 40,000 - 60,000 per month',
+    description: 'Supervise intensive care nursing stations, monitor patient hemodynamics, manage infusions, and ensure high infection control standards.',
+    lastDate: '2027-12-31',
+    featured: false,
+    status: 'active' as const,
+  },
+];
+
 export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
   const { user, token, logout } = useAuth();
   const isTestAccount = user?.email?.toLowerCase() === 'cricketloverayush9999@gmail.com';
@@ -142,6 +214,7 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
   const [updatingApplicationId, setUpdatingApplicationId] = useState<string | null>(null);
   const [selectedJobId, setSelectedJobId] = useState<string>('all');
   const [applicationFilter, setApplicationFilter] = useState<ApplicationFilter>('all');
+  const [seedingTestJobs, setSeedingTestJobs] = useState(false);
   const [interviewDraft, setInterviewDraft] = useState<{
     application: ApplicationResponse;
     date: string;
@@ -184,6 +257,33 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
     return allApplications;
   };
 
+  const seedTestJobsNow = async (companyNameOverride?: string) => {
+    if (seedingTestJobs) return;
+    setSeedingTestJobs(true);
+    const orgName = companyNameOverride || employer?.companyName || 'Aimss Multi-Speciality Hospital';
+    toast.info('Generating sample medical jobs for your VIP account...');
+    try {
+      for (const sample of SAMPLE_TEST_JOBS) {
+        try {
+          await createJob({
+            ...sample,
+            organization: orgName,
+            contactEmail: user?.email || 'cricketloverayush9999@gmail.com',
+            contactPhone: user?.phone || '+916265561446',
+          });
+        } catch (jobErr) {
+          console.warn('Sample job creation error:', jobErr);
+        }
+      }
+      toast.success('4 sample clinical jobs added to your test dashboard!');
+      await loadDashboardData(false);
+    } catch (err: any) {
+      toast.error('Unable to create test jobs: ' + (err?.message || 'Server error'));
+    } finally {
+      setSeedingTestJobs(false);
+    }
+  };
+
   const loadDashboardData = async (showLoader = false) => {
     if (!user || !token) return;
     if (showLoader) setLoading(true);
@@ -200,6 +300,14 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
       });
       const employerJobs = jobsResponse.content || [];
       setMyJobs(employerJobs);
+
+      // If test account has 0 jobs, auto-seed on the fly once!
+      if (isTestAccount && employerJobs.length === 0 && !sessionStorage.getItem('medex_seeded_' + user.id)) {
+        sessionStorage.setItem('medex_seeded_' + user.id, '1');
+        setTimeout(() => {
+          void seedTestJobsNow(employerData.companyName);
+        }, 150);
+      }
 
       const applications = await fetchApplicationsForJobs(employerJobs, token);
       setMyApplications(applications);
@@ -828,6 +936,17 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                   ? currentSubscription.plan.name
                   : 'No active plan'}
               </button>
+              {isTestAccount && (
+                <button
+                  className="mx-btn mx-btn--sm bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1.5"
+                  type="button"
+                  disabled={seedingTestJobs}
+                  onClick={() => void seedTestJobsNow()}
+                >
+                  <Sparkles size={14} className={seedingTestJobs ? 'animate-spin' : ''} />
+                  {seedingTestJobs ? 'Adding Jobs…' : '⚡ Generate 4 Sample Jobs'}
+                </button>
+              )}
             </div>
           </section>
 
@@ -943,9 +1062,23 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                   <div className="dashboard-empty-state__icon"><Briefcase size={26} /></div>
                   <h3>No {jobFilter === 'all' ? '' : `${jobFilter} `}jobs found</h3>
                   <p>Your job postings will appear here as soon as they are available.</p>
-                  <button className="dashboard-primary-button dashboard-primary-button--small" onClick={handlePostJob} type="button">
-                    <Plus size={16} /> Post a Job
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '8px' }}>
+                    <button className="dashboard-primary-button dashboard-primary-button--small" onClick={handlePostJob} type="button">
+                      <Plus size={16} /> Post a Job
+                    </button>
+                    {isTestAccount && (
+                      <button
+                        className="dashboard-primary-button dashboard-primary-button--small"
+                        style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)', color: '#ffffff' }}
+                        type="button"
+                        disabled={seedingTestJobs}
+                        onClick={() => void seedTestJobsNow()}
+                      >
+                        <Sparkles size={16} className={seedingTestJobs ? 'animate-spin' : ''} />
+                        {seedingTestJobs ? 'Generating Jobs…' : '⚡ Generate 4 Sample Jobs'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="mx-joblist">

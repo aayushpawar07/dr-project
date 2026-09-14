@@ -797,6 +797,16 @@
   color: #64748b;
 }
 
+.insights-pill--rose {
+  background: #fff1f2;
+  color: #9f1239;
+  border: 1px solid #fecdd3;
+}
+
+.insights-pill--rose svg {
+  color: #e11d48;
+}
+
 .insights-profile__location-text {
   min-width: 0;
   overflow: hidden;

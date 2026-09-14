@@ -3,6 +3,8 @@ import {
   ArrowLeft,
   Building2,
   CheckCircle2,
+  Edit3,
+  Globe,
   GraduationCap,
   Mail,
   MapPin,
@@ -12,10 +14,11 @@ import {
   Sparkles,
   Stethoscope,
   User,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
-import { fetchEmployer, EmployerResponse } from '../api/employers';
+import { fetchEmployer, updateEmployerProfile, EmployerResponse, EmployerProfileUpdatePayload } from '../api/employers';
 import { CandidateProfileData, fetchMyCandidateProfile, updateMyCandidateProfile } from '../api/candidateProfiles';
 import '../styles/profile-page.css';
 
@@ -53,6 +56,19 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
   const [candidate, setCandidate] = useState<CandidateProfileData>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isEditingEmployer, setIsEditingEmployer] = useState(false);
+  const [employerForm, setEmployerForm] = useState<EmployerProfileUpdatePayload>({
+    companyName: '',
+    companyType: 'hospital',
+    companyDescription: '',
+    website: '',
+    address: '',
+    city: '',
+    state: '',
+    pincode: '',
+    name: '',
+    phone: '',
+  });
 
   useEffect(() => {
     let active = true;
@@ -62,7 +78,21 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
       try {
         if (user.role === 'employer') {
           const data = await fetchEmployer(user.id, token);
-          if (active) setEmployer(data);
+          if (active) {
+            setEmployer(data);
+            setEmployerForm({
+              companyName: data.companyName || '',
+              companyType: data.companyType || 'hospital',
+              companyDescription: data.companyDescription || '',
+              website: data.website || '',
+              address: data.address || '',
+              city: data.city || '',
+              state: data.state || '',
+              pincode: data.pincode || '',
+              name: data.userName || user?.name || '',
+              phone: user?.phone || '',
+            });
+          }
         } else if (user.role === 'candidate') {
           const data = await fetchMyCandidateProfile(token);
           if (active) setCandidate(data);
@@ -82,7 +112,30 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
   if (!user) return null;
   const isEmployer = user.role === 'employer';
   const isCandidate = user.role === 'candidate';
-  const displayName = isEmployer ? employer?.companyName || user.name : user.name;
+  const displayName = isEmployer ? employer?.companyName || employerForm.companyName || user.name : user.name;
+
+  const saveEmployer = async () => {
+    if (!token || !employer?.id) {
+      toast.error('Employer profile identifier not available');
+      return;
+    }
+    if (!employerForm.companyName?.trim()) {
+      toast.error('Company / Hospital Name is required');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const updated = await updateEmployerProfile(employer.id, employerForm, token);
+      setEmployer(updated);
+      setIsEditingEmployer(false);
+      toast.success('Employer profile updated successfully');
+    } catch (error: any) {
+      toast.error(error?.message || 'Unable to update employer profile');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const saveCandidate = async () => {
     if (!token) return;
@@ -137,15 +190,57 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
                   <Mail />
                   {user.email}
                 </span>
-                {user.phone && (
+                {(employerForm.phone || user.phone) && (
                   <span className="profile-header-meta-item">
                     <Phone />
-                    {user.phone}
+                    {employerForm.phone || user.phone}
                   </span>
                 )}
               </div>
             </div>
           </div>
+
+          {isEmployer && (
+            <div className="profile-header-actions">
+              <button
+                type="button"
+                className={`profile-edit-toggle-btn ${isEditingEmployer ? 'is-active' : ''}`}
+                onClick={() => {
+                  if (isEditingEmployer) {
+                    if (employer) {
+                      setEmployerForm({
+                        companyName: employer.companyName || '',
+                        companyType: employer.companyType || 'hospital',
+                        companyDescription: employer.companyDescription || '',
+                        website: employer.website || '',
+                        address: employer.address || '',
+                        city: employer.city || '',
+                        state: employer.state || '',
+                        pincode: employer.pincode || '',
+                        name: employer.userName || user?.name || '',
+                        phone: user?.phone || '',
+                      });
+                    }
+                    setIsEditingEmployer(false);
+                  } else {
+                    setIsEditingEmployer(true);
+                  }
+                }}
+              >
+                {isEditingEmployer ? (
+                  <>
+                    <X className="h-4 w-4" />
+                    <span>Cancel Edit</span>
+                  </>
+                ) : (
+                  <>
+                    <Edit3 className="h-4 w-4" />
+                    <span>Edit Profile</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </section>
 
         {loading ? (
@@ -365,35 +460,216 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
         ) : isEmployer ? (
           <div className="profile-body-grid">
             <main className="profile-main-column">
-              <ProfileSection
-                icon={Building2}
-                title="Company Details"
-                subtitle="Employer identity and business details."
-                variant="blue"
-              >
-                <div className="profile-account-list">
-                  <Info label="Company" value={employer?.companyName} />
-                  <Info label="Type" value={employer?.companyType} />
-                  <Info label="Website" value={employer?.website} />
-                  <Info label="Email" value={employer?.userEmail} />
-                </div>
-              </ProfileSection>
+              {isEditingEmployer ? (
+                <>
+                  <ProfileSection
+                    icon={Building2}
+                    title="Company Information"
+                    subtitle="Update your healthcare organization brand, legal entity, and category."
+                    variant="blue"
+                  >
+                    <div className="profile-fields-grid">
+                      <Field label="Company / Hospital Name *">
+                        <input
+                          className="profile-input"
+                          value={employerForm.companyName || ''}
+                          onChange={(e) => setEmployerForm({ ...employerForm, companyName: e.target.value })}
+                          placeholder="e.g. Aimss Multi-Speciality Hospital"
+                          required
+                        />
+                      </Field>
+                      <Field label="Organization Type">
+                        <select
+                          className="profile-select"
+                          value={employerForm.companyType || 'hospital'}
+                          onChange={(e) => setEmployerForm({ ...employerForm, companyType: e.target.value as any })}
+                        >
+                          <option value="hospital">Hospital / Healthcare Facility</option>
+                          <option value="consultancy">Healthcare Consultancy</option>
+                          <option value="hr">HR & Medical Recruitment Agency</option>
+                        </select>
+                      </Field>
+                      <Field label="Official Website">
+                        <input
+                          className="profile-input"
+                          value={employerForm.website || ''}
+                          onChange={(e) => setEmployerForm({ ...employerForm, website: e.target.value })}
+                          placeholder="https://example-hospital.com"
+                        />
+                      </Field>
+                    </div>
+                    <div className="profile-field-full" style={{ marginTop: '16px' }}>
+                      <Field label="About Organization / Facilities Overview">
+                        <textarea
+                          className="profile-textarea"
+                          value={employerForm.companyDescription || ''}
+                          onChange={(e) => setEmployerForm({ ...employerForm, companyDescription: e.target.value })}
+                          placeholder="Describe your clinical infrastructure, bed count, super-specialities, ICU setup, and clinical vision…"
+                          rows={4}
+                        />
+                      </Field>
+                    </div>
+                  </ProfileSection>
 
-              <ProfileSection
-                icon={MapPin}
-                title="Location & Verification"
-                subtitle="Current company location and approval status."
-                variant="teal"
-              >
-                <div className="profile-account-list">
-                  <Info label="Address" value={employer?.address} />
-                  <Info
-                    label="City / State"
-                    value={[employer?.city, employer?.state].filter(Boolean).join(', ')}
-                  />
-                  <Info label="Verification" value={employer?.verificationStatus} />
-                </div>
-              </ProfileSection>
+                  <ProfileSection
+                    icon={MapPin}
+                    title="Location & Campus Address"
+                    subtitle="Physical facility address for doctors and applicants."
+                    variant="teal"
+                  >
+                    <div className="profile-fields-grid">
+                      <Field label="Campus / Street Address">
+                        <input
+                          className="profile-input"
+                          value={employerForm.address || ''}
+                          onChange={(e) => setEmployerForm({ ...employerForm, address: e.target.value })}
+                          placeholder="Building, Plot, Area / Road"
+                        />
+                      </Field>
+                      <Field label="City">
+                        <input
+                          className="profile-input"
+                          value={employerForm.city || ''}
+                          onChange={(e) => setEmployerForm({ ...employerForm, city: e.target.value })}
+                          placeholder="e.g. Bhopal"
+                        />
+                      </Field>
+                      <Field label="State">
+                        <select
+                          className="profile-select"
+                          value={employerForm.state || ''}
+                          onChange={(e) => setEmployerForm({ ...employerForm, state: e.target.value })}
+                        >
+                          <option value="">Select State</option>
+                          {INDIAN_STATES.map((s) => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Postal / PIN Code">
+                        <input
+                          className="profile-input"
+                          value={employerForm.pincode || ''}
+                          onChange={(e) => setEmployerForm({ ...employerForm, pincode: e.target.value })}
+                          placeholder="e.g. 462001"
+                          maxLength={10}
+                        />
+                      </Field>
+                    </div>
+                  </ProfileSection>
+
+                  <ProfileSection
+                    icon={User}
+                    title="Primary Representative"
+                    subtitle="Contact person details for recruitment and candidate inquiries."
+                    variant="neutral"
+                  >
+                    <div className="profile-fields-grid">
+                      <Field label="Contact Person Name">
+                        <input
+                          className="profile-input"
+                          value={employerForm.name || ''}
+                          onChange={(e) => setEmployerForm({ ...employerForm, name: e.target.value })}
+                          placeholder="e.g. Aayush Paradkar"
+                        />
+                      </Field>
+                      <Field label="Contact Phone Number">
+                        <input
+                          className="profile-input"
+                          value={employerForm.phone || ''}
+                          onChange={(e) => setEmployerForm({ ...employerForm, phone: e.target.value })}
+                          placeholder="+91 98765 43210"
+                        />
+                      </Field>
+                    </div>
+                  </ProfileSection>
+
+                  <div className="profile-actions-bar">
+                    <button
+                      type="button"
+                      disabled={saving}
+                      className="profile-save-btn"
+                      onClick={() => void saveEmployer()}
+                    >
+                      <Save className={`h-4.5 w-4.5 ${saving ? 'animate-spin' : ''}`} />
+                      {saving ? 'Saving Employer Profile…' : 'Save Profile Changes'}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={saving}
+                      className="profile-cancel-btn"
+                      onClick={() => {
+                        if (employer) {
+                          setEmployerForm({
+                            companyName: employer.companyName || '',
+                            companyType: employer.companyType || 'hospital',
+                            companyDescription: employer.companyDescription || '',
+                            website: employer.website || '',
+                            address: employer.address || '',
+                            city: employer.city || '',
+                            state: employer.state || '',
+                            pincode: employer.pincode || '',
+                            name: employer.userName || user?.name || '',
+                            phone: user?.phone || '',
+                          });
+                        }
+                        setIsEditingEmployer(false);
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <ProfileSection
+                    icon={Building2}
+                    title="Company Details"
+                    subtitle="Employer identity and business details."
+                    variant="blue"
+                  >
+                    <div className="profile-account-list">
+                      <Info label="Company" value={employer?.companyName || employerForm.companyName} />
+                      <Info label="Type" value={employer?.companyType ? employer.companyType.toUpperCase() : 'HOSPITAL'} />
+                      <Info label="Website" value={employer?.website || employerForm.website} />
+                      <Info label="Email" value={employer?.userEmail || user.email} />
+                      {(employer?.companyDescription || employerForm.companyDescription) && (
+                        <Info label="About" value={employer?.companyDescription || employerForm.companyDescription} />
+                      )}
+                    </div>
+                  </ProfileSection>
+
+                  <ProfileSection
+                    icon={MapPin}
+                    title="Location & Verification"
+                    subtitle="Current company location and approval status."
+                    variant="teal"
+                  >
+                    <div className="profile-account-list">
+                      <Info label="Address" value={employer?.address || employerForm.address} />
+                      <Info
+                        label="City / State"
+                        value={[employer?.city || employerForm.city, employer?.state || employerForm.state].filter(Boolean).join(', ')}
+                      />
+                      {(employer?.pincode || employerForm.pincode) && (
+                        <Info label="PIN Code" value={employer?.pincode || employerForm.pincode} />
+                      )}
+                      <Info label="Verification" value={employer?.verificationStatus || 'approved'} />
+                    </div>
+                  </ProfileSection>
+
+                  <div className="profile-actions-bar">
+                    <button
+                      type="button"
+                      className="profile-save-btn profile-save-btn--edit"
+                      onClick={() => setIsEditingEmployer(true)}
+                    >
+                      <Edit3 className="h-4.5 w-4.5" />
+                      Edit Profile Details
+                    </button>
+                  </div>
+                </>
+              )}
             </main>
 
             <aside className="profile-aside-column">
@@ -403,11 +679,32 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
                   <h3>Account Information</h3>
                 </div>
                 <div className="profile-account-list">
-                  <Info label="Name" value={user.name} />
+                  <Info label="Name" value={employerForm.name || employer?.userName || user.name} />
                   <Info label="Email" value={user.email} />
-                  <Info label="Phone" value={user.phone} />
+                  <Info label="Phone" value={employerForm.phone || user.phone} />
                   <Info label="Role" value="Healthcare Employer" />
                 </div>
+              </div>
+
+              <div className="profile-info-card">
+                <div className="profile-info-card-head">
+                  <ShieldCheck className="text-blue-600" />
+                  <h3>Employer Verification</h3>
+                </div>
+                <ul className="profile-info-list">
+                  <li className="profile-info-item">
+                    <span className="profile-info-item-dot" />
+                    <span>Verified accounts receive a trust badge on medical job postings.</span>
+                  </li>
+                  <li className="profile-info-item">
+                    <span className="profile-info-item-dot" />
+                    <span>Candidates can review institution location, credentials, and website.</span>
+                  </li>
+                  <li className="profile-info-item">
+                    <span className="profile-info-item-dot" />
+                    <span>Click "Edit Profile Details" anytime to update institution data.</span>
+                  </li>
+                </ul>
               </div>
             </aside>
           </div>

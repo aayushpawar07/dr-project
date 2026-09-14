@@ -481,6 +481,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       label: 'People',
       items: [
         { label: 'Employer Verification', icon: ShieldCheck, action: () => onNavigate('admin-employer-verification'), badge: data.pendingEmployerCount, badgeTone: 'warning' },
+        { label: 'Employer Insights', icon: Building2, action: () => onNavigate('admin-employer-insights') },
         { label: 'Candidate Insights', icon: Stethoscope, action: () => onNavigate('admin-candidate-insights'), badge: data.totalCandidateProfiles },
         { label: 'Applications', icon: FileText, action: () => onNavigate('admin-applications'), badge: totalApplications },
         { label: 'Admin Staff', icon: Users, action: () => onNavigate('admin-users') },
@@ -740,6 +741,9 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
             </button>
             <button type="button" className="admin-ui-quick-button" onClick={() => onNavigate('admin-applications')}>
               <FileText /> Applications
+            </button>
+            <button type="button" className="admin-ui-quick-button" onClick={() => onNavigate('admin-employer-insights')}>
+              <Building2 /> Employer Insights
             </button>
             <button type="button" className="admin-ui-quick-button" onClick={() => onNavigate('admin-candidate-insights')}>
               <Stethoscope /> Candidate Clusters

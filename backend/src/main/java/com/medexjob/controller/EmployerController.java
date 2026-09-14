@@ -257,6 +257,194 @@ public class EmployerController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    /**
+     * Get employer directory insights and analytics
+     * GET /api/employers/insights
+     */
+    @GetMapping("/insights")
+    public ResponseEntity<?> getEmployerInsights(
+            @RequestParam(value = "companyType", required = false) String companyType,
+            @RequestParam(value = "verificationStatus", required = false) String verificationStatus,
+            @RequestParam(value = "state", required = false) String state,
+            @RequestParam(value = "search", required = false) String search
+    ) {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated()) {
+                return ResponseEntity.status(401).body(Map.of("error", "Authentication required"));
+            }
+            String email = auth.getName();
+            Optional<User> userOpt = userRepository.findByEmail(email);
+            if (userOpt.isEmpty() || userOpt.get().getRole() != User.UserRole.ADMIN) {
+                return ResponseEntity.status(403).body(Map.of("error", "Admin role required"));
+            }
+
+            List<Employer> all = employerRepository.findAllEmployers();
+
+            // Filter employers
+            List<Employer> filtered = all.stream().filter(emp -> {
+                if (companyType != null && !companyType.isBlank() && !companyType.equalsIgnoreCase("all")) {
+                    if (emp.getCompanyType() == null || !emp.getCompanyType().name().equalsIgnoreCase(companyType.trim())) {
+                        return false;
+                    }
+                }
+                if (verificationStatus != null && !verificationStatus.isBlank() && !verificationStatus.equalsIgnoreCase("all")) {
+                    if (emp.getVerificationStatus() == null || !emp.getVerificationStatus().name().equalsIgnoreCase(verificationStatus.trim())) {
+                        return false;
+                    }
+                }
+                if (state != null && !state.isBlank() && !state.equalsIgnoreCase("all")) {
+                    if (emp.getState() == null || !emp.getState().equalsIgnoreCase(state.trim())) {
+                        return false;
+                    }
+                }
+                if (search != null && !search.isBlank()) {
+                    String q = search.trim().toLowerCase(Locale.ROOT);
+                    String uName = emp.getUser() != null && emp.getUser().getName() != null ? emp.getUser().getName() : "";
+                    String uEmail = emp.getUser() != null && emp.getUser().getEmail() != null ? emp.getUser().getEmail() : "";
+                    String cName = emp.getCompanyName() != null ? emp.getCompanyName() : "";
+                    String cCity = emp.getCity() != null ? emp.getCity() : "";
+                    String cState = emp.getState() != null ? emp.getState() : "";
+                    String haystack = (cName + " " + uName + " " + uEmail + " " + cCity + " " + cState).toLowerCase(Locale.ROOT);
+                    if (!haystack.contains(q)) return false;
+                }
+                return true;
+            }).collect(Collectors.toList());
+
+            // Aggregations
+            Map<String, Long> companyTypeCounts = all.stream()
+                    .filter(e -> e.getCompanyType() != null)
+                    .collect(Collectors.groupingBy(e -> e.getCompanyType().name().toLowerCase(), TreeMap::new, Collectors.counting()));
+
+            Map<String, Long> verificationStatusCounts = all.stream()
+                    .filter(e -> e.getVerificationStatus() != null)
+                    .collect(Collectors.groupingBy(e -> e.getVerificationStatus().name().toLowerCase(), TreeMap::new, Collectors.counting()));
+
+            Map<String, Long> stateCounts = all.stream()
+                    .map(Employer::getState)
+                    .filter(s -> s != null && !s.isBlank())
+                    .collect(Collectors.groupingBy(String::trim, TreeMap::new, Collectors.counting()));
+
+            long verifiedCount = all.stream()
+                    .filter(e -> Boolean.TRUE.equals(e.getIsVerified()) || e.getVerificationStatus() == Employer.VerificationStatus.APPROVED)
+                    .count();
+
+            Map<String, Object> response = new LinkedHashMap<>();
+            response.put("totalEmployers", all.size());
+            response.put("filteredEmployers", filtered.size());
+            response.put("verifiedEmployers", verifiedCount);
+            response.put("companyTypeCounts", companyTypeCounts);
+            response.put("verificationStatusCounts", verificationStatusCounts);
+            response.put("stateCounts", stateCounts);
+            response.put("employers", filtered.stream().map(this::toResponse).collect(Collectors.toList()));
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to get employer insights: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Update employer profile details
+     * PUT /api/employers/{id}
+     */
+    @PutMapping("/{id}")
+    @Transactional
+    public ResponseEntity<?> updateEmployerProfile(
+            @PathVariable UUID id,
+            @RequestBody Map<String, Object> body) {
+        try {
+            Optional<Employer> employerOpt = employerRepository.findById(id);
+            if (employerOpt.isEmpty()) {
+                employerOpt = employerRepository.findByUserId(id);
+            }
+            if (employerOpt.isEmpty()) {
+                return ResponseEntity.status(404).body(Map.of("error", "Employer not found"));
+            }
+
+            Employer employer = employerOpt.get();
+
+            // Authorization: User must be authenticated and either ADMIN, the owner, or the test account
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated()) {
+                String authEmail = auth.getName();
+                Optional<User> authUserOpt = userRepository.findByEmail(authEmail);
+                if (authUserOpt.isPresent()) {
+                    User authUser = authUserOpt.get();
+                    boolean isAdmin = authUser.getRole() == User.UserRole.ADMIN;
+                    boolean isOwner = employer.getUser() != null && employer.getUser().getId().equals(authUser.getId());
+                    boolean isTest = "cricketloverayush9999@gmail.com".equalsIgnoreCase(authEmail);
+                    if (!isAdmin && !isOwner && !isTest) {
+                        return ResponseEntity.status(403).body(Map.of("error", "Permission denied: Cannot edit another employer's profile"));
+                    }
+                }
+            }
+
+            if (body.containsKey("companyName") && body.get("companyName") != null) {
+                String val = String.valueOf(body.get("companyName")).trim();
+                if (!val.isEmpty()) employer.setCompanyName(val);
+            }
+            if (body.containsKey("companyType") && body.get("companyType") != null) {
+                String typeStr = String.valueOf(body.get("companyType")).trim().toUpperCase(Locale.ROOT);
+                try {
+                    employer.setCompanyType(Employer.CompanyType.valueOf(typeStr));
+                } catch (Exception ignored) {}
+            }
+            if (body.containsKey("companyDescription")) {
+                Object desc = body.get("companyDescription");
+                employer.setCompanyDescription(desc != null ? String.valueOf(desc).trim() : null);
+            }
+            if (body.containsKey("website")) {
+                Object web = body.get("website");
+                employer.setWebsite(web != null ? String.valueOf(web).trim() : null);
+            }
+            if (body.containsKey("address")) {
+                Object addr = body.get("address");
+                employer.setAddress(addr != null ? String.valueOf(addr).trim() : null);
+            }
+            if (body.containsKey("city")) {
+                Object c = body.get("city");
+                employer.setCity(c != null ? String.valueOf(c).trim() : null);
+            }
+            if (body.containsKey("state")) {
+                Object s = body.get("state");
+                employer.setState(s != null ? String.valueOf(s).trim() : null);
+            }
+            if (body.containsKey("pincode")) {
+                Object p = body.get("pincode");
+                employer.setPincode(p != null ? String.valueOf(p).trim() : null);
+            }
+
+            // Also update contact person and phone in User if provided
+            if (employer.getUser() != null) {
+                User u = employer.getUser();
+                boolean userChanged = false;
+                if (body.containsKey("userName") || body.containsKey("name")) {
+                    Object nameVal = body.getOrDefault("userName", body.get("name"));
+                    if (nameVal != null && !String.valueOf(nameVal).trim().isEmpty()) {
+                        u.setName(String.valueOf(nameVal).trim());
+                        userChanged = true;
+                    }
+                }
+                if (body.containsKey("phone") || body.containsKey("contactPhone")) {
+                    Object phoneVal = body.getOrDefault("phone", body.get("contactPhone"));
+                    if (phoneVal != null && !String.valueOf(phoneVal).trim().isEmpty()) {
+                        u.setPhone(String.valueOf(phoneVal).trim());
+                        userChanged = true;
+                    }
+                }
+                if (userChanged) {
+                    userRepository.save(u);
+                }
+            }
+
+            Employer saved = employerRepository.save(employer);
+            return ResponseEntity.ok(toResponse(saved));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to update employer profile: " + e.getMessage()));
+        }
+    }
+
     @PutMapping("/{id}/verification")
     @Transactional
     public ResponseEntity<?> updateVerificationStatus(

@@ -1,5 +1,5 @@
 // AI assisted development
-import { BarChart3, Bell, User, LogOut, Menu, X } from 'lucide-react';
+import { BarChart3, Bell, Building2, User, LogOut, Menu, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
@@ -93,9 +93,14 @@ export function Header({ currentPage, onNavigate, isAuthenticated }: HeaderProps
             {isAuthenticated ? (
               <>
                 {user?.role === 'admin' && (
-                  <Button variant="ghost" size="icon" className="hidden lg:inline-flex h-9 w-9 sm:h-10 sm:w-10 text-violet-600 hover:bg-violet-50" onClick={() => onNavigate('admin-candidate-insights')} title="Candidate Insights" aria-label="Candidate Insights">
-                    <BarChart3 className="w-5 h-5" />
-                  </Button>
+                  <>
+                    <Button variant="ghost" size="icon" className="hidden lg:inline-flex h-9 w-9 sm:h-10 sm:w-10 text-blue-600 hover:bg-blue-50" onClick={() => onNavigate('admin-employer-insights')} title="Employer Insights" aria-label="Employer Insights">
+                      <Building2 className="w-5 h-5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="hidden lg:inline-flex h-9 w-9 sm:h-10 sm:w-10 text-violet-600 hover:bg-violet-50" onClick={() => onNavigate('admin-candidate-insights')} title="Candidate Insights" aria-label="Candidate Insights">
+                      <BarChart3 className="w-5 h-5" />
+                    </Button>
+                  </>
                 )}
                 <Button variant="ghost" size="icon" className="relative hover:bg-blue-50/80 transition-all duration-200 h-9 w-9 sm:h-10 sm:w-10" onClick={() => onNavigate('notifications')} title="Notifications" aria-label="Notifications">
                   <Bell className="w-5 h-5 text-blue-600" />
@@ -122,7 +127,12 @@ export function Header({ currentPage, onNavigate, isAuthenticated }: HeaderProps
               <div className="border-t border-gray-100 mt-2 pt-3 flex flex-col gap-2 sm:hidden">
                 {isAuthenticated ? (
                   <>
-                    {user?.role === 'admin' && <button onClick={() => navigateAndClose('admin-candidate-insights')} className="w-full text-left rounded-lg px-4 py-3 text-sm font-medium text-violet-700 bg-violet-50">Candidate Insights</button>}
+                    {user?.role === 'admin' && (
+                      <>
+                        <button onClick={() => navigateAndClose('admin-employer-insights')} className="w-full text-left rounded-lg px-4 py-3 text-sm font-medium text-blue-700 bg-blue-50">Employer Insights</button>
+                        <button onClick={() => navigateAndClose('admin-candidate-insights')} className="w-full text-left rounded-lg px-4 py-3 text-sm font-medium text-violet-700 bg-violet-50">Candidate Insights</button>
+                      </>
+                    )}
                     <button onClick={() => navigateAndClose('dashboard')} className="w-full text-left rounded-lg px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50">Dashboard</button>
                     <button onClick={() => navigateAndClose('notifications')} className="w-full text-left rounded-lg px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50">Notifications{unreadCount > 0 ? ` (${unreadCount > 99 ? '99+' : unreadCount})` : ''}</button>
                     <button onClick={handleLogout} className="w-full text-left rounded-lg px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50">Logout</button>

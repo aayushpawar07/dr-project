@@ -53,6 +53,7 @@ import { EditJobPage } from "./components/EditJobPage";
 import { AiBulkJobUploader } from "./components/AiBulkJobUploader";
 import { RecruitmentPage } from "./components/RecruitmentPage";
 import { AdminCandidateInsights } from "./components/AdminCandidateInsights";
+import { AdminEmployerInsights } from "./components/AdminEmployerInsights";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 
@@ -266,6 +267,16 @@ function AppContent() {
                 element={
                   user.role === "admin" ? (
                     <AdminCandidateInsights onNavigate={handleNavigate} />
+                  ) : (
+                    <AuthPage mode="login" onNavigate={handleNavigate} />
+                  )
+                }
+              />
+              <Route
+                path="/admin-employer-insights"
+                element={
+                  user.role === "admin" ? (
+                    <AdminEmployerInsights onNavigate={handleNavigate} />
                   ) : (
                     <AuthPage mode="login" onNavigate={handleNavigate} />
                   )

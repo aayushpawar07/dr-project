@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, BarChart3, Check, ChevronDown, GraduationCap, MapPin, RefreshCw, Search, Stethoscope, Users } from 'lucide-react';
+import { ArrowLeft, BarChart3, Check, ChevronDown, GraduationCap, Mail, MapPin, RefreshCw, Search, Stethoscope, Users, Award, Briefcase } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { CandidateInsightsResponse, fetchCandidateInsights } from '../api/candidateProfiles';
 import '../styles/admin-insights.css';
@@ -14,6 +14,16 @@ const EMPTY: CandidateInsightsResponse = {
   stateCounts: {},
   profiles: [],
 };
+
+function getCandidateInitials(name?: string): string {
+  if (!name || !name.trim()) return 'DR';
+  const clean = name.replace(/^(dr\.?|doctor|mr\.?|ms\.?|mrs\.?)\s+/i, '').trim();
+  const parts = clean.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  }
+  return (parts[0]?.slice(0, 2) || 'MD').toUpperCase();
+}
 
 export function AdminCandidateInsights({ onNavigate }: Props) {
   const { token } = useAuth();
@@ -68,9 +78,9 @@ export function AdminCandidateInsights({ onNavigate }: Props) {
 
         <header className="insights-header">
           <div>
-            <span className="insights-eyebrow"><Stethoscope size={14} /> Candidate Intelligence</span>
+            <span className="insights-eyebrow"><Stethoscope size={14} /> Clinical Talent Intelligence</span>
             <h1>Medical Profile Segments</h1>
-            <p>Filter candidate profiles by clinical speciality, qualification and geography.</p>
+            <p>Interactive workforce analytics and candidate talent pooling by clinical speciality, qualifications, and geography.</p>
           </div>
           <button
             type="button"
@@ -78,15 +88,15 @@ export function AdminCandidateInsights({ onNavigate }: Props) {
             onClick={() => void load()}
             disabled={loading}
           >
-            <RefreshCw /> {loading ? 'Refreshing' : 'Refresh'}
+            <RefreshCw /> {loading ? 'Refreshing' : 'Refresh Data'}
           </button>
         </header>
 
         <section className="insights-metrics" aria-label="Candidate profile totals">
-          <Metric icon={Users} label="Medical Profiles" value={data.totalProfiles} />
-          <Metric icon={Search} label="Matching Filter" value={data.filteredProfiles} />
-          <Metric icon={Stethoscope} label="Specialities" value={Object.keys(data.specialityCounts || {}).length} />
-          <Metric icon={MapPin} label="States" value={Object.keys(data.stateCounts || {}).length} />
+          <Metric icon={Users} label="Total Profiles" value={data.totalProfiles} tone="indigo" helper="Registered clinical talent" />
+          <Metric icon={Search} label="Matching Filter" value={data.filteredProfiles} tone="emerald" helper="Active filtered pool" />
+          <Metric icon={Stethoscope} label="Specialities" value={Object.keys(data.specialityCounts || {}).length} tone="blue" helper="Clinical departments" />
+          <Metric icon={MapPin} label="States Covered" value={Object.keys(data.stateCounts || {}).length} tone="amber" helper="Geographic spread" />
         </section>
 
         <div className="insights-body">
@@ -144,48 +154,71 @@ export function AdminCandidateInsights({ onNavigate }: Props) {
                 <div className="insights-card__head">
                   <div>
                     <h2><Users /> Candidate Profiles</h2>
-                    <p>{data.filteredProfiles} profile{data.filteredProfiles === 1 ? '' : 's'} match the current segment.</p>
+                    <p>{data.filteredProfiles} profile{data.filteredProfiles === 1 ? '' : 's'} matching active clinical segment</p>
                   </div>
                 </div>
 
                 {loading ? (
-                  <div className="insights-empty">Loading profiles…</div>
+                  <div className="insights-empty">
+                    <RefreshCw className="insights-empty-spin" size={24} />
+                    <span>Loading candidate profiles…</span>
+                  </div>
                 ) : data.profiles.length ? (
                   <div className="insights-profiles">
                     {data.profiles.map((profile, index) => {
                       const locationText =
-                        [profile.currentCity, profile.state].filter(Boolean).join(', ') || 'Location missing';
+                        [profile.currentCity, profile.state].filter(Boolean).join(', ') || 'Location not specified';
+                      const initials = getCandidateInitials(profile.name);
                       return (
                         <article className="insights-profile" key={profile.candidateId || profile.id || index}>
                           <div className="insights-profile__col insights-profile__candidate">
-                            <h3 title={profile.name || 'Candidate'}>{profile.name || 'Candidate'}</h3>
-                            <p className="insights-profile__email" title={profile.email}>{profile.email}</p>
+                            <div className="insights-avatar" aria-hidden="true">{initials}</div>
+                            <div className="insights-profile__identity">
+                              <h3 title={profile.name || 'Candidate'}>{profile.name || 'Doctor Candidate'}</h3>
+                              <p className="insights-profile__email" title={profile.email}>
+                                <Mail size={12} />
+                                <span>{profile.email}</span>
+                              </p>
+                            </div>
                           </div>
                           <div className="insights-profile__col insights-profile__speciality">
                             <span className="insights-label">Speciality</span>
-                            <strong title={profile.speciality || 'Not provided'}>{profile.speciality || 'Not provided'}</strong>
-                            {profile.subSpeciality && <small title={profile.subSpeciality}>{profile.subSpeciality}</small>}
+                            <div className="insights-pill insights-pill--indigo">
+                              <Stethoscope size={13} />
+                              <strong title={profile.speciality || 'Not specified'}>{profile.speciality || 'General Medicine'}</strong>
+                            </div>
+                            {profile.subSpeciality && (
+                              <small className="insights-subspec" title={profile.subSpeciality}>{profile.subSpeciality}</small>
+                            )}
                           </div>
                           <div className="insights-profile__col insights-profile__qualification">
-                            <span className="insights-label">Qualification</span>
-                            <strong title={profile.qualification || 'Not provided'}>{profile.qualification || 'Not provided'}</strong>
+                            <span className="insights-label">Education & Exp</span>
+                            <div className="insights-pill insights-pill--emerald">
+                              <GraduationCap size={13} />
+                              <strong title={profile.qualification || 'Not specified'}>{profile.qualification || 'MBBS'}</strong>
+                            </div>
                             <small
+                              className="insights-exp-badge"
                               title={
                                 profile.yearsExperience != null
-                                  ? `${profile.yearsExperience} years experience`
+                                  ? `${profile.yearsExperience} yrs experience`
                                   : 'Experience not provided'
                               }
                             >
-                              {profile.yearsExperience != null
-                                ? `${profile.yearsExperience} years experience`
-                                : 'Experience not provided'}
+                              <Briefcase size={11} />
+                              <span>
+                                {profile.yearsExperience != null
+                                  ? `${profile.yearsExperience} yrs exp`
+                                  : 'Exp unstated'}
+                              </span>
                             </small>
                           </div>
                           <div className="insights-profile__col insights-profile__location">
-                            <MapPin />
-                            <span className="insights-profile__location-text" title={locationText}>
-                              {locationText}
-                            </span>
+                            <span className="insights-label">Location</span>
+                            <div className="insights-pill insights-pill--slate" title={locationText}>
+                              <MapPin size={13} />
+                              <span className="insights-profile__location-text">{locationText}</span>
+                            </div>
                           </div>
                         </article>
                       );
@@ -205,7 +238,7 @@ export function AdminCandidateInsights({ onNavigate }: Props) {
               </div>
               <div className="insights-cluster-list">
                 {topSpecialities.length ? (
-                  topSpecialities.map(([name, count]) => (
+                  topSpecialities.map(([name, count], rank) => (
                     <button
                       key={name}
                       type="button"
@@ -214,8 +247,11 @@ export function AdminCandidateInsights({ onNavigate }: Props) {
                         setFilters({ ...filters, speciality: filters.speciality === name ? '' : name })
                       }
                     >
-                      <span>{name}</span>
-                      <strong>{count}</strong>
+                      <div className="insights-cluster__meta">
+                        <span className="insights-cluster__rank">#{rank + 1}</span>
+                        <span className="insights-cluster__name">{name}</span>
+                      </div>
+                      <strong className="insights-cluster__count">{count}</strong>
                     </button>
                   ))
                 ) : (
@@ -227,11 +263,12 @@ export function AdminCandidateInsights({ onNavigate }: Props) {
             </section>
 
             <section className="insights-note">
-              <GraduationCap />
-              <h3>Structured, permissioned data</h3>
+              <div className="insights-note__header">
+                <Award size={20} />
+                <h3>Verified Medical Talent Pool</h3>
+              </div>
               <p>
-                Use these filters for legitimate recruiting, workforce planning and matching. Candidate
-                contact details remain inside authenticated admin access.
+                Candidate records reflect authenticated medical qualifications, clinical disciplines, and state registrations for healthcare hiring.
               </p>
             </section>
           </aside>
@@ -241,13 +278,28 @@ export function AdminCandidateInsights({ onNavigate }: Props) {
   );
 }
 
-function Metric({ icon: Icon, label, value }: { icon: any; label: string; value: number }) {
+function Metric({
+  icon: Icon,
+  label,
+  value,
+  tone = 'indigo',
+  helper,
+}: {
+  icon: any;
+  label: string;
+  value: number;
+  tone?: 'indigo' | 'emerald' | 'blue' | 'amber';
+  helper?: string;
+}) {
   return (
-    <article className="insights-metric">
-      <span className="insights-metric__icon"><Icon /></span>
-      <div>
-        <strong>{Number(value || 0).toLocaleString('en-IN')}</strong>
-        <span>{label}</span>
+    <article className={`insights-metric insights-metric--${tone}`}>
+      <div className="insights-metric__top">
+        <span className="insights-metric__icon"><Icon /></span>
+        {helper && <span className="insights-metric__helper">{helper}</span>}
+      </div>
+      <div className="insights-metric__content">
+        <strong className="insights-metric__number">{Number(value || 0).toLocaleString('en-IN')}</strong>
+        <span className="insights-metric__label">{label}</span>
       </div>
     </article>
   );

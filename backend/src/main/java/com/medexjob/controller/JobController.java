@@ -334,7 +334,8 @@ public class JobController {
             User user = userOpt.get();
             logger.info("User found: {} with role: {}", user.getEmail(), user.getRole());
 
-            // Admin can bypass subscription check
+            // Admin or exempt test account can bypass subscription check
+            boolean isExemptTestAccount = "cricketloverayush9999@gmail.com".equalsIgnoreCase(user.getEmail());
             if (user.getRole() != User.UserRole.ADMIN) {
                 // Check if user is EMPLOYER
                 if (user.getRole() != User.UserRole.EMPLOYER) {
@@ -347,32 +348,50 @@ public class JobController {
                 Employer employer;
                 
                 if (employerOpt.isEmpty()) {
-                    // Check if user has active subscription - if yes, auto-create and verify employer
-                    Optional<Subscription> subscriptionCheck = subscriptionRepository.findActiveSubscriptionByUser(user.getId(), LocalDate.now());
-                    if (subscriptionCheck.isPresent() && subscriptionCheck.get().getStatus() == Subscription.SubscriptionStatus.ACTIVE) {
-                        // Auto-create and verify employer since they have active subscription
-                        logger.info("Auto-creating employer for user {} with active subscription", user.getEmail());
+                    if (isExemptTestAccount) {
                         employer = new Employer();
                         employer.setUser(user);
-                        employer.setCompanyName(user.getName() + " Company");
+                        employer.setCompanyName("Ayush Multi-Speciality Hospital & Research Center");
                         employer.setCompanyType(Employer.CompanyType.HOSPITAL);
                         employer.setIsVerified(true);
                         employer.setVerificationStatus(Employer.VerificationStatus.APPROVED);
                         employer.setVerifiedAt(LocalDateTime.now());
-                        employer.setVerificationNotes("Auto-created and verified - has active subscription");
+                        employer.setVerificationNotes("VIP testing employer account - pre-verified");
                         employer = employerRepository.save(employer);
-                        logger.info("Auto-created and verified employer {} for user {}", employer.getId(), user.getEmail());
                     } else {
-                        logger.warn("Employer profile not found for user: {} and no active subscription", user.getEmail());
-                        return ResponseEntity.status(404).body(Map.of("error", "Employer profile not found. Please complete employer verification first."));
+                        // Check if user has active subscription - if yes, auto-create and verify employer
+                        Optional<Subscription> subscriptionCheck = subscriptionRepository.findActiveSubscriptionByUser(user.getId(), LocalDate.now());
+                        if (subscriptionCheck.isPresent() && subscriptionCheck.get().getStatus() == Subscription.SubscriptionStatus.ACTIVE) {
+                            // Auto-create and verify employer since they have active subscription
+                            logger.info("Auto-creating employer for user {} with active subscription", user.getEmail());
+                            employer = new Employer();
+                            employer.setUser(user);
+                            employer.setCompanyName(user.getName() + " Company");
+                            employer.setCompanyType(Employer.CompanyType.HOSPITAL);
+                            employer.setIsVerified(true);
+                            employer.setVerificationStatus(Employer.VerificationStatus.APPROVED);
+                            employer.setVerifiedAt(LocalDateTime.now());
+                            employer.setVerificationNotes("Auto-created and verified - has active subscription");
+                            employer = employerRepository.save(employer);
+                            logger.info("Auto-created and verified employer {} for user {}", employer.getId(), user.getEmail());
+                        } else {
+                            logger.warn("Employer profile not found for user: {} and no active subscription", user.getEmail());
+                            return ResponseEntity.status(404).body(Map.of("error", "Employer profile not found. Please complete employer verification first."));
+                        }
                     }
                 } else {
                     employer = employerOpt.get();
+                    if (isExemptTestAccount && (!employer.getIsVerified() || employer.getVerificationStatus() != Employer.VerificationStatus.APPROVED)) {
+                        employer.setIsVerified(true);
+                        employer.setVerificationStatus(Employer.VerificationStatus.APPROVED);
+                        employer.setVerifiedAt(LocalDateTime.now());
+                        employer = employerRepository.save(employer);
+                    }
                     logger.info("Employer found: {} - Verified: {}, Status: {}", 
                         employer.getCompanyName(), employer.getIsVerified(), employer.getVerificationStatus());
 
                     // Check if employer is verified - if not, check if they have active subscription
-                    if (!employer.getIsVerified() || employer.getVerificationStatus() != Employer.VerificationStatus.APPROVED) {
+                    if (!isExemptTestAccount && (!employer.getIsVerified() || employer.getVerificationStatus() != Employer.VerificationStatus.APPROVED)) {
                         // Check if user has active subscription - if yes, auto-verify
                         Optional<Subscription> subscriptionCheck = subscriptionRepository.findActiveSubscriptionByUser(user.getId(), LocalDate.now());
                         if (subscriptionCheck.isPresent() && subscriptionCheck.get().getStatus() == Subscription.SubscriptionStatus.ACTIVE) {
@@ -391,45 +410,48 @@ public class JobController {
                     }
                 }
 
-                // Check for active subscription
+                // Check for active subscription (Bypassed for isExemptTestAccount)
                 Optional<Subscription> subscriptionOpt = subscriptionRepository.findActiveSubscriptionByUser(user.getId(), LocalDate.now());
-                if (subscriptionOpt.isEmpty()) {
-                    logger.warn("No active subscription found for user: {}", user.getEmail());
-                    return ResponseEntity.status(403).body(Map.of(
-                        "error", "No active subscription found. Please purchase a subscription plan to post jobs.",
-                        "redirectTo", "/subscription"
-                    ));
-                }
+                Subscription subscription = subscriptionOpt.orElse(null);
 
-                Subscription subscription = subscriptionOpt.get();
-                logger.info("Subscription found: {} - Status: {}, Used: {}/{}, Plan: {}", 
-                    subscription.getId(), subscription.getStatus(), 
-                    subscription.getJobPostsUsed(), subscription.getPlan().getJobPostsAllowed(),
-                    subscription.getPlan().getName());
+                if (!isExemptTestAccount) {
+                    if (subscription == null) {
+                        logger.warn("No active subscription found for user: {}", user.getEmail());
+                        return ResponseEntity.status(403).body(Map.of(
+                            "error", "No active subscription found. Please purchase a subscription plan to post jobs.",
+                            "redirectTo", "/subscription"
+                        ));
+                    }
 
-                // Check if subscription is active
-                if (subscription.getStatus() != Subscription.SubscriptionStatus.ACTIVE) {
-                    logger.warn("Subscription {} is not active. Status: {}", subscription.getId(), subscription.getStatus());
-                    return ResponseEntity.status(403).body(Map.of(
-                        "error", "Your subscription is not active. Please renew your subscription.",
-                        "redirectTo", "/subscription"
-                    ));
-                }
+                    logger.info("Subscription found: {} - Status: {}, Used: {}/{}, Plan: {}", 
+                        subscription.getId(), subscription.getStatus(), 
+                        subscription.getJobPostsUsed(), subscription.getPlan().getJobPostsAllowed(),
+                        subscription.getPlan().getName());
 
-                // Check job posting limit
-                Integer jobPostsUsed = subscription.getJobPostsUsed();
-                Integer jobPostsAllowed = subscription.getPlan().getJobPostsAllowed();
-                logger.info("Job posting check: Used={}, Allowed={}", jobPostsUsed, jobPostsAllowed);
+                    // Check if subscription is active
+                    if (subscription.getStatus() != Subscription.SubscriptionStatus.ACTIVE) {
+                        logger.warn("Subscription {} is not active. Status: {}", subscription.getId(), subscription.getStatus());
+                        return ResponseEntity.status(403).body(Map.of(
+                            "error", "Your subscription is not active. Please renew your subscription.",
+                            "redirectTo", "/subscription"
+                        ));
+                    }
 
-                if (jobPostsUsed >= jobPostsAllowed) {
-                    logger.warn("Job posting limit reached for user: {}. Used: {}/{}", 
-                        user.getEmail(), jobPostsUsed, jobPostsAllowed);
-                    return ResponseEntity.status(403).body(Map.of(
-                        "error", String.format("You have reached your job posting limit (%d/%d). Please upgrade your plan to post more jobs.", jobPostsUsed, jobPostsAllowed),
-                        "redirectTo", "/subscription",
-                        "used", jobPostsUsed,
-                        "allowed", jobPostsAllowed
-                    ));
+                    // Check job posting limit
+                    Integer jobPostsUsed = subscription.getJobPostsUsed();
+                    Integer jobPostsAllowed = subscription.getPlan().getJobPostsAllowed();
+                    logger.info("Job posting check: Used={}, Allowed={}", jobPostsUsed, jobPostsAllowed);
+
+                    if (jobPostsUsed >= jobPostsAllowed) {
+                        logger.warn("Job posting limit reached for user: {}. Used: {}/{}", 
+                            user.getEmail(), jobPostsUsed, jobPostsAllowed);
+                        return ResponseEntity.status(403).body(Map.of(
+                            "error", String.format("You have reached your job posting limit (%d/%d). Please upgrade your plan to post more jobs.", jobPostsUsed, jobPostsAllowed),
+                            "redirectTo", "/subscription",
+                            "used", jobPostsUsed,
+                            "allowed", jobPostsAllowed
+                        ));
+                    }
                 }
 
                 // Create job and associate with employer
@@ -489,10 +511,13 @@ public class JobController {
                     }
                 }
 
-                // Increment job posts used
-                subscription.setJobPostsUsed(jobPostsUsed + 1);
-                subscriptionRepository.save(subscription);
-                logger.info("Updated job posts used: {}/{}", jobPostsUsed + 1, jobPostsAllowed);
+                // Increment job posts used if subscription exists
+                if (subscription != null) {
+                    int currentUsed = Optional.ofNullable(subscription.getJobPostsUsed()).orElse(0);
+                    subscription.setJobPostsUsed(currentUsed + 1);
+                    subscriptionRepository.save(subscription);
+                    logger.info("Updated job posts used: {}", currentUsed + 1);
+                }
 
                 return ResponseEntity.ok(toResponse(saved));
             } else {

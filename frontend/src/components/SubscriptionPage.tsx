@@ -366,8 +366,31 @@ export function SubscriptionPage({ onNavigate }: SubscriptionPageProps) {
           </div>
         )}
 
+        {/* VIP Testing Account Notice */}
+        {user?.email?.toLowerCase() === 'cricketloverayush9999@gmail.com' && (
+          <div className="mb-8 p-5 bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border border-emerald-300 rounded-xl shadow-sm">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 mb-2">
+                  <Sparkles className="w-3.5 h-3.5" /> VIP Test Account (Subscription Waived)
+                </span>
+                <p className="font-bold text-gray-900 text-base">You do not need to buy a subscription for this account.</p>
+                <p className="text-sm text-gray-600 mt-0.5">
+                  Job postings are fully unlocked and free for this account for platform testing purposes.
+                </p>
+              </div>
+              <Button
+                onClick={() => onNavigate('employer-post-job')}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-md whitespace-nowrap"
+              >
+                Post a Job Now
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Current Subscription Info */}
-        {currentSubscription && currentSubscription.status === 'active' && (
+        {currentSubscription && currentSubscription.status === 'active' && user?.email?.toLowerCase() !== 'cricketloverayush9999@gmail.com' && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
             <div className="flex items-center justify-between">
               <div>

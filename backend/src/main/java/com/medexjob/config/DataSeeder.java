@@ -2,11 +2,13 @@ package com.medexjob.config;
 
 import com.medexjob.entity.Employer;
 import com.medexjob.entity.Job;
+import com.medexjob.entity.Subscription;
 import com.medexjob.entity.SubscriptionPlan;
 import com.medexjob.entity.User;
 import com.medexjob.repository.EmployerRepository;
 import com.medexjob.repository.JobRepository;
 import com.medexjob.repository.SubscriptionPlanRepository;
+import com.medexjob.repository.SubscriptionRepository;
 import com.medexjob.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,8 +18,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 @Component
 @Profile({"default","dev"})
@@ -104,12 +108,16 @@ public class DataSeeder implements CommandLineRunner {
     @Autowired private EmployerRepository employerRepository;
     @Autowired private JobRepository jobRepository;
     @Autowired private SubscriptionPlanRepository subscriptionPlanRepository;
+    @Autowired private SubscriptionRepository subscriptionRepository;
     @Autowired private PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) {
         // Always seed subscription plans
         seedSubscriptionPlans();
+
+        // Always ensure test employer account cricketloverayush9999@gmail.com is seeded with test jobs and active status
+        seedTestEmployerAccount();
         
         if (!seedJobs) return; // only run when explicitly enabled
         if (userPassword == null || userPassword.isBlank()) {
@@ -325,5 +333,143 @@ public class DataSeeder implements CommandLineRunner {
         plan3.setIsActive(true);
         plan3.setDisplayOrder(3);
         subscriptionPlanRepository.save(plan3);
+    }
+
+    private void seedTestEmployerAccount() {
+        try {
+            final String testEmail = "cricketloverayush9999@gmail.com";
+            final String testPassword = "123456789";
+
+            User user = userRepository.findAll().stream()
+                    .filter(u -> u.getEmail().equalsIgnoreCase(testEmail))
+                    .findFirst()
+                    .orElseGet(() -> {
+                        User nu = new User();
+                        nu.setName("Ayush Healthcare");
+                        nu.setEmail(testEmail);
+                        nu.setPhone("+91 98765 43210");
+                        nu.setRole(User.UserRole.EMPLOYER);
+                        return nu;
+                    });
+
+            user.setPasswordHash(passwordEncoder.encode(testPassword));
+            user.setIsActive(true);
+            user.setIsVerified(true);
+            user = userRepository.save(user);
+
+            final User finalUser = user;
+            Employer employer = employerRepository.findAll().stream()
+                    .filter(e -> e.getUser() != null && e.getUser().getId().equals(finalUser.getId()))
+                    .findFirst()
+                    .orElseGet(() -> {
+                        Employer ne = new Employer();
+                        ne.setUser(finalUser);
+                        ne.setCompanyName("Ayush Multi-Speciality Hospital & Research Center");
+                        ne.setCompanyType(Employer.CompanyType.HOSPITAL);
+                        ne.setCity("Bhopal");
+                        ne.setState("Madhya Pradesh");
+                        return ne;
+                    });
+
+            employer.setIsVerified(true);
+            employer.setVerificationStatus(Employer.VerificationStatus.APPROVED);
+            employer.setVerifiedAt(LocalDateTime.now());
+            employer.setVerificationNotes("VIP testing employer account - pre-verified");
+            employer = employerRepository.save(employer);
+
+            // Ensure active test subscription exists in DB
+            Optional<Subscription> subOpt = subscriptionRepository.findActiveSubscriptionByUser(finalUser.getId(), LocalDate.now());
+            if (subOpt.isEmpty()) {
+                SubscriptionPlan plan = subscriptionPlanRepository.findAll().stream()
+                        .filter(p -> p.getJobPostsAllowed() != null && p.getJobPostsAllowed() >= 100)
+                        .findFirst()
+                        .orElseGet(() -> subscriptionPlanRepository.findAll().stream().findFirst().orElse(null));
+
+                if (plan != null) {
+                    Subscription sub = new Subscription();
+                    sub.setUserId(finalUser.getId());
+                    sub.setPlan(plan);
+                    sub.setStatus(Subscription.SubscriptionStatus.ACTIVE);
+                    sub.setStartDate(LocalDate.now().minusDays(1));
+                    sub.setEndDate(LocalDate.now().plusYears(10));
+                    sub.setJobPostsUsed(0);
+                    sub.setAutoRenew(true);
+                    subscriptionRepository.save(sub);
+                }
+            }
+
+            // Seed test jobs for this employer
+            List<JobSeed> testJobs = List.of(
+                new JobSeed(
+                    "Senior Consultant - Critical Care Medicine",
+                    "private",
+                    "specialist",
+                    "Bhopal, Madhya Pradesh",
+                    "MD/DNB in Anaesthesia or Critical Care Medicine (IDCCM)",
+                    "3-6 years",
+                    2,
+                    "INR 2,20,000 - 3,00,000 per month",
+                    "2027-12-31",
+                    "Lead our advanced 24-bed multidisciplinary ICU and ECMO team. Manage critical patient admissions, ventilator protocols, and bedside echocardiography.",
+                    true,
+                    "Critical Care",
+                    "FULL_TIME",
+                    "SENIOR"
+                ),
+                new JobSeed(
+                    "Emergency Medical Officer (Casualty)",
+                    "private",
+                    "medical officer",
+                    "Bhopal, Madhya Pradesh",
+                    "MBBS with valid MCI/State Council registration and ACLS/ATLS certification",
+                    "1-3 years",
+                    4,
+                    "INR 90,000 - 1,25,000 per month",
+                    "2027-12-31",
+                    "Handle emergency room triage, primary trauma stabilization, resuscitation, and prompt referral coordination in our Level-1 trauma unit.",
+                    true,
+                    "Emergency Medicine",
+                    "FULL_TIME",
+                    "MID"
+                ),
+                new JobSeed(
+                    "Consultant Pediatrician & Neonatologist",
+                    "private",
+                    "specialist",
+                    "Bhopal, Madhya Pradesh",
+                    "MD/DNB in Pediatrics with NICU/PICU clinical exposure",
+                    "2-5 years",
+                    2,
+                    "INR 1,80,000 - 2,50,000 per month",
+                    "2027-12-31",
+                    "Provide comprehensive neonatal intensive care, pediatric inpatient care, developmental screening, and parent counseling.",
+                    false,
+                    "Pediatrics",
+                    "FULL_TIME",
+                    "MID"
+                ),
+                new JobSeed(
+                    "ICU Staff Nurse (In-Charge)",
+                    "private",
+                    "paramedical",
+                    "Bhopal, Madhya Pradesh",
+                    "B.Sc Nursing / GNM with State Nursing Council Registration",
+                    "2-4 years",
+                    6,
+                    "INR 40,000 - 60,000 per month",
+                    "2027-12-31",
+                    "Supervise intensive care nursing stations, monitor patient hemodynamics, manage infusions, and ensure high infection control standards.",
+                    false,
+                    "Critical Care Nursing",
+                    "FULL_TIME",
+                    "MID"
+                )
+            );
+
+            final Employer finalEmployer = employer;
+            testJobs.forEach(j -> saveSeedJob(j, finalEmployer, finalUser));
+        } catch (Exception e) {
+            System.err.println("Notice: Could not auto-seed test employer account: " + e.getMessage());
+        }
     }
 }

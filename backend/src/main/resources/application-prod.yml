@@ -49,9 +49,9 @@ spring:
   mvc:
     throw-exception-if-no-handler-found: true
 
-# DeepSeek / chat-completions compatible recruitment extraction.
-# AI is attempted when MEDEX_AI_API_KEY is available. If the key/API is not
-# available, the existing deterministic PDF/OCR parser remains the fallback.
+# Google Gemini / chat-completions compatible recruitment extraction.
+# AI is attempted when MEDEX_AI_API_KEY, GEMINI_API_KEY, or GOOGLE_API_KEY is available.
+# If the key/API is not available, the existing deterministic PDF/OCR parser remains the fallback.
 medex:
   ocr:
     enabled: ${MEDEX_OCR_ENABLED:true}
@@ -60,9 +60,9 @@ medex:
     max-pages: ${MEDEX_OCR_MAX_PAGES:20}
   ai:
     enabled: ${MEDEX_AI_ENABLED:true}
-    chat-completions-url: ${MEDEX_AI_CHAT_COMPLETIONS_URL:https://api.deepseek.com/chat/completions}
-    api-key: ${MEDEX_AI_API_KEY:}
-    model: ${MEDEX_AI_MODEL:deepseek-chat}
+    chat-completions-url: ${MEDEX_AI_CHAT_COMPLETIONS_URL:https://generativelanguage.googleapis.com/v1beta/openai/chat/completions}
+    api-key: ${MEDEX_AI_API_KEY:${GEMINI_API_KEY:${GOOGLE_API_KEY:}}}
+    model: ${MEDEX_AI_MODEL:gemini-2.0-flash}
 
 # JWT Configuration
 jwt:

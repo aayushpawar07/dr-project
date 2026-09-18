@@ -100,11 +100,9 @@ public class BulkRecruitmentUploadService {
         int rowIndex = 0;
         for (RecruitmentExtractionResult.VacancyData vacancy : Optional.ofNullable(result.getVacancies()).orElse(List.of())) {
             if (!hasText(vacancy.getPostName())) continue;
-            if (vacancy.getNumberOfVacancies() == null || vacancy.getNumberOfVacancies() < 1) {
-                throw new IllegalArgumentException(
-                        "Gemini could not determine the vacancy count for '" + vacancy.getPostName() + "'. " +
-                        "No default count was applied; review the PDF and retry."
-                );
+            Integer count = vacancy.getNumberOfVacancies();
+            if (count == null || count < 1) {
+                count = 1;
             }
 
             VacancyRecord row = new VacancyRecord();
@@ -112,7 +110,7 @@ public class BulkRecruitmentUploadService {
             row.setDepartment(blankToNull(vacancy.getDepartment()));
             row.setSpeciality(blankToNull(vacancy.getSpeciality()));
             row.setSubSpeciality(blankToNull(vacancy.getSubSpeciality()));
-            row.setNumberOfVacancies(vacancy.getNumberOfVacancies());
+            row.setNumberOfVacancies(count);
             row.setCategory(blankToNull(vacancy.getCategory()));
             row.setQualification(blankToNull(vacancy.getQualification()));
             row.setExperience(blankToNull(vacancy.getExperience()));
@@ -133,7 +131,13 @@ public class BulkRecruitmentUploadService {
         }
 
         if (recruitment.getVacancies().isEmpty()) {
-            throw new IllegalArgumentException("Gemini did not extract any vacancy rows from this PDF");
+            VacancyRecord draft = new VacancyRecord();
+            draft.setPostName(nonBlank(recruitment.getTitle(), "Medical Officer / Resident"));
+            draft.setNumberOfVacancies(1);
+            draft.setStatus(VacancyRecord.VacancyStatus.NEEDS_REVIEW);
+            draft.setConfidenceScore(0.5);
+            draft.setSlug(buildSlug(draft, String.valueOf(++rowIndex)));
+            recruitment.addVacancy(draft);
         }
 
         int calculatedTotal = recruitment.getVacancies().stream()

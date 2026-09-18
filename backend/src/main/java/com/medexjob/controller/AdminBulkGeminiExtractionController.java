@@ -35,12 +35,17 @@ public class AdminBulkGeminiExtractionController {
     ) {
         try {
             BulkRecruitmentUploadService.UploadResult result = uploadService.extractAndCreate(file, forceCreate);
+            String method = result.recruitment().getExtractionMethod();
+            boolean isAi = method != null && (method.contains("GEMINI") || method.contains("AI"));
+            String message = result.duplicate() && !result.created()
+                    ? "Possible duplicate recruitment found. Existing recruitment loaded for review."
+                    : (isAi
+                        ? "Gemini extraction complete. Review the extracted vacancy rows before publishing."
+                        : "Recruitment extracted from PDF. Review and edit the vacancy rows before publishing.");
             Map<String, Object> body = new LinkedHashMap<>();
             body.put("duplicate", result.duplicate());
             body.put("created", result.created());
-            body.put("message", result.duplicate() && !result.created()
-                    ? "Possible duplicate recruitment found. Existing recruitment loaded for review."
-                    : "Gemini extraction complete. Review the extracted vacancy rows before publishing.");
+            body.put("message", message);
             body.put("recruitment", toResponse(result.recruitment()));
             return ResponseEntity.ok(body);
         } catch (IllegalArgumentException ex) {

@@ -46,15 +46,16 @@ public class RecruitmentExtractionService {
             String extractionText = ocrText.orElse(nativeText);
             boolean usedOcr = ocrText.isPresent();
 
-            if (nativeTextSparse && !usedOcr) {
-                throw new IllegalArgumentException(
-                    "This PDF looks scanned and OCR did not run. Install tesseract-ocr on the server and keep medex.ocr.enabled=true, then upload again."
-                );
+            if (nonWhitespaceLength(extractionText) < 50) {
+                if (nativeTextSparse && !usedOcr) {
+                    throw new IllegalArgumentException(
+                        "This PDF looks scanned or image-only and OCR did not run. Install tesseract-ocr on the server and keep medex.ocr.enabled=true, then upload again."
+                    );
+                }
+                throw new IllegalArgumentException("Unable to read enough text from this PDF for extraction.");
             }
 
-            Optional<RecruitmentExtractionResult> ai = nonWhitespaceLength(extractionText) >= 50
-                    ? aiClient.extract(extractionText)
-                    : Optional.empty();
+            Optional<RecruitmentExtractionResult> ai = aiClient.extract(extractionText);
             RecruitmentExtractionResult result = ai.orElseGet(() -> heuristic(document, extractionText, usedOcr, nativeTextSparse));
             RecruitmentFieldSanitizer.sanitize(result);
             if (ai.isPresent()) {
@@ -70,7 +71,7 @@ public class RecruitmentExtractionService {
         }
     }
 
-    private RecruitmentExtractionResult heuristic(PDDocument document, String fullText, boolean usedOcr, boolean nativeTextSparse) {
+    public RecruitmentExtractionResult heuristic(PDDocument document, String fullText, boolean usedOcr, boolean nativeTextSparse) {
         RecruitmentExtractionResult result = new RecruitmentExtractionResult();
         result.setExtractionMethod("HEURISTIC_PDF");
         RecruitmentExtractionResult.RecruitmentData recruitment = result.getRecruitment();
@@ -102,6 +103,10 @@ public class RecruitmentExtractionService {
             // Keep metadata-only result; admin review screen will surface missing rows.
         }
 
+        if (result.getVacancies().isEmpty()) {
+            parseGenericVacancies(fullText, result.getVacancies(), recruitment.getTitle());
+        }
+
         int total = result.getVacancies().stream()
                 .map(RecruitmentExtractionResult.VacancyData::getNumberOfVacancies)
                 .filter(Objects::nonNull)
@@ -109,6 +114,37 @@ public class RecruitmentExtractionService {
                 .sum();
         recruitment.setTotalVacancies(total > 0 ? total : extractTotalVacancies(normalized));
         return result;
+    }
+
+    private void parseGenericVacancies(String fullText, List<RecruitmentExtractionResult.VacancyData> target, String title) {
+        String lower = fullText.toLowerCase(Locale.ROOT);
+        String[] knownRoles = {
+                "Junior Resident", "Senior Resident", "Medical Officer", "General Duty Medical Officer",
+                "Consultant", "Specialist", "Assistant Professor", "Associate Professor",
+                "Professor", "Staff Nurse", "Nursing Officer", "Tutor"
+        };
+        boolean foundAny = false;
+        for (String role : knownRoles) {
+            if (lower.contains(role.toLowerCase(Locale.ROOT))) {
+                RecruitmentExtractionResult.VacancyData v = new RecruitmentExtractionResult.VacancyData();
+                v.setPostName(role);
+                v.setNumberOfVacancies(1);
+                v.setJobType("Direct Recruitment");
+                v.setConfidenceScore(0.70);
+                v.setSourcePage(1);
+                target.add(v);
+                foundAny = true;
+            }
+        }
+        if (!foundAny) {
+            RecruitmentExtractionResult.VacancyData v = new RecruitmentExtractionResult.VacancyData();
+            v.setPostName(title != null && !title.isBlank() && !title.equalsIgnoreCase("Recruitment Notification") ? title : "Medical Officer / Resident");
+            v.setNumberOfVacancies(1);
+            v.setJobType("Direct Recruitment");
+            v.setConfidenceScore(0.50);
+            v.setSourcePage(1);
+            target.add(v);
+        }
     }
 
     private void parseVacancyMatrix(String pageText, List<RecruitmentExtractionResult.VacancyData> target) {
@@ -330,9 +366,13 @@ public class RecruitmentExtractionService {
     }
 
     private String extractOrganisation(String text) {
-        String matched = group(text, "(?im)^\\s*(ALL INDIA INSTITUTE OF MEDICAL SCIENCES,\\s*JODHPUR)\\s*$", 1);
+        String matched = group(text, "(?im)^\\s*(ALL INDIA INSTITUTE OF MEDICAL SCIENCES[\\w\\s,]*)", 1);
         if (matched != null) return titleCaseOrganisation(matched);
-        String first = Arrays.stream(text.split("\\R")).map(String::trim).filter(s -> !s.isBlank()).findFirst().orElse("Unknown Organisation");
+        String govt = group(text, "(?im)^\\s*(GOVERNMENT OF [\\w\\s,]+|MINISTRY OF [\\w\\s,]+)", 1);
+        if (govt != null) return titleCaseOrganisation(govt);
+        String hospital = group(text, "(?im)^\\s*([A-Za-z\\s]+(?:HOSPITAL|INSTITUTE|COLLEGE|MEDICAL CENTRE|HEALTH SERVICES)[\\w\\s,]*)", 1);
+        if (hospital != null && hospital.length() < 120) return titleCaseOrganisation(hospital);
+        String first = Arrays.stream(text.split("\\R")).map(String::trim).filter(s -> !s.isBlank() && s.length() > 3).findFirst().orElse("Medical Institution");
         return first.length() > 250 ? first.substring(0, 250) : first;
     }
 
@@ -346,15 +386,19 @@ public class RecruitmentExtractionService {
     }
 
     private String extractSubject(String text) {
-        Matcher m = Pattern.compile("(?is)Subject\\s*:\\s*(.+?)(?=\\n\\s*(?:All India Institute|Online applications|Sr\\.))").matcher(text);
+        Matcher m = Pattern.compile("(?is)Subject\\s*:\\s*(.+?)(?=\\n\\s*(?:All India Institute|Online applications|Sr\\.|Advertisement|Date))").matcher(text);
         if (m.find()) return normalize(m.group(1));
-        return "Recruitment Notification";
+        Matcher m2 = Pattern.compile("(?im)^\\s*((?:RECRUITMENT|VACANCY|ENGAGEMENT|WALK-IN INTERVIEW)\\s*(?:NOTICE|NOTIFICATION)?\\s*(?:FOR|REGARDING)?\\s*[^\\n]{5,100})").matcher(text);
+        if (m2.find()) return normalize(m2.group(1));
+        return "Medical Recruitment Notification";
     }
 
     private String extractLocation(String normalized) {
         Matcher m = Pattern.compile("(?i)Jodhpur\\s*\\(Rajasthan\\)").matcher(normalized);
         if (m.find()) return "Jodhpur, Rajasthan";
         if (normalized.toLowerCase(Locale.ROOT).contains("jodhpur")) return "Jodhpur, Rajasthan";
+        Matcher cityState = Pattern.compile("(?i)\\b(New Delhi|Delhi|Mumbai|Kolkata|Chennai|Bengaluru|Bangalore|Hyderabad|Rishikesh|Bhopal|Patna|Raipur|Bhubaneswar|Lucknow|Chandigarh|Nagpur|Gorakhpur|Kalyani|Bathinda|Guwahati|Deoghar|Bibinagar|Rajkot|Jammu|Vijaypur|Awantipora|Madurai|Varanasi|Pune|Ahmedabad|Jaipur)\\b").matcher(normalized);
+        if (cityState.find()) return cityState.group(1);
         return "India";
     }
 

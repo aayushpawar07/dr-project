@@ -14,18 +14,35 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class RecruitmentExtractionServiceTest {
 
+    private RecruitmentAiExtractionClient disabledAiClient() {
+        return new RecruitmentAiExtractionClient(
+                org.springframework.web.client.RestClient.builder(),
+                new com.fasterxml.jackson.databind.ObjectMapper(),
+                false, "", "", ""
+        ) {
+            @Override
+            public Optional<RecruitmentExtractionResult> extract(String pdfText) {
+                return Optional.empty();
+            }
+        };
+    }
+
+    private RecruitmentOcrService disabledOcrService() {
+        return new RecruitmentOcrService(false, "tesseract", "eng", 20, 180.0f, 30) {
+            @Override
+            public Optional<String> extract(PDDocument document) {
+                return Optional.empty();
+            }
+        };
+    }
+
     @Test
     void heuristicPdfExtractsFortyVacancyRecords() throws Exception {
-        RecruitmentAiExtractionClient ai = mock(RecruitmentAiExtractionClient.class);
-        when(ai.extract(any())).thenReturn(Optional.empty());
-        RecruitmentOcrService ocr = mock(RecruitmentOcrService.class);
-        when(ocr.extract(any())).thenReturn(Optional.empty());
+        RecruitmentAiExtractionClient ai = disabledAiClient();
+        RecruitmentOcrService ocr = disabledOcrService();
         RecruitmentExtractionService service = new RecruitmentExtractionService(ai, ocr);
 
         MockMultipartFile file = new MockMultipartFile(
@@ -53,8 +70,8 @@ class RecruitmentExtractionServiceTest {
     @Test
     void rejectsEmptyAndNonPdfUploads() {
         RecruitmentExtractionService service = new RecruitmentExtractionService(
-                mock(RecruitmentAiExtractionClient.class),
-                mock(RecruitmentOcrService.class)
+                disabledAiClient(),
+                disabledOcrService()
         );
         assertThatThrownBy(() -> service.extract(new MockMultipartFile("file", "x.pdf", "application/pdf", new byte[0])))
                 .isInstanceOf(IllegalArgumentException.class);

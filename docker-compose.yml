@@ -70,9 +70,9 @@ services:
       FTP_REMOTE_DIR: uploads
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://medexjob.com,http://medexjob.com,https://www.medexjob.com,http://www.medexjob.com}
       # AI Extraction Configuration
-      MEDEX_AI_API_KEY: ${MEDEX_AI_API_KEY:-}
-      MEDEX_AI_MODEL: ${MEDEX_AI_MODEL:-deepseek-chat}
-      MEDEX_AI_CHAT_COMPLETIONS_URL: ${MEDEX_AI_CHAT_COMPLETIONS_URL:-https://api.deepseek.com/chat/completions}
+      MEDEX_AI_API_KEY: ${MEDEX_AI_API_KEY:-${GEMINI_API_KEY:-${GOOGLE_API_KEY:-}}}
+      MEDEX_AI_MODEL: ${MEDEX_AI_MODEL:-gemini-2.0-flash}
+      MEDEX_AI_CHAT_COMPLETIONS_URL: ${MEDEX_AI_CHAT_COMPLETIONS_URL:-https://generativelanguage.googleapis.com/v1beta/openai/chat/completions}
       MEDEX_OCR_LANGUAGE: ${MEDEX_OCR_LANGUAGE:-hin+eng}
     ports:
       - "${BACKEND_PORT:-8081}:8081"

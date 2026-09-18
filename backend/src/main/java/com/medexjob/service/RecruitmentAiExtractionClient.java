@@ -33,11 +33,12 @@ public class RecruitmentAiExtractionClient {
     private final String endpoint;
     private final String apiKey;
     private final String model;
+    private volatile String lastErrorMessage = "AI extraction has not run yet";
 
     public RecruitmentAiExtractionClient(
             RestClient.Builder builder,
             ObjectMapper objectMapper,
-            @Value("${medex.ai.enabled:false}") boolean enabled,
+            @Value("${medex.ai.enabled:true}") boolean enabled,
             @Value("${medex.ai.chat-completions-url:}") String endpoint,
             @Value("${medex.ai.api-key:}") String apiKey,
             @Value("${medex.ai.model:}") String model
@@ -53,14 +54,78 @@ public class RecruitmentAiExtractionClient {
         this.model = model;
     }
 
+    public String getLastErrorMessage() {
+        return lastErrorMessage;
+    }
+
+    public boolean isConfigured() {
+        String key = resolveApiKey();
+        return enabled && !key.isBlank();
+    }
+
+    public String resolveApiKey() {
+        if (apiKey != null && !apiKey.isBlank()) {
+            return apiKey.trim();
+        }
+        String envMedex = System.getenv("MEDEX_AI_API_KEY");
+        if (envMedex != null && !envMedex.isBlank()) {
+            return envMedex.trim();
+        }
+        String envGemini = System.getenv("GEMINI_API_KEY");
+        if (envGemini != null && !envGemini.isBlank()) {
+            return envGemini.trim();
+        }
+        String envGoogle = System.getenv("GOOGLE_API_KEY");
+        if (envGoogle != null && !envGoogle.isBlank()) {
+            return envGoogle.trim();
+        }
+        String prop = System.getProperty("medex.ai.api-key");
+        if (prop != null && !prop.isBlank()) {
+            return prop.trim();
+        }
+        return "";
+    }
+
+    public String resolveEndpoint(String effectiveKey) {
+        String ep = (endpoint != null && !endpoint.isBlank()) ? endpoint.trim() : "";
+        if (ep.isBlank()) {
+            return "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+        }
+        if (ep.contains("deepseek.com") && effectiveKey.startsWith("AIza")) {
+            log.info("Detected Google Gemini API key; routing to Google Gemini chat-completions endpoint.");
+            return "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+        }
+        return ep;
+    }
+
+    public String resolveModel(String effectiveEndpoint) {
+        String m = (model != null && !model.isBlank()) ? model.trim() : "";
+        if (m.isBlank() || (effectiveEndpoint.contains("googleapis.com") && m.equalsIgnoreCase("deepseek-chat"))) {
+            return "gemini-2.0-flash";
+        }
+        return m;
+    }
+
     public Optional<RecruitmentExtractionResult> extract(String pdfText) {
-        if (!enabled || endpoint.isBlank() || apiKey.isBlank() || model.isBlank()) {
+        if (!enabled) {
+            this.lastErrorMessage = "AI extraction is disabled (medex.ai.enabled=false)";
             return Optional.empty();
         }
+        String effectiveKey = resolveApiKey();
+        if (effectiveKey.isBlank()) {
+            this.lastErrorMessage = "AI API key is missing. Set MEDEX_AI_API_KEY, GEMINI_API_KEY, or GOOGLE_API_KEY.";
+            log.warn(this.lastErrorMessage);
+            return Optional.empty();
+        }
+
+        String targetEndpoint = resolveEndpoint(effectiveKey);
+        String targetModel = resolveModel(targetEndpoint);
+        boolean isGemini = targetEndpoint.contains("generativelanguage.googleapis.com");
+
         try {
             String text = pdfText.length() > MAX_TEXT_CHARS ? pdfText.substring(0, MAX_TEXT_CHARS) : pdfText;
             Map<String, Object> body = Map.of(
-                    "model", model,
+                    "model", targetModel,
                     "temperature", 0,
                     "response_format", Map.of("type", "json_object"),
                     "messages", List.of(
@@ -69,25 +134,56 @@ public class RecruitmentAiExtractionClient {
                     )
             );
 
+            String callUri = targetEndpoint;
+            if (isGemini && !callUri.contains("key=")) {
+                callUri = callUri + (callUri.contains("?") ? "&" : "?") + "key=" + effectiveKey;
+            }
+
             String raw = restClient.post()
-                    .uri(endpoint)
+                    .uri(callUri)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .headers(headers -> headers.setBearerAuth(apiKey))
+                    .headers(headers -> {
+                        headers.setBearerAuth(effectiveKey);
+                        if (isGemini) {
+                            headers.set("x-goog-api-key", effectiveKey);
+                        }
+                    })
                     .body(body)
                     .retrieve()
                     .body(String.class);
 
+            if (raw == null || raw.isBlank()) {
+                this.lastErrorMessage = "AI provider returned empty response body";
+                return Optional.empty();
+            }
+
             JsonNode root = objectMapper.readTree(raw);
             String content = root.path("choices").path(0).path("message").path("content").asText();
             if (content.isBlank()) {
+                this.lastErrorMessage = "AI provider returned empty content in choices[0].message.content";
                 return Optional.empty();
             }
-            content = content.replaceFirst("^```(?:json)?\\s*", "").replaceFirst("\\s*```$", "");
+
+            // Extract innermost JSON object cleanly
+            int jsonStart = content.indexOf('{');
+            int jsonEnd = content.lastIndexOf('}');
+            if (jsonStart >= 0 && jsonEnd > jsonStart) {
+                content = content.substring(jsonStart, jsonEnd + 1);
+            } else {
+                content = content.replaceFirst("^```(?:json)?\\s*", "").replaceFirst("\\s*```$", "");
+            }
+
             RecruitmentExtractionResult result = objectMapper.readValue(content, RecruitmentExtractionResult.class);
             RecruitmentFieldSanitizer.sanitize(result);
-            result.setExtractionMethod("AI");
+            result.setExtractionMethod(isGemini ? "GEMINI" : "AI");
+            this.lastErrorMessage = null;
             return Optional.of(result);
+        } catch (org.springframework.web.client.RestClientResponseException ex) {
+            this.lastErrorMessage = "AI service returned HTTP " + ex.getStatusCode().value() + ": " + ex.getResponseBodyAsString();
+            log.warn("AI recruitment extraction failed with HTTP response: {}", this.lastErrorMessage);
+            return Optional.empty();
         } catch (Exception ex) {
+            this.lastErrorMessage = "AI recruitment extraction error (" + ex.getClass().getSimpleName() + "): " + ex.getMessage();
             log.warn("AI recruitment extraction failed; deterministic parser will be used where allowed: {}", ex.getMessage());
             return Optional.empty();
         }

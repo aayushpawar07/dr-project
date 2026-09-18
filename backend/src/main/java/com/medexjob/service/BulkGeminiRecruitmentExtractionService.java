@@ -22,18 +22,22 @@ import java.util.Optional;
  */
 @Service
 public class BulkGeminiRecruitmentExtractionService {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(BulkGeminiRecruitmentExtractionService.class);
     private static final int MIN_EXTRACTABLE_CHARS = 50;
     private static final int NATIVE_TEXT_SPARSE_THRESHOLD = 250;
 
     private final RecruitmentAiExtractionClient aiClient;
     private final RecruitmentOcrService ocrService;
+    private final RecruitmentExtractionService heuristicService;
 
     public BulkGeminiRecruitmentExtractionService(
             RecruitmentAiExtractionClient aiClient,
-            RecruitmentOcrService ocrService
+            RecruitmentOcrService ocrService,
+            RecruitmentExtractionService heuristicService
     ) {
         this.aiClient = aiClient;
         this.ocrService = ocrService;
+        this.heuristicService = heuristicService;
     }
 
     public RecruitmentExtractionService.ExtractionPayload extract(MultipartFile file) throws IOException {
@@ -49,24 +53,30 @@ public class BulkGeminiRecruitmentExtractionService {
             String extractionText = ocrText.orElse(nativeText);
             boolean usedOcr = ocrText.isPresent();
 
-            if (nativeTextSparse && !usedOcr) {
-                throw new IllegalArgumentException(
-                        "This PDF looks scanned and OCR did not run. Install tesseract-ocr on the server and keep medex.ocr.enabled=true, then upload again."
-                );
-            }
-
             if (nonWhitespaceLength(extractionText) < MIN_EXTRACTABLE_CHARS) {
+                if (nativeTextSparse && !usedOcr) {
+                    throw new IllegalArgumentException(
+                            "This PDF looks scanned or image-only and OCR did not run. " +
+                            "Please upload a text-based PDF or enable OCR on the server."
+                    );
+                }
                 throw new IllegalArgumentException(
-                        "Unable to read enough text from this PDF for Gemini extraction. " +
-                        "Use a text-based PDF or enable OCR for scanned notifications."
+                        "Unable to read enough text from this PDF for extraction (minimum " + MIN_EXTRACTABLE_CHARS + " characters required)."
                 );
             }
+            Optional<RecruitmentExtractionResult> aiResult = aiClient.extract(extractionText);
 
-            RecruitmentExtractionResult result = aiClient.extract(extractionText)
-                    .orElseThrow(() -> new IllegalStateException(
-                            "Gemini extraction failed or is not configured. Verify MEDEX_AI_ENABLED, " +
-                            "MEDEX_AI_API_KEY, MEDEX_AI_CHAT_COMPLETIONS_URL and MEDEX_AI_MODEL, then retry."
-                    ));
+            RecruitmentExtractionResult result;
+            if (aiResult.isPresent()) {
+                result = aiResult.get();
+                result.setExtractionMethod(usedOcr ? "GEMINI_OCR" : "GEMINI");
+            } else {
+                log.info("Gemini extraction unavailable ({}); falling back to deterministic PDF parser",
+                        aiClient.getLastErrorMessage());
+                result = heuristicService.heuristic(document, extractionText, usedOcr, nativeTextSparse);
+                RecruitmentFieldSanitizer.sanitize(result);
+                result.setExtractionMethod(usedOcr ? "PDF_OCR" : "PDF_TEXT");
+            }
 
             if (result.getRecruitment() == null) {
                 result.setRecruitment(new RecruitmentExtractionResult.RecruitmentData());
@@ -75,7 +85,6 @@ public class BulkGeminiRecruitmentExtractionService {
                 result.setVacancies(new java.util.ArrayList<>());
             }
 
-            result.setExtractionMethod(usedOcr ? "GEMINI_OCR" : "GEMINI");
             return new RecruitmentExtractionService.ExtractionPayload(
                     result,
                     fingerprint,

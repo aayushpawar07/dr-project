@@ -61,12 +61,19 @@ export function JobDetailPage({
   const { isAuthenticated, user, token } = useAuth();
   const [job, setJob] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showApplyDialog, setShowApplyDialog] = useState(initialShowApplyDialog);
-  const [applicationData, setApplicationData] = useState({
-    coverLetter: "",
-    resumeUrl: "",
-    answers: [] as any[],
+  const [notFound, setNotFound] = useState(false);
+  const [showApplyDialog, setShowApplyDialog] = useState(
+    initialShowApplyDialog,
+  );
+  const [isDialogOpening, setIsDialogOpening] = useState(false);
+  const buttonClickTimeRef = useRef<number>(0);
+  const dialogJustOpenedRef = useRef<boolean>(false);
+  const viewIncrementedRef = useRef<string | null>(null);
+  const [applicationForm, setApplicationForm] = useState({
+    candidateName: "",
+    candidateEmail: "",
+    candidatePhone: "",
+    resume: null as File | null,
     notes: "",
   });
   const [applying, setApplying] = useState(false);

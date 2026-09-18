@@ -302,7 +302,7 @@ function GovernmentJobDetail({
               </div>
             </Card>
 
-            <Card className="p-6">
+            <Card className="p-6 job-detail-about-org medex-about-organization-card hidden lg:block">
               <h3 className="mb-4 font-semibold text-gray-900">About Organization</h3>
               <div className="space-y-3 text-sm text-gray-700">
                 <div className="flex items-start gap-2">

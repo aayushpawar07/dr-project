@@ -98,6 +98,7 @@ function updateAboutOrganization(organization: string) {
   const card = heading.parentElement;
   if (!card) return;
   card.classList.add("medex-about-organization-card");
+  card.classList.add("job-detail-about-org");
 
   const buildingIcon = card.querySelector<SVGElement>('svg[class*="lucide-building"]');
   const row = buildingIcon?.parentElement;

@@ -177,12 +177,17 @@
   color: #047857 !important;
 }
 
-/* iPad and smaller: one column, apply card directly under the header. */
+/* iPad and mobile (<= 1024px): compact density, concise actions, hide About Organization. Laptop/desktop untouched. */
 @media (max-width: 1024px) {
+  .job-detail-page .container.mx-auto.px-4.py-8 {
+    padding-top: 10px !important;
+    padding-bottom: 18px !important;
+  }
+
   .job-detail-page .job-detail-grid {
     display: flex !important;
     flex-direction: column;
-    gap: 12px !important;
+    gap: 10px !important;
   }
 
   .job-detail-page .job-detail-main,
@@ -207,66 +212,411 @@
   .job-detail-page .job-detail-docs,
   .job-detail-page .job-detail-aside > :not(.job-detail-apply) { order: 5; }
 
-  .job-detail-page .medex-description-tabs {
-    position: static !important;
-    top: auto !important;
-  }
-
-  .job-detail-page .job-detail-facts .grid,
-  .job-detail-page .job-detail-facts .grid.md\:grid-cols-2 {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 10px !important;
-  }
-
-  .job-detail-page .medex-job-facts-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 10px !important;
-  }
-
-  .job-detail-page .medex-kv-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-}
-
-@media (max-width: 767px) {
-  .job-detail-page .container.mx-auto.px-4.py-8 {
-    padding-top: 10px !important;
-    padding-bottom: 16px !important;
-  }
-
-  .job-detail-page .job-detail-grid {
-    gap: 10px !important;
-  }
-
-  .job-detail-page .job-detail-hero,
-  .job-detail-page .job-detail-facts,
-  .job-detail-page .job-detail-description,
-  .job-detail-page .job-detail-docs,
-  .job-detail-page .job-detail-apply,
-  .job-detail-page .job-detail-aside > .p-6,
-  .job-detail-page .medex-job-hero-card,
-  .job-detail-page .medex-job-facts-card,
+  /* 1. Hide About Organization card on mobile & iPad */
   .job-detail-page .medex-about-organization-card,
-  .job-detail-page .medex-description-card {
-    padding: 12px 14px !important;
+  .job-detail-page .job-detail-about-org,
+  .job-detail-page .job-detail-aside > .medex-about-organization-card,
+  .job-detail-page .job-detail-aside > .job-detail-about-org,
+  .job-detail-page [class*="about-organization"] {
+    display: none !important;
+  }
+
+  /* 2. Top Hero Card: sleek, compact, following the exact same style (Image 5) */
+  .job-detail-page .job-detail-hero,
+  .job-detail-page .medex-job-hero-card {
+    padding: 10px 12px !important;
     border-radius: 12px !important;
+  }
+
+  .job-detail-page .job-detail-hero .space-y-4 > :not([hidden]) ~ :not([hidden]),
+  .job-detail-page .medex-job-hero-card .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 5px !important;
+  }
+
+  .job-detail-page .job-detail-hero h1,
+  .job-detail-page .medex-job-hero-title {
+    font-size: clamp(1.12rem, 3.8vw, 1.32rem) !important;
+    font-weight: 750 !important;
+    margin: 2px 0 4px !important;
+    line-height: 1.22 !important;
+  }
+
+  .job-detail-page .medex-job-organization-line {
+    margin: 0 0 5px !important;
+    gap: 6px !important;
+    font-size: 0.78rem !important;
+  }
+
+  .job-detail-page .medex-job-organization-line span,
+  .job-detail-page .medex-org-highlight {
+    padding: 2px 7px !important;
+    font-size: 0.76rem !important;
+    border-radius: 5px !important;
+    line-height: 1.25 !important;
+  }
+
+  .job-detail-page .medex-job-organization-icon {
+    width: 18px !important;
+    height: 18px !important;
+    flex: 0 0 18px !important;
+    border-radius: 4px !important;
+  }
+
+  .job-detail-page .medex-job-organization-icon svg {
+    width: 11px !important;
+    height: 11px !important;
+  }
+
+  .job-detail-page .medex-job-hero-meta {
+    gap: 10px !important;
+    font-size: 0.72rem !important;
+    margin-top: 4px !important;
+  }
+
+  .job-detail-page .medex-job-hero-meta svg {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .job-detail-page .medex-job-hero-action {
+    min-height: 26px !important;
+    height: 26px !important;
+    padding: 0 8px !important;
+    font-size: 0.72rem !important;
+    border-radius: 6px !important;
+    gap: 4px !important;
+  }
+
+  /* 3. Concise Apply Card: minimal spacing between Apply Now, Edit Job, and Share Job (Image 2) */
+  .job-detail-page .job-detail-apply {
+    padding: 10px 12px !important;
+    border-radius: 12px !important;
+  }
+
+  .job-detail-page .job-detail-apply .space-y-4 > :not([hidden]) ~ :not([hidden]),
+  .job-detail-page .job-detail-apply .space-y-3 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 5px !important;
+  }
+
+  .job-detail-page .job-detail-apply hr,
+  .job-detail-page .job-detail-apply [role="none"],
+  .job-detail-page .job-detail-apply .job-detail-action-separator {
+    display: none !important;
+  }
+
+  .job-detail-page .job-detail-apply p {
+    font-size: 0.75rem !important;
+    line-height: 1.3 !important;
+    margin-bottom: 4px !important;
+  }
+
+  .job-detail-page .job-detail-apply .rounded-md.border,
+  .job-detail-page .job-detail-apply [role="alert"] {
+    padding: 4px 8px !important;
+    font-size: 0.74rem !important;
+    border-radius: 6px !important;
+    min-height: 0 !important;
+    margin-bottom: 4px !important;
+  }
+
+  .job-detail-page .job-detail-apply [role="alert"] svg,
+  .job-detail-page .job-detail-apply .rounded-md.border svg {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .job-detail-page .job-detail-apply button.bg-green-600,
+  .job-detail-page .job-detail-apply button.bg-blue-600,
+  .job-detail-page .job-detail-apply button.w-full:not([variant="outline"]) {
+    min-height: 36px !important;
+    height: 36px !important;
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
+    border-radius: 7px !important;
+  }
+
+  .job-detail-page .job-detail-secondary-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 6px !important;
+    width: 100% !important;
+    padding-top: 2px !important;
+    margin-top: 5px !important;
+  }
+
+  .job-detail-page .job-detail-secondary-actions button {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    min-height: 32px !important;
+    height: 32px !important;
+    padding: 0 8px !important;
+    font-size: 0.76rem !important;
+    border-radius: 6px !important;
+    white-space: nowrap !important;
+  }
+
+  .job-detail-page .job-detail-secondary-actions button svg {
+    width: 13px !important;
+    height: 13px !important;
+    margin-right: 4px !important;
+  }
+
+  /* 4. Job Details Facts Grid: compact 2-column on mobile/iPad */
+  .job-detail-page .job-detail-facts,
+  .job-detail-page .medex-job-facts-card {
+    padding: 10px 12px !important;
+    border-radius: 12px !important;
+  }
+
+  .job-detail-page .job-detail-facts h2,
+  .job-detail-page .medex-job-facts-title {
+    font-size: 1.05rem !important;
+    font-weight: 750 !important;
+    margin-bottom: 6px !important;
   }
 
   .job-detail-page .job-detail-facts .grid,
   .job-detail-page .job-detail-facts .grid.md\:grid-cols-2,
   .job-detail-page .medex-job-facts-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 8px !important;
+    gap: 6px !important;
   }
 
+  /* 5. Job Description: compact boxes & reduced gap without touching layout (Images 3 & 4) */
+  .job-detail-page .job-detail-description,
+  .job-detail-page .medex-description-card {
+    padding: 10px 12px !important;
+    border-radius: 12px !important;
+  }
+
+  .job-detail-page .job-detail-description h2,
+  .job-detail-page .medex-description-title {
+    font-size: 1.05rem !important;
+    font-weight: 750 !important;
+    margin-bottom: 6px !important;
+  }
+
+  /* Intro banner ("Everything important, organised for quick scanning") */
+  .job-detail-page .medex-description-intro {
+    padding: 6px 9px !important;
+    margin: 0 0 7px !important;
+    gap: 7px !important;
+    border-radius: 7px !important;
+  }
+
+  .job-detail-page .medex-intro-icon {
+    width: 22px !important;
+    height: 22px !important;
+    padding: 4px !important;
+    border-radius: 5px !important;
+    flex: 0 0 22px !important;
+  }
+
+  .job-detail-page .medex-intro-icon svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+
+  .job-detail-page .medex-description-intro strong {
+    font-size: 0.76rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .job-detail-page .medex-description-intro p {
+    font-size: 0.7rem !important;
+    line-height: 1.25 !important;
+    margin-top: 1px !important;
+  }
+
+  /* Description Shell & Tabs */
+  .job-detail-page .medex-description-shell {
+    gap: 7px !important;
+  }
+
+  .job-detail-page .medex-description-tabs {
+    padding: 2px 0 5px !important;
+    gap: 5px !important;
+    border-bottom-width: 1px !important;
+    position: static !important;
+    top: auto !important;
+  }
+
+  .job-detail-page .medex-description-tab {
+    min-height: 30px !important;
+    height: 30px !important;
+    padding: 4px 8px !important;
+    font-size: 0.72rem !important;
+    border-radius: 6px !important;
+    gap: 4px !important;
+  }
+
+  .job-detail-page .medex-tab-icon {
+    width: 13px !important;
+    height: 13px !important;
+  }
+
+  .job-detail-page .medex-tab-count {
+    display: none !important;
+  }
+
+  /* Panel Header */
+  .job-detail-page .medex-description-panel {
+    border-radius: 8px !important;
+  }
+
+  .job-detail-page .medex-description-panel-header {
+    padding: 6px 10px !important;
+    gap: 7px !important;
+  }
+
+  .job-detail-page .medex-panel-icon {
+    width: 22px !important;
+    height: 22px !important;
+    padding: 3px !important;
+    border-radius: 5px !important;
+    flex: 0 0 22px !important;
+  }
+
+  .job-detail-page .medex-panel-icon svg {
+    width: 13px !important;
+    height: 13px !important;
+  }
+
+  .job-detail-page .medex-panel-title-group h3 {
+    font-size: 0.8rem !important;
+    font-weight: 750 !important;
+  }
+
+  .job-detail-page .medex-panel-title-group p {
+    display: none !important;
+  }
+
+  .job-detail-page .medex-panel-count {
+    font-size: 0.64rem !important;
+    padding: 1px 5px !important;
+  }
+
+  /* Panel Body */
+  .job-detail-page .medex-section-body {
+    padding: 6px 8px !important;
+    gap: 4px !important;
+  }
+
+  /* KV Grid & Field Boxes (POST, ORGANISATION, LOCATION, etc.) */
+  .job-detail-page .medex-kv-grid {
+    gap: 4px !important;
+  }
+
+  .job-detail-page .medex-kv-row {
+    padding: 5px 8px !important;
+    min-height: 0 !important;
+    gap: 6px !important;
+    border-radius: 7px !important;
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+  }
+
+  .job-detail-page .medex-kv-icon {
+    width: 20px !important;
+    height: 20px !important;
+    padding: 3px !important;
+    border-radius: 4px !important;
+    flex: 0 0 20px !important;
+  }
+
+  .job-detail-page .medex-kv-icon svg {
+    width: 12px !important;
+    height: 12px !important;
+  }
+
+  .job-detail-page .medex-kv-copy {
+    gap: 1px !important;
+  }
+
+  .job-detail-page .medex-kv-label {
+    font-size: 0.58rem !important;
+    font-weight: 750 !important;
+    letter-spacing: 0.025em !important;
+    line-height: 1.1 !important;
+    margin-bottom: 1px !important;
+    text-transform: uppercase !important;
+  }
+
+  .job-detail-page .medex-kv-value {
+    font-size: 0.74rem !important;
+    font-weight: 600 !important;
+    line-height: 1.25 !important;
+  }
+
+  .job-detail-page .medex-kv-value--org {
+    padding: 1px 5px !important;
+    border-radius: 4px !important;
+    font-size: 0.74rem !important;
+    line-height: 1.25 !important;
+  }
+
+  /* List items & lines inside description */
+  .job-detail-page .medex-description-line {
+    padding: 4px 6px !important;
+    gap: 5px !important;
+    border-radius: 5px !important;
+  }
+
+  .job-detail-page .medex-line-icon {
+    width: 12px !important;
+    height: 12px !important;
+    flex: 0 0 12px !important;
+    margin-top: 2px !important;
+  }
+
+  .job-detail-page .medex-description-line p {
+    font-size: 0.74rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .job-detail-page .medex-description-list {
+    gap: 4px !important;
+  }
+
+  .job-detail-page .medex-description-list-item {
+    padding: 4px 7px !important;
+    gap: 5px !important;
+    border-radius: 5px !important;
+  }
+
+  .job-detail-page .medex-list-icon {
+    width: 12px !important;
+    height: 12px !important;
+    flex: 0 0 12px !important;
+    margin-top: 2px !important;
+  }
+
+  .job-detail-page .medex-list-copy {
+    font-size: 0.74rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .job-detail-page .medex-description-subheading {
+    padding: 3px 0 2px !important;
+    margin: 2px 0 0 !important;
+    gap: 5px !important;
+  }
+
+  .job-detail-page .medex-subheading-icon {
+    width: 13px !important;
+    height: 13px !important;
+  }
+
+  .job-detail-page .medex-description-subheading h4 {
+    font-size: 0.76rem !important;
+  }
+}
+
+/* Phones (< 768px): single column for KV grid, tight compact spacing */
+@media (max-width: 767px) {
   .job-detail-page .medex-kv-grid {
     grid-template-columns: minmax(0, 1fr) !important;
-  }
-
-  .job-detail-page .job-detail-description p,
-  .job-detail-page .medex-description-card p {
-    font-size: 0.86rem !important;
-    line-height: 1.5 !important;
   }
 }
 

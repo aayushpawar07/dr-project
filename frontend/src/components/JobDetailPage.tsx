@@ -1515,13 +1515,12 @@ export function JobDetailPage({
                   </div>
                 )}
 
-                {/* Only show save button for candidates when logged in */}
-                {isAuthenticated && user?.role === "candidate" && (
-                  <>
-                    <Separator />
+                {/* Actions: save (candidates), edit (employers/admins), share (all) */}
+                <div className="job-detail-secondary-actions flex flex-wrap items-center gap-2 pt-1">
+                  {isAuthenticated && user && user.role === "candidate" && (
                     <Button
                       variant="outline"
-                      className="w-full"
+                      className="flex-1 min-h-[34px] h-[34px] px-2.5 text-xs font-medium"
                       onClick={handleSaveJob}
                       disabled={saving}
                     >
@@ -1529,48 +1528,44 @@ export function JobDetailPage({
                         "Saving..."
                       ) : isSaved ? (
                         <>
-                          <BookmarkCheck className="w-4 h-4 mr-2" />
+                          <BookmarkCheck className="w-3.5 h-3.5 mr-1.5" />
                           Saved
                         </>
                       ) : (
                         <>
-                          <Bookmark className="w-4 h-4 mr-2" />
+                          <Bookmark className="w-3.5 h-3.5 mr-1.5" />
                           Save Job
                         </>
                       )}
                     </Button>
-                  </>
-                )}
+                  )}
 
-                {isAuthenticated && user && (user.role === "admin" || user.role === "employer") && (
-                  <>
-                    <Separator />
+                  {isAuthenticated && user && (user.role === "admin" || user.role === "employer") && (
                     <Button
                       variant="outline"
-                      className="w-full text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-300 font-medium"
+                      className="flex-1 min-h-[34px] h-[34px] px-2.5 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 border-amber-300"
                       onClick={() => onNavigate("edit-job", job.id || jobId)}
                     >
-                      <Edit className="w-4 h-4 mr-2 text-amber-700" />
+                      <Edit className="w-3.5 h-3.5 mr-1.5 text-amber-700" />
                       Edit This Job
                     </Button>
-                  </>
-                )}
+                  )}
 
-                {/* Share Job button for all users (candidates, employers, admins, guests) */}
-                <Separator />
-                <Button
-                  variant="outline"
-                  className="w-full text-blue-600 border-blue-200 hover:bg-blue-50"
-                  onClick={handleNativeShare}
-                >
-                  <Share2 className="w-4 h-4 mr-2 text-blue-600" />
-                  Share Job
-                </Button>
+                  {/* Share Job button for all users (candidates, employers, admins, guests) */}
+                  <Button
+                    variant="outline"
+                    className="flex-1 min-h-[34px] h-[34px] px-2.5 text-xs font-medium text-blue-600 border-blue-200 hover:bg-blue-50"
+                    onClick={handleNativeShare}
+                  >
+                    <Share2 className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
+                    Share Job
+                  </Button>
+                </div>
               </div>
             </Card>
 
             {/* Company Info */}
-            <Card className="p-6">
+            <Card className="p-6 job-detail-about-org medex-about-organization-card hidden lg:block">
               <h3 className="text-lg text-gray-900 mb-4">About Organization</h3>
               <div className="space-y-3">
                 <div className="flex items-center gap-2">

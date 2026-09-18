@@ -21,6 +21,8 @@ import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { cardFieldText, cardSalaryText, displayJobDescription } from '../utils/extractedFieldDisplay';
+import { cleanLocation } from '../utils/locationCleaner';
+import { buildJobShareText, getJobShareUrl, shareTextWithoutUrl } from '../utils/shareContent';
 
 interface Props {
   onNavigate: (page: string, entityId?: string) => void;
@@ -85,33 +87,51 @@ function GovernmentJobDetail({
   job: any;
   onNavigate: Props['onNavigate'];
 }) {
-  const locationText = job.location || [job.city, job.state].filter(Boolean).join(', ');
   const organization =
     job.organization ||
     job.companyName ||
     job.employer?.companyName ||
     job.employerName ||
     'Government Organisation';
+  const rawLocation = job.location || [job.city, job.state].filter(Boolean).join(', ');
+  const fallbackCityState = [job.city, job.state].filter(Boolean).join(', ');
+  const locationText = cleanLocation(rawLocation, organization, fallbackCityState);
 
   const notificationUrl = job.jobDocumentUrl || job.pdfUrl;
   const officialWebsite = extractOfficialWebsite(job.description) || job.officialWebsite;
-  const applyLink = job.applyLink;
   const daysLeft = job.lastDate
     ? Math.ceil((new Date(job.lastDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
 
   const handleShare = async () => {
-    const data = {
-      title: job.title,
-      text: `${job.title} - ${organization}`,
-      url: window.location.href,
+    const shareUrl = getJobShareUrl(job.id);
+    const shareText = buildJobShareText(
+      {
+        id: job.id,
+        title: job.title,
+        organization,
+        location: locationText,
+        sector: 'government',
+        category: job.category,
+        numberOfPosts: job.numberOfPosts,
+        qualification: cardFieldText(job.qualification),
+        experience: cardFieldText(job.experience),
+        salary: cardSalaryText(job.salary),
+        lastDate: job.lastDate,
+      },
+      shareUrl,
+    );
+    const shareData = {
+      title: `${job.title} | MedExJob`,
+      text: shareTextWithoutUrl(shareText, shareUrl),
+      url: shareUrl,
     };
 
     try {
       if (navigator.share) {
-        await navigator.share(data);
+        await navigator.share(shareData);
       } else {
-        await navigator.clipboard.writeText(window.location.href);
+        await navigator.clipboard.writeText(shareText);
       }
     } catch {
       // User cancelled the native share sheet.
@@ -201,9 +221,9 @@ function GovernmentJobDetail({
             </Card>
 
             {/* Same card/grid treatment as Private job details */}
-            <Card className="p-6 job-detail-facts">
-              <h2 className="mb-4 text-xl text-gray-900">Job Details</h2>
-              <div className="grid gap-4 md:grid-cols-2">
+            <Card className="p-4 sm:p-6 job-detail-facts">
+              <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-bold text-gray-900">Job Details</h2>
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
                 <PrivateStyleDetail icon={MapPin} label="Location" value={locationText || 'See notification'} />
                 <PrivateStyleDetail
                   icon={Briefcase}
@@ -214,6 +234,7 @@ function GovernmentJobDetail({
                   icon={GraduationCap}
                   label="Qualification"
                   value={cardFieldText(job.qualification, 'See job description')}
+                  className="col-span-2"
                 />
                 <PrivateStyleDetail
                   icon={BriefcaseIcon}
@@ -233,9 +254,9 @@ function GovernmentJobDetail({
               </div>
             </Card>
 
-            <Card className="p-6 job-detail-description">
-              <h2 className="mb-4 text-xl text-gray-900">Job Description</h2>
-              <p className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+            <Card className="p-4 sm:p-6 job-detail-description">
+              <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-bold text-gray-900">Job Description</h2>
+              <p className="whitespace-pre-wrap text-gray-700 leading-relaxed text-sm sm:text-base">
                 {displayJobDescription(job) ||
                   'Refer to the official notification for complete eligibility, selection process and application instructions.'}
               </p>
@@ -245,7 +266,7 @@ function GovernmentJobDetail({
 
           {/* Same right-column composition as Private jobs */}
           <div className="job-detail-aside space-y-6 md:col-span-1">
-            <Card className="p-6 md:sticky md:top-20 job-detail-apply">
+            <Card className="p-4 sm:p-6 md:sticky md:top-20 job-detail-apply">
               <div className="space-y-4">
                 {daysLeft != null && daysLeft > 0 && (
                   <div
@@ -273,20 +294,7 @@ function GovernmentJobDetail({
                     Government applications are submitted through the official process. MedExJob does not collect this application.
                   </p>
 
-                  {applyLink ? (
-                    <Button className="w-full bg-blue-600 hover:bg-blue-700" asChild>
-                      <a href={applyLink} target="_blank" rel="noopener noreferrer">
-                        Official Apply Link
-                        <ExternalLink className="ml-2 h-4 w-4" />
-                      </a>
-                    </Button>
-                  ) : (
-                    <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-800">
-                      Online application link is not listed. Check the official notification for offline, walk-in or direct application instructions.
-                    </div>
-                  )}
-
-                  <Button variant="outline" className="w-full text-blue-600" onClick={handleShare}>
+                  <Button variant="outline" className="w-full text-blue-600 hover:bg-blue-50" onClick={handleShare}>
                     <Share2 className="mr-2 h-4 w-4" />
                     Share Job
                   </Button>
@@ -334,19 +342,21 @@ function PrivateStyleDetail({
   icon: Icon,
   label,
   value,
+  className = '',
 }: {
   icon: any;
   label: string;
   value: string;
+  className?: string;
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-white p-4">
-      <div className="rounded-md bg-blue-50 p-2 text-blue-600">
+    <div className={`flex items-start gap-2 sm:gap-3 rounded-lg border border-gray-200 bg-white p-2.5 sm:p-3.5 shadow-none ${className}`}>
+      <div className="rounded-md bg-blue-50 p-1.5 sm:p-2 text-blue-600 shrink-0">
         <Icon className="h-4 w-4" />
       </div>
-      <div className="min-w-0">
-        <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>
-        <p className="mt-1 text-sm font-medium leading-6 text-gray-900">{value}</p>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500">{label}</p>
+        <p className="mt-0.5 text-xs sm:text-sm font-medium leading-tight sm:leading-snug text-gray-900 break-words">{value}</p>
       </div>
     </div>
   );

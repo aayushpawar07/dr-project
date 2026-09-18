@@ -5,7 +5,7 @@ type ShareableNews = {
   fullStory?: string;
 };
 
-type ShareableJob = {
+export type ShareableJob = {
   id: string;
   title: string;
   description?: string;
@@ -13,9 +13,24 @@ type ShareableJob = {
   location?: string;
   qualification?: string;
   salary?: string;
+  salaryRange?: string;
   experience?: string;
-  numberOfPosts?: number;
+  numberOfPosts?: number | string;
+  sector?: string;
+  category?: string;
+  lastDate?: string;
 };
+
+function formatShareDate(dateStr?: string) {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch {
+    return dateStr;
+  }
+}
 
 function toPlainText(value?: string) {
   if (!value) return '';
@@ -67,20 +82,48 @@ export function buildNewsShareText(news: ShareableNews, shareUrl = getNewsShareU
 }
 
 export function buildJobShareText(job: ShareableJob, shareUrl = getJobShareUrl(job.id)) {
-  const description = toPlainText(job.description);
-  const dynamicFallback = [
-    job.organization,
-    job.location,
-    job.qualification,
-    job.salary,
-    job.experience,
-    job.numberOfPosts ? `${job.numberOfPosts} posts` : '',
-  ]
-    .filter(Boolean)
-    .join(' • ');
+  const lines: string[] = [];
 
-  const excerpt = truncate(description || dynamicFallback, 220);
-  return [job.title, excerpt, shareUrl].filter(Boolean).join('\n\n');
+  const sectorBadge = job.sector?.toLowerCase() === 'government' ? '🏛️ Government Job' : '💼 Private Job';
+  lines.push(`${sectorBadge}: *${job.title.trim()}*`);
+
+  if (job.organization?.trim()) {
+    lines.push(`🏥 *Hospital/Org:* ${job.organization.trim()}`);
+  }
+
+  if (job.location?.trim()) {
+    lines.push(`📍 *Location:* ${job.location.trim()}`);
+  }
+
+  if (job.numberOfPosts != null && String(job.numberOfPosts).trim()) {
+    const count = Number(job.numberOfPosts);
+    const postLabel = !isNaN(count) && count === 1 ? '1 Post' : `${job.numberOfPosts} Posts`;
+    lines.push(`👥 *Vacancies:* ${postLabel}`);
+  }
+
+  if (job.qualification?.trim()) {
+    lines.push(`🎓 *Qualification:* ${job.qualification.trim()}`);
+  }
+
+  if (job.experience?.trim()) {
+    lines.push(`⏳ *Experience:* ${job.experience.trim()}`);
+  }
+
+  const salaryVal = (job.salary || job.salaryRange || '').trim();
+  if (salaryVal) {
+    lines.push(`💰 *Salary:* ${salaryVal}`);
+  }
+
+  if (job.lastDate) {
+    const formatted = formatShareDate(job.lastDate);
+    if (formatted) {
+      lines.push(`📅 *Apply By:* ${formatted}`);
+    }
+  }
+
+  lines.push(`\n🔗 *Apply on MedExJob:* ${shareUrl}`);
+
+  return lines.join('\n');
 }
 
 export function shareTextWithoutUrl(fullText: string, shareUrl: string) {

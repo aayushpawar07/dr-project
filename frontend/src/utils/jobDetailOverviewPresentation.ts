@@ -65,20 +65,14 @@ function ensureOrganization(heroCard: HTMLElement, organization: string) {
   if (!titleContainer) return;
   titleContainer.classList.add("medex-job-hero-copy");
 
-  const existingOrganization = Array.from(titleContainer.children).find((child) => {
-    if (!(child instanceof HTMLElement) || child === h1) return false;
-    const text = cleanText(child.textContent);
-    return text === organization;
-  }) as HTMLElement | undefined;
+  // Check if an organization name or element is already rendered in the title container
+  const alreadyHasOrg =
+    titleContainer.querySelector(".medex-job-organization-line") ||
+    titleContainer.querySelector(".medex-org-highlight") ||
+    titleContainer.querySelector(".medex-job-organization-injected") ||
+    titleContainer.querySelector('svg[class*="lucide-building"]');
 
-  if (existingOrganization) {
-    existingOrganization.classList.add("medex-job-organization-line");
-    const name = existingOrganization.querySelector("span");
-    if (name) name.classList.add("medex-org-highlight", "medex-job-organization-name");
-    return;
-  }
-
-  if (titleContainer.querySelector(".medex-job-organization-line")) return;
+  if (alreadyHasOrg) return;
 
   const line = document.createElement("div");
   line.className = "medex-job-organization-line medex-job-organization-injected";

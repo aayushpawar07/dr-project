@@ -219,25 +219,43 @@
   }
 
   .medex-job-hero-card {
-    padding: 20px !important;
+    padding: 14px !important;
   }
 
   .medex-job-facts-card {
-    padding: 18px !important;
-  }
-
-  .medex-job-facts-grid {
-    grid-template-columns: 1fr !important;
-  }
-
-  .medex-job-fact {
-    grid-template-columns: 38px minmax(0, 1fr) !important;
     padding: 12px !important;
   }
 
+  .medex-job-facts-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .medex-job-fact[data-fact*="qualification"] {
+    grid-column: span 2 / span 2 !important;
+  }
+
+  .medex-job-fact {
+    grid-template-columns: 30px minmax(0, 1fr) !important;
+    padding: 8px 10px !important;
+    gap: 8px !important;
+    border-radius: 10px !important;
+  }
+
   .medex-job-fact-icon {
-    width: 34px !important;
-    height: 34px !important;
-    padding: 8px !important;
+    width: 28px !important;
+    height: 28px !important;
+    padding: 6px !important;
+    border-radius: 6px !important;
+  }
+
+  .medex-job-fact-label {
+    font-size: 0.68rem !important;
+    margin-bottom: 2px !important;
+  }
+
+  .medex-job-fact-value {
+    font-size: 0.82rem !important;
+    line-height: 1.35 !important;
   }
 }

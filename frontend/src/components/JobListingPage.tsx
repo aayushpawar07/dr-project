@@ -50,11 +50,23 @@ function matchesWhatTitle(job: any, keyword: string) {
   const trimmedKeyword = keyword.trim();
   if (!trimmedKeyword) return true;
 
-  const title = String(job?.title || job?.displayTitle || "").toLowerCase();
-  if (!title) return false;
+  const targetTitles = [
+    job?.displayTitle,
+    job?.title,
+    ...(Array.isArray(job?.postNames) ? job.postNames : []),
+    job?.category,
+    job?.speciality,
+    job?.department,
+  ]
+    .filter(Boolean)
+    .map((s) => String(s).toLowerCase());
+
+  if (targetTitles.length === 0) return false;
 
   const groups = roleGroups(trimmedKeyword);
-  return groups.some((tokens) => tokens.every((token) => title.includes(token)));
+  return groups.some((tokens) =>
+    targetTitles.some((target) => tokens.every((token) => target.includes(token)))
+  );
 }
 
 function filterByWhatTitle(content: any[], keyword: string) {

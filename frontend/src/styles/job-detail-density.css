@@ -212,12 +212,15 @@
     top: auto !important;
   }
 
+  .job-detail-page .job-detail-facts .grid,
   .job-detail-page .job-detail-facts .grid.md\:grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
   }
 
   .job-detail-page .medex-job-facts-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
   }
 
   .job-detail-page .medex-kv-grid {
@@ -227,8 +230,8 @@
 
 @media (max-width: 767px) {
   .job-detail-page .container.mx-auto.px-4.py-8 {
-    padding-top: 12px !important;
-    padding-bottom: 18px !important;
+    padding-top: 10px !important;
+    padding-bottom: 16px !important;
   }
 
   .job-detail-page .job-detail-grid {
@@ -245,14 +248,25 @@
   .job-detail-page .medex-job-facts-card,
   .job-detail-page .medex-about-organization-card,
   .job-detail-page .medex-description-card {
-    padding: 14px !important;
-    border-radius: 14px !important;
+    padding: 12px 14px !important;
+    border-radius: 12px !important;
   }
 
+  .job-detail-page .job-detail-facts .grid,
   .job-detail-page .job-detail-facts .grid.md\:grid-cols-2,
-  .job-detail-page .medex-job-facts-grid,
+  .job-detail-page .medex-job-facts-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
   .job-detail-page .medex-kv-grid {
     grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .job-detail-page .job-detail-description p,
+  .job-detail-page .medex-description-card p {
+    font-size: 0.86rem !important;
+    line-height: 1.5 !important;
   }
 }
 

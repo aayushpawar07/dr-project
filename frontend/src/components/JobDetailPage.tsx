@@ -46,6 +46,8 @@ import { saveJob, unsaveJob, checkIfJobIsSaved } from "../api/savedJobs";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 import { ResumeUploadSection } from "./ResumeUploadSection";
 import { cardFieldText, cardSalaryText, displayJobDescription } from "../utils/extractedFieldDisplay";
+import { cleanLocation } from "../utils/locationCleaner";
+import { buildJobShareText, getJobShareUrl, shareTextWithoutUrl } from "../utils/shareContent";
 
 interface JobDetailPageProps {
   onNavigate: (page: string, entityId?: string) => void;
@@ -59,19 +61,12 @@ export function JobDetailPage({
   const { isAuthenticated, user, token } = useAuth();
   const [job, setJob] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-  const [showApplyDialog, setShowApplyDialog] = useState(
-    initialShowApplyDialog,
-  );
-  const [isDialogOpening, setIsDialogOpening] = useState(false);
-  const buttonClickTimeRef = useRef<number>(0);
-  const dialogJustOpenedRef = useRef<boolean>(false);
-  const viewIncrementedRef = useRef<string | null>(null);
-  const [applicationForm, setApplicationForm] = useState({
-    candidateName: "",
-    candidateEmail: "",
-    candidatePhone: "",
-    resume: null as File | null,
+  const [error, setError] = useState<string | null>(null);
+  const [showApplyDialog, setShowApplyDialog] = useState(initialShowApplyDialog);
+  const [applicationData, setApplicationData] = useState({
+    coverLetter: "",
+    resumeUrl: "",
+    answers: [] as any[],
     notes: "",
   });
   const [applying, setApplying] = useState(false);
@@ -81,8 +76,16 @@ export function JobDetailPage({
   const [userApplication, setUserApplication] = useState<any>(null);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-  const locationText =
+  const orgName =
+    job?.organization ||
+    (job as any)?.companyName ||
+    (job as any)?.employer?.companyName ||
+    (job as any)?.employerName ||
+    "";
+  const rawLocation =
     job?.location || [job?.city, job?.state].filter(Boolean).join(", ");
+  const fallbackCityState = [job?.city, job?.state].filter(Boolean).join(", ");
+  const locationText = cleanLocation(rawLocation, orgName, fallbackCityState);
   const { jobId } = useParams<{ jobId: string }>();
 
   const getShareUrl = () => {
@@ -103,12 +106,33 @@ export function JobDetailPage({
     }
   };
 
+  const getFullShareText = () => {
+    if (!job) return "";
+    return buildJobShareText(
+      {
+        id: job.id || jobId,
+        title: job.title,
+        organization: orgName,
+        location: locationText,
+        sector: job.sector || "private",
+        category: job.category,
+        numberOfPosts: job.numberOfPosts,
+        qualification: cardFieldText(job.qualification),
+        experience: cardFieldText(job.experience),
+        salary: cardSalaryText(job.salary),
+        lastDate: job.lastDate,
+      },
+      getShareUrl(),
+    );
+  };
+
   const handleNativeShare = async () => {
     if (!job) return;
     const shareUrl = getShareUrl();
+    const shareText = getFullShareText();
     const shareData = {
       title: `${job.title} | MedExJob`,
-      text: `Check out this medical job opening: ${job.title} at ${job.organization || 'MedExJob'}`,
+      text: shareTextWithoutUrl(shareText, shareUrl),
       url: shareUrl,
     };
     if (navigator.share) {
@@ -121,7 +145,7 @@ export function JobDetailPage({
   };
 
   const shareToWhatsApp = () => {
-    const text = encodeURIComponent(`*${job?.title}*\n${job?.organization ? job.organization + '\n' : ''}Apply here: ${getShareUrl()}`);
+    const text = encodeURIComponent(getFullShareText());
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   };
 
@@ -568,73 +592,87 @@ export function JobDetailPage({
             </Card>
 
             {/* Job Details */}
-            <Card className="p-6 job-detail-facts">
-              <h2 className="text-xl text-gray-900 mb-4">Job Details</h2>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-gray-500">Location</p>
-                    <p className="text-gray-900">
+            <Card className="p-4 sm:p-6 job-detail-facts">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Job Details</h2>
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
+                <div className="flex items-start gap-2 sm:gap-3 rounded-lg border border-gray-200 bg-white p-2.5 sm:p-3.5 shadow-none">
+                  <div className="rounded-md bg-blue-50 p-1.5 sm:p-2 text-blue-600 shrink-0">
+                    <MapPin className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500">Location</p>
+                    <p className="mt-0.5 text-xs sm:text-sm font-medium leading-tight sm:leading-snug text-gray-900 break-words">
                       {locationText || "Location"}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <Briefcase className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-gray-500">Number of Posts</p>
-                    <p className="text-gray-900">{job.numberOfPosts}</p>
+                <div className="flex items-start gap-2 sm:gap-3 rounded-lg border border-gray-200 bg-white p-2.5 sm:p-3.5 shadow-none">
+                  <div className="rounded-md bg-blue-50 p-1.5 sm:p-2 text-blue-600 shrink-0">
+                    <Briefcase className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500">Number of Posts</p>
+                    <p className="mt-0.5 text-xs sm:text-sm font-medium leading-tight sm:leading-snug text-gray-900 break-words">{job.numberOfPosts || "See description"}</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <GraduationCap className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-gray-500">Qualification</p>
-                    <p className="text-gray-900">{cardFieldText(job.qualification, 'See job description')}</p>
+                <div className="flex items-start gap-2 sm:gap-3 rounded-lg border border-gray-200 bg-white p-2.5 sm:p-3.5 shadow-none col-span-2">
+                  <div className="rounded-md bg-blue-50 p-1.5 sm:p-2 text-blue-600 shrink-0">
+                    <GraduationCap className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500">Qualification</p>
+                    <p className="mt-0.5 text-xs sm:text-sm font-medium leading-tight sm:leading-snug text-gray-900 break-words">{cardFieldText(job.qualification, 'See job description')}</p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <Briefcase className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-gray-500">Experience</p>
-                    <p className="text-gray-900">{cardFieldText(job.experience, 'See job description')}</p>
+                <div className="flex items-start gap-2 sm:gap-3 rounded-lg border border-gray-200 bg-white p-2.5 sm:p-3.5 shadow-none">
+                  <div className="rounded-md bg-blue-50 p-1.5 sm:p-2 text-blue-600 shrink-0">
+                    <Briefcase className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500">Experience</p>
+                    <p className="mt-0.5 text-xs sm:text-sm font-medium leading-tight sm:leading-snug text-gray-900 break-words">{cardFieldText(job.experience, 'See job description')}</p>
                   </div>
                 </div>
 
                 {cardSalaryText(job.salary) && (
-                  <div className="flex items-start gap-3">
-                    <DollarSign className="w-5 h-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <p className="text-sm text-gray-500">Salary</p>
-                      <p className="text-gray-900">{cardSalaryText(job.salary)}</p>
+                  <div className="flex items-start gap-2 sm:gap-3 rounded-lg border border-gray-200 bg-white p-2.5 sm:p-3.5 shadow-none">
+                    <div className="rounded-md bg-blue-50 p-1.5 sm:p-2 text-blue-600 shrink-0">
+                      <DollarSign className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500">Salary</p>
+                      <p className="mt-0.5 text-xs sm:text-sm font-medium leading-tight sm:leading-snug text-gray-900 break-words">{cardSalaryText(job.salary)}</p>
                     </div>
                   </div>
                 )}
 
-                <div className="flex items-start gap-3">
-                  <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-gray-500">Last Date to Apply</p>
-                    <p className="text-gray-900">
-                      {new Date(job.lastDate).toLocaleDateString("en-IN", {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })}
-                    </p>
+                {job.lastDate && (
+                  <div className="flex items-start gap-2 sm:gap-3 rounded-lg border border-gray-200 bg-white p-2.5 sm:p-3.5 shadow-none">
+                    <div className="rounded-md bg-blue-50 p-1.5 sm:p-2 text-blue-600 shrink-0">
+                      <Calendar className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500">Last Date to Apply</p>
+                      <p className="mt-0.5 text-xs sm:text-sm font-medium leading-tight sm:leading-snug text-gray-900 break-words">
+                        {new Date(job.lastDate).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </Card>
 
             {/* Job Description */}
-            <Card className="p-6 job-detail-description">
-              <h2 className="text-xl text-gray-900 mb-4">Job Description</h2>
-              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{displayJobDescription(job)}</p>
+            <Card className="p-4 sm:p-6 job-detail-description">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Job Description</h2>
+              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-sm sm:text-base">{displayJobDescription(job)}</p>
             </Card>
 
           </div>

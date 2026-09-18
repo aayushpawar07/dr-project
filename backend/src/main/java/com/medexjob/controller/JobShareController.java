@@ -189,16 +189,30 @@ public class JobShareController {
 
     private String buildDescription(Job job, String org, String loc) {
         StringBuilder sb = new StringBuilder();
-        if (job.getCategory() != null) {
-            sb.append(job.getCategory().toString().replace('_', ' ')).append(" position");
+        if (job.getSector() != null) {
+            sb.append(job.getSector() == Job.JobSector.GOVERNMENT ? "Government Medical Job" : "Private Healthcare Job");
         } else {
-            sb.append("Medical job opening");
+            sb.append("Medical Job Opening");
         }
-        if (!org.isEmpty()) sb.append(" at ").append(org);
+        if (!org.isEmpty()) {
+            sb.append(" at ").append(org);
+        }
+        if (loc != null && !loc.isBlank()) {
+            sb.append(" in ").append(loc);
+        }
         if (job.getNumberOfPosts() != null && job.getNumberOfPosts() > 0) {
-            sb.append(". ").append(job.getNumberOfPosts()).append(" post(s)");
+            sb.append(" • ").append(job.getNumberOfPosts()).append(" Post(s)");
         }
-        sb.append(" in ").append(loc).append(". Apply on MedExJob.com.");
+        if (job.getQualification() != null && !job.getQualification().isBlank()) {
+            sb.append(" • Qualification: ").append(truncate(plainText(job.getQualification()), 60));
+        }
+        if (job.getSalaryRange() != null && !job.getSalaryRange().isBlank()) {
+            sb.append(" • Salary: ").append(job.getSalaryRange());
+        }
+        if (job.getLastDate() != null) {
+            sb.append(" • Apply By: ").append(job.getLastDate());
+        }
+        sb.append(". Apply on MedExJob.");
         return escapeHtml(sb.toString());
     }
 

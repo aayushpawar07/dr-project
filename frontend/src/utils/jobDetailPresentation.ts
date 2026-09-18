@@ -544,17 +544,7 @@ function relabelExistingGovernmentLinks(root: ParentNode) {
   Array.from(root.querySelectorAll("a")).forEach((anchor) => {
     const text = anchor.textContent?.trim().toLowerCase() || "";
     if (anchor.dataset.medexRelabeled === "true") return;
-    if (text.includes("official apply link")) {
-      anchor.childNodes.forEach((node) => {
-        if (node.nodeType === Node.TEXT_NODE) node.textContent = "";
-      });
-      const label = document.createElement("span");
-      label.textContent = "Official Website";
-      const firstSvg = anchor.querySelector("svg");
-      if (firstSvg) firstSvg.after(label);
-      else anchor.prepend(label);
-      anchor.dataset.medexRelabeled = "true";
-    } else if (text.includes("view notification") || text.includes("official notification pdf")) {
+    if (text.includes("view notification") || text.includes("official notification pdf")) {
       anchor.childNodes.forEach((node) => {
         if (node.nodeType === Node.TEXT_NODE) node.textContent = "";
       });

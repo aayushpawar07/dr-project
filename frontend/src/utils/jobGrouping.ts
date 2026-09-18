@@ -60,7 +60,18 @@ function searchTextFor(job: any) {
 function matchesQuery(job: any, query?: string) {
   const groups = queryGroups(query);
   if (!groups.length) return true;
-  const haystack = clean(job?._groupSearchText || searchTextFor(job)).toLowerCase();
+  const haystack = clean([
+    job?.displayTitle,
+    job?.title,
+    ...(job?.postNames || []),
+    ...(job?.departments || []),
+    ...(job?.specialities || []),
+    job?.department,
+    job?.speciality,
+    job?.category,
+    organisation(job),
+    job?.location,
+  ].filter(Boolean).join(' ')).toLowerCase();
   // Comma-separated role groups are OR; words within each role are AND.
   return groups.some((tokens) => tokens.every((token) => haystack.includes(token)));
 }
@@ -74,7 +85,7 @@ export function groupRecruitmentJobs(jobs: any[], query?: string) {
       const displayTitle = clean(job?.title);
       const enriched = { ...job, displayTitle };
       const searchText = searchTextFor(enriched);
-      standalone.push({ ...enriched, _groupSearchText: searchText, title: query?.trim() ? searchText : displayTitle });
+      standalone.push({ ...enriched, _groupSearchText: searchText, title: displayTitle });
       continue;
     }
 
@@ -108,7 +119,7 @@ export function groupRecruitmentJobs(jobs: any[], query?: string) {
     return {
       ...first,
       displayTitle,
-      title: query?.trim() ? searchText : displayTitle,
+      title: displayTitle,
       organization: org || first.organization,
       recruitmentGrouped: true,
       groupedVacancyRows: items.length,

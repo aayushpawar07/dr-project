@@ -134,54 +134,57 @@ public final class JobSpecifications {
 
             List<String> tokens = tokenize(searchQuery);
             if (!tokens.isEmpty()) {
-                List<Predicate> allSearchMatches = new ArrayList<>();
-                List<Predicate> titleTokenMatches = new ArrayList<>();
-
-                // Phrase matches receive the strongest relevance rank, but are not
-                // required. This prevents a query such as "Senior Medical Officer"
-                // from hiding useful "Medical Officer" jobs just because "Senior"
-                // is absent from the stored record.
                 Predicate exactTitlePhrase = like(cb, root.get("title"), searchQuery);
-                allSearchMatches.add(exactTitlePhrase);
-                allSearchMatches.add(like(cb, employerJoin.get("companyName"), searchQuery));
-                allSearchMatches.add(like(cb, root.get("speciality"), searchQuery));
-                allSearchMatches.add(like(cb, root.get("department"), searchQuery));
-                allSearchMatches.add(like(cb, root.get("qualification"), searchQuery));
-                allSearchMatches.add(like(cb, root.get("location"), searchQuery));
+                Predicate exactEmployerPhrase = like(cb, employerJoin.get("companyName"), searchQuery);
+                Predicate exactSpecialityPhrase = like(cb, root.get("speciality"), searchQuery);
+                Predicate exactDepartmentPhrase = like(cb, root.get("department"), searchQuery);
+                Predicate exactQualificationPhrase = like(cb, root.get("qualification"), searchQuery);
+                Predicate exactLocationPhrase = like(cb, root.get("location"), searchQuery);
+
+                Predicate anyExactPhrase = cb.or(
+                        exactTitlePhrase,
+                        exactEmployerPhrase,
+                        exactSpecialityPhrase,
+                        exactDepartmentPhrase,
+                        exactQualificationPhrase,
+                        exactLocationPhrase
+                );
+
+                List<Predicate> perTokenPredicates = new ArrayList<>();
+                List<Predicate> titleTokenPredicates = new ArrayList<>();
 
                 for (String token : tokens) {
                     Predicate titleMatch = like(cb, root.get("title"), token);
-                    titleTokenMatches.add(titleMatch);
+                    titleTokenPredicates.add(titleMatch);
 
-                    allSearchMatches.add(titleMatch);
-                    allSearchMatches.add(like(cb, employerJoin.get("companyName"), token));
-                    allSearchMatches.add(like(cb, root.get("description"), token));
-                    allSearchMatches.add(like(cb, root.get("speciality"), token));
-                    allSearchMatches.add(like(cb, root.get("department"), token));
-                    allSearchMatches.add(like(cb, root.get("qualification"), token));
-                    allSearchMatches.add(like(cb, root.get("requirements"), token));
-                    allSearchMatches.add(like(cb, root.get("benefits"), token));
-                    allSearchMatches.add(like(cb, root.get("location"), token));
-                    allSearchMatches.add(like(cb, root.get("experience"), token));
-                    allSearchMatches.add(like(cb, root.get("jobType"), token));
+                    List<Predicate> tokenMatches = new ArrayList<>();
+                    tokenMatches.add(titleMatch);
+                    tokenMatches.add(like(cb, employerJoin.get("companyName"), token));
+                    tokenMatches.add(like(cb, root.get("speciality"), token));
+                    tokenMatches.add(like(cb, root.get("department"), token));
+                    tokenMatches.add(like(cb, root.get("qualification"), token));
+                    tokenMatches.add(like(cb, root.get("location"), token));
+                    tokenMatches.add(like(cb, root.get("jobType"), token));
 
                     if (token.equals("government") || token.equals("govt") || token.equals("public")) {
-                        allSearchMatches.add(cb.equal(root.get("sector"), Job.JobSector.GOVERNMENT));
+                        tokenMatches.add(cb.equal(root.get("sector"), Job.JobSector.GOVERNMENT));
                     } else if (token.equals("private") || token.equals("corporate")) {
-                        allSearchMatches.add(cb.equal(root.get("sector"), Job.JobSector.PRIVATE));
+                        tokenMatches.add(cb.equal(root.get("sector"), Job.JobSector.PRIVATE));
                     }
+
+                    perTokenPredicates.add(cb.or(tokenMatches.toArray(new Predicate[0])));
                 }
 
-                // Elasticsearch-style broad relevance semantics: at least one
-                // meaningful term must match somewhere, rather than requiring every
-                // token to be present.
-                predicates.add(cb.or(allSearchMatches.toArray(new Predicate[0])));
+                Predicate allTokensMatch = cb.and(perTokenPredicates.toArray(new Predicate[0]));
+                Predicate allTitleTokensMatch = cb.and(titleTokenPredicates.toArray(new Predicate[0]));
 
-                Predicate anyTitleTokenMatch = cb.or(titleTokenMatches.toArray(new Predicate[0]));
+                predicates.add(cb.or(anyExactPhrase, allTokensMatch));
+
                 Expression<Integer> relevanceOrder = cb.<Integer>selectCase()
                         .when(exactTitlePhrase, 1)
-                        .when(anyTitleTokenMatch, 2)
-                        .otherwise(3);
+                        .when(allTitleTokensMatch, 2)
+                        .when(anyExactPhrase, 3)
+                        .otherwise(4);
                 query.orderBy(cb.asc(relevanceOrder), cb.desc(root.get("createdAt")));
             }
 

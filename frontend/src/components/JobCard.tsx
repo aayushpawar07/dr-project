@@ -19,6 +19,7 @@ import { Button } from './ui/button';
 import { Job } from '../types';
 import { buildJobShareText, getJobShareUrl, shareTextWithoutUrl } from '../utils/shareContent';
 import { cardFieldText, cardSalaryText } from '../utils/extractedFieldDisplay';
+import { cleanLocation } from '../utils/locationCleaner';
 
 interface JobCardProps {
   job: Job;
@@ -36,7 +37,6 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
   const displayTitle = view.displayTitle || job.title;
   const sourceRecruitmentId = view.sourceRecruitmentId;
   const grouped = Boolean(view.recruitmentGrouped && sourceRecruitmentId);
-  const locationText = job.location || [view.city, view.state].filter(Boolean).join(', ');
   const organizationName = [
     job.organization,
     view.organisationName,
@@ -46,6 +46,9 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
     view.employerName,
     view.hospitalName,
   ].map((value) => String(value ?? '').trim()).find(Boolean) || '';
+  const rawLocation = job.location || [view.city, view.state].filter(Boolean).join(', ');
+  const fallbackCityState = [view.city, view.state].filter(Boolean).join(', ');
+  const locationText = cleanLocation(rawLocation, organizationName, fallbackCityState);
   const qualificationText = cardFieldText(job.qualification);
   const experienceText = cardFieldText(job.experience);
   const salaryText = cardSalaryText(job.salary || view.salaryRange);
@@ -69,10 +72,17 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
       : getJobShareUrl(job.id);
     const shareText = buildJobShareText(
       {
-        ...job,
+        id: job.id,
         title: displayTitle,
         organization: organizationName,
         location: locationText,
+        sector,
+        category: job.category,
+        numberOfPosts: job.numberOfPosts,
+        qualification: qualificationText,
+        experience: experienceText,
+        salary: salaryText,
+        lastDate: job.lastDate,
       },
       shareUrl,
     );

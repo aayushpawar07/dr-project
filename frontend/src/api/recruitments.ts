@@ -64,14 +64,24 @@ export interface Recruitment {
   rejectedVacancies?: number;
 }
 
-export async function extractRecruitment(file: File, forceCreate = false) {
+export async function extractRecruitment(
+  file: File,
+  forceCreate = false,
+  forceReextract = false,
+  apiKey?: string,
+  allowFallback = false,
+) {
   const form = new FormData();
   form.append('file', file);
   beginAiExtractionFeedback('Extracting recruitment with Gemini');
   try {
+    const headers: Record<string, string> = { 'Content-Type': 'multipart/form-data' };
+    if (apiKey && apiKey.trim()) {
+      headers['X-Gemini-Api-Key'] = apiKey.trim();
+    }
     const res = await apiClient.post('/admin/recruitments/gemini-extract', form, {
-      params: { forceCreate },
-      headers: { 'Content-Type': 'multipart/form-data' },
+      params: { forceCreate, forceReextract, allowFallback },
+      headers,
     });
     return res.data as { duplicate: boolean; created: boolean; message: string; recruitment: Recruitment };
   } finally {

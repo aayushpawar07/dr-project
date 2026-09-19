@@ -80,11 +80,34 @@ public class RecruitmentExtractionService {
         recruitment.setOrganisationName(extractOrganisation(fullText));
         recruitment.setAdvertisementNumber(group(fullText, "(?i)Advertisement\\s+No\\s*:\\s*(.+?)(?:\\s{2,}|\\n|Date\\s*:)", 1));
         recruitment.setTitle(extractSubject(fullText));
-        recruitment.setOfficialWebsite(cleanUrl(group(fullText, "(?i)Website\\s*:\\s*(https?://\\S+)", 1)));
-        recruitment.setSector(normalized.toLowerCase(Locale.ROOT).contains("government of india") || normalized.toLowerCase(Locale.ROOT).contains("govt. of india") ? "government" : "private");
+        
+        String rawWeb = group(fullText, "(?i)Website\\s*:\\s*(?:https?://)?([a-zA-Z0-9.-]+\\.[a-z]{2,}(?:/\\S*)?)", 1);
+        if (rawWeb == null) {
+            rawWeb = group(fullText, "(?i)\\b(https?://[a-zA-Z0-9.-]+\\.[a-z]{2,}(?:/\\S*)?)\\b", 1);
+        }
+        if (rawWeb == null) {
+            rawWeb = group(fullText, "(?i)\\b(www\\.[a-zA-Z0-9.-]+\\.[a-z]{2,}(?:/\\S*)?)\\b", 1);
+        }
+        if (rawWeb != null) {
+            String clean = cleanUrl(rawWeb);
+            if (!clean.startsWith("http://") && !clean.startsWith("https://")) {
+                clean = "https://" + clean;
+            }
+            recruitment.setOfficialWebsite(clean);
+        }
+
+        String normLower = normalized.toLowerCase(Locale.ROOT);
+        boolean isGov = normLower.contains("government") || normLower.contains("govt")
+                || normLower.contains("ministry") || normLower.contains("psu")
+                || normLower.contains("enterprise") || normLower.contains("national health mission")
+                || normLower.contains("nhm") || normLower.contains("delhi")
+                || normLower.contains("hospital") || normLower.contains("health society")
+                || normLower.contains("swasthya") || normLower.contains("samiti");
+        recruitment.setSector(isGov ? "government" : "private");
         recruitment.setLocation(extractLocation(normalized));
         recruitment.setRecruitmentYear(extractYear(recruitment.getAdvertisementNumber(), normalized));
         recruitment.setApplicationLastDate(extractClosingDate(normalized));
+        recruitment.setApplicationFee(extractApplicationFee(fullText));
         recruitment.setImportantInstructions(extractImportantInstructions(fullText));
 
         try {
@@ -117,11 +140,66 @@ public class RecruitmentExtractionService {
     }
 
     private void parseGenericVacancies(String fullText, List<RecruitmentExtractionResult.VacancyData> target, String title) {
+        // First check for multi-post table rows e.g. "1. SR (Obs & Gynae) 03 (Gen-1, OBC-2*)" or "1. Medical Officer 05"
+        Pattern tableRow = Pattern.compile("(?im)^\\s*\\d{1,2}[.)]\\s+([A-Za-z\\s()&/\\-]{3,50})\\s+(\\d{1,3})(?:\\s*\\(([^)]+)\\))?");
+        Matcher tableMatcher = tableRow.matcher(fullText);
+        boolean foundTableRows = false;
+        while (tableMatcher.find()) {
+            String role = tableMatcher.group(1).trim();
+            if (role.toLowerCase(Locale.ROOT).contains("page") || role.toLowerCase(Locale.ROOT).contains("date")) {
+                continue;
+            }
+            int count = safeInt(tableMatcher.group(2));
+            if (count <= 0) continue;
+            String category = tableMatcher.group(3) != null ? tableMatcher.group(3).trim() : null;
+
+            RecruitmentExtractionResult.VacancyData v = new RecruitmentExtractionResult.VacancyData();
+            v.setPostName(role);
+            v.setNumberOfVacancies(count);
+            v.setCategory(category);
+            v.setJobType("Direct Recruitment");
+            v.setConfidenceScore(0.80);
+            v.setSourcePage(1);
+            target.add(v);
+            foundTableRows = true;
+        }
+
+        // Next check for "Recruitment of Manager (Medical Services) (E-02) 3 posts (2 UR 1 OBC)"
+        if (!foundTableRows) {
+            Matcher postMatch = Pattern.compile("(?im)(?:recruitment\\s+of|post\\s+of)\\s+([A-Za-z\\s()&/\\-]+?)\\s+(?:\\([A-Z0-9-]+\\)\\s+)?(\\d{1,3})\\s+posts?(?:\\s*\\(([^)]+)\\))?").matcher(fullText);
+            if (postMatch.find()) {
+                String postName = postMatch.group(1).trim();
+                int count = safeInt(postMatch.group(2));
+                String category = postMatch.group(3) != null ? postMatch.group(3).trim() : null;
+                RecruitmentExtractionResult.VacancyData v = new RecruitmentExtractionResult.VacancyData();
+                v.setPostName(postName);
+                v.setNumberOfVacancies(count > 0 ? count : 1);
+                v.setCategory(category);
+                v.setJobType("Direct Recruitment");
+                v.setConfidenceScore(0.85);
+                v.setSourcePage(1);
+
+                String qual = group(fullText, "(?im)(?:qualification|eligibility)[^\\n\\r:]*[:\\-]\\s*([^\\r\\n]{5,100})", 1);
+                if (qual != null) v.setQualification(qual);
+                String pay = group(fullText, "(?im)(?:scale\\s+of\\s+pay|pay|salary)[^\\n\\r:]*[:\\-]\\s*([^\\r\\n]{5,60})", 1);
+                if (pay != null) v.setSalary(pay);
+                String exp = group(fullText, "(?im)(?:experience)[^\\n\\r:]*[:\\-]\\s*([^\\r\\n]{5,80})", 1);
+                if (exp != null) v.setExperience(exp);
+                String age = group(fullText, "(?im)(?:age)[^\\n\\r:]*[:\\-]\\s*([^\\r\\n]{5,50})", 1);
+                if (age != null) v.setAgeLimit(age);
+
+                target.add(v);
+                foundTableRows = true;
+            }
+        }
+
+        if (foundTableRows) return;
+
         String lower = fullText.toLowerCase(Locale.ROOT);
         String[] knownRoles = {
                 "Junior Resident", "Senior Resident", "Medical Officer", "General Duty Medical Officer",
                 "Consultant", "Specialist", "Assistant Professor", "Associate Professor",
-                "Professor", "Staff Nurse", "Nursing Officer", "Tutor"
+                "Professor", "Staff Nurse", "Nursing Officer", "Tutor", "Manager"
         };
         boolean foundAny = false;
         for (String role : knownRoles) {
@@ -370,9 +448,16 @@ public class RecruitmentExtractionService {
         if (matched != null) return titleCaseOrganisation(matched);
         String govt = group(text, "(?im)^\\s*(GOVERNMENT OF [\\w\\s,]+|MINISTRY OF [\\w\\s,]+)", 1);
         if (govt != null) return titleCaseOrganisation(govt);
-        String hospital = group(text, "(?im)^\\s*([A-Za-z\\s]+(?:HOSPITAL|INSTITUTE|COLLEGE|MEDICAL CENTRE|HEALTH SERVICES)[\\w\\s,]*)", 1);
+        String hospital = group(text, "(?im)^\\s*([A-Za-z\\s]+(?:HOSPITAL|INSTITUTE|COLLEGE|MEDICAL CENTRE|HEALTH SERVICES|HEALTH SOCIETY)[\\w\\s,]*)", 1);
         if (hospital != null && hospital.length() < 120) return titleCaseOrganisation(hospital);
-        String first = Arrays.stream(text.split("\\R")).map(String::trim).filter(s -> !s.isBlank() && s.length() > 3).findFirst().orElse("Medical Institution");
+        String psu = group(text, "(?im)^\\s*([A-Za-z\\s]+(?:LIMITED|LTD|CORPORATION|ENTERPRISE|AUTHORITY)[\\w\\s,]*)", 1);
+        if (psu != null && psu.length() < 120 && !psu.toUpperCase(Locale.ROOT).contains("CIN")) return titleCaseOrganisation(psu);
+
+        String first = Arrays.stream(text.split("\\R"))
+                .map(String::trim)
+                .filter(s -> !s.isBlank() && s.length() > 3)
+                .filter(s -> !s.matches("(?i).*\\b(phone|tel|fax|email|website|cin|nwjhkk|dated|0712|pincode|pin|regd|head office)\\b.*"))
+                .findFirst().orElse("Medical Institution");
         return first.length() > 250 ? first.substring(0, 250) : first;
     }
 
@@ -409,12 +494,37 @@ public class RecruitmentExtractionService {
     }
 
     private String extractClosingDate(String text) {
-        Matcher m = Pattern.compile("(?i)closing date.*?(\\d{1,2}(?:st|nd|rd|th)?\\s+[A-Za-z]+,?\\s+20\\d{2})").matcher(text);
-        if (!m.find()) return null;
-        String raw = m.group(1).replaceAll("(?i)(\\d{1,2})(st|nd|rd|th)", "$1").replace(",", "").trim();
-        for (String pattern : List.of("d MMMM yyyy", "dd MMMM yyyy")) {
-            try { return LocalDate.parse(raw, DateTimeFormatter.ofPattern(pattern, Locale.ENGLISH)).toString(); }
-            catch (DateTimeParseException ignored) { }
+        Matcher m = Pattern.compile("(?i)(?:closing\\s+date|last\\s+date|deadline).*?(\\d{1,2}(?:st|nd|rd|th)?\\s+[A-Za-z]+,?\\s+20\\d{2})").matcher(text);
+        if (m.find()) {
+            String raw = m.group(1).replaceAll("(?i)(\\d{1,2})(st|nd|rd|th)", "$1").replace(",", "").trim();
+            for (String pattern : List.of("d MMMM yyyy", "dd MMMM yyyy", "d MMM yyyy", "dd MMM yyyy")) {
+                try { return LocalDate.parse(raw, DateTimeFormatter.ofPattern(pattern, Locale.ENGLISH)).toString(); }
+                catch (DateTimeParseException ignored) { }
+            }
+        }
+        Matcher m2 = Pattern.compile("(?i)(?:last\\s+date|closing\\s+date|walk-in[\\s-]+interview|interview|अन्तिम\\s+तिथि)[^\\n\\r\\d]*(\\d{1,2}[./-]\\d{1,2}[./-]20\\d{2})").matcher(text);
+        if (m2.find()) {
+            String raw = m2.group(1).replace('/', '-').replace('.', '-').trim();
+            for (String pattern : List.of("d-M-yyyy", "dd-MM-yyyy")) {
+                try { return LocalDate.parse(raw, DateTimeFormatter.ofPattern(pattern)).toString(); }
+                catch (DateTimeParseException ignored) { }
+            }
+        }
+        Matcher m3 = Pattern.compile("(?i)(?:walk-in[\\s-]+interview)[^\\n\\r]*?(\\d{1,2}[./-]\\d{1,2}[./-]20\\d{2})").matcher(text);
+        if (m3.find()) {
+            String raw = m3.group(1).replace('/', '-').replace('.', '-').trim();
+            for (String pattern : List.of("d-M-yyyy", "dd-MM-yyyy")) {
+                try { return LocalDate.parse(raw, DateTimeFormatter.ofPattern(pattern)).toString(); }
+                catch (DateTimeParseException ignored) { }
+            }
+        }
+        return null;
+    }
+
+    private String extractApplicationFee(String text) {
+        Matcher m = Pattern.compile("(?i)(?:application\\s+fee|demand\\s+draft\\s+for|fee)[^\\n\\r:]*[:\\-]?\\s*(Rs\\.?\\s*\\d+(?:/\\-)?[^\\r\\n.]*|exempted[^\\r\\n.]*)").matcher(text);
+        if (m.find()) {
+            return normalize(m.group(1));
         }
         return null;
     }

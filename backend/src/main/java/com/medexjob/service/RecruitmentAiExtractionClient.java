@@ -64,6 +64,13 @@ public class RecruitmentAiExtractionClient {
     }
 
     public String resolveApiKey() {
+        return resolveApiKey(null);
+    }
+
+    public String resolveApiKey(String clientKey) {
+        if (clientKey != null && !clientKey.isBlank()) {
+            return clientKey.trim();
+        }
         if (apiKey != null && !apiKey.isBlank()) {
             return apiKey.trim();
         }
@@ -107,13 +114,17 @@ public class RecruitmentAiExtractionClient {
     }
 
     public Optional<RecruitmentExtractionResult> extract(String pdfText) {
+        return extract(pdfText, null);
+    }
+
+    public Optional<RecruitmentExtractionResult> extract(String pdfText, String clientApiKey) {
         if (!enabled) {
             this.lastErrorMessage = "AI extraction is disabled (medex.ai.enabled=false)";
             return Optional.empty();
         }
-        String effectiveKey = resolveApiKey();
+        String effectiveKey = resolveApiKey(clientApiKey);
         if (effectiveKey.isBlank()) {
-            this.lastErrorMessage = "AI API key is missing. Set MEDEX_AI_API_KEY, GEMINI_API_KEY, or GOOGLE_API_KEY.";
+            this.lastErrorMessage = "AI API key is missing. Set MEDEX_AI_API_KEY, GEMINI_API_KEY, or GOOGLE_API_KEY, or provide it in the uploader.";
             log.warn(this.lastErrorMessage);
             return Optional.empty();
         }
@@ -164,7 +175,101 @@ public class RecruitmentAiExtractionClient {
                 return Optional.empty();
             }
 
-            // Extract innermost JSON object cleanly
+            return parseJsonResult(content, isGemini ? "GEMINI" : "AI");
+        } catch (org.springframework.web.client.RestClientResponseException ex) {
+            this.lastErrorMessage = "AI service returned HTTP " + ex.getStatusCode().value() + ": " + ex.getResponseBodyAsString();
+            log.warn("AI recruitment extraction failed with HTTP response: {}", this.lastErrorMessage);
+            return Optional.empty();
+        } catch (Exception ex) {
+            this.lastErrorMessage = "AI recruitment extraction error (" + ex.getClass().getSimpleName() + "): " + ex.getMessage();
+            log.warn("AI recruitment extraction failed: {}", ex.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Multimodal PDF extraction using Gemini's native generateContent API with inlineData.
+     * This provides superior extraction for scanned PDFs, Hindi/bilingual documents,
+     * legacy fonts (e.g. Kruti Dev), and complex multi-job tables.
+     */
+    public Optional<RecruitmentExtractionResult> extractFromPdf(byte[] pdfBytes, String fallbackText, String clientApiKey) {
+        if (!enabled) {
+            this.lastErrorMessage = "AI extraction is disabled (medex.ai.enabled=false)";
+            return Optional.empty();
+        }
+        String effectiveKey = resolveApiKey(clientApiKey);
+        if (effectiveKey.isBlank()) {
+            this.lastErrorMessage = "Gemini API key is missing. Please configure GEMINI_API_KEY or enter your API key in the uploader.";
+            log.warn(this.lastErrorMessage);
+            return Optional.empty();
+        }
+
+        String targetEndpoint = resolveEndpoint(effectiveKey);
+        String targetModel = resolveModel(targetEndpoint);
+        boolean isGemini = targetEndpoint.contains("generativelanguage.googleapis.com");
+
+        if (isGemini && pdfBytes != null && pdfBytes.length > 0 && pdfBytes.length <= 20 * 1024 * 1024) {
+            try {
+                String base64Pdf = java.util.Base64.getEncoder().encodeToString(pdfBytes);
+                String geminiNativeUri = "https://generativelanguage.googleapis.com/v1beta/models/"
+                        + targetModel + ":generateContent?key=" + effectiveKey;
+
+                Map<String, Object> inlineData = Map.of(
+                        "mimeType", "application/pdf",
+                        "data", base64Pdf
+                );
+                Map<String, Object> pdfPart = Map.of("inlineData", inlineData);
+                Map<String, Object> promptPart = Map.of(
+                        "text", systemPrompt() + "\n\nPlease extract all recruitment and vacancy information from the attached PDF document. Return valid JSON only adhering strictly to the JSON schema."
+                );
+
+                Map<String, Object> body = Map.of(
+                        "contents", List.of(
+                                Map.of("parts", List.of(pdfPart, promptPart))
+                        ),
+                        "generationConfig", Map.of(
+                                "responseMimeType", "application/json",
+                                "temperature", 0.0
+                        )
+                );
+
+                String raw = restClient.post()
+                        .uri(geminiNativeUri)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .headers(headers -> headers.set("x-goog-api-key", effectiveKey))
+                        .body(body)
+                        .retrieve()
+                        .body(String.class);
+
+                if (raw != null && !raw.isBlank()) {
+                    JsonNode root = objectMapper.readTree(raw);
+                    JsonNode candidates = root.path("candidates");
+                    if (candidates.isArray() && !candidates.isEmpty()) {
+                        String text = candidates.get(0).path("content").path("parts").path(0).path("text").asText();
+                        if (text != null && !text.isBlank()) {
+                            return parseJsonResult(text, "GEMINI");
+                        }
+                    }
+                }
+                log.warn("Gemini native generateContent returned empty or unexpected response; attempting text-based fallback.");
+            } catch (org.springframework.web.client.RestClientResponseException ex) {
+                this.lastErrorMessage = "Gemini API HTTP " + ex.getStatusCode().value() + ": " + ex.getResponseBodyAsString();
+                log.warn("Gemini multimodal PDF extraction failed: {}", this.lastErrorMessage);
+            } catch (Exception ex) {
+                this.lastErrorMessage = "Gemini multimodal extraction error (" + ex.getClass().getSimpleName() + "): " + ex.getMessage();
+                log.warn("Gemini multimodal extraction failed: {}", ex.getMessage());
+            }
+        }
+
+        // Fallback to text-based chat/completions endpoint if multimodal was not applicable or failed
+        if (fallbackText != null && !fallbackText.isBlank()) {
+            return extract(fallbackText, effectiveKey);
+        }
+        return Optional.empty();
+    }
+
+    private Optional<RecruitmentExtractionResult> parseJsonResult(String content, String method) {
+        try {
             int jsonStart = content.indexOf('{');
             int jsonEnd = content.lastIndexOf('}');
             if (jsonStart >= 0 && jsonEnd > jsonStart) {
@@ -175,16 +280,12 @@ public class RecruitmentAiExtractionClient {
 
             RecruitmentExtractionResult result = objectMapper.readValue(content, RecruitmentExtractionResult.class);
             RecruitmentFieldSanitizer.sanitize(result);
-            result.setExtractionMethod(isGemini ? "GEMINI" : "AI");
+            result.setExtractionMethod(method);
             this.lastErrorMessage = null;
             return Optional.of(result);
-        } catch (org.springframework.web.client.RestClientResponseException ex) {
-            this.lastErrorMessage = "AI service returned HTTP " + ex.getStatusCode().value() + ": " + ex.getResponseBodyAsString();
-            log.warn("AI recruitment extraction failed with HTTP response: {}", this.lastErrorMessage);
-            return Optional.empty();
         } catch (Exception ex) {
-            this.lastErrorMessage = "AI recruitment extraction error (" + ex.getClass().getSimpleName() + "): " + ex.getMessage();
-            log.warn("AI recruitment extraction failed; deterministic parser will be used where allowed: {}", ex.getMessage());
+            this.lastErrorMessage = "Failed to parse AI JSON response: " + ex.getMessage();
+            log.warn("JSON parsing error: {}", ex.getMessage());
             return Optional.empty();
         }
     }
@@ -192,8 +293,25 @@ public class RecruitmentAiExtractionClient {
     private String systemPrompt() {
         return """
                 You extract structured medical recruitment data from official recruitment notifications.
-                Return JSON only. Never invent, assume, copy from unrelated vacancies, or default missing values; use null instead.
-                Keep values tied to the vacancy/row they belong to.
+                Return JSON only. Never invent, assume, or default missing values; use null instead.
+                
+                CRITICAL MULTI-JOB INSTRUCTION:
+                If the notification lists multiple posts/jobs, multiple departments, or multiple vacancy rows (e.g. Senior Resident across different departments like Obs & Gynae, Surgery, Paediatrics; or distinct posts like GDMO, Medical Officer, Specialist, Manager), YOU MUST EXTRACT EVERY SINGLE JOB/POST AS A SEPARATE OBJECT in the "vacancies" array. Never combine different jobs or departments into one vacancy.
+                
+                CRITICAL BILINGUAL & HINDI INSTRUCTION:
+                The document may be in English, Hindi, or bilingual. Understand common Indian recruitment terms:
+                - "कार्यालय" = Office, "जिला स्वास्थ्य समिति" = District Health Society, "राष्ट्रीय स्वास्थ्य मिशन" = National Health Mission
+                - "पदनाम" / "पद का नाम" = postName (translate/transliterate into standard English, e.g. "Medical Officer", "Senior Resident", "Specialist", "Manager")
+                - "पदों की संख्या" = numberOfVacancies (extract the integer number, e.g. 03 -> 3)
+                - "वांछित शैक्षिक योग्यता" / "योग्यता" = qualification (e.g. "MBBS", "MD/MS/DNB")
+                - "नियत मानदेय" / "मानदेय" / "वेतन" = salary (e.g. "Rs. 1,00,000/- per month")
+                - "आवेदन की अन्तिम तिथि" / "अन्तिम तिथि" = applicationLastDate (format: YYYY-MM-DD)
+                - "साक्षात्कार" / "वाक इन इंटरव्यू" = selectionProcess ("Walk-in Interview")
+                - "संविदा" = jobType ("Contractual")
+                - "आयु सीमा" = ageLimit (e.g. "Below 45 years" or "Maximum 65 years")
+                - "आरक्षण श्रेणी" / "श्रेणी" = category ("UR", "OBC", "SC", "ST", "EWS")
+                - For organisationName, provide clean, readable English (e.g. "District Health Society, Hardoi (National Health Mission)", "MOIL Limited", "Sardar Vallabh Bhai Patel Hospital"). Do NOT copy phone numbers, fax, or garbled font glyphs into the organisation name.
+                
                 Required JSON shape:
                 {
                   "recruitment": {
@@ -213,14 +331,20 @@ public class RecruitmentAiExtractionClient {
                     "confidenceScore": 0.0, "sourcePage": null
                   }]
                 }
-                Card-field rules — these values appear on listing cards, so keep them short and relevant:
-                - qualification: degree/diploma only (e.g. "MD/MS/DNB", "MBBS"). 3-80 characters. Never Gazette citations, NMC norms paragraphs, or "as per official notification".
-                - experience: years or a specific requirement only (e.g. "3 years teaching"). If the PDF only has a generic NMC/gazette rule, use null.
-                - salary: pay figure or pay level only (e.g. "Rs. 1,65,480 per month" or "Level-13"). Do not copy allowance paragraphs.
-                - department, speciality, postName: the name only. Never append eligibility, gazette, or NMC text.
-                - officialWebsite, officialNotificationUrl, officialApplicationUrl: extract any official website, notification link, or online application link found in the PDF. Normalize to start with https:// if possible.
-                - Put NMC norms, Gazette of India wording, long eligibility notes, and common rules into importantInstructions and jobDescription only.
-                Description rules — generate recruitment.jobDescription using exactly these section headings so the website can split them into tabs. Use a blank line between sections. Use "Label: Value" for facts. Use "- " bullets for lists. Do not use markdown tables, STEP 1/2/3, or long paragraphs. Do not invent facts that are not in THIS PDF. Omit a section only if the PDF has no information for it. Do not include website or PDF links:
+                
+                Card-field rules:
+                - sector: must be "government" for any central/state government, PSU (like MOIL, SAIL, etc.), government hospital, AIIMS, NHM, district health society, or government authority. Use "private" ONLY for private companies or private hospitals.
+                - qualification: degree/diploma only (e.g. "MD/MS/DNB", "MBBS"). 3-80 characters.
+                - experience: years or specific requirement only (e.g. "1 year post internship in a hospital").
+                - salary: pay figure, pay scale or pay level (e.g. "Rs. 1,00,000 per month" or "Rs. 50,000 - 1,60,000/-" or "Pay Matrix Level 11").
+                - department, speciality, postName: the clean name only.
+                - applicationFee: extract fee amount and category exemptions (e.g. "Rs. 590/- (Exempt for SC/ST/PwD)" or "Exempted / Nil / No Fee").
+                - applicationLastDate: extract in YYYY-MM-DD format. If this is a Walk-in-Interview notice, set applicationLastDate to the last interview date.
+                - officialWebsite, officialNotificationUrl, officialApplicationUrl: extract valid URLs (e.g. "https://www.moil.nic.in", "http://hardoi.nic.in", "https://health.delhi.gov.in"). Add https:// or http:// if missing.
+                - Put NMC norms, long eligibility notes, and general conditions into importantInstructions and jobDescription only.
+                
+                Description rules:
+                Generate recruitment.jobDescription using these section headings separated by blank lines:
                 JOB DETAILS
                 Post: ...
                 Organisation: ...
@@ -236,10 +360,6 @@ public class RecruitmentAiExtractionClient {
                 Experience: ...
                 Age Limit: ...
 
-                RESPONSIBILITIES
-                - ...
-                - ...
-
                 APPLICATION PROCESS
                 Mode of Application: ...
                 Application Start Date: YYYY-MM-DD
@@ -251,7 +371,6 @@ public class RecruitmentAiExtractionClient {
 
                 DOCUMENTS REQUIRED
                 - ...
-                - ...
 
                 IMPORTANT NOTES
                 - ...
@@ -259,21 +378,7 @@ public class RecruitmentAiExtractionClient {
                 CONTACT INFORMATION
                 Email: ...
                 Phone: ...
-                - jobDescription must be useful and specific from THIS PDF: not a one-line stub, not a dump of the whole notice.
-                - For multi-post notices, write one shared description for the recruitment; vacancy-specific degree/pay stay in vacancy fields.
-                Other extraction rules:
-                - Extract every genuine vacancy row/post from the notification. Do not merge unrelated rows.
-                - Keep post, department, speciality, category, location and vacancy count associated with the exact row they came from.
-                - numberOfVacancies must come from the exact vacancy/row. If missing or ambiguous, return null, never 1.
-                - If a table has category-wise counts, keep category-wise rows separate when needed so totals stay accurate.
-                - vacancy.location must come from that vacancy/row when the notification gives a vacancy-specific location. Do not copy a location from another row.
-                - recruitment.location is only a recruitment-wide location when the document clearly states one location applies to all vacancies; otherwise use null.
-                - applicationLastDate must be the actual application closing/deadline date. Never infer or manufacture a date.
-                - Do not use advertisement dates, interview dates, reporting dates, exam dates, document-verification dates, or unrelated dates as applicationLastDate.
-                - Never fill missing fields from common knowledge, previous notices, examples, or another vacancy in the same PDF.
-                - totalVacancies should reflect the notification total only when explicitly stated or safely sum-able from extracted vacancy rows.
-                - confidenceScore is 0.0-1.0 and should be lower for ambiguous/OCR-damaged rows.
-                - This is extraction only; an administrator reviews the result before publishing.
+                Website: ...
                 """;
     }
 }

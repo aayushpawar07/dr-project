@@ -52,6 +52,8 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
   const [bulkFields, setBulkFields] = useState(emptyBulk);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem('medex_gemini_api_key') || '');
+  const [showApiKey, setShowApiKey] = useState(false);
 
   const rows = useMemo(() => {
     if (!recruitment) return [];
@@ -97,7 +99,7 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
     } : current);
   };
 
-  const processFile = async (forceCreate = false) => {
+  const processFile = async (forceCreate = false, forceReextract = false, allowFallback = false) => {
     if (!file) {
       toast.error('Select a recruitment PDF first.');
       return;
@@ -108,15 +110,21 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
     }
     setProcessing(true);
     try {
-      const result = await extractRecruitment(file, forceCreate);
+      const result = await extractRecruitment(file, forceCreate, forceReextract, apiKey, allowFallback);
       setRecruitment(result.recruitment);
-      setDuplicateWarning(result.duplicate && !result.created);
+      setDuplicateWarning(result.duplicate && !result.created && !forceReextract);
       setSelected(new Set());
-      toast.success(result.duplicate && !result.created
-        ? 'Existing recruitment loaded for review.'
-        : 'Gemini extraction complete. Review every vacancy before publishing.');
+      const isAi = result.recruitment.extractionMethod?.includes('GEMINI') || result.recruitment.extractionMethod?.includes('AI');
+      if (result.duplicate && !result.created && !forceReextract) {
+        toast.info('Existing recruitment loaded for review. Click "Re-extract" if you want to re-run Gemini.');
+      } else if (isAi) {
+        toast.success('Gemini AI extraction complete! Review the extracted vacancy rows before publishing.');
+      } else {
+        toast.warning('Extracted using offline parser (Limited accuracy). Please review all fields.');
+      }
     } catch (error: any) {
-      toast.error(error?.response?.data?.error || error?.message || 'PDF extraction failed.');
+      const errMsg = error?.response?.data?.error || error?.message || 'PDF extraction failed.';
+      toast.error(errMsg);
     } finally {
       setProcessing(false);
     }
@@ -403,7 +411,61 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
           <Button variant="outline" onClick={() => onNavigate('dashboard/admin')}>Back to Admin</Button>
         </div>
 
-        <Card className="mb-6 p-6">
+        {/* Gemini API Key Configuration Card */}
+        <Card className="mb-6 border-blue-200 bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-slate-50 p-5 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className={`flex h-2.5 w-2.5 rounded-full ${apiKey ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`} />
+                <h2 className="font-semibold text-slate-900">Google Gemini API Configuration</h2>
+                <Badge variant="outline" className={apiKey ? 'border-emerald-300 bg-emerald-50 text-emerald-800' : 'border-amber-300 bg-amber-50 text-amber-800'}>
+                  {apiKey ? 'API Key Configured' : 'API Key Required for Gemini'}
+                </Badge>
+              </div>
+              <p className="text-xs text-slate-600">
+                Gemini 2.0 Flash extracts multi-job vacancies, scanned Hindi/English PDFs, salaries, and dates directly from the PDF.
+                Get a free API key at{' '}
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="font-medium text-blue-600 underline hover:text-blue-800">
+                  Google AI Studio
+                </a>.
+              </p>
+            </div>
+            <div className="flex w-full items-center gap-2 sm:w-auto">
+              <div className="relative flex-1 sm:w-80">
+                <input
+                  type={showApiKey ? 'text' : 'password'}
+                  placeholder="Paste your Gemini API Key (AIza...)"
+                  className="h-10 w-full rounded-md border border-slate-300 bg-white px-3 pr-12 text-sm font-mono focus:border-blue-500 focus:outline-none"
+                  value={apiKey}
+                  onChange={(e) => {
+                    setApiKey(e.target.value);
+                    localStorage.setItem('medex_gemini_api_key', e.target.value.trim());
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowApiKey(!showApiKey)}
+                  className="absolute right-2 top-2.5 text-xs text-slate-400 hover:text-slate-600"
+                >
+                  {showApiKey ? 'Hide' : 'Show'}
+                </button>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-10"
+                onClick={() => {
+                  localStorage.setItem('medex_gemini_api_key', apiKey.trim());
+                  toast.success('Gemini API Key saved in browser!');
+                }}
+              >
+                Save
+              </Button>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="mb-6 p-6 shadow-sm">
           <div className="grid items-end gap-4 lg:grid-cols-[1fr_auto]">
             <div>
               <label className="mb-2 block text-sm font-semibold text-slate-700">Recruitment notification PDF</label>
@@ -413,25 +475,48 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
                   <Upload className="h-7 w-7 text-blue-600" />
                   <div>
                     <p className="font-semibold text-slate-900">{file?.name || 'Choose a PDF notification'}</p>
-                    <p className="text-sm text-slate-500">PDF only, maximum 20 MB. AI extraction never auto-publishes.</p>
+                    <p className="text-sm text-slate-500">PDF only, maximum 20 MB. Gemini extracts multi-post vacancies, scanned documents & bilingual text.</p>
                   </div>
                 </div>
               </button>
             </div>
-            <Button onClick={() => processFile(false)} disabled={!file || processing} className="h-11 bg-blue-600 px-6 hover:bg-blue-700">
-              {processing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-              {processing ? 'Extracting with Gemini…' : 'Extract Recruitment'}
-            </Button>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button onClick={() => processFile(false, false, false)} disabled={!file || processing} className="h-11 bg-blue-600 px-6 hover:bg-blue-700">
+                {processing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                {processing ? 'Extracting with Gemini…' : 'Extract Recruitment'}
+              </Button>
+              <Button variant="outline" onClick={() => processFile(false, false, true)} disabled={!file || processing} className="h-11 px-4 text-xs text-slate-600 hover:text-slate-900" title="Extract without AI using offline regex/table parser">
+                Offline Parser
+              </Button>
+            </div>
           </div>
         </Card>
 
         {duplicateWarning && recruitment && (
           <div className="mb-6 flex flex-col justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 md:flex-row md:items-center">
             <div className="flex gap-3">
-              <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-600" />
-              <div><p className="font-semibold text-amber-900">Possible duplicate recruitment found</p><p className="text-sm text-amber-800">The existing record is loaded. Create a revision only when the PDF is genuinely revised.</p></div>
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+              <div>
+                <p className="font-semibold text-amber-900">Possible duplicate recruitment found</p>
+                <p className="text-sm text-amber-800">
+                  This document is already in the system. Re-extract with Gemini to replace unapproved draft data, or create a new revision.
+                </p>
+              </div>
             </div>
-            <Button variant="outline" onClick={() => processFile(true)} disabled={processing}><RefreshCw className="mr-2 h-4 w-4" />Create Revision</Button>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={() => processFile(false, true, false)}
+                disabled={processing}
+                className="bg-amber-700 text-white hover:bg-amber-800"
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                Re-extract with Gemini (Overwrite Draft)
+              </Button>
+              <Button variant="outline" onClick={() => processFile(true, false, false)} disabled={processing}>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Create New Revision
+              </Button>
+            </div>
           </div>
         )}
 
@@ -455,7 +540,22 @@ export function AiBulkJobUploader({ onNavigate }: Props) {
               <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-bold text-slate-950">Master Recruitment</h2>
-                  <p className="text-sm text-slate-500">Extraction method: {recruitment.extractionMethod || 'Unknown'} · Status: {recruitment.status}</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="text-sm text-slate-500">Extraction method:</span>
+                    <Badge
+                      variant="outline"
+                      className={
+                        recruitment.extractionMethod?.includes('GEMINI') || recruitment.extractionMethod?.includes('AI')
+                          ? 'border-emerald-300 bg-emerald-50 font-semibold text-emerald-800'
+                          : 'border-amber-300 bg-amber-50 font-semibold text-amber-800'
+                      }
+                    >
+                      {recruitment.extractionMethod?.includes('GEMINI') || recruitment.extractionMethod?.includes('AI')
+                        ? '✨ ' + recruitment.extractionMethod
+                        : '⚠️ ' + (recruitment.extractionMethod || 'OFFLINE')}
+                    </Badge>
+                    <span className="text-sm text-slate-500">· Status: {recruitment.status}</span>
+                  </div>
                 </div>
                 <Button onClick={saveMaster} disabled={actionLoading === 'master'}>{actionLoading === 'master' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}Save Details</Button>
               </div>

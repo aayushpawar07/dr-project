@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -31,17 +32,21 @@ public class AdminBulkGeminiExtractionController {
     @PostMapping(value = "/gemini-extract", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> extract(
             @RequestPart("file") MultipartFile file,
-            @RequestParam(value = "forceCreate", defaultValue = "false") boolean forceCreate
+            @RequestParam(value = "forceCreate", defaultValue = "false") boolean forceCreate,
+            @RequestParam(value = "forceReextract", defaultValue = "false") boolean forceReextract,
+            @RequestParam(value = "allowFallback", defaultValue = "false") boolean allowFallback,
+            @RequestHeader(value = "X-Gemini-Api-Key", required = false) String clientApiKey
     ) {
         try {
-            BulkRecruitmentUploadService.UploadResult result = uploadService.extractAndCreate(file, forceCreate);
+            BulkRecruitmentUploadService.UploadResult result = uploadService.extractAndCreate(
+                    file, forceCreate, forceReextract, clientApiKey, allowFallback);
             String method = result.recruitment().getExtractionMethod();
             boolean isAi = method != null && (method.contains("GEMINI") || method.contains("AI"));
             String message = result.duplicate() && !result.created()
                     ? "Possible duplicate recruitment found. Existing recruitment loaded for review."
                     : (isAi
                         ? "Gemini extraction complete. Review the extracted vacancy rows before publishing."
-                        : "Recruitment extracted from PDF. Review and edit the vacancy rows before publishing.");
+                        : "Recruitment extracted using offline parser. Review and edit the vacancy rows before publishing.");
             Map<String, Object> body = new LinkedHashMap<>();
             body.put("duplicate", result.duplicate());
             body.put("created", result.created());

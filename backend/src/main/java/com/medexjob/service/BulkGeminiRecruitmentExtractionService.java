@@ -41,6 +41,10 @@ public class BulkGeminiRecruitmentExtractionService {
     }
 
     public RecruitmentExtractionService.ExtractionPayload extract(MultipartFile file) throws IOException {
+        return extract(file, null, true);
+    }
+
+    public RecruitmentExtractionService.ExtractionPayload extract(MultipartFile file, String clientApiKey, boolean allowFallback) throws IOException {
         validatePdf(file);
         byte[] bytes = file.getBytes();
         validatePdfSignature(bytes);
@@ -53,26 +57,25 @@ public class BulkGeminiRecruitmentExtractionService {
             String extractionText = ocrText.orElse(nativeText);
             boolean usedOcr = ocrText.isPresent();
 
-            if (nonWhitespaceLength(extractionText) < MIN_EXTRACTABLE_CHARS) {
-                if (nativeTextSparse && !usedOcr) {
-                    throw new IllegalArgumentException(
-                            "This PDF looks scanned or image-only and OCR did not run. " +
-                            "Please upload a text-based PDF or enable OCR on the server."
-                    );
-                }
-                throw new IllegalArgumentException(
-                        "Unable to read enough text from this PDF for extraction (minimum " + MIN_EXTRACTABLE_CHARS + " characters required)."
-                );
-            }
-            Optional<RecruitmentExtractionResult> aiResult = aiClient.extract(extractionText);
+            // First attempt multimodal PDF extraction directly with Gemini (processes scanned PDFs, Hindi, Kruti-dev, and tables)
+            Optional<RecruitmentExtractionResult> aiResult = aiClient.extractFromPdf(bytes, extractionText, clientApiKey);
 
             RecruitmentExtractionResult result;
             if (aiResult.isPresent()) {
                 result = aiResult.get();
-                result.setExtractionMethod(usedOcr ? "GEMINI_OCR" : "GEMINI");
+                if (result.getExtractionMethod() == null) {
+                    result.setExtractionMethod(usedOcr ? "GEMINI_OCR" : "GEMINI");
+                }
             } else {
-                log.info("Gemini extraction unavailable ({}); falling back to deterministic PDF parser",
-                        aiClient.getLastErrorMessage());
+                String aiError = aiClient.getLastErrorMessage();
+                log.info("Gemini extraction unavailable ({})", aiError);
+                if (!allowFallback) {
+                    throw new IllegalArgumentException(
+                            aiError != null && !aiError.isBlank()
+                                    ? aiError
+                                    : "Gemini AI extraction is unavailable. Please check your Gemini API key."
+                    );
+                }
                 result = heuristicService.heuristic(document, extractionText, usedOcr, nativeTextSparse);
                 RecruitmentFieldSanitizer.sanitize(result);
                 result.setExtractionMethod(usedOcr ? "PDF_OCR" : "PDF_TEXT");

@@ -34,11 +34,22 @@ public class BulkRecruitmentUploadService {
 
     @Transactional
     public UploadResult extractAndCreate(MultipartFile file, boolean forceCreate) throws IOException {
-        RecruitmentExtractionService.ExtractionPayload payload = extractionService.extract(file);
+        return extractAndCreate(file, forceCreate, false, null, true);
+    }
+
+    @Transactional
+    public UploadResult extractAndCreate(
+            MultipartFile file,
+            boolean forceCreate,
+            boolean forceReextract,
+            String clientApiKey,
+            boolean allowFallback
+    ) throws IOException {
+        RecruitmentExtractionService.ExtractionPayload payload = extractionService.extract(file, clientApiKey, allowFallback);
         Recruitment recruitment = mapRecruitment(payload.result(), payload.fingerprint(), payload.sourceFileName());
 
         Optional<Recruitment> duplicate = findPossibleDuplicate(recruitment, payload.fingerprint());
-        if (duplicate.isPresent() && !forceCreate) {
+        if (duplicate.isPresent() && !forceCreate && !forceReextract) {
             Recruitment existing = recruitmentRepository.findByIdWithVacancies(duplicate.get().getId())
                     .orElseThrow(() -> new NoSuchElementException("Duplicate recruitment could not be loaded"));
             return new UploadResult(existing, true, false);
@@ -46,8 +57,36 @@ public class BulkRecruitmentUploadService {
 
         if (duplicate.isPresent()) {
             Recruitment existing = duplicate.get();
-            recruitment.setDuplicateOf(existing.getId());
-            recruitment.setRevisionNumber(Optional.ofNullable(existing.getRevisionNumber()).orElse(1) + 1);
+            if (forceReextract && existing.getStatus() == Recruitment.RecruitmentStatus.REVIEW) {
+                // Overwrite the existing review draft
+                existing.setOrganisationName(recruitment.getOrganisationName());
+                existing.setTitle(recruitment.getTitle());
+                existing.setAdvertisementNumber(recruitment.getAdvertisementNumber());
+                existing.setRecruitmentYear(recruitment.getRecruitmentYear());
+                existing.setSector(recruitment.getSector());
+                existing.setLocation(recruitment.getLocation());
+                existing.setApplicationStartDate(recruitment.getApplicationStartDate());
+                existing.setApplicationLastDate(recruitment.getApplicationLastDate());
+                existing.setApplicationFee(recruitment.getApplicationFee());
+                existing.setOfficialNotificationUrl(recruitment.getOfficialNotificationUrl());
+                existing.setOfficialApplicationUrl(recruitment.getOfficialApplicationUrl());
+                existing.setOfficialWebsite(recruitment.getOfficialWebsite());
+                existing.setImportantInstructions(recruitment.getImportantInstructions());
+                existing.setJobDescription(recruitment.getJobDescription());
+                existing.setSourcePdfName(recruitment.getSourcePdfName());
+                existing.setPdfFingerprint(recruitment.getPdfFingerprint());
+                existing.setExtractionMethod(recruitment.getExtractionMethod());
+                existing.setTotalVacancies(recruitment.getTotalVacancies());
+                existing.getVacancies().clear();
+                for (VacancyRecord v : recruitment.getVacancies()) {
+                    existing.addVacancy(v);
+                }
+                Recruitment saved = recruitmentRepository.save(existing);
+                return new UploadResult(saved, false, true);
+            } else {
+                recruitment.setDuplicateOf(existing.getId());
+                recruitment.setRevisionNumber(Optional.ofNullable(existing.getRevisionNumber()).orElse(1) + 1);
+            }
         } else {
             recruitment.setRevisionNumber(1);
         }

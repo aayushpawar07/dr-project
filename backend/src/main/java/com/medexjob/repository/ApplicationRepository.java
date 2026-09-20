@@ -38,6 +38,9 @@ public interface ApplicationRepository extends JpaRepository<Application, UUID> 
     // Find applications by candidate and status
     Page<Application> findByCandidateIdAndStatus(UUID candidateId, Application.ApplicationStatus status, Pageable pageable);
 
+    // Count applications by candidate
+    long countByCandidateId(UUID candidateId);
+
     // Count applications by job
     long countByJobId(UUID jobId);
 

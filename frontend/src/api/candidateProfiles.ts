@@ -17,6 +17,15 @@ export interface CandidateProfileData {
   preferredLocation?: string;
   employmentPreference?: string;
   profileSummary?: string;
+  profilePhotoUrl?: string;
+  medicalCategory?: string;
+  currentOrganization?: string;
+  preferredJobRole?: string;
+  skills?: string;
+  registrationYear?: string;
+  registrationState?: string;
+  resumeUrl?: string;
+  resumeFileName?: string;
   profileComplete?: boolean;
   updatedAt?: string;
 }
@@ -28,6 +37,24 @@ export interface CandidateInsightsResponse {
   qualificationCounts: Record<string, number>;
   stateCounts: Record<string, number>;
   profiles: CandidateProfileData[];
+}
+
+export interface CandidateSearchParams {
+  qualification?: string;
+  speciality?: string;
+  jobRole?: string;
+  minExperience?: number;
+  maxExperience?: number;
+  state?: string;
+  city?: string;
+  preferredLocation?: string;
+  candidateType?: string;
+  search?: string;
+}
+
+export interface CandidateSearchResponse {
+  total: number;
+  candidates: CandidateProfileData[];
 }
 
 async function request<T>(url: string, token: string, options: RequestInit = {}): Promise<T> {
@@ -48,6 +75,46 @@ export function fetchMyCandidateProfile(token: string) {
 
 export function updateMyCandidateProfile(profile: CandidateProfileData, token: string) {
   return request<CandidateProfileData>('/candidate-profiles/me', token, { method: 'PUT', body: JSON.stringify(profile) });
+}
+
+export async function uploadCandidatePhoto(file: File, token: string): Promise<CandidateProfileData> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await fetch(`${API_BASE}/candidate-profiles/me/photo`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: formData,
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.error || body.message || `Photo upload failed (${response.status})`);
+  }
+  return response.json();
+}
+
+export async function uploadCandidateResume(file: File, token: string): Promise<CandidateProfileData> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await fetch(`${API_BASE}/candidate-profiles/me/resume`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: formData,
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.error || body.message || `Resume upload failed (${response.status})`);
+  }
+  return response.json();
+}
+
+export function searchCandidates(params: CandidateSearchParams, token: string) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && String(value).trim()) {
+      query.set(key, String(value).trim());
+    }
+  });
+  return request<CandidateSearchResponse>(`/candidate-profiles/search${query.toString() ? `?${query}` : ''}`, token);
 }
 
 export function fetchCandidateInsights(params: { speciality?: string; qualification?: string; state?: string; search?: string }, token: string) {

@@ -767,6 +767,23 @@ public class JobController {
         job.setDescription(Optional.ofNullable(req.description()).orElse(""));
         job.setSector(parseSectorWithDefault(req.sector()));
         job.setCategory(mapCategoryFromLabelWithDefault(Optional.ofNullable(req.category()).orElse("")));
+        if (req.jobRoles() != null) {
+            if (req.jobRoles() instanceof List<?> list) {
+                String joined = list.stream().map(Object::toString).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.joining(", "));
+                job.setJobRoles(joined);
+                if (!list.isEmpty() && (req.category() == null || req.category().isBlank())) {
+                    job.setCategory(mapCategoryFromLabelWithDefault(list.get(0).toString()));
+                }
+            } else {
+                String str = req.jobRoles().toString().trim();
+                job.setJobRoles(str);
+                if (req.category() == null || req.category().isBlank()) {
+                    job.setCategory(mapCategoryFromLabelWithDefault(str.split(",")[0].trim()));
+                }
+            }
+        } else if (req.category() != null && !req.category().isBlank()) {
+            job.setJobRoles(req.category());
+        }
         job.setLocation(Optional.ofNullable(req.location()).orElse(""));
         job.setQualification(Optional.ofNullable(req.qualification()).orElse(""));
         job.setExperience(Optional.ofNullable(req.experience()).orElse(""));
@@ -833,6 +850,19 @@ public class JobController {
             Job.JobCategory parsedCategory = mapCategoryFromLabel(req.category());
             if (parsedCategory != null) {
                 job.setCategory(parsedCategory);
+            }
+        }
+        if (req.jobRoles() != null) {
+            if (req.jobRoles() instanceof List<?> list) {
+                String joined = list.stream().map(Object::toString).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.joining(", "));
+                job.setJobRoles(joined);
+                if (!list.isEmpty() && (req.category() == null || req.category().isBlank())) {
+                    Job.JobCategory parsed = mapCategoryFromLabel(list.get(0).toString());
+                    if (parsed != null) job.setCategory(parsed);
+                }
+            } else {
+                String str = req.jobRoles().toString().trim();
+                job.setJobRoles(str);
             }
         }
         if (req.location() != null && !req.location().isBlank()) {
@@ -1050,7 +1080,9 @@ public class JobController {
             case "senior resident", "senior_resident" -> Job.JobCategory.SENIOR_RESIDENT;
             case "medical officer", "medical_officer", "doctor", "doctors" -> Job.JobCategory.MEDICAL_OFFICER;
             case "faculty", "professor", "assistant professor", "associate professor" -> Job.JobCategory.FACULTY;
-            case "specialist", "consultant" -> Job.JobCategory.SPECIALIST;
+            case "specialist" -> Job.JobCategory.SPECIALIST;
+            case "consultant" -> Job.JobCategory.CONSULTANT;
+            case "gdmo", "general duty medical officer" -> Job.JobCategory.GDMO;
             case "dental", "bds", "mds", "dentist" -> Job.JobCategory.DENTAL;
             case "ayush", "ayurveda", "homoeopathy", "unani", "siddha", "bams", "bhms", "bums" -> Job.JobCategory.AYUSH;
             case "nursing", "nurse", "staff nurse", "anm", "gnm", "b.sc nursing", "m.sc nursing" -> Job.JobCategory.NURSING;
@@ -1087,6 +1119,7 @@ public class JobController {
         String organization,
         String sector,
         String category,
+        Object jobRoles,
         String location,
         String qualification,
         String experience,
@@ -1131,6 +1164,19 @@ public class JobController {
         m.put("employerId", employerId != null ? employerId.toString() : null);
         m.put("sector", j.getSector() == Job.JobSector.GOVERNMENT ? "government" : "private");
         m.put("category", mapCategoryToLabel(j.getCategory()));
+        List<String> roles = new ArrayList<>();
+        if (j.getJobRoles() != null && !j.getJobRoles().isBlank()) {
+            for (String r : j.getJobRoles().split(",")) {
+                String trimmed = r.trim();
+                if (!trimmed.isEmpty() && !roles.contains(trimmed)) {
+                    roles.add(trimmed);
+                }
+            }
+        }
+        if (roles.isEmpty() && j.getCategory() != null) {
+            roles.add(mapCategoryToLabel(j.getCategory()));
+        }
+        m.put("jobRoles", roles);
         m.put("location", j.getLocation());
         m.put("qualification", j.getQualification());
         m.put("experience", j.getExperience());
@@ -1167,6 +1213,8 @@ public class JobController {
             case MEDICAL_OFFICER -> "Medical Officer";
             case FACULTY -> "Faculty";
             case SPECIALIST -> "Specialist";
+            case CONSULTANT -> "Consultant";
+            case GDMO -> "GDMO";
             case DENTAL -> "Dental";
             case AYUSH -> "AYUSH";
             case NURSING -> "Nursing";

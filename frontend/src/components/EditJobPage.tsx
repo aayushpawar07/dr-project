@@ -46,6 +46,12 @@ export function EditJobPage({ onNavigate }: EditJobPageProps) {
           organization: data.organization || "",
           sector: data.sector || "private",
           category: data.category || "Medical Officer",
+          jobRoles:
+            data.jobRoles && data.jobRoles.length > 0
+              ? data.jobRoles
+              : data.category
+              ? [data.category]
+              : ["Medical Officer"],
           location: data.location || "",
           qualification: data.qualification || "",
           experience: data.experience || "",

@@ -139,27 +139,33 @@ export function buildStructuredJobDescription(input: {
 
 export function displayJobDescription(job: any, extras: string[] = []) {
   const raw = preserveMultiline(job?.description);
+  if (!raw || !raw.trim()) {
+    return buildStructuredJobDescription({
+      postName: job?.displayTitle || job?.title,
+      organisationName: job?.organization || job?.organisationName || job?.employer?.companyName,
+      department: cleanExtractedName(job?.department),
+      speciality: cleanExtractedName(job?.speciality),
+      location: job?.location,
+      numberOfPosts: job?.numberOfPosts,
+      jobType: job?.jobType,
+      qualification: isRegulatoryDump(job?.qualification) ? job.qualification : cardFieldText(job?.qualification, job?.qualification),
+      experience: isRegulatoryDump(job?.experience) ? job.experience : cardFieldText(job?.experience, job?.experience),
+      salary: job?.salary || job?.salaryRange,
+      applicationLastDate: job?.lastDate,
+      selectionProcess: job?.selectionProcess,
+      importantInstructions: job?.importantInstructions,
+      extraNotes: leftoverEligibilityNotes(job?.qualification, job?.experience, job?.requirements, ...extras),
+      otherEligibility: job?.requirements,
+    });
+  }
+
   const collapsed = raw.replace(/\s+/g, ' ').trim();
   if (/^JOB DETAILS/i.test(raw) || /^JOB DETAILS/i.test(collapsed)) {
     const restored = restorePortalDescription(raw);
     const notes = leftoverEligibilityNotes(job?.qualification, job?.experience, job?.requirements, ...extras);
     return notes.length ? `${restored}\n\nIMPORTANT NOTES\n\n${notes.join('\n')}` : restored;
   }
-  return buildStructuredJobDescription({
-    postName: job?.displayTitle || job?.title,
-    organisationName: job?.organization || job?.organisationName || job?.employer?.companyName,
-    department: cleanExtractedName(job?.department),
-    speciality: cleanExtractedName(job?.speciality),
-    location: job?.location,
-    numberOfPosts: job?.numberOfPosts,
-    jobType: job?.jobType,
-    qualification: isRegulatoryDump(job?.qualification) ? job.qualification : cardFieldText(job?.qualification, job?.qualification),
-    experience: isRegulatoryDump(job?.experience) ? job.experience : cardFieldText(job?.experience, job?.experience),
-    salary: job?.salary || job?.salaryRange,
-    applicationLastDate: job?.lastDate,
-    selectionProcess: job?.selectionProcess,
-    importantInstructions: job?.importantInstructions,
-    extraNotes: leftoverEligibilityNotes(job?.qualification, job?.experience, job?.requirements, ...extras),
-    otherEligibility: job?.requirements,
-  }) || raw;
+
+  // Preserve user-provided full multi-line description
+  return raw;
 }

@@ -54,6 +54,7 @@ import { AiBulkJobUploader } from "./components/AiBulkJobUploader";
 import { RecruitmentPage } from "./components/RecruitmentPage";
 import { AdminCandidateInsights } from "./components/AdminCandidateInsights";
 import { AdminEmployerInsights } from "./components/AdminEmployerInsights";
+import { ImpersonationBanner } from "./components/ImpersonationBanner";
 import { Toaster } from "./components/ui/sonner";
 import { toast } from "sonner";
 
@@ -130,6 +131,7 @@ function AppContent() {
 
   return (
     <div className="flex flex-col min-h-screen">
+      <ImpersonationBanner onNavigate={handleNavigate} />
       <Header
         currentPage={currentPage}
         onNavigate={handleNavigate}

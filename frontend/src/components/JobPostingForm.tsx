@@ -58,6 +58,7 @@ interface JobFormData {
   organization: string;
   sector: JobSector;
   category: JobCategory;
+  jobRoles?: string[];
   location: string;
   state: string;
   qualification: string;
@@ -85,6 +86,8 @@ const jobCategories: JobCategory[] = [
   'Junior Resident',
   'Senior Resident',
   'Specialist',
+  'Consultant',
+  'GDMO',
   'Faculty',
   'Dental',
   'AYUSH',
@@ -214,11 +217,176 @@ function formatExtractedDescription(
   });
 }
 
+function parseRawVacancyNotice(rawText: string): Partial<JobFormData> {
+  const text = rawText.trim();
+  const result: Partial<JobFormData> = {
+    description: text,
+  };
+
+  // 1. Job Roles detection (Multi-role support)
+  const detectedRoles: string[] = [];
+  const roleKeywords: Array<{ role: JobCategory; regex: RegExp }> = [
+    { role: 'Consultant', regex: /\b(consultant|sr\.\s*consultant)\b/i },
+    { role: 'GDMO', regex: /\b(gdmo|general\s+duty\s+medical\s+officer)\b/i },
+    { role: 'Senior Resident', regex: /\b(senior\s+resident|sr\b|sr\.)/i },
+    { role: 'Junior Resident', regex: /\b(junior\s+resident|jr\b|jr\.)/i },
+    { role: 'Medical Officer', regex: /\b(medical\s+officer|mo\b)/i },
+    { role: 'Specialist', regex: /\b(specialist|super\s*specialist)\b/i },
+    { role: 'Faculty', regex: /\b(faculty|professor|assoc\w*\s+professor|asst\w*\s+professor|assistant\s+professor|tutor|lecturer)\b/i },
+    { role: 'Dental', regex: /\b(dental|dentist|bds|mds)\b/i },
+    { role: 'AYUSH', regex: /\b(ayush|ayurved\w*|homeopath\w*|unani|siddha|bams|bhms)\b/i },
+    { role: 'Nursing', regex: /\b(nurs\w*|staff\s*nurse|sister\s*tutor|gnm|b\.sc\s*nurs\w*)\b/i },
+    { role: 'Pharmacy', regex: /\b(pharmac\w*|b\.pharm|d\.pharm)\b/i },
+    { role: 'Paramedical', regex: /\b(paramedic\w*|lab\s*tech\w*|radiograph\w*|x-ray\s*tech\w*|ecg\s*tech\w*|ot\s*tech\w*)\b/i },
+    { role: 'Allied Health', regex: /\b(allied\s*health|physiotherap\w*|occupational\s*therap\w*)\b/i },
+    { role: 'Psychology & Mental Health', regex: /\b(psycholog\w*|psychiatr\w*|mental\s*health|counselor)\b/i },
+    { role: 'Nutrition & Dietetics', regex: /\b(dieti\w*|nutrition\w*)\b/i },
+    { role: 'Hospital Administration', regex: /\b(hospital\s*admin\w*|medical\s*superintendent|healthcare\s*admin\w*)\b/i },
+    { role: 'Public Health', regex: /\b(public\s*health|epidemiolog\w*|mph\b)\b/i },
+    { role: 'Life Science & Research', regex: /\b(life\s*science|research\s*officer|research\s*associate|jrf\b|srf\b)\b/i },
+  ];
+
+  for (const r of roleKeywords) {
+    if (r.regex.test(text) && !detectedRoles.includes(r.role)) {
+      detectedRoles.push(r.role);
+    }
+  }
+
+  if (detectedRoles.length > 0) {
+    result.jobRoles = detectedRoles;
+    result.category = detectedRoles[0] as JobCategory;
+  }
+
+  // 2. Organization detection
+  const orgMatch = text.match(/(?:at|in|by|for)\s+([A-Z][A-Za-z0-9&., ]{3,55}(?:Hospital|Institute|AIIMS|Medical College|Health Centre|Clinic|Healthcare|Infirmary|Trust|Foundation|Council|University|Directorate))/i)
+    || text.match(/([A-Z][A-Za-z0-9&., ]{2,50}(?:Hospital|Medical College|AIIMS|PGIMER|ESIC|Health City|Heart Institute))/i);
+  if (orgMatch) {
+    result.organization = orgMatch[1].trim();
+  }
+
+  // 3. Post Title detection
+  const titleMatch = text.match(/(?:post(?:s)?(?:\s+of|\s*[:-])|recruitment\s+(?:of|for)|walk-in(?:\s+interview)?\s+(?:for)?|applications\s+invited\s+for(?:\s+the\s+post\s+of)?)\s*[:\-]?\s*([A-Za-z0-9&/,\- ]{4,80})/i);
+  if (titleMatch) {
+    result.title = titleMatch[1].trim().split(/\n|\r/)[0].replace(/^(the\s+post\s+of\s+)/i, '');
+  } else if (detectedRoles.length > 0) {
+    result.title = detectedRoles.slice(0, 3).join(' / ');
+  }
+
+  // 4. Sector detection
+  if (/government|govt\.|ministry|nhm|national health mission|aiims|esic|railway|psc|upsc|sams|state health/i.test(text)) {
+    result.sector = 'government';
+  } else {
+    result.sector = 'private';
+  }
+
+  // 5. Location & State detection
+  for (const state of INDIAN_STATES) {
+    const reg = new RegExp(`\\b${state}\\b`, 'i');
+    if (reg.test(text)) {
+      result.state = state;
+      const locMatch = text.match(new RegExp(`([A-Za-z]+)(?:\\s*,?\\s*${state})`, 'i'));
+      result.location = locMatch ? locMatch[1].trim() : state;
+      break;
+    }
+  }
+  if (!result.location) {
+    const cityKeywords = ['Delhi', 'Mumbai', 'Bengaluru', 'Bangalore', 'Chennai', 'Kolkata', 'Hyderabad', 'Pune', 'Ahmedabad', 'Jaipur', 'Lucknow', 'Kanpur', 'Nagpur', 'Indore', 'Bhopal', 'Patna', 'Vadodara', 'Ghaziabad', 'Ludhiana', 'Agra', 'Nashik', 'Faridabad', 'Meerut', 'Rajkot', 'Varanasi', 'Srinagar', 'Aurangabad', 'Dhanbad', 'Amritsar', 'Navi Mumbai', 'Allahabad', 'Prayagraj', 'Ranchi', 'Howrah', 'Coimbatore', 'Jabalpur', 'Gwalior', 'Vijayawada', 'Jodhpur', 'Madurai', 'Raipur', 'Kota', 'Guwahati', 'Chandigarh', 'Noida', 'Gorakhpur', 'Rishikesh', 'Dehradun', 'Bhubaneswar', 'Gurgaon', 'Gurugram'];
+    for (const city of cityKeywords) {
+      if (new RegExp(`\\b${city}\\b`, 'i').test(text)) {
+        result.location = city;
+        result.state = inferState(city) || '';
+        break;
+      }
+    }
+  }
+
+  // 6. Qualification detection
+  const qualMatches: string[] = [];
+  const qualRegexes = [
+    /\b(DM|MCh|DNB|MD|MS|MBBS|BDS|MDS|BAMS|BHMS|BUMS|BPT|MPT|B\.?Sc\s+Nursing|M\.?Sc\s+Nursing|GNM|ANM|B\.?Pharm|M\.?Pharm|Pharm\.?D|DMLT|BMLT)\b/gi
+  ];
+  for (const qr of qualRegexes) {
+    const matches = text.match(qr);
+    if (matches) {
+      for (const m of matches) {
+        const u = m.toUpperCase().replace(/\s+/g, ' ');
+        if (!qualMatches.includes(u)) qualMatches.push(u);
+      }
+    }
+  }
+  if (qualMatches.length > 0) {
+    result.qualification = qualMatches.join(' / ');
+  }
+
+  // 7. Experience detection
+  const expMatch = text.match(/(?:experience|exp\.)\s*[:\-]?\s*([0-9]+(?:\s*-\s*[0-9]+)?\s*(?:years?|yrs?|months?))/i)
+    || text.match(/([0-9]+\s*(?:to|-)\s*[0-9]+\s*(?:years?|yrs?)\s*(?:of\s*)?experience)/i)
+    || text.match(/\b(freshers?\s*(?:can\s*apply|welcome)?)\b/i);
+  if (expMatch) {
+    result.experience = expMatch[1].trim();
+  }
+
+  // 8. Number of Posts detection
+  const postCountMatch = text.match(/(?:no\.\s*of\s*(?:posts?|vacanc(?:y|ies))|total\s*(?:posts?|vacanc(?:y|ies))|vacanc(?:y|ies))\s*[:\-]?\s*([0-9]{1,4})/i)
+    || text.match(/([0-9]{1,4})\s+(?:posts?|vacanc(?:y|ies))/i);
+  if (postCountMatch) {
+    const n = parseInt(postCountMatch[1], 10);
+    if (!isNaN(n) && n > 0 && n < 100000) {
+      result.numberOfPosts = n;
+    }
+  }
+
+  // 9. Salary detection
+  const salMatch = text.match(/(?:salary|pay\s*scale|remuneration|stipend|ctc|package)\s*[:\-]?\s*(₹?\s*[0-9]+(?:,[0-9]+)*(?:\s*-\s*₹?\s*[0-9]+(?:,[0-9]+)*)?(?:\s*(?:\/|\s*per\s*)(?:month|pm|annum|year|lpa))?)/i)
+    || text.match(/(₹\s*[0-9]+(?:,[0-9]+)*(?:\s*-\s*₹?\s*[0-9]+(?:,[0-9]+)*)?)/)
+    || text.match(/([0-9]+(?:[.,][0-9]+)?\s*(?:to|-)\s*[0-9]+(?:[.,][0-9]+)?\s*(?:lpa|lakhs?|lac))/i)
+    || text.match(/(level\s*[- ]\s*[0-9]{1,2}(?:\s*as\s*per\s*7th\s*cpc)?)/i);
+  if (salMatch) {
+    result.salary = salMatch[1].trim();
+  }
+
+  // 10. Last date / Interview date detection
+  const lastDateMatch = text.match(/(?:last\s*date(?:\s*for\s*(?:submission|application|apply))?|closing\s*date|apply\s*before|walk-in\s*interview\s*(?:on|date))\s*[:\-]?\s*([0-9]{1,2}[./-][0-9]{1,2}[./-][0-9]{2,4}|[0-9]{1,2}(?:st|nd|rd|th)?\s+(?:Jan\w*|Feb\w*|Mar\w*|Apr\w*|May|Jun\w*|Jul\w*|Aug\w*|Sep\w*|Oct\w*|Nov\w*|Dec\w*)\s*,?\s*[0-9]{4})/i);
+  if (lastDateMatch) {
+    const rawDate = lastDateMatch[1].trim();
+    try {
+      const dmy = rawDate.match(/^([0-9]{1,2})[./-]([0-9]{1,2})[./-]([0-9]{4})$/);
+      if (dmy) {
+        result.lastDate = `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`;
+      } else {
+        const parsed = new Date(rawDate);
+        if (!isNaN(parsed.getTime())) {
+          result.lastDate = parsed.toISOString().split('T')[0];
+        }
+      }
+    } catch (_) {}
+  }
+
+  // 11. Contact Email & Phone
+  const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+  if (emailMatch) {
+    result.contactEmail = emailMatch[0];
+  }
+  const phoneMatch = text.match(/(?:\+91[\s-]?)?[6-9][0-9]{9}/);
+  if (phoneMatch) {
+    result.contactPhone = phoneMatch[0];
+  }
+
+  // 12. External Apply Link
+  const linkMatch = text.match(/https?:\/\/[^\s]+/);
+  if (linkMatch) {
+    result.applyLink = linkMatch[0];
+  }
+
+  return result;
+}
+
 const defaultData: JobFormData = {
   title: '',
   organization: '',
   sector: 'private',
   category: 'Medical Officer',
+  jobRoles: ['Medical Officer'],
   location: '',
   state: '',
   qualification: '',
@@ -250,6 +418,11 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
   const [pdfExtraction, setPdfExtraction] = useState<JobTemplateExtractionResponse | null>(null);
   const [selectedVacancyIndex, setSelectedVacancyIndex] = useState(0);
 
+  // Direct paste & auto-fill state
+  const [pastePanelOpen, setPastePanelOpen] = useState(false);
+  const [rawPastedNotice, setRawPastedNotice] = useState('');
+  const [autoFillStats, setAutoFillStats] = useState<string[] | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const secondaryFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -257,8 +430,15 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
     if (!initialData) return;
     setFormData((p) => {
       const m = { ...p, ...initialData } as JobFormData;
+      const initialRoles =
+        initialData.jobRoles && initialData.jobRoles.length > 0
+          ? initialData.jobRoles
+          : initialData.category
+          ? [initialData.category]
+          : ['Medical Officer'];
       return {
         ...m,
+        jobRoles: initialRoles,
         state: initialData.state || inferState(initialData.location),
         sector: isEmployer ? 'private' : m.sector || 'private',
       };
@@ -273,6 +453,99 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
 
   const setField = <K extends keyof JobFormData>(field: K, value: JobFormData[K]) =>
     setFormData((p) => ({ ...p, [field]: value }));
+
+  const toggleRole = (role: string) => {
+    setFormData((p) => {
+      const current = p.jobRoles || (p.category ? [p.category] : ['Medical Officer']);
+      const exists = current.includes(role);
+      let updated: string[];
+      if (exists) {
+        updated = current.filter((r) => r !== role);
+        if (updated.length === 0) updated = [role];
+      } else {
+        updated = [...current, role];
+      }
+      return {
+        ...p,
+        jobRoles: updated,
+        category: (updated[0] as JobCategory) || p.category,
+      };
+    });
+  };
+
+  const handleAutoFillFromText = () => {
+    if (!rawPastedNotice.trim()) return;
+    const parsed = parseRawVacancyNotice(rawPastedNotice);
+    const populated: string[] = [];
+
+    setFormData((p) => {
+      const next = { ...p };
+      if (parsed.title) {
+        next.title = parsed.title;
+        populated.push('Title');
+      }
+      if (parsed.organization) {
+        next.organization = parsed.organization;
+        populated.push('Organization');
+      }
+      if (parsed.sector && !isEmployer) {
+        next.sector = parsed.sector;
+        populated.push('Sector');
+      }
+      if (parsed.jobRoles && parsed.jobRoles.length > 0) {
+        next.jobRoles = parsed.jobRoles;
+        next.category = parsed.category || (parsed.jobRoles[0] as JobCategory);
+        populated.push(`Roles (${parsed.jobRoles.join(', ')})`);
+      }
+      if (parsed.location) {
+        next.location = parsed.location;
+        populated.push('Location');
+      }
+      if (parsed.state) {
+        next.state = parsed.state;
+        populated.push('State');
+      }
+      if (parsed.qualification) {
+        next.qualification = parsed.qualification;
+        populated.push('Qualification');
+      }
+      if (parsed.experience) {
+        next.experience = parsed.experience;
+        populated.push('Experience');
+      }
+      if (parsed.numberOfPosts) {
+        next.numberOfPosts = parsed.numberOfPosts;
+        populated.push('Posts');
+      }
+      if (parsed.salary) {
+        next.salary = parsed.salary;
+        populated.push('Salary');
+      }
+      if (parsed.lastDate) {
+        next.lastDate = parsed.lastDate;
+        populated.push('Last Date');
+      }
+      if (parsed.contactEmail) {
+        next.contactEmail = parsed.contactEmail;
+        populated.push('Email');
+      }
+      if (parsed.contactPhone) {
+        next.contactPhone = parsed.contactPhone;
+        populated.push('Phone');
+      }
+      if (parsed.applyLink) {
+        next.applyLink = parsed.applyLink;
+        populated.push('Apply Link');
+      }
+      // Preserve full raw description
+      next.description = rawPastedNotice;
+      populated.push('Full Description (Preserved)');
+
+      return next;
+    });
+
+    setAutoFillStats(populated);
+  };
 
   const stepValid =
     step === 1
@@ -363,6 +636,10 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
       ...formData,
       sector: isEmployer ? 'private' : formData.sector,
       location: locationWithState(formData.location, formData.state),
+      jobRoles:
+        formData.jobRoles && formData.jobRoles.length > 0
+          ? formData.jobRoles
+          : [formData.category],
       status,
     });
 
@@ -427,172 +704,196 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
           {/* STEP 1: Matching Image 4 */}
           {step === 1 && (
             <>
-              {/* Top 3 Upload Cards */}
-              <div className="jpf-upload-grid">
-                {/* Card 1: Post & Organization Upload */}
-                <div className="jpf-top-card">
-                  <div className="jpf-top-card-header">
-                    <div className="jpf-top-badge jpf-top-badge--purple">
-                      <FileText className="h-5 w-5" />
+              {/* Direct Paste Notice & Auto-Fill Feature */}
+              <div className="mb-6 rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50/90 via-purple-50/60 to-blue-50/70 p-4 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-xs">
+                      <Sparkles className="h-4 w-4" />
                     </div>
                     <div>
-                      <div className="jpf-top-card-title">Post &amp; Organization *</div>
-                      <div className="jpf-top-card-sub">
-                        Upload the official notice and review the character details.
-                      </div>
+                      <h3 className="text-sm font-bold text-slate-900">
+                        Direct Paste Vacancy Notice &amp; Auto-Fill
+                      </h3>
+                      <p className="text-xs text-slate-600">
+                        Paste full raw job circular text to automatically detect and populate fields.
+                      </p>
                     </div>
                   </div>
-
-                  <div className="jpf-dropzone">
-                    <CloudUpload className="jpf-dropzone-icon" />
-                    <div className="jpf-dropzone-prompt">
-                      {formData.pdfFile ? formData.pdfFile.name : 'Choose PDF / Image File'}
-                    </div>
-                    <div className="jpf-dropzone-limit">(Max 5 MB)</div>
-
-                    <button
-                      type="button"
-                      className="jpf-btn-upload"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={extractingPdf}
-                    >
-                      {extractingPdf ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Extracting…
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="h-4 w-4" />
-                          {formData.pdfFile ? 'Change File' : 'Upload File'}
-                        </>
-                      )}
-                    </button>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="application/pdf,.pdf,image/png,image/jpeg"
-                      className="hidden"
-                      onChange={(e) => void handlePdf(e.target.files?.[0])}
-                    />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPastePanelOpen(!pastePanelOpen)}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 transition shadow-2xs cursor-pointer"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    {pastePanelOpen ? 'Hide Paste Box' : 'Paste Notice & Auto-Fill'}
+                  </button>
                 </div>
 
-                {/* Card 2: Choose PDF / Vacancy Selector */}
-                <div className="jpf-top-card">
-                  <div className="jpf-top-card-header">
-                    <div className="jpf-top-badge jpf-top-badge--orange">
-                      <FileText className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <div className="jpf-top-card-title">Choose PDF *</div>
-                      <div className="jpf-top-card-sub">Select the file for your job notice</div>
-                    </div>
-                  </div>
+                {pastePanelOpen && (
+                  <div className="mt-3 pt-3 border-t border-indigo-100/80 space-y-3">
+                    <textarea
+                      rows={6}
+                      className="w-full text-xs font-mono p-3 bg-white rounded-xl border border-indigo-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 text-slate-800 shadow-inner"
+                      placeholder="Paste raw advertisement / vacancy notice text here (e.g. from newspaper, WhatsApp group, PDF text, or hospital portal)..."
+                      value={rawPastedNotice}
+                      onChange={(e) => setRawPastedNotice(e.target.value)}
+                    />
 
-                  <div>
-                    {(pdfExtraction?.vacancies?.length || 0) > 1 ? (
-                      <div>
-                        <Label className="text-xs font-semibold text-slate-700 mb-1 block">
-                          Extracted Vacancies
-                        </Label>
-                        <Select
-                          value={String(selectedVacancyIndex)}
-                          onValueChange={(val) =>
-                            applyExtractedVacancy(pdfExtraction!, Number(val))
-                          }
-                        >
-                          <SelectTrigger className="bg-white border-slate-200">
-                            <SelectValue placeholder="Select vacancy" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {pdfExtraction!.vacancies!.map((v, i) => (
-                              <SelectItem key={`${v.postName}-${i}`} value={String(i)}>
-                                {v.postName || `Vacancy ${i + 1}`}
-                                {v.department ? ` — ${v.department}` : ''}
-                                {v.numberOfVacancies ? ` (${v.numberOfVacancies})` : ''}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    ) : (
-                      <Select
-                        value={formData.pdfFile?.name ? 'selected' : ''}
-                        onValueChange={() => fileInputRef.current?.click()}
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-[11px] text-slate-500">
+                        Format, spacing, and all line breaks will be preserved in Job Description.
+                      </span>
+                      <button
+                        type="button"
+                        disabled={!rawPastedNotice.trim()}
+                        onClick={handleAutoFillFromText}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 disabled:opacity-50 transition shadow-sm cursor-pointer"
                       >
-                        <SelectTrigger className="bg-white border-slate-200">
-                          <SelectValue placeholder={formData.pdfFile?.name || 'Select PDF'} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {formData.pdfFile && (
-                            <SelectItem value="selected">{formData.pdfFile.name}</SelectItem>
-                          )}
-                          <SelectItem value="upload_new">+ Choose another PDF</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        <Sparkles className="h-4 w-4" />
+                        Detect &amp; Auto-Fill Fields
+                      </button>
+                    </div>
+
+                    {autoFillStats && autoFillStats.length > 0 && (
+                      <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <div>
+                          <strong>Successfully Auto-Filled {autoFillStats.length} fields:</strong>{' '}
+                          {autoFillStats.join(', ')}.
+                          <div className="text-[11px] text-emerald-700 mt-0.5">
+                            You can review and modify any field below before submitting.
+                          </div>
+                        </div>
+                      </div>
                     )}
                   </div>
-                </div>
+                )}
+              </div>
 
-                {/* Card 3: Choose File */}
-                <div className="jpf-top-card">
-                  <div className="jpf-top-card-header">
-                    <div className="jpf-top-badge jpf-top-badge--teal">
-                      <Folder className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <div className="jpf-top-card-title">Choose File *</div>
-                      <div className="jpf-top-card-sub">
-                        {formData.imageFile
-                          ? formData.imageFile.name
-                          : formData.pdfFile
-                          ? formData.pdfFile.name
-                          : 'No file selected'}
+              {/* Simplified PDF Upload: Only for Government Jobs, completely omitted for Private */}
+              {formData.sector === 'government' ? (
+                <div className="mb-6 rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50/60 to-indigo-50/40 p-5 shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-xs">
+                        <FileText className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-bold text-slate-900">
+                            Government Official Vacancy PDF
+                          </h3>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                            Govt Job Notice
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500">
+                          Upload the official recruitment PDF notification to auto-extract details.
+                        </p>
                       </div>
                     </div>
+
+                    {formData.pdfFile && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setField('pdfFile', undefined);
+                          setPdfExtraction(null);
+                          setPdfMessage('');
+                        }}
+                        className="text-xs font-semibold text-rose-600 hover:text-rose-700 underline"
+                      >
+                        Remove PDF
+                      </button>
+                    )}
                   </div>
 
-                  <div>
-                    <button
-                      type="button"
-                      className="jpf-btn-choose-file"
-                      onClick={() => secondaryFileInputRef.current?.click()}
-                    >
-                      <span className="truncate">
-                        {formData.imageFile ? formData.imageFile.name : 'Choose File'}
-                      </span>
-                      <Upload className="h-4 w-4 text-slate-400 shrink-0 ml-2" />
-                    </button>
-                    <input
-                      ref={secondaryFileInputRef}
-                      type="file"
-                      accept="image/*,application/pdf"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          if (file.type.startsWith('image/')) {
-                            setField('imageFile', file);
-                          } else {
-                            void handlePdf(file);
-                          }
-                        }
-                      }}
-                    />
+                  <div className="flex flex-col sm:flex-row items-center gap-3 bg-white/90 p-4 rounded-xl border border-blue-100">
+                    <div className="flex-1 w-full">
+                      {formData.pdfFile ? (
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-800">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                          <span className="truncate">{formData.pdfFile.name}</span>
+                          <span className="text-slate-400 font-normal shrink-0">
+                            ({(formData.pdfFile.size / 1024 / 1024).toFixed(2)} MB)
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-slate-500">
+                          No PDF selected yet. Single clean PDF upload (Max 20 MB).
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+                      <button
+                        type="button"
+                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-blue-700 transition cursor-pointer"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={extractingPdf}
+                      >
+                        {extractingPdf ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span>Extracting with AI…</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4" />
+                            <span>{formData.pdfFile ? 'Change PDF' : 'Upload PDF Notice'}</span>
+                          </>
+                        )}
+                      </button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="application/pdf,.pdf"
+                        className="hidden"
+                        onChange={(e) => void handlePdf(e.target.files?.[0])}
+                      />
+                    </div>
                   </div>
+
+                  {/* If multi-vacancy PDF extracted */}
+                  {(pdfExtraction?.vacancies?.length || 0) > 1 && (
+                    <div className="mt-3 bg-white p-3 rounded-xl border border-slate-200">
+                      <Label className="text-xs font-semibold text-slate-700 mb-1.5 block">
+                        Found {pdfExtraction!.vacancies!.length} vacancies in this PDF. Select vacancy to apply:
+                      </Label>
+                      <Select
+                        value={String(selectedVacancyIndex)}
+                        onValueChange={(val) =>
+                          applyExtractedVacancy(pdfExtraction!, Number(val))
+                        }
+                      >
+                        <SelectTrigger className="bg-white border-slate-200 h-9 text-xs">
+                          <SelectValue placeholder="Select vacancy row" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {pdfExtraction!.vacancies!.map((v, i) => (
+                            <SelectItem key={`${v.postName}-${i}`} value={String(i)}>
+                              {v.postName || `Vacancy ${i + 1}`}
+                              {v.department ? ` — ${v.department}` : ''}
+                              {v.numberOfVacancies ? ` (${v.numberOfVacancies} posts)` : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
-              </div>
+              ) : null}
 
               {/* PDF Feedback Messages */}
               {pdfMessage && (
-                <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2.5 text-xs font-semibold text-emerald-800">
+                <div className="mb-4 flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2.5 text-xs font-semibold text-emerald-800">
                   <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
                   <span>{pdfMessage}</span>
                 </div>
               )}
               {pdfError && (
-                <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-2.5 text-xs font-semibold text-red-800">
+                <div className="mb-4 flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-2.5 text-xs font-semibold text-red-800">
                   <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
                   <span>{pdfError}</span>
                 </div>
@@ -613,7 +914,7 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
                     className="jpf-input"
                     value={formData.title}
                     onChange={(e) => setField('title', e.target.value)}
-                    placeholder="e.g. Senior Resident"
+                    placeholder="e.g. Senior Resident / Specialist Consultant"
                   />
                 </div>
               </div>
@@ -633,12 +934,12 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
                     className="jpf-input"
                     value={formData.organization}
                     onChange={(e) => setField('organization', e.target.value)}
-                    placeholder="e.g. AIIMS, Gorakhpur"
+                    placeholder="e.g. AIIMS, Apollo Hospitals, Fortis Healthcare"
                   />
                 </div>
               </div>
 
-              {/* Row 3: Job Sector * & Job Role / Category * */}
+              {/* Row 3: Job Sector * & Job Role (Multi-Select) * */}
               <div className="jpf-field-row">
                 {/* Col 1: Job Sector * */}
                 <div className="jpf-field-card">
@@ -679,29 +980,71 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
                   </div>
                 </div>
 
-                {/* Col 2: Job Role / Category * */}
+                {/* Col 2: Job Role (Multi-Select) * */}
                 <div className="jpf-field-card">
-                  <div className="jpf-field-header">
-                    <div className="jpf-field-badge jpf-badge--purple">
-                      <UserCheck className="h-4 w-4" />
+                  <div className="jpf-field-header justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="jpf-field-badge jpf-badge--purple">
+                        <UserCheck className="h-4 w-4" />
+                      </div>
+                      <Label className="jpf-field-label">Job Roles (Multi-Select) *</Label>
                     </div>
-                    <Label className="jpf-field-label">Job Role / Category *</Label>
+                    <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+                      {(formData.jobRoles || [formData.category]).length} selected
+                    </span>
                   </div>
-                  <Select
-                    value={formData.category}
-                    onValueChange={(val: JobCategory) => setField('category', val)}
-                  >
-                    <SelectTrigger className="bg-white border-slate-200 h-[42px] rounded-lg">
-                      <SelectValue placeholder="Select role / category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {jobCategories.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+
+                  {/* Selected tags */}
+                  <div className="flex flex-wrap gap-1.5 mb-2.5 min-h-[34px] p-2 bg-slate-50 rounded-lg border border-slate-200">
+                    {(formData.jobRoles && formData.jobRoles.length > 0
+                      ? formData.jobRoles
+                      : [formData.category]
+                    ).map((role) => (
+                      <span
+                        key={role}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200"
+                      >
+                        {role}
+                        <button
+                          type="button"
+                          onClick={() => toggleRole(role)}
+                          className="hover:text-rose-600 text-indigo-600 ml-0.5 font-bold cursor-pointer"
+                          title="Remove role"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Quick Toggle Role Pills */}
+                  <div>
+                    <div className="text-[11px] font-medium text-slate-500 mb-1.5">
+                      Click to toggle roles:
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+                      {jobCategories.map((cat) => {
+                        const isSelected = (
+                          formData.jobRoles || [formData.category]
+                        ).includes(cat);
+                        return (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => toggleRole(cat)}
+                            className={`text-xs px-2.5 py-1 rounded-full border font-medium transition cursor-pointer ${
+                              isSelected
+                                ? 'bg-teal-600 text-white border-teal-600 shadow-xs'
+                                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
+                            }`}
+                          >
+                            {isSelected ? '✓ ' : '+ '}
+                            {cat}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -953,19 +1296,31 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
           {step === 3 && (
             <div className="space-y-4">
               <div className="jpf-field-card">
-                <div className="jpf-field-header">
-                  <div className="jpf-field-badge jpf-badge--blue">
-                    <FileText className="h-4 w-4" />
+                <div className="jpf-field-header justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="jpf-field-badge jpf-badge--blue">
+                      <FileText className="h-4 w-4" />
+                    </div>
+                    <Label className="jpf-field-label">Job Description *</Label>
                   </div>
-                  <Label className="jpf-field-label">Job Description *</Label>
+                  <span className="text-[11px] font-medium text-slate-500">
+                    {formData.description.length} chars &bull;{' '}
+                    {formData.description.trim()
+                      ? formData.description.trim().split(/\s+/).length
+                      : 0}{' '}
+                    words (Unlimited, formatting preserved)
+                  </span>
                 </div>
                 <textarea
-                  rows={10}
-                  className="jpf-textarea"
+                  rows={14}
+                  className="jpf-textarea font-sans text-sm leading-relaxed"
                   value={formData.description}
                   onChange={(e) => setField('description', e.target.value)}
-                  placeholder="Role overview, key responsibilities, qualifications, selection process, and application instructions..."
+                  placeholder="Role overview, responsibilities, eligibility details, vacancies breakdown, selection process, and application instructions. 15-30+ lines supported with full line breaks and spacing preserved..."
                 />
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Tip: Multiple paragraphs and line breaks are fully preserved on the live job details page.
+                </p>
               </div>
 
               <div className="jpf-field-row">

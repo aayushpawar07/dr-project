@@ -47,6 +47,7 @@ import {
 import { fetchJobsByEmployer, createJob } from '../api/jobs';
 import { getCurrentSubscription, SubscriptionResponse } from '../api/subscriptions';
 import { fetchNotifications } from '../api/notifications';
+import { searchCandidates, CandidateProfileData } from '../api/candidateProfiles';
 import { openFileInViewer } from '../utils/fileUtils';
 import '../styles/employer-dashboard.css';
 
@@ -54,7 +55,7 @@ interface EmployerDashboardProps {
   onNavigate: (page: string, entityId?: string) => void;
 }
 
-type DashboardSection = 'jobs' | 'applications' | 'subscription' | 'notifications' | 'verification';
+type DashboardSection = 'jobs' | 'applications' | 'candidates' | 'subscription' | 'notifications' | 'verification';
 type JobFilter = 'all' | 'active' | 'pending' | 'draft' | 'closed';
 type ApplicationFilter = 'all' | 'new' | 'shortlisted' | 'interview' | 'selected' | 'rejected';
 
@@ -221,6 +222,51 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
     link?: string;
     notes?: string;
   } | null>(null);
+
+  // Candidate Talent Pool Search State
+  const [candidatesList, setCandidatesList] = useState<CandidateProfileData[]>([]);
+  const [candidatesTotal, setCandidatesTotal] = useState(0);
+  const [loadingCandidates, setLoadingCandidates] = useState(false);
+  const [candidateSearch, setCandidateSearch] = useState('');
+  const [candidateQualification, setCandidateQualification] = useState('');
+  const [candidateSpeciality, setCandidateSpeciality] = useState('');
+  const [candidateJobRole, setCandidateJobRole] = useState('');
+  const [candidateMinExp, setCandidateMinExp] = useState<number | undefined>(undefined);
+  const [candidateState, setCandidateState] = useState('');
+  const [candidateType, setCandidateType] = useState('');
+  const [viewingCandidate, setViewingCandidate] = useState<CandidateProfileData | null>(null);
+
+  const fetchCandidates = async () => {
+    if (!token) return;
+    setLoadingCandidates(true);
+    try {
+      const res = await searchCandidates(
+        {
+          search: candidateSearch || undefined,
+          qualification: candidateQualification || undefined,
+          speciality: candidateSpeciality || undefined,
+          jobRole: candidateJobRole || undefined,
+          minExperience: candidateMinExp,
+          state: candidateState || undefined,
+          candidateType: candidateType || undefined,
+        },
+        token,
+      );
+      setCandidatesList(res.candidates || []);
+      setCandidatesTotal(res.total || 0);
+    } catch (e: any) {
+      console.error('Failed to load candidate talent pool:', e);
+      toast.error(e?.message || 'Unable to load candidates');
+    } finally {
+      setLoadingCandidates(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeSection === 'candidates') {
+      void fetchCandidates();
+    }
+  }, [activeSection]);
 
   const fetchApplicationsForJobs = async (jobs: any[], authToken: string) => {
     if (jobs.length === 0) return [];
@@ -666,6 +712,13 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
       badge: interviewCount,
       active: activeSection === 'applications' && applicationFilter === 'interview',
       action: () => openApplications('interview'),
+    },
+    {
+      label: 'Candidate Talent Pool',
+      icon: UserCheck,
+      badge: candidatesTotal > 0 ? candidatesTotal : undefined,
+      active: activeSection === 'candidates',
+      action: () => openSection('candidates'),
     },
   ];
 
@@ -1368,6 +1421,396 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                   Open Application Management <ChevronRight size={16} />
                 </button>
               </div>
+            </section>
+          )}
+
+          {activeSection === 'candidates' && (
+            <section className="dashboard-panel">
+              <div className="dashboard-panel__header flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <UserCheck className="h-5 w-5 text-teal-600" />
+                    Candidate Talent Pool &amp; CV Search
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Search clinical professionals by qualification, speciality, job role, and download CVs.
+                  </p>
+                </div>
+                <div className="text-xs font-semibold px-3 py-1.5 bg-teal-50 text-teal-800 rounded-full border border-teal-200 w-fit">
+                  {candidatesTotal} Candidates Available
+                </div>
+              </div>
+
+              {/* Filters Bar */}
+              <div className="bg-slate-50/90 p-4 rounded-2xl border border-slate-200 mb-6 space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-600 block mb-1">Search Keyword / Name</label>
+                    <input
+                      type="text"
+                      className="w-full text-xs p-2 rounded-lg border border-slate-200 bg-white"
+                      placeholder="Doctor name, hospital, skill..."
+                      value={candidateSearch}
+                      onChange={(e) => setCandidateSearch(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && void fetchCandidates()}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-600 block mb-1">Qualification</label>
+                    <input
+                      type="text"
+                      className="w-full text-xs p-2 rounded-lg border border-slate-200 bg-white"
+                      placeholder="e.g. MBBS, MD, MS, DNB, BDS"
+                      value={candidateQualification}
+                      onChange={(e) => setCandidateQualification(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-600 block mb-1">Speciality</label>
+                    <input
+                      type="text"
+                      className="w-full text-xs p-2 rounded-lg border border-slate-200 bg-white"
+                      placeholder="e.g. Cardiology, Surgery"
+                      value={candidateSpeciality}
+                      onChange={(e) => setCandidateSpeciality(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-600 block mb-1">Job Role</label>
+                    <input
+                      type="text"
+                      className="w-full text-xs p-2 rounded-lg border border-slate-200 bg-white"
+                      placeholder="e.g. Senior Resident, Consultant"
+                      value={candidateJobRole}
+                      onChange={(e) => setCandidateJobRole(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-600 block mb-1">Min Experience (Years)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      className="w-full text-xs p-2 rounded-lg border border-slate-200 bg-white"
+                      placeholder="e.g. 2"
+                      value={candidateMinExp ?? ''}
+                      onChange={(e) => setCandidateMinExp(e.target.value ? Number(e.target.value) : undefined)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-600 block mb-1">State / Location</label>
+                    <input
+                      type="text"
+                      className="w-full text-xs p-2 rounded-lg border border-slate-200 bg-white"
+                      placeholder="e.g. Delhi, Maharashtra"
+                      value={candidateState}
+                      onChange={(e) => setCandidateState(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-600 block mb-1">Medical Domain</label>
+                    <select
+                      className="w-full text-xs p-2 rounded-lg border border-slate-200 bg-white"
+                      value={candidateType}
+                      onChange={(e) => setCandidateType(e.target.value)}
+                    >
+                      <option value="">All Domains</option>
+                      <option value="Modern Medicine">Allopathy / Modern Medicine</option>
+                      <option value="Dental">Dental Surgery</option>
+                      <option value="AYUSH">AYUSH</option>
+                      <option value="Nursing">Nursing</option>
+                      <option value="Pharmacy">Pharmacy</option>
+                      <option value="Paramedical">Paramedical</option>
+                      <option value="Administration">Hospital Administration</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void fetchCandidates()}
+                      disabled={loadingCandidates}
+                      className="flex-1 bg-teal-600 text-white text-xs font-bold py-2 px-3 rounded-lg hover:bg-teal-700 transition cursor-pointer"
+                    >
+                      {loadingCandidates ? 'Searching…' : 'Apply Filters'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCandidateSearch('');
+                        setCandidateQualification('');
+                        setCandidateSpeciality('');
+                        setCandidateJobRole('');
+                        setCandidateMinExp(undefined);
+                        setCandidateState('');
+                        setCandidateType('');
+                        setTimeout(() => void fetchCandidates(), 50);
+                      }}
+                      className="bg-slate-200 text-slate-700 text-xs font-semibold py-2 px-3 rounded-lg hover:bg-slate-300 transition cursor-pointer"
+                    >
+                      Reset
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Candidates Grid */}
+              {loadingCandidates ? (
+                <div className="text-center py-12 text-slate-500 text-sm">Searching candidates…</div>
+              ) : candidatesList.length === 0 ? (
+                <div className="text-center py-12 bg-slate-50 rounded-2xl border border-slate-200">
+                  <UserCheck className="h-10 w-10 text-slate-400 mx-auto mb-2" />
+                  <h3 className="text-sm font-bold text-slate-700">No candidates match your search</h3>
+                  <p className="text-xs text-slate-500 mt-1">Try broadening your filter criteria or clearing the search keyword.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {candidatesList.map((cand) => (
+                    <div
+                      key={cand.id || cand.candidateId || cand.email}
+                      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs hover:border-teal-300 hover:shadow-md transition flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-start gap-3 mb-3">
+                          {cand.profilePhotoUrl ? (
+                            <img
+                              src={cand.profilePhotoUrl}
+                              alt={cand.name || 'Candidate'}
+                              className="w-12 h-12 rounded-xl object-cover border border-teal-200 shrink-0"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-xl bg-teal-100 text-teal-800 font-bold text-sm flex items-center justify-center shrink-0">
+                              {getInitials(cand.name || 'MD')}
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-1">
+                              <h3 className="text-sm font-bold text-slate-900 truncate">
+                                {cand.name || 'Clinical Candidate'}
+                              </h3>
+                              {cand.yearsExperience != null && (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 shrink-0">
+                                  {cand.yearsExperience} yrs exp
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs font-semibold text-teal-700 truncate">
+                              {[cand.qualification, cand.speciality].filter(Boolean).join(' • ') || 'Medical Professional'}
+                            </div>
+                            {cand.currentOrganization && (
+                              <div className="text-[11px] text-slate-500 truncate flex items-center gap-1 mt-0.5">
+                                <Building2 size={11} className="shrink-0" />
+                                <span>{cand.currentOrganization}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Location & Preferred Role */}
+                        <div className="grid grid-cols-2 gap-2 text-[11px] bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-3">
+                          <div>
+                            <span className="text-slate-400 block text-[10px]">Location</span>
+                            <span className="font-medium text-slate-700 truncate block">
+                              {[cand.currentCity, cand.state].filter(Boolean).join(', ') || 'Not specified'}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 block text-[10px]">Preferred Role</span>
+                            <span className="font-medium text-slate-700 truncate block">
+                              {cand.preferredJobRole || 'Any Role'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Skills Chips */}
+                        {cand.skills && (
+                          <div className="mb-3">
+                            <div className="flex flex-wrap gap-1">
+                              {cand.skills.split(',').slice(0, 4).map((s, idx) => (
+                                <span key={idx} className="text-[10px] bg-indigo-50 text-indigo-700 font-medium px-2 py-0.5 rounded-md">
+                                  {s.trim()}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
+                        {cand.resumeUrl ? (
+                          <a
+                            href={cand.resumeUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 inline-flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl bg-teal-600 text-white text-xs font-bold hover:bg-teal-700 transition"
+                          >
+                            <FileText size={13} />
+                            View CV
+                          </a>
+                        ) : (
+                          <span className="flex-1 text-center py-1.5 text-xs text-slate-400 bg-slate-50 rounded-xl">
+                            No CV uploaded
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setViewingCandidate(cand)}
+                          className="py-1.5 px-3 rounded-xl border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition cursor-pointer"
+                        >
+                          Full Profile
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Full Candidate Modal */}
+              {viewingCandidate && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
+                  <div className="w-full max-w-xl bg-white rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+                    <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                      <div className="flex items-center gap-3">
+                        {viewingCandidate.profilePhotoUrl ? (
+                          <img
+                            src={viewingCandidate.profilePhotoUrl}
+                            alt={viewingCandidate.name || 'Candidate'}
+                            className="w-12 h-12 rounded-xl object-cover border border-teal-300"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-xl bg-teal-100 text-teal-800 font-bold flex items-center justify-center">
+                            {getInitials(viewingCandidate.name || 'Candidate')}
+                          </div>
+                        )}
+                        <div>
+                          <h3 className="text-base font-bold text-slate-900">{viewingCandidate.name || 'Candidate'}</h3>
+                          <div className="text-xs text-teal-700 font-medium">
+                            {[viewingCandidate.qualification, viewingCandidate.speciality].filter(Boolean).join(' • ') || 'Medical Professional'}
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setViewingCandidate(null)}
+                        className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200 transition cursor-pointer"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+
+                    <div className="p-5 overflow-y-auto space-y-4 text-xs">
+                      <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl">
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">Medical Domain</span>
+                          <strong className="text-slate-800">{viewingCandidate.medicalCategory || 'Not specified'}</strong>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">Clinical Experience</span>
+                          <strong className="text-slate-800">{viewingCandidate.yearsExperience != null ? `${viewingCandidate.yearsExperience} Years` : 'Not specified'}</strong>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">Current Organization</span>
+                          <strong className="text-slate-800">{viewingCandidate.currentOrganization || 'Not specified'}</strong>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">Preferred Job Role</span>
+                          <strong className="text-slate-800">{viewingCandidate.preferredJobRole || 'Not specified'}</strong>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">Location</span>
+                          <strong className="text-slate-800">{[viewingCandidate.currentCity, viewingCandidate.state].filter(Boolean).join(', ') || 'Not specified'}</strong>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px]">Preferred Location</span>
+                          <strong className="text-slate-800">{viewingCandidate.preferredLocation || 'Anywhere'}</strong>
+                        </div>
+                      </div>
+
+                      {/* Registration */}
+                      <div className="border border-indigo-100 bg-indigo-50/40 p-3 rounded-xl space-y-1">
+                        <div className="text-[11px] font-bold text-indigo-900 flex items-center gap-1.5">
+                          <ShieldCheck size={14} className="text-indigo-600" /> Professional Registration Details
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-slate-700 pt-1">
+                          <div>Council: <strong>{viewingCandidate.registrationCouncil || '—'}</strong></div>
+                          <div>Reg Number: <strong>{viewingCandidate.registrationNumber || '—'}</strong></div>
+                          <div>State: <strong>{viewingCandidate.registrationState || '—'}</strong></div>
+                          <div>Year: <strong>{viewingCandidate.registrationYear || '—'}</strong></div>
+                        </div>
+                      </div>
+
+                      {/* Skills */}
+                      {viewingCandidate.skills && (
+                        <div>
+                          <span className="text-slate-400 block text-[10px] mb-1">Key Skills &amp; Procedures</span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {viewingCandidate.skills.split(',').map((s, idx) => (
+                              <span key={idx} className="bg-teal-50 text-teal-800 font-medium px-2 py-0.5 rounded-md text-[11px]">
+                                {s.trim()}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Profile Summary */}
+                      {viewingCandidate.profileSummary && (
+                        <div>
+                          <span className="text-slate-400 block text-[10px] mb-1">Summary / CV Intro</span>
+                          <p className="bg-slate-50 p-3 rounded-xl text-slate-700 leading-relaxed font-sans">
+                            {viewingCandidate.profileSummary}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Contact Details */}
+                      <div className="border border-slate-200 p-3 rounded-xl space-y-2">
+                        <div className="text-[11px] font-bold text-slate-800">Contact Candidate</div>
+                        <div className="flex flex-wrap gap-4 text-xs text-slate-700">
+                          {viewingCandidate.email && (
+                            <a href={`mailto:${viewingCandidate.email}`} className="flex items-center gap-1 text-teal-700 font-medium hover:underline">
+                              <Mail size={13} /> {viewingCandidate.email}
+                            </a>
+                          )}
+                          {viewingCandidate.phone && (
+                            <a href={`tel:${viewingCandidate.phone}`} className="flex items-center gap-1 text-teal-700 font-medium hover:underline">
+                              <Phone size={13} /> {viewingCandidate.phone}
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => setViewingCandidate(null)}
+                        className="text-xs font-semibold text-slate-600 hover:text-slate-900 cursor-pointer"
+                      >
+                        Close
+                      </button>
+                      {viewingCandidate.resumeUrl && (
+                        <a
+                          href={viewingCandidate.resumeUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 text-white text-xs font-bold hover:bg-teal-700 transition"
+                        >
+                          <Download size={14} /> Download CV / Resume
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </section>
           )}
 

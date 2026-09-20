@@ -348,7 +348,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       icon: Users,
       trend: data.overview?.usersGrowth,
       action: () => onNavigate('admin-users'),
-      subtext: 'Platform accounts',
+      subtext: 'Directory & Impersonate',
     },
     {
       label: 'Employers',
@@ -484,7 +484,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
         { label: 'Employer Insights', icon: Building2, action: () => onNavigate('admin-employer-insights') },
         { label: 'Candidate Insights', icon: Stethoscope, action: () => onNavigate('admin-candidate-insights'), badge: data.totalCandidateProfiles },
         { label: 'Applications', icon: FileText, action: () => onNavigate('admin-applications'), badge: totalApplications },
-        { label: 'Admin Staff', icon: Users, action: () => onNavigate('admin-users') },
+        { label: 'User Directory & Impersonate', icon: Users, action: () => onNavigate('admin-users') },
       ],
     },
     {
@@ -754,8 +754,8 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
             <button type="button" className="admin-ui-quick-button" onClick={() => onNavigate('analytics')}>
               <BarChart3 /> Analytics
             </button>
-            <button type="button" className="admin-ui-quick-button" onClick={() => onNavigate('admin-users')}>
-              <Users /> Admin Staff
+            <button type="button" className="admin-ui-quick-button purple" onClick={() => onNavigate('admin-users')}>
+              <Users /> User Directory & Impersonate
             </button>
             <button type="button" className="admin-ui-quick-button" onClick={() => onNavigate('admin-pricing')}>
               <CreditCard /> Pricing

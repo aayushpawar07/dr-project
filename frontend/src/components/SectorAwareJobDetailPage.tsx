@@ -157,7 +157,15 @@ function GovernmentJobDetail({
                     Government
                   </span>
 
-                  {job.category && <Badge variant="outline">{job.category}</Badge>}
+                  {Array.isArray(job.jobRoles) && job.jobRoles.length > 0 ? (
+                    job.jobRoles.map((role: string, idx: number) => (
+                      <Badge key={idx} variant="outline" className="border-teal-300 bg-teal-50 text-teal-800 font-medium">
+                        {role}
+                      </Badge>
+                    ))
+                  ) : job.category ? (
+                    <Badge variant="outline">{job.category}</Badge>
+                  ) : null}
                   <Badge
                     variant="outline"
                     className="border-emerald-200 bg-emerald-50 text-emerald-700"

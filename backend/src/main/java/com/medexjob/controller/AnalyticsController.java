@@ -427,6 +427,8 @@ public class AnalyticsController {
             case MEDICAL_OFFICER -> "Medical Officer";
             case FACULTY -> "Faculty";
             case SPECIALIST -> "Specialist";
+            case CONSULTANT -> "Consultant";
+            case GDMO -> "GDMO";
             case DENTAL -> "Dental";
             case AYUSH -> "AYUSH";
             case NURSING -> "Nursing";

@@ -46,7 +46,7 @@ public class Job {
   private String title;
 
   @NotBlank
-  @Column(name = "description", columnDefinition = "TEXT", nullable = false)
+  @Column(name = "description", columnDefinition = "LONGTEXT", nullable = false)
   private String description;
 
   @Enumerated(EnumType.STRING)
@@ -56,6 +56,9 @@ public class Job {
   @Enumerated(EnumType.STRING)
   @Column(name = "category", nullable = false)
   private JobCategory category;
+
+  @Column(name = "job_roles", length = 1000)
+  private String jobRoles;
 
   @NotBlank
   @Size(max = 200)
@@ -241,6 +244,8 @@ public class Job {
   public void setSector(JobSector sector) { this.sector = sector; }
   public JobCategory getCategory() { return category; }
   public void setCategory(JobCategory category) { this.category = category; }
+  public String getJobRoles() { return jobRoles; }
+  public void setJobRoles(String jobRoles) { this.jobRoles = jobRoles; }
   public String getLocation() { return location; }
   public void setLocation(String location) { this.location = location; }
   public String getQualification() { return qualification; }
@@ -318,6 +323,8 @@ public class Job {
     MEDICAL_OFFICER,
     FACULTY,
     SPECIALIST,
+    CONSULTANT,
+    GDMO,
     DENTAL,
     AYUSH,
     NURSING,

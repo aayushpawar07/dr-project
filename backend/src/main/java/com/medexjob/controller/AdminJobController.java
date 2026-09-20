@@ -721,6 +721,19 @@ public class AdminJobController {
         m.put("employerId", employerId != null ? employerId.toString() : null);
         m.put("sector", j.getSector() == Job.JobSector.GOVERNMENT ? "government" : "private");
         m.put("category", mapCategoryToLabel(j.getCategory()));
+        List<String> roles = new ArrayList<>();
+        if (j.getJobRoles() != null && !j.getJobRoles().isBlank()) {
+            for (String r : j.getJobRoles().split(",")) {
+                String trimmed = r.trim();
+                if (!trimmed.isEmpty() && !roles.contains(trimmed)) {
+                    roles.add(trimmed);
+                }
+            }
+        }
+        if (roles.isEmpty() && j.getCategory() != null) {
+            roles.add(mapCategoryToLabel(j.getCategory()));
+        }
+        m.put("jobRoles", roles);
         m.put("location", j.getLocation());
         m.put("qualification", j.getQualification());
         m.put("experience", j.getExperience());
@@ -760,6 +773,8 @@ public class AdminJobController {
             case MEDICAL_OFFICER: return "Medical Officer";
             case FACULTY: return "Faculty";
             case SPECIALIST: return "Specialist";
+            case CONSULTANT: return "Consultant";
+            case GDMO: return "GDMO";
             case DENTAL: return "Dental";
             case AYUSH: return "AYUSH";
             case NURSING: return "Nursing";

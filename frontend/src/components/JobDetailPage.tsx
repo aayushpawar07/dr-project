@@ -515,7 +515,15 @@ export function JobDetailPage({
                       </>
                     )}
                   </span>
-                  <Badge variant="outline">{job.category}</Badge>
+                  {Array.isArray(job.jobRoles) && job.jobRoles.length > 0 ? (
+                    job.jobRoles.map((role: string, idx: number) => (
+                      <Badge key={idx} variant="outline" className="border-teal-300 bg-teal-50 text-teal-800 font-medium">
+                        {role}
+                      </Badge>
+                    ))
+                  ) : job.category ? (
+                    <Badge variant="outline">{job.category}</Badge>
+                  ) : null}
                   {job.featured && (
                     <Badge
                       className="bg-yellow-100 text-yellow-700 border-yellow-200"

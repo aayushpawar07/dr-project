@@ -54,6 +54,33 @@ public class CandidateProfile {
     @Column(name = "employment_preference", length = 80)
     private String employmentPreference;
 
+    @Column(name = "profile_photo_url", length = 500)
+    private String profilePhotoUrl;
+
+    @Column(name = "medical_category", length = 100)
+    private String medicalCategory;
+
+    @Column(name = "current_organization", length = 200)
+    private String currentOrganization;
+
+    @Column(name = "preferred_job_role", length = 200)
+    private String preferredJobRole;
+
+    @Column(name = "skills", columnDefinition = "TEXT")
+    private String skills;
+
+    @Column(name = "registration_year", length = 20)
+    private String registrationYear;
+
+    @Column(name = "registration_state", length = 100)
+    private String registrationState;
+
+    @Column(name = "resume_url", length = 500)
+    private String resumeUrl;
+
+    @Column(name = "resume_file_name", length = 255)
+    private String resumeFileName;
+
     @Column(name = "profile_summary", columnDefinition = "TEXT")
     private String profileSummary;
 
@@ -90,6 +117,24 @@ public class CandidateProfile {
     public void setEmploymentPreference(String employmentPreference) { this.employmentPreference = clean(employmentPreference); }
     public String getProfileSummary() { return profileSummary; }
     public void setProfileSummary(String profileSummary) { this.profileSummary = clean(profileSummary); }
+    public String getProfilePhotoUrl() { return profilePhotoUrl; }
+    public void setProfilePhotoUrl(String profilePhotoUrl) { this.profilePhotoUrl = clean(profilePhotoUrl); }
+    public String getMedicalCategory() { return medicalCategory; }
+    public void setMedicalCategory(String medicalCategory) { this.medicalCategory = clean(medicalCategory); }
+    public String getCurrentOrganization() { return currentOrganization; }
+    public void setCurrentOrganization(String currentOrganization) { this.currentOrganization = clean(currentOrganization); }
+    public String getPreferredJobRole() { return preferredJobRole; }
+    public void setPreferredJobRole(String preferredJobRole) { this.preferredJobRole = clean(preferredJobRole); }
+    public String getSkills() { return skills; }
+    public void setSkills(String skills) { this.skills = clean(skills); }
+    public String getRegistrationYear() { return registrationYear; }
+    public void setRegistrationYear(String registrationYear) { this.registrationYear = clean(registrationYear); }
+    public String getRegistrationState() { return registrationState; }
+    public void setRegistrationState(String registrationState) { this.registrationState = clean(registrationState); }
+    public String getResumeUrl() { return resumeUrl; }
+    public void setResumeUrl(String resumeUrl) { this.resumeUrl = clean(resumeUrl); }
+    public String getResumeFileName() { return resumeFileName; }
+    public void setResumeFileName(String resumeFileName) { this.resumeFileName = clean(resumeFileName); }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 

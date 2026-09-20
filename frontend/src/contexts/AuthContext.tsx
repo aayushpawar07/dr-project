@@ -19,6 +19,10 @@ interface AuthContextType {
   verifyOtp: (email: string, otp: string) => Promise<void>;
   resetPasswordWithOtp: (email: string, otp: string, newPassword: string) => Promise<void>;
   isAuthenticated: boolean;
+  isImpersonating: boolean;
+  impersonatorAdmin: User | null;
+  impersonateUser: (targetUser: User, targetToken: string) => void;
+  exitImpersonation: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -73,12 +77,69 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(getInitialUser);
   const [token, setToken] = useState<string | null>(getInitialToken);
 
+  const [impersonatorAdmin, setImpersonatorAdmin] = useState<User | null>(() => {
+    try {
+      const stored = sessionStorage.getItem('admin_impersonator_user');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const isImpersonating = !!impersonatorAdmin;
+
   const logout = useCallback(() => {
     setUser(null);
     setToken(null);
     localStorage.removeItem('token');
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
+    sessionStorage.removeItem('admin_impersonator_token');
+    sessionStorage.removeItem('admin_impersonator_user');
+    setImpersonatorAdmin(null);
+  }, []);
+
+  const impersonateUser = useCallback((targetUser: User, targetToken: string) => {
+    if (!user || user.role !== 'admin') {
+      toast.error('Only administrators can enter View As mode');
+      return;
+    }
+    // Save current admin context
+    sessionStorage.setItem('admin_impersonator_token', token || '');
+    sessionStorage.setItem('admin_impersonator_user', JSON.stringify(user));
+    setImpersonatorAdmin(user);
+
+    const normalized = {
+      ...targetUser,
+      role: typeof targetUser.role === 'string' ? (targetUser.role.toLowerCase() as any) : targetUser.role,
+    };
+    setUser(normalized);
+    setToken(targetToken);
+    localStorage.setItem('token', targetToken);
+    localStorage.setItem('user', JSON.stringify(normalized));
+    toast.success(`Now viewing as ${normalized.name} (${normalized.role})`);
+  }, [user, token]);
+
+  const exitImpersonation = useCallback(() => {
+    const adminToken = sessionStorage.getItem('admin_impersonator_token');
+    const adminUserStr = sessionStorage.getItem('admin_impersonator_user');
+    if (!adminToken || !adminUserStr) {
+      toast.error('Original Admin session not found');
+      return;
+    }
+    try {
+      const adminUser = JSON.parse(adminUserStr);
+      setUser(adminUser);
+      setToken(adminToken);
+      localStorage.setItem('token', adminToken);
+      localStorage.setItem('user', JSON.stringify(adminUser));
+      sessionStorage.removeItem('admin_impersonator_token');
+      sessionStorage.removeItem('admin_impersonator_user');
+      setImpersonatorAdmin(null);
+      toast.success('Exited View As mode. Returned to Admin.');
+    } catch (e) {
+      console.error('Failed to exit impersonation', e);
+    }
   }, []);
 
   useEffect(() => {
@@ -295,6 +356,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     verifyOtp,
     resetPasswordWithOtp,
     isAuthenticated: !!user,
+    isImpersonating,
+    impersonatorAdmin,
+    impersonateUser,
+    exitImpersonation,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

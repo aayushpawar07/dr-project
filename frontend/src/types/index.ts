@@ -8,6 +8,8 @@ export type JobCategory =
   | 'Medical Officer' 
   | 'Faculty' 
   | 'Specialist' 
+  | 'Consultant'
+  | 'GDMO'
   | 'Dental'
   | 'AYUSH'
   | 'Nursing'
@@ -37,6 +39,11 @@ export interface Candidate extends User {
   experience: string;
   resumeUrl?: string;
   savedJobs: string[];
+  profilePhotoUrl?: string;
+  medicalCategory?: string;
+  currentOrganization?: string;
+  preferredJobRole?: string;
+  skills?: string;
 }
 
 export interface Employer extends User {
@@ -53,6 +60,7 @@ export interface Job {
   organization: string;
   sector: JobSector;
   category: JobCategory;
+  jobRoles?: string[];
   location: string;
   state?: string;
   qualification: string;

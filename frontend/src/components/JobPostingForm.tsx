@@ -259,7 +259,12 @@ function parseRawVacancyNotice(rawText: string): Partial<JobFormData> {
   }
 
   // 2. Organization detection
-  const orgMatch = text.match(/(?:at|in|by|for)\s+([A-Z][A-Za-z0-9&., ]{3,55}(?:Hospital|Institute|AIIMS|Medical College|Health Centre|Clinic|Healthcare|Infirmary|Trust|Foundation|Council|University|Directorate))/i)
+  const orgMatch =
+    text.match(/(?:Organization|Hospital|Institute|Authority|Employer|Institution|Trust)\s*[:\-]\s*([A-Za-z0-9&.,' -]{3,70})/i)
+    || text.match(/\b(AIIMS\s+[A-Za-z]+(?:\s*\([^)]+\))?)/i)
+    || text.match(/\b((?:AIIMS|ESIC|PGIMER|NIMHANS|JIPMER|SGPGI|BHU|AMU)\s+[A-Za-z]+)\b/i)
+    || text.match(/\b(All\s+India\s+Institute\s+of\s+Medical\s+Sciences(?:\s*,?\s*[A-Za-z]+)?)/i)
+    || text.match(/(?:at|in|by|for)\s+([A-Z][A-Za-z0-9&., ]{3,55}(?:Hospital|Institute|AIIMS|Medical College|Health Centre|Clinic|Healthcare|Infirmary|Trust|Foundation|Council|University|Directorate))/i)
     || text.match(/([A-Z][A-Za-z0-9&., ]{2,50}(?:Hospital|Medical College|AIIMS|PGIMER|ESIC|Health City|Heart Institute))/i);
   if (orgMatch) {
     result.organization = orgMatch[1].trim();

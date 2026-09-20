@@ -46,6 +46,7 @@ import {
   leftoverEligibilityNotes,
 } from '../utils/extractedFieldDisplay';
 import '../styles/job-posting-template.css';
+import { toast } from 'sonner';
 
 interface JobPostingFormProps {
   onCancel: () => void;
@@ -545,6 +546,11 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
     });
 
     setAutoFillStats(populated);
+    if (populated.length > 0) {
+      toast.success(`Parsed notice & auto-filled ${populated.length} fields!`);
+    } else {
+      toast.info('Notice text loaded into description.');
+    }
   };
 
   const stepValid =
@@ -705,17 +711,17 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
           {step === 1 && (
             <>
               {/* Direct Paste Notice & Auto-Fill Feature */}
-              <div className="mb-6 rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50/90 via-purple-50/60 to-blue-50/70 p-4 shadow-sm">
-                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <div className="jpf-paste-box">
+                <div className="jpf-paste-header">
                   <div className="flex items-center gap-2.5">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-xs">
-                      <Sparkles className="h-4 w-4" />
+                    <div className="jpf-paste-icon">
+                      <Sparkles className="h-5 w-5" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-slate-900">
+                      <h3 className="text-sm font-bold text-slate-900 m-0">
                         Direct Paste Vacancy Notice &amp; Auto-Fill
                       </h3>
-                      <p className="text-xs text-slate-600">
+                      <p className="text-xs text-slate-600 m-0 mt-0.5">
                         Paste full raw job circular text to automatically detect and populate fields.
                       </p>
                     </div>
@@ -723,7 +729,7 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
                   <button
                     type="button"
                     onClick={() => setPastePanelOpen(!pastePanelOpen)}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 transition shadow-2xs cursor-pointer"
+                    className="jpf-paste-toggle-btn"
                   >
                     <Sparkles className="h-3.5 w-3.5" />
                     {pastePanelOpen ? 'Hide Paste Box' : 'Paste Notice & Auto-Fill'}
@@ -731,38 +737,53 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
                 </div>
 
                 {pastePanelOpen && (
-                  <div className="mt-3 pt-3 border-t border-indigo-100/80 space-y-3">
+                  <div className="mt-3 pt-3 border-t border-indigo-200/80 space-y-3">
                     <textarea
-                      rows={6}
-                      className="w-full text-xs font-mono p-3 bg-white rounded-xl border border-indigo-200 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 text-slate-800 shadow-inner"
+                      rows={7}
+                      className="jpf-paste-textarea"
                       placeholder="Paste raw advertisement / vacancy notice text here (e.g. from newspaper, WhatsApp group, PDF text, or hospital portal)..."
                       value={rawPastedNotice}
                       onChange={(e) => setRawPastedNotice(e.target.value)}
                     />
 
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-[11px] text-slate-500">
-                        Format, spacing, and all line breaks will be preserved in Job Description.
-                      </span>
+                    <div className="jpf-paste-actions-row">
+                      <div className="text-xs text-slate-600 flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-indigo-600" />
+                        <span>Click the button to parse Title, Roles, Location, Salary, Dates, etc. into the form.</span>
+                      </div>
                       <button
                         type="button"
                         disabled={!rawPastedNotice.trim()}
                         onClick={handleAutoFillFromText}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 disabled:opacity-50 transition shadow-sm cursor-pointer"
+                        className="jpf-paste-autofill-btn"
+                        style={{
+                          backgroundColor: rawPastedNotice.trim() ? '#4338ca' : '#94a3b8',
+                          color: '#ffffff',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '12px 26px',
+                          borderRadius: '12px',
+                          fontWeight: 750,
+                          fontSize: '0.92rem',
+                          cursor: rawPastedNotice.trim() ? 'pointer' : 'not-allowed',
+                          boxShadow: '0 4px 16px rgba(67, 56, 202, 0.4)',
+                          border: 'none',
+                        }}
                       >
                         <Sparkles className="h-4 w-4" />
-                        Detect &amp; Auto-Fill Fields
+                        <span>✨ Detect &amp; Auto-Fill Fields</span>
                       </button>
                     </div>
 
                     {autoFillStats && autoFillStats.length > 0 && (
-                      <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-start gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-xs text-emerald-900 flex items-start gap-2 shadow-xs">
+                        <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
                         <div>
                           <strong>Successfully Auto-Filled {autoFillStats.length} fields:</strong>{' '}
                           {autoFillStats.join(', ')}.
-                          <div className="text-[11px] text-emerald-700 mt-0.5">
-                            You can review and modify any field below before submitting.
+                          <div className="text-[11px] text-emerald-800 mt-1">
+                            You can review and modify any field below before continuing.
                           </div>
                         </div>
                       </div>

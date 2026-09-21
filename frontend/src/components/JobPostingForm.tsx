@@ -572,6 +572,13 @@ function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
     }
   }
 
+  if (result.title && result.title.length > 195) result.title = result.title.slice(0, 195);
+  if (result.organization && result.organization.length > 195) result.organization = result.organization.slice(0, 195);
+  if (result.location && result.location.length > 195) result.location = result.location.slice(0, 195);
+  if (result.experience && result.experience.length > 95) result.experience = result.experience.slice(0, 95);
+  if (result.salary && result.salary.length > 95) result.salary = result.salary.slice(0, 95);
+  if (result.speciality && result.speciality.length > 250) result.speciality = result.speciality.slice(0, 250);
+
   return result;
 }
 

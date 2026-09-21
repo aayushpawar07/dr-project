@@ -85,25 +85,25 @@ public class RecruitmentManagementService {
     @Transactional
     public Recruitment createManualRecruitment(ManualRecruitmentRequest req, String userEmail) {
         Recruitment r = new Recruitment();
-        r.setOrganisationName(nonBlank(req.getOrganisationName(), "Government Organisation"));
+        r.setOrganisationName(clip(nonBlank(req.getOrganisationName(), "Government Organisation"), 200));
 
         String rawTitle = nonBlank(req.getTitle(), "Medical Staff Recruitment");
         String cleanTitle = rawTitle.trim();
         if (!cleanTitle.toLowerCase(Locale.ROOT).contains("recruitment") && !cleanTitle.toLowerCase(Locale.ROOT).contains("departments")) {
             cleanTitle = cleanTitle + " Recruitment " + LocalDate.now().getYear() + " - Multiple Departments";
         }
-        r.setTitle(cleanTitle);
-        r.setAdvertisementNumber(req.getAdvertisementNumber());
+        r.setTitle(clip(cleanTitle, 300));
+        r.setAdvertisementNumber(clip(req.getAdvertisementNumber(), 150));
         r.setRecruitmentYear(req.getRecruitmentYear() != null ? req.getRecruitmentYear() : LocalDate.now().getYear());
         r.setSector(parseSector(req.getSector()));
-        r.setLocation(nonBlank(req.getLocation(), "India"));
+        r.setLocation(clip(nonBlank(req.getLocation(), "India"), 200));
         r.setApplicationStartDate(req.getApplicationStartDate());
         r.setApplicationLastDate(req.getApplicationLastDate());
         r.setApplicationFee(req.getApplicationFee());
         r.setSelectionProcess(req.getSelectionProcess());
-        r.setOfficialNotificationUrl(normalizeUrl(req.getOfficialNotificationUrl()));
-        r.setOfficialApplicationUrl(normalizeUrl(req.getOfficialApplicationUrl()));
-        r.setOfficialWebsite(normalizeUrl(req.getOfficialWebsite()));
+        r.setOfficialNotificationUrl(clip(normalizeUrl(req.getOfficialNotificationUrl()), 1000));
+        r.setOfficialApplicationUrl(clip(normalizeUrl(req.getOfficialApplicationUrl()), 1000));
+        r.setOfficialWebsite(clip(normalizeUrl(req.getOfficialWebsite()), 1000));
         r.setImportantInstructions(req.getImportantInstructions());
         r.setJobDescription(req.getJobDescription());
         r.setSourcePdfName("Direct_Notice_Input.txt");
@@ -114,27 +114,27 @@ public class RecruitmentManagementService {
         r.setExtractionMethod("DIRECT_PASTE");
         r.setStatus(Recruitment.RecruitmentStatus.REVIEW);
         r.setOfficialSourceVerified(true);
-        r.setVerifiedBy(nonBlank(userEmail, "Admin"));
+        r.setVerifiedBy(clip(nonBlank(userEmail, "Admin"), 200));
         r.setVerificationDate(LocalDate.now());
 
         int index = 0;
         List<ManualVacancyRequest> vList = req.getVacancies() != null ? req.getVacancies() : List.of();
         for (ManualVacancyRequest vr : vList) {
             VacancyRecord v = new VacancyRecord();
-            v.setPostName(nonBlank(vr.getPostName(), nonBlank(rawTitle, nonBlank(r.getTitle(), "Medical Staff"))));
-            v.setDepartment(vr.getDepartment());
-            v.setSpeciality(nonBlank(vr.getSpeciality(), vr.getDepartment()));
-            v.setSubSpeciality(vr.getSubSpeciality());
+            v.setPostName(clip(nonBlank(vr.getPostName(), nonBlank(rawTitle, nonBlank(r.getTitle(), "Medical Staff"))), 255));
+            v.setDepartment(clip(vr.getDepartment(), 220));
+            v.setSpeciality(clip(nonBlank(vr.getSpeciality(), vr.getDepartment()), 220));
+            v.setSubSpeciality(clip(vr.getSubSpeciality(), 220));
             v.setNumberOfVacancies(vr.getNumberOfVacancies() != null && vr.getNumberOfVacancies() > 0 ? vr.getNumberOfVacancies() : 1);
-            v.setCategory(vr.getCategory());
+            v.setCategory(clip(vr.getCategory(), 100));
             v.setQualification(firstNonBlank(vr.getQualification(), req.getQualification()));
             v.setExperience(firstNonBlank(vr.getExperience(), req.getExperience()));
-            v.setAgeLimit(firstNonBlank(vr.getAgeLimit(), req.getAgeLimit()));
-            v.setSalary(firstNonBlank(vr.getSalary(), req.getSalary()));
-            v.setPayLevel(vr.getPayLevel());
-            v.setPayScale(vr.getPayScale());
-            v.setJobType(firstNonBlank(vr.getJobType(), req.getJobType(), "Full Time"));
-            v.setLocation(firstNonBlank(vr.getLocation(), req.getLocation(), r.getLocation()));
+            v.setAgeLimit(clip(firstNonBlank(vr.getAgeLimit(), req.getAgeLimit()), 300));
+            v.setSalary(clip(firstNonBlank(vr.getSalary(), req.getSalary()), 300));
+            v.setPayLevel(clip(vr.getPayLevel(), 150));
+            v.setPayScale(clip(vr.getPayScale(), 250));
+            v.setJobType(clip(firstNonBlank(vr.getJobType(), req.getJobType(), "Full Time"), 100));
+            v.setLocation(clip(firstNonBlank(vr.getLocation(), req.getLocation(), r.getLocation()), 200));
             v.setOtherEligibilityRequirements(firstNonBlank(vr.getOtherEligibilityRequirements(), req.getImportantInstructions()));
             v.setConfidenceScore(1.0);
             v.setStatus(Boolean.TRUE.equals(req.getPublishImmediately()) ? VacancyRecord.VacancyStatus.APPROVED : VacancyRecord.VacancyStatus.NEEDS_REVIEW);

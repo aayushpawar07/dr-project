@@ -130,9 +130,41 @@ export interface JobPayload {
   type?: 'hospital' | 'consultancy' | 'hr' | string;
 }
 
+function clipStr(str: any, max: number): string | undefined {
+  if (typeof str !== 'string') return undefined;
+  const t = str.trim();
+  return t.length > max ? t.slice(0, max) : t;
+}
+
+function sanitizePhone(phone?: string): string {
+  if (!phone) return '0000000000';
+  let cleaned = phone.split(/[\/,]/)[0].trim();
+  cleaned = cleaned.replace(/[^0-9+]/g, '');
+  if (!cleaned) return '0000000000';
+  return cleaned.slice(0, 15);
+}
+
+function sanitizeEmail(email?: string): string {
+  if (!email) return 'noreply@medexjob.com';
+  let cleaned = email.split(/[\/,;]/)[0].trim();
+  if (cleaned.length > 100 || !/^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$/.test(cleaned)) {
+    return 'noreply@medexjob.com';
+  }
+  return cleaned;
+}
+
 function backendJobPayload<T extends Partial<JobPayload>>(payload: T): Omit<T, 'state'> {
   const { state: _state, ...body } = payload;
-  return body as Omit<T, 'state'>;
+  const result: any = { ...body };
+  if (result.title) result.title = clipStr(result.title, 200);
+  if (result.organization) result.organization = clipStr(result.organization, 200);
+  if (result.location) result.location = clipStr(result.location, 200);
+  if (result.experience) result.experience = clipStr(result.experience, 100);
+  if (result.salary) result.salary = clipStr(result.salary, 100);
+  if (result.speciality) result.speciality = clipStr(result.speciality, 255);
+  result.contactPhone = sanitizePhone(result.contactPhone);
+  result.contactEmail = sanitizeEmail(result.contactEmail);
+  return result as Omit<T, 'state'>;
 }
 
 export async function createJob(payload: JobPayload) {

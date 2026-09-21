@@ -43,24 +43,39 @@ public class VacancyJobPublisher {
         String companyName = organisation != null && !organisation.trim().isEmpty() 
                 ? organisation.trim() 
                 : "MedExJob Recruitment";
-        return employerRepository.findByCompanyName(companyName).orElseGet(() -> {
-            String slug = slug(companyName);
+        if (companyName.length() > 200) {
+            companyName = companyName.substring(0, 200);
+        }
+        final String finalCompanyName = companyName;
+        return employerRepository.findByCompanyName(finalCompanyName).orElseGet(() -> {
+            String slug = slug(finalCompanyName);
             String emailSlug = slug.isBlank() ? UUID.randomUUID().toString().substring(0, 8) : slug;
-            if (emailSlug.length() > 55) emailSlug = emailSlug.substring(0, 55);
+            if (emailSlug.length() > 50) emailSlug = emailSlug.substring(0, 50);
             String email = "bulk+" + emailSlug + "@medexjob.com";
-            User user = userRepository.findByEmail(email).orElseGet(() -> {
+            
+            Optional<User> existingUser = userRepository.findByEmail(email);
+            User user;
+            if (existingUser.isPresent()) {
+                user = existingUser.get();
+                Optional<Employer> existingEmp = employerRepository.findByUserId(user.getId());
+                if (existingEmp.isPresent()) {
+                    return existingEmp.get();
+                }
+            } else {
                 User u = new User();
-                u.setName(companyName + " Recruitment");
+                String uName = finalCompanyName + " Recruitment";
+                u.setName(uName.length() > 100 ? uName.substring(0, 100) : uName);
                 u.setEmail(email);
                 u.setPhone("0000000000");
                 u.setRole(User.UserRole.EMPLOYER);
                 u.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
                 u.setIsVerified(true);
-                return userRepository.saveAndFlush(u);
-            });
+                user = userRepository.saveAndFlush(u);
+            }
+            
             Employer e = new Employer();
             e.setUser(user);
-            e.setCompanyName(companyName);
+            e.setCompanyName(finalCompanyName);
             e.setCompanyType(Employer.CompanyType.HOSPITAL);
             e.setIsVerified(true);
             e.setVerificationStatus(Employer.VerificationStatus.APPROVED);

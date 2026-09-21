@@ -27,6 +27,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 
 @RestController
 @RequestMapping("/api/jobs")
@@ -555,7 +558,7 @@ public class JobController {
                 logger.error("Cause: {}", e.getCause().getMessage());
             }
             Map<String, Object> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Failed to create job: " + e.getMessage());
+            errorResponse.put("error", "Failed to create job: " + extractErrorMessage(e));
             return ResponseEntity.status(500).body(errorResponse);
         }
     }
@@ -752,6 +755,28 @@ public class JobController {
         }
     }
 
+    // Helper: clip string to maximum length
+    private String clip(String val, int maxLen) {
+        if (val == null) return null;
+        val = val.trim();
+        return val.length() > maxLen ? val.substring(0, maxLen) : val;
+    }
+
+    private String extractErrorMessage(Exception e) {
+        Throwable root = e;
+        while (root.getCause() != null && root.getCause() != root) {
+            root = root.getCause();
+        }
+        if (root instanceof ConstraintViolationException cve) {
+            StringBuilder sb = new StringBuilder("Validation error: ");
+            for (ConstraintViolation<?> cv : cve.getConstraintViolations()) {
+                sb.append(cv.getPropertyPath()).append(" ").append(cv.getMessage()).append("; ");
+            }
+            return sb.toString();
+        }
+        return (root != null && root.getMessage() != null) ? root.getMessage() : e.getMessage();
+    }
+
     // Helper: map request onto entity (for CREATE - sets all fields with defaults)
     private void applyRequestToJob(JobRequest req, Job job, Employer employer) {
         // If employer is provided (from authenticated user), use it; otherwise resolve/create
@@ -763,62 +788,72 @@ public class JobController {
             job.setEmployer(resolvedEmployer);
         }
 
-        job.setTitle(req.title());
+        job.setTitle(clip(req.title(), 200));
         job.setDescription(Optional.ofNullable(req.description()).orElse(""));
         job.setSector(parseSectorWithDefault(req.sector()));
         job.setCategory(mapCategoryFromLabelWithDefault(Optional.ofNullable(req.category()).orElse("")));
         if (req.jobRoles() != null) {
             if (req.jobRoles() instanceof List<?> list) {
                 String joined = list.stream().map(Object::toString).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.joining(", "));
-                job.setJobRoles(joined);
+                job.setJobRoles(clip(joined, 1000));
                 if (!list.isEmpty() && (req.category() == null || req.category().isBlank())) {
                     job.setCategory(mapCategoryFromLabelWithDefault(list.get(0).toString()));
                 }
             } else {
                 String str = req.jobRoles().toString().trim();
-                job.setJobRoles(str);
+                job.setJobRoles(clip(str, 1000));
                 if (req.category() == null || req.category().isBlank()) {
                     job.setCategory(mapCategoryFromLabelWithDefault(str.split(",")[0].trim()));
                 }
             }
         } else if (req.category() != null && !req.category().isBlank()) {
-            job.setJobRoles(req.category());
+            job.setJobRoles(clip(req.category(), 1000));
         }
-        job.setLocation(Optional.ofNullable(req.location()).orElse(""));
+        job.setLocation(clip(Optional.ofNullable(req.location()).orElse(""), 200));
         job.setQualification(Optional.ofNullable(req.qualification()).orElse(""));
-        job.setExperience(Optional.ofNullable(req.experience()).orElse(""));
+        job.setExperience(clip(Optional.ofNullable(req.experience()).orElse(""), 100));
         job.setExperienceLevel(req.experienceLevel() != null ? parseExperienceLevel(req.experienceLevel()) : null);
-        job.setSpeciality(Optional.ofNullable(req.speciality()).orElse(""));
+        job.setSpeciality(clip(Optional.ofNullable(req.speciality()).orElse(""), 255));
         job.setDutyType(req.dutyType() != null ? parseDutyType(req.dutyType()) : null);
         job.setNumberOfPosts(Optional.ofNullable(req.numberOfPosts()).orElse(1));
-        job.setSalaryRange(req.salary());
-        job.setPdfUrl(req.pdfUrl());
-        job.setJobDocumentUrl(req.jobDocumentUrl());
-        job.setJobImageUrl(req.jobImageUrl());
-        job.setApplyLink(req.applyLink());
-        job.setRequirements(req.requirements()); // Set requirements
-        job.setBenefits(req.benefits()); // Set benefits
+        job.setSalaryRange(clip(req.salary(), 100));
+        job.setPdfUrl(clip(req.pdfUrl(), 500));
+        job.setJobDocumentUrl(clip(req.jobDocumentUrl(), 500));
+        job.setJobImageUrl(clip(req.jobImageUrl(), 500));
+        job.setApplyLink(clip(req.applyLink(), 500));
+        job.setRequirements(req.requirements());
+        job.setBenefits(req.benefits());
         // Handle lastDate - required field, default to 30 days from now if not provided
         if (req.lastDate() != null && !req.lastDate().isBlank()) {
             try { 
                 job.setLastDate(java.time.LocalDate.parse(req.lastDate())); 
             } catch (Exception e) {
-                // If parsing fails, set default to 30 days from now
                 job.setLastDate(java.time.LocalDate.now().plusDays(30));
             }
         } else {
-            // Default to 30 days from now if not provided
             job.setLastDate(java.time.LocalDate.now().plusDays(30));
         }
         // Contact details - check for null AND blank strings, validate email format
         String email = req.contactEmail();
-        if (email != null && !email.isBlank() && email.trim().matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
-            job.setContactEmail(email.trim());
+        if (email != null && !email.isBlank()) {
+            email = email.split("[,;/]")[0].trim();
+            if (email.length() <= 100 && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
+                job.setContactEmail(email);
+            } else {
+                job.setContactEmail("noreply@medexjob.com");
+            }
         } else {
             job.setContactEmail("noreply@medexjob.com");
         }
         String phone = req.contactPhone();
-        job.setContactPhone(phone != null && !phone.isBlank() ? phone.trim() : "0000000000");
+        if (phone != null && !phone.isBlank()) {
+            phone = phone.split("[,/]")[0].trim().replaceAll("[^0-9+]", "");
+            if (phone.isBlank()) phone = "0000000000";
+            else if (phone.length() > 15) phone = phone.substring(0, 15);
+            job.setContactPhone(phone);
+        } else {
+            job.setContactPhone("0000000000");
+        }
     }
 
     // Helper: map request onto entity for UPDATE - preserves existing values when request fields are null/empty
@@ -835,7 +870,7 @@ public class JobController {
 
         // Update only non-null/non-blank fields (preserve existing values)
         if (req.title() != null && !req.title().isBlank()) {
-            job.setTitle(req.title());
+            job.setTitle(clip(req.title(), 200));
         }
         if (req.description() != null) {
             job.setDescription(req.description());
@@ -855,30 +890,30 @@ public class JobController {
         if (req.jobRoles() != null) {
             if (req.jobRoles() instanceof List<?> list) {
                 String joined = list.stream().map(Object::toString).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.joining(", "));
-                job.setJobRoles(joined);
+                job.setJobRoles(clip(joined, 1000));
                 if (!list.isEmpty() && (req.category() == null || req.category().isBlank())) {
                     Job.JobCategory parsed = mapCategoryFromLabel(list.get(0).toString());
                     if (parsed != null) job.setCategory(parsed);
                 }
             } else {
                 String str = req.jobRoles().toString().trim();
-                job.setJobRoles(str);
+                job.setJobRoles(clip(str, 1000));
             }
         }
         if (req.location() != null && !req.location().isBlank()) {
-            job.setLocation(req.location());
+            job.setLocation(clip(req.location(), 200));
         }
         if (req.qualification() != null) {
             job.setQualification(req.qualification());
         }
         if (req.experience() != null) {
-            job.setExperience(req.experience());
+            job.setExperience(clip(req.experience(), 100));
         }
         if (req.experienceLevel() != null && !req.experienceLevel().isBlank()) {
             job.setExperienceLevel(parseExperienceLevel(req.experienceLevel()));
         }
         if (req.speciality() != null) {
-            job.setSpeciality(req.speciality());
+            job.setSpeciality(clip(req.speciality(), 255));
         }
         if (req.dutyType() != null && !req.dutyType().isBlank()) {
             job.setDutyType(parseDutyType(req.dutyType()));
@@ -887,19 +922,19 @@ public class JobController {
             job.setNumberOfPosts(req.numberOfPosts());
         }
         if (req.salary() != null) {
-            job.setSalaryRange(req.salary());
+            job.setSalaryRange(clip(req.salary(), 100));
         }
         if (req.pdfUrl() != null) {
-            job.setPdfUrl(req.pdfUrl());
+            job.setPdfUrl(clip(req.pdfUrl(), 500));
         }
         if (req.jobDocumentUrl() != null) {
-            job.setJobDocumentUrl(req.jobDocumentUrl());
+            job.setJobDocumentUrl(clip(req.jobDocumentUrl(), 500));
         }
         if (req.jobImageUrl() != null) {
-            job.setJobImageUrl(req.jobImageUrl());
+            job.setJobImageUrl(clip(req.jobImageUrl(), 500));
         }
         if (req.applyLink() != null) {
-            job.setApplyLink(req.applyLink());
+            job.setApplyLink(clip(req.applyLink(), 500));
         }
         if (req.requirements() != null) {
             job.setRequirements(req.requirements());
@@ -917,18 +952,19 @@ public class JobController {
         }
         // Contact details - only update if provided and validate email format
         if (req.contactEmail() != null && !req.contactEmail().isBlank()) {
-            String email = req.contactEmail().trim();
-            if (email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
+            String email = req.contactEmail().split("[,;/]")[0].trim();
+            if (email.length() <= 100 && email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
                 job.setContactEmail(email);
             }
-            // If invalid email, keep existing value
         }
         // Fix empty contactEmail from existing data
         if (job.getContactEmail() == null || job.getContactEmail().isBlank()) {
             job.setContactEmail("noreply@medexjob.com");
         }
         if (req.contactPhone() != null && !req.contactPhone().isBlank()) {
-            job.setContactPhone(req.contactPhone().trim());
+            String phone = req.contactPhone().split("[,/]")[0].trim().replaceAll("[^0-9+]", "");
+            if (phone.length() > 15) phone = phone.substring(0, 15);
+            job.setContactPhone(phone.isBlank() ? "0000000000" : phone);
         }
         // Fix empty contactPhone from existing data
         if (job.getContactPhone() == null || job.getContactPhone().isBlank()) {
@@ -937,7 +973,12 @@ public class JobController {
     }
 
     private Employer resolveOrCreateEmployer(String organization, String type) {
-        String companyName = Optional.ofNullable(organization).orElse("MedExJob Admin Posted");
+        String companyName = (organization != null && !organization.isBlank())
+            ? organization.trim()
+            : "MedExJob Admin Posted";
+        if (companyName.length() > 200) {
+            companyName = companyName.substring(0, 200);
+        }
 
         // 1. Try to find an existing employer by company name
         Optional<Employer> existingEmployer = employerRepository.findByCompanyName(companyName);
@@ -945,27 +986,42 @@ public class JobController {
             return existingEmployer.get();
         }
 
-        // 2. If not found, create a new Employer
+        // 2. Associate with a User (safe dummy user per organization)
+        String sanitized = companyName.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase();
+        if (sanitized.length() > 50) {
+            sanitized = sanitized.substring(0, 50);
+        }
+        if (sanitized.isBlank()) {
+            sanitized = "org_" + UUID.randomUUID().toString().substring(0, 8);
+        }
+        String dummyEmail = "admin+" + sanitized + "@medexjob.com";
+
+        Optional<User> existingUser = userRepository.findByEmail(dummyEmail);
+        User employerUser;
+        if (existingUser.isPresent()) {
+            employerUser = existingUser.get();
+            Optional<Employer> employerByUser = employerRepository.findByUserId(employerUser.getId());
+            if (employerByUser.isPresent()) {
+                return employerByUser.get();
+            }
+        } else {
+            User dummyUser = new User();
+            String userName = "Admin - " + companyName;
+            dummyUser.setName(userName.length() > 100 ? userName.substring(0, 100) : userName);
+            dummyUser.setEmail(dummyEmail);
+            dummyUser.setPhone("0000000000");
+            dummyUser.setRole(User.UserRole.EMPLOYER);
+            dummyUser.setPasswordHash(passwordEncoder.encode("AdminCreated_" + System.currentTimeMillis()));
+            dummyUser.setIsVerified(true);
+            dummyUser.setIsActive(true);
+            employerUser = userRepository.save(dummyUser);
+        }
+
         Employer newEmployer = new Employer();
         newEmployer.setCompanyName(companyName);
         newEmployer.setCompanyType(parseCompanyType(type));
-        newEmployer.setIsVerified(true); // Admin-posted jobs are considered verified
+        newEmployer.setIsVerified(true);
         newEmployer.setVerificationStatus(Employer.VerificationStatus.APPROVED);
-
-        // Associate with a User. This is a simplification for admin-posted jobs.
-        // In a real system, an admin might select an existing employer user,
-        // or there might be a dedicated 'system' user for admin postings.
-        // For now, create a unique dummy user per company to avoid unique constraint violations.
-        String dummyEmail = "admin+" + companyName.replaceAll("[^a-zA-Z0-9]", "_") + "@medexjob.com";
-        User employerUser = userRepository.findByEmail(dummyEmail).orElseGet(() -> {
-            User dummyUser = new User();
-            dummyUser.setName("MedExJob Admin - " + companyName);
-            dummyUser.setEmail(dummyEmail);
-            dummyUser.setPhone("0000000000");
-            dummyUser.setRole(User.UserRole.EMPLOYER); // Must be an EMPLOYER role
-            dummyUser.setPasswordHash(passwordEncoder.encode("AdminCreated_" + System.currentTimeMillis())); // Properly BCrypt encoded
-            return userRepository.save(dummyUser);
-        });
         newEmployer.setUser(employerUser);
 
         return employerRepository.save(newEmployer);
@@ -1114,12 +1170,14 @@ public class JobController {
 
     // === END OF REQUIRED HELPER METHOD PLACEHOLDERS ===
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     private record JobRequest(
         String title,
         String organization,
         String sector,
         String category,
         Object jobRoles,
+        String department,
         String location,
         String qualification,
         String experience,

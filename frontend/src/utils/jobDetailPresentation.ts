@@ -230,11 +230,12 @@ function appendLinkifiedText(parent: HTMLElement, text: string) {
 }
 
 function stripBullet(line: string): string {
-  return line.replace(BULLET_PATTERN, "").trim();
+  return line.replace(BULLET_PATTERN, "").replace(/^#+\s*/, "").trim();
 }
 
 function looksLikeSubheading(line: string): boolean {
   const clean = stripBullet(line);
+  if (/^#+\s*/.test(line)) return true;
   return clean.endsWith(":") && clean.length <= 70 && clean.indexOf(":") === clean.length - 1;
 }
 

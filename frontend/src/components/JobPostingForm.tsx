@@ -82,6 +82,8 @@ interface JobFormData {
   contactPhone: string;
   pdfUrl?: string;
   applyLink?: string;
+  ageLimit?: string;
+  selectionProcess?: string;
   pdfFile?: File;
   imageFile?: File;
   status?: string;
@@ -446,6 +448,11 @@ function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
     result.requirements = reqMatch[1].trim();
   }
 
+  const ageMatch = text.match(/(?:^|\n)\s*(?:\*\s*)?(?:Age\s*Limit|Age)\s*[:\-]\s*([^\n\r]+)/i);
+  if (ageMatch) {
+    result.ageLimit = ageMatch[1].trim();
+  }
+
   const benMatch = text.match(/(?:^|\n)\s*(?:\*\s*)?(?:Benefits?\s*&?\s*Perks?|Perks?)\s*[:\-]\s*([^\n\r]+)/i);
   if (benMatch) {
     result.benefits = benMatch[1].trim();
@@ -685,10 +692,15 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
         applicationLastDate: formData.lastDate || undefined,
         qualification: formData.qualification || undefined,
         experience: formData.experience || undefined,
+        ageLimit: formData.ageLimit || undefined,
         salary: formData.salary || undefined,
         jobType: formData.dutyType === 'full_time' ? 'Full Time' : formData.dutyType === 'part_time' ? 'Part Time' : 'Contract',
         jobDescription: rawPastedNotice || formData.description,
         importantInstructions: formData.requirements || undefined,
+        selectionProcess: formData.selectionProcess || undefined,
+        officialApplicationUrl: formData.applyLink || undefined,
+        officialNotificationUrl: formData.applyLink || undefined,
+        officialWebsite: formData.applyLink || undefined,
         publishImmediately: true,
         vacancies: detectedRecruitment.departments.map((d) => ({
           postName: d.postName || formData.title.trim() || detectedRecruitment.title || 'Medical Officer / Resident',
@@ -698,6 +710,7 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
           category: d.category || undefined,
           qualification: formData.qualification || undefined,
           experience: formData.experience || undefined,
+          ageLimit: formData.ageLimit || undefined,
           salary: formData.salary || undefined,
           location: formData.location || undefined,
           jobType: formData.dutyType === 'full_time' ? 'Full Time' : 'Contract',
@@ -790,6 +803,14 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
       if (parsed.applyLink) {
         next.applyLink = parsed.applyLink;
         populated.push('Apply Link');
+      }
+      if (parsed.ageLimit) {
+        next.ageLimit = parsed.ageLimit;
+        populated.push('Age Limit');
+      }
+      if (parsed.selectionProcess) {
+        next.selectionProcess = parsed.selectionProcess;
+        populated.push('Selection Process');
       }
       // Preserve full raw description
       next.description = rawPastedNotice;

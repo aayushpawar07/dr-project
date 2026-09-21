@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clock, CheckCircle, XCircle, Calendar, FileText, Eye, MessageSquare, Phone, Mail, MapPin, Search, Filter, Users, Briefcase, MoreVertical, Loader2, ArrowLeft, AlertCircle, Video, ExternalLink } from 'lucide-react';
 import { Button } from './ui/button';
@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 import { fetchApplications, updateApplicationStatus } from '../api/applications';
 import { useAuth } from '../contexts/AuthContext';
 import { ApplicationResponse } from '../api/applications';
-import { fetchJobsByEmployer } from '../api/jobs';
+import { fetchJobsByEmployer, fetchAdminJobs, fetchJobs } from '../api/jobs';
 import { fetchEmployer } from '../api/employers';
 import { openFileInViewer } from '../utils/fileUtils';
 
@@ -36,10 +36,13 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [isInterviewDialogOpen, setIsInterviewDialogOpen] = useState(false);
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
+  const [availableJobs, setAvailableJobs] = useState<{ id: string; title: string; organization?: string }[]>([]);
   const [filters, setFilters] = useState({
     status: 'all',
     search: '',
-    jobId: '',
+    jobId: 'all',
+    minExp: 'all',
+    qualification: '',
     startDate: '',
     endDate: ''
   });
@@ -51,6 +54,30 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
       return;
     }
   }, [isAuthenticated, user, token, navigate]);
+
+  useEffect(() => {
+    async function loadJobsList() {
+      if (!token || !isAuthenticated || !user) return;
+      try {
+        if ((userRole === 'employer' || user?.role === 'EMPLOYER') && user) {
+          const emp = await fetchEmployer(user.id, token);
+          const res = await fetchJobsByEmployer(emp.id, { status: 'all', size: 1000 });
+          setAvailableJobs(res.content || []);
+        } else {
+          try {
+            const res = await fetchAdminJobs({ size: 1000 });
+            setAvailableJobs(res.content || []);
+          } catch {
+            const res = await fetchJobs({ size: 1000 });
+            setAvailableJobs(res.content || []);
+          }
+        }
+      } catch (e) {
+        console.warn('Could not load jobs for dropdown filter', e);
+      }
+    }
+    loadJobsList();
+  }, [token, isAuthenticated, user, userRole]);
 
   useEffect(() => {
     if (isAuthenticated && user && token) {
@@ -69,7 +96,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
       const params: any = {
         status: (filters.status && filters.status !== "all") ? filters.status : undefined,
         search: filters.search || undefined,
-        jobId: filters.jobId || undefined,
+        jobId: (filters.jobId && filters.jobId !== "all") ? filters.jobId : undefined,
         startDate: filters.startDate || undefined,
         endDate: filters.endDate || undefined,
         page: 0,
@@ -276,15 +303,53 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
     });
   };
 
-  const filteredApplications = applications.filter(app => {
-    // Handle "all" status filter
-    const matchesStatus = !filters.status || filters.status === "all" || app.status === filters.status;
-    const matchesSearch = !filters.search ||
-      app.candidateName.toLowerCase().includes(filters.search.toLowerCase()) ||
-      app.jobTitle.toLowerCase().includes(filters.search.toLowerCase()) ||
-      app.jobOrganization.toLowerCase().includes(filters.search.toLowerCase());
-    return matchesStatus && matchesSearch;
-  });
+  const filteredApplications = useMemo(() => {
+    return applications.filter(app => {
+      // 1. Status Filter
+      const matchesStatus = !filters.status || filters.status === "all" || app.status === filters.status;
+      if (!matchesStatus) return false;
+
+      // 2. Specific Job Filter
+      if (filters.jobId && filters.jobId !== 'all') {
+        if (app.jobId !== filters.jobId) return false;
+      }
+
+      // 3. Experience Filter (> 2 years, etc.)
+      if (filters.minExp && filters.minExp !== 'all') {
+        const requiredExp = Number(filters.minExp);
+        const candExp = app.candidateYearsExperience ?? 0;
+        if (candExp < requiredExp) return false;
+      }
+
+      // 4. Qualification / Speciality Filter
+      if (filters.qualification && filters.qualification.trim()) {
+        const term = filters.qualification.trim().toLowerCase();
+        const qual = (app.candidateQualification || '').toLowerCase();
+        const spec = (app.candidateSpeciality || '').toLowerCase();
+        if (!qual.includes(term) && !spec.includes(term)) return false;
+      }
+
+      // 5. Search Keyword
+      if (filters.search && filters.search.trim()) {
+        const term = filters.search.trim().toLowerCase();
+        const name = (app.candidateName || '').toLowerCase();
+        const email = (app.candidateEmail || '').toLowerCase();
+        const phone = (app.candidatePhone || '').toLowerCase();
+        const city = (app.candidateCity || '').toLowerCase();
+        const title = (app.jobTitle || '').toLowerCase();
+        const org = (app.jobOrganization || '').toLowerCase();
+        const matches = name.includes(term) ||
+          email.includes(term) ||
+          phone.includes(term) ||
+          city.includes(term) ||
+          title.includes(term) ||
+          org.includes(term);
+        if (!matches) return false;
+      }
+
+      return true;
+    });
+  }, [applications, filters]);
 
   // Don't render if not authenticated
   if (!isAuthenticated || !user || !token) {
@@ -407,12 +472,64 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input
             id="search"
-            placeholder="Search by name, job, or organization..."
+            placeholder="Candidate name, email, phone, city..."
             value={filters.search}
             onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
             className="pl-10 text-sm"
           />
         </div>
+      </div>
+
+      <div>
+        <Label htmlFor="jobId" className="text-sm font-medium">Specific Posted Job</Label>
+        <Select 
+          value={filters.jobId} 
+          onValueChange={(value) => setFilters(prev => ({ ...prev, jobId: value }))}
+        >
+          <SelectTrigger className="mt-1.5 text-sm">
+            <SelectValue placeholder="All Posted Jobs" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Posted Jobs ({availableJobs.length})</SelectItem>
+            {availableJobs.map((j) => (
+              <SelectItem key={j.id} value={j.id}>
+                {j.title}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        <Label htmlFor="minExp" className="text-sm font-medium">Candidate Experience</Label>
+        <Select 
+          value={filters.minExp} 
+          onValueChange={(value) => setFilters(prev => ({ ...prev, minExp: value }))}
+        >
+          <SelectTrigger className="mt-1.5 text-sm">
+            <SelectValue placeholder="Any Experience" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Any Experience</SelectItem>
+            <SelectItem value="1">1+ Years Experience</SelectItem>
+            <SelectItem value="2">2+ Years Experience (Min 2 Yrs)</SelectItem>
+            <SelectItem value="3">3+ Years Experience</SelectItem>
+            <SelectItem value="5">5+ Years Experience</SelectItem>
+            <SelectItem value="8">8+ Years Experience</SelectItem>
+            <SelectItem value="10">10+ Years Experience</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        <Label htmlFor="qualification" className="text-sm font-medium">Qualification / Speciality</Label>
+        <Input
+          id="qualification"
+          placeholder="e.g. MBBS, MD, MS, DNB, BDS..."
+          value={filters.qualification}
+          onChange={(e) => setFilters(prev => ({ ...prev, qualification: e.target.value }))}
+          className="mt-1.5 text-sm"
+        />
       </div>
 
       <div>
@@ -457,16 +574,27 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
         />
       </div>
 
-      <Button
-        variant="outline"
-        onClick={() => {
-          setFilters({ status: 'all', search: '', jobId: '', startDate: '', endDate: '' });
-          onClose?.();
-        }}
-        className="w-full text-sm"
-      >
-        Clear Filters
-      </Button>
+      <div className="flex gap-2 pt-2">
+        <Button
+          variant="outline"
+          onClick={() => {
+            setFilters({ status: 'all', search: '', jobId: 'all', minExp: 'all', qualification: '', startDate: '', endDate: '' });
+            onClose?.();
+          }}
+          className="flex-1 text-xs"
+        >
+          Clear Filters
+        </Button>
+        <Button
+          variant="default"
+          onClick={() => {
+            onClose?.();
+          }}
+          className="flex-1 text-xs bg-teal-600 hover:bg-teal-700 text-white font-bold"
+        >
+          Apply Filters
+        </Button>
+      </div>
     </div>
   );
 
@@ -528,6 +656,14 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                   />
                   <span className="truncate">{application.candidateEmail}</span>
                 </p>
+                {(application.candidateQualification || application.candidateSpeciality) && (
+                  <p 
+                    className="text-xs font-semibold text-teal-600 dark:text-teal-400 truncate mt-0.5"
+                    style={{ fontSize: 'clamp(0.72rem, 0.95vw, 0.82rem)' }}
+                  >
+                    {[application.candidateQualification, application.candidateSpeciality].filter(Boolean).join(' • ')}
+                  </p>
+                )}
               </div>
             </div>
             <Badge 
@@ -574,6 +710,56 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                 {application.jobOrganization}
               </span>
             </div>
+
+            {/* Candidate Experience Badge */}
+            <div className="flex items-center gap-2">
+              <div 
+                className="flex-shrink-0 rounded-md bg-gray-100 dark:bg-gray-700/50 flex items-center justify-center"
+                style={{
+                  width: 'clamp(1.75rem, 2.5vw, 2rem)',
+                  height: 'clamp(1.75rem, 2.5vw, 2rem)'
+                }}
+              >
+                <Clock 
+                  className={application.candidateYearsExperience != null && application.candidateYearsExperience >= 2 ? "text-emerald-600 dark:text-emerald-400" : "text-gray-500"} 
+                  style={{ width: 'clamp(0.875rem, 1.2vw, 1rem)', height: 'clamp(0.875rem, 1.2vw, 1rem)' }}
+                />
+              </div>
+              <span style={{
+                fontSize: 'clamp(0.75rem, 1vw, 0.875rem)',
+                fontWeight: application.candidateYearsExperience != null && application.candidateYearsExperience >= 2 ? 700 : 500,
+                color: application.candidateYearsExperience != null && application.candidateYearsExperience >= 2 ? '#047857' : undefined
+              }}>
+                {application.candidateYearsExperience != null
+                  ? `${application.candidateYearsExperience >= 2 ? '🎯 ' : ''}${application.candidateYearsExperience} yr${application.candidateYearsExperience === 1 ? '' : 's'} exp`
+                  : 'Exp not specified'}
+              </span>
+            </div>
+
+            {/* Candidate Location if available */}
+            {(application.candidateCity || application.candidateState) && (
+              <div className="flex items-center gap-2 min-w-0">
+                <div 
+                  className="flex-shrink-0 rounded-md bg-gray-100 dark:bg-gray-700/50 flex items-center justify-center"
+                  style={{
+                    width: 'clamp(1.75rem, 2.5vw, 2rem)',
+                    height: 'clamp(1.75rem, 2.5vw, 2rem)'
+                  }}
+                >
+                  <MapPin 
+                    className="text-gray-500 dark:text-gray-400" 
+                    style={{ width: 'clamp(0.875rem, 1.2vw, 1rem)', height: 'clamp(0.875rem, 1.2vw, 1rem)' }}
+                  />
+                </div>
+                <span 
+                  className="truncate font-medium text-gray-700 dark:text-gray-300"
+                  style={{ fontSize: 'clamp(0.75rem, 1vw, 0.875rem)' }}
+                >
+                  {[application.candidateCity, application.candidateState].filter(Boolean).join(', ')}
+                </span>
+              </div>
+            )}
+
             <div className="flex items-center gap-2">
               <div 
                 className="flex-shrink-0 rounded-md bg-gray-100 dark:bg-gray-700/50 flex items-center justify-center"

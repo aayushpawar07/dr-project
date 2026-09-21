@@ -32,6 +32,8 @@ import {
   ArrowLeft,
   Calendar,
   AlertCircle,
+  Shield,
+  Layers,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
@@ -75,6 +77,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
   const [loading, setLoading] = useState(true);
   const [loadingDirectory, setLoadingDirectory] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [submittedSearch, setSubmittedSearch] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -100,29 +103,30 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
   const [newPassword, setNewPassword] = useState('');
   const [formLoading, setFormLoading] = useState(false);
 
-  // Fetch Directory or Admins whenever activeTab or token changes
+  // Load both admins & directory on mount, and reload when tab/token changes
   useEffect(() => {
     if (!token) return;
-    if (activeTab === 'admin') {
-      fetchAdmins();
-    } else {
-      loadDirectory(activeTab);
-    }
+    void fetchAdmins();
+    void loadDirectory(activeTab, submittedSearch);
   }, [token, activeTab]);
 
   const loadDirectory = async (roleFilter?: string, query?: string) => {
     try {
       setLoadingDirectory(true);
       setError(null);
-      const roleParam = roleFilter === 'all' || !roleFilter ? undefined : roleFilter.toUpperCase();
+      const roleParam = roleFilter === 'all' || !roleFilter ? undefined : roleFilter.toLowerCase();
       const res = await fetchUserDirectory({
         role: roleParam,
-        search: (query !== undefined ? query : searchTerm) || undefined,
-      }, token);
-      setDirectoryUsers(res.users || []);
+        search: query !== undefined ? query : (searchTerm || undefined),
+      }, token || '');
+
+      // Handle array response directly from backend API
+      const userList = Array.isArray(res) ? res : ((res as any)?.users || []);
+      setDirectoryUsers(userList);
     } catch (err: any) {
       console.error('Error fetching directory:', err);
       setError(err.message || 'Failed to load user directory');
+      setDirectoryUsers([]);
     } finally {
       setLoadingDirectory(false);
     }
@@ -131,11 +135,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
   const fetchAdmins = async () => {
     try {
       setLoading(true);
-      setError(null);
-      
-      if (!token) {
-        throw new Error('Authentication token not found. Please login again.');
-      }
+      if (!token) return;
 
       const apiUrl = `${API_BASE}/admin/users?t=${Date.now()}`;
       const response = await fetch(apiUrl, {
@@ -149,54 +149,43 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
       });
 
       if (!response.ok) {
-        let errorData;
-        try {
-          errorData = await response.json();
-        } catch {
-          const text = await response.text();
-          throw new Error(text || `Failed to fetch admins (${response.status})`);
-        }
-        throw new Error(errorData.message || errorData.error || `Failed to fetch admins (${response.status})`);
+        throw new Error(`Failed to fetch admins (${response.status})`);
       }
 
       const data = await response.json();
-      if (!data || !Array.isArray(data)) {
-        setAdmins([]);
-        return;
+      if (Array.isArray(data)) {
+        const mappedAdmins = data.map((user: any) => ({
+          id: user.id ? String(user.id) : '',
+          name: user.name ? String(user.name).trim() : 'N/A',
+          email: user.email ? String(user.email).trim() : 'N/A',
+          phone: user.phone ? String(user.phone).trim() : 'N/A',
+          role: user.role || 'ADMIN',
+          isActive: user.isActive !== undefined && user.isActive !== null ? Boolean(user.isActive) : true,
+          isVerified: user.isVerified !== undefined && user.isVerified !== null ? Boolean(user.isVerified) : false,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt
+        }));
+        setAdmins(mappedAdmins);
       }
-      
-      const mappedAdmins = data.map((user: any) => ({
-        id: user.id ? (typeof user.id === 'string' ? user.id : String(user.id)) : '',
-        name: (user.name !== null && user.name !== undefined) ? String(user.name).trim() : 'N/A',
-        email: (user.email !== null && user.email !== undefined) ? String(user.email).trim() : 'N/A',
-        phone: (user.phone !== null && user.phone !== undefined) ? String(user.phone).trim() : 'N/A',
-        role: user.role || 'ADMIN',
-        isActive: user.isActive !== undefined && user.isActive !== null ? Boolean(user.isActive) : true,
-        isVerified: user.isVerified !== undefined && user.isVerified !== null ? Boolean(user.isVerified) : false,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt
-      }));
-      setAdmins(mappedAdmins);
     } catch (err: any) {
       console.error('Error fetching admins:', err);
-      setError(err.message || 'Failed to load admins');
-      setAdmins([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Impersonate User / HR / Employer
+  // Impersonate User / HR / Employer (Passwordless one-click switch)
   const handleImpersonate = async (targetUser: { id: string; name?: string; email?: string; role?: string }) => {
     try {
       setImpersonatingId(targetUser.id);
-      const res = await impersonateApi(targetUser.id, token);
+      const res = await impersonateApi(targetUser.id, token || '');
       authImpersonate(res.user, res.token);
-      toast.success(`Switched view to ${res.user.name || res.user.email} (${res.user.role})`);
+      toast.success(`Switched view to ${res.user.name || res.user.email} (${res.user.role})!`);
       
-      if (res.user.role?.toLowerCase() === 'employer') {
+      const targetRole = String(res.user.role || targetUser.role || '').toLowerCase();
+      if (targetRole === 'employer') {
         onNavigate('dashboard/employer');
-      } else if (res.user.role?.toLowerCase() === 'candidate') {
+      } else if (targetRole === 'candidate') {
         onNavigate('dashboard/candidate');
       } else {
         onNavigate('dashboard');
@@ -213,7 +202,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
   const handleToggleStatus = async (userItem: DirectoryUser) => {
     try {
       const nextStatus = !userItem.isActive;
-      await toggleUserStatus(userItem.id, nextStatus, token);
+      await toggleUserStatus(userItem.id, nextStatus, token || '');
       setDirectoryUsers(prev =>
         prev.map(u => u.id === userItem.id ? { ...u, isActive: nextStatus } : u)
       );
@@ -228,7 +217,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
   const handleViewFullProfile = async (userId: string) => {
     try {
       setLoadingProfile(true);
-      const profileData = await fetchUserFullProfile(userId, token);
+      const profileData = await fetchUserFullProfile(userId, token || '');
       setViewingProfile(profileData);
     } catch (err: any) {
       console.error('Error fetching profile:', err);
@@ -305,16 +294,10 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
       });
 
       if (!response.ok) {
-        let errorData;
-        try { errorData = await response.json(); } catch {
-          const text = await response.text();
-          throw new Error(text || `Failed to update admin (${response.status})`);
-        }
-        throw new Error(errorData.message || errorData.error || 'Failed to update admin');
+        throw new Error('Failed to update admin');
       }
 
-      const result = await response.json();
-      setSuccessMessage(result.message || 'Admin updated successfully');
+      setSuccessMessage('Admin updated successfully');
       setIsEditDialogOpen(false);
       setSelectedAdmin(null);
       setFormData({ name: '', email: '', phone: '', password: '' });
@@ -349,9 +332,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
       if (!response.ok) {
         await fetchAdmins();
-        let errorData;
-        try { errorData = await response.json(); } catch { errorData = {}; }
-        throw new Error(errorData.message || errorData.error || 'Failed to delete admin');
+        throw new Error('Failed to delete admin');
       }
 
       setSuccessMessage(`${adminNameToDelete} deleted successfully`);
@@ -384,16 +365,10 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
       });
 
       if (!response.ok) {
-        let errorData;
-        try { errorData = await response.json(); } catch {
-          const text = await response.text();
-          throw new Error(text || `Failed to reset password (${response.status})`);
-        }
-        throw new Error(errorData.message || errorData.error || 'Failed to reset password');
+        throw new Error('Failed to reset password');
       }
 
-      const result = await response.json();
-      setSuccessMessage(result.message || 'Password reset successfully');
+      setSuccessMessage('Password reset successfully');
       setIsPasswordDialogOpen(false);
       setSelectedAdmin(null);
       setNewPassword('');
@@ -435,25 +410,38 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
     return currentUser?.id === admin.id || String(currentUser?.id) === String(admin.id);
   };
 
-  // Client-side search filters
+  // Client-side search and filters
   const filteredAdmins = admins.filter(admin =>
     admin.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     admin.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const filteredDirectory = directoryUsers.filter(user => {
+    // Role filter
+    const roleLower = String(user.role || '').toLowerCase();
+    if (activeTab === 'employer' && roleLower !== 'employer') return false;
+    if (activeTab === 'candidate' && roleLower !== 'candidate') return false;
+
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
     return (
       (user.name && user.name.toLowerCase().includes(term)) ||
       (user.email && user.email.toLowerCase().includes(term)) ||
       (user.phone && user.phone.includes(term)) ||
-      (user.organization && user.organization.toLowerCase().includes(term)) ||
+      (user.companyName && user.companyName.toLowerCase().includes(term)) ||
+      (user.currentOrganization && user.currentOrganization.toLowerCase().includes(term)) ||
       (user.qualification && user.qualification.toLowerCase().includes(term)) ||
-      (user.specialization && user.specialization.toLowerCase().includes(term)) ||
-      (user.location && user.location.toLowerCase().includes(term))
+      (user.speciality && user.speciality.toLowerCase().includes(term)) ||
+      (user.currentCity && user.currentCity.toLowerCase().includes(term)) ||
+      (user.state && user.state.toLowerCase().includes(term))
     );
   });
+
+  // Accurate counts across loaded directory
+  const employerCount = directoryUsers.filter(u => String(u.role || '').toLowerCase() === 'employer').length;
+  const candidateCount = directoryUsers.filter(u => String(u.role || '').toLowerCase() === 'candidate').length;
+  const adminCount = admins.length;
+  const totalCount = directoryUsers.length;
 
   return (
     <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
@@ -464,18 +452,18 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
           <div>
             <button
               onClick={() => onNavigate('dashboard/admin')}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-teal-700 hover:text-teal-900 transition-colors mb-2"
+              className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-teal-700 hover:text-teal-900 transition-colors mb-2 cursor-pointer"
             >
-              <ArrowLeft className="w-3.5 h-3.5" /> Back to Dashboard
+              <ArrowLeft className="w-4 h-4" /> Back to Admin Dashboard
             </button>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-600 to-cyan-600 flex items-center justify-center text-white shadow-md shadow-teal-500/20">
-                <Users className="w-5 h-5" />
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-teal-600 to-cyan-600 flex items-center justify-center text-white shadow-lg shadow-teal-500/25">
+                <Users className="w-6 h-6" />
               </div>
-              User Directory & Impersonation
+              User Directory &amp; Role Impersonator
             </h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Explore clinical candidate profiles, healthcare employer accounts, and switch to view the platform as any user with one click.
+            <p className="text-sm text-slate-600 mt-1">
+              Explore candidate profiles, employer accounts (e.g. Max, Apollo, Aimss), and switch to view the platform as any user with 1-click passwordless access.
             </p>
           </div>
 
@@ -484,20 +472,20 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
               variant="outline"
               size="sm"
               onClick={() => {
-                if (activeTab === 'admin') fetchAdmins();
-                else loadDirectory(activeTab);
+                void fetchAdmins();
+                void loadDirectory(activeTab);
               }}
               disabled={loading || loadingDirectory}
-              className="h-10 text-slate-700 hover:bg-slate-100"
+              className="h-10 text-slate-700 hover:bg-slate-100 border-slate-300"
             >
               <RefreshCw className={`w-4 h-4 mr-2 ${loading || loadingDirectory ? 'animate-spin' : ''}`} />
-              Refresh
+              Refresh Directory
             </Button>
 
             <Button
               size="sm"
               onClick={() => setIsAddDialogOpen(true)}
-              className="h-10 bg-teal-700 hover:bg-teal-800 text-white shadow-sm"
+              className="h-10 bg-teal-700 hover:bg-teal-800 text-white shadow-md font-semibold"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add Admin
@@ -507,398 +495,445 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
         {/* Notifications / Alerts */}
         {successMessage && (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 flex items-center gap-3 shadow-sm">
+          <div className="p-4 bg-emerald-50 border border-emerald-300 rounded-2xl text-emerald-900 flex items-center gap-3 shadow-xs">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-            <span className="text-sm font-medium">{successMessage}</span>
+            <span className="text-sm font-semibold">{successMessage}</span>
           </div>
         )}
 
         {error && (
-          <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 flex items-center gap-3 shadow-sm">
+          <div className="p-4 bg-rose-50 border border-rose-300 rounded-2xl text-rose-900 flex items-center gap-3 shadow-xs">
             <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0" />
-            <span className="text-sm font-medium">{error}</span>
+            <span className="text-sm font-semibold">{error}</span>
           </div>
         )}
 
-        {/* Metric Summary Ribbon */}
+        {/* Metric Summary Ribbon with Live Clinical Counts */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card
+          <div
             onClick={() => setActiveTab('all')}
-            className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
+            className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 ${
               activeTab === 'all'
-                ? 'border-teal-600 ring-2 ring-teal-500/20 bg-white shadow-md'
-                : 'border-slate-200 bg-white/70 hover:bg-white hover:border-slate-300 shadow-sm'
+                ? 'border-teal-500 ring-2 ring-teal-500/20 bg-white shadow-md'
+                : 'border-slate-200 bg-white hover:border-slate-300 shadow-xs'
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">All Accounts</span>
-              <div className="w-8 h-8 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">All Accounts</span>
+              <div className="w-8 h-8 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center">
                 <Users className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-2xl font-bold text-slate-900 mt-2">{directoryUsers.length || '—'}</div>
-            <div className="text-xs text-slate-400 mt-1">Full platform directory</div>
-          </Card>
+            <div className="text-2xl font-extrabold text-slate-900 mt-2">{totalCount}</div>
+            <div className="text-xs text-slate-500 mt-0.5">Platform total directory</div>
+          </div>
 
-          <Card
+          <div
             onClick={() => setActiveTab('employer')}
-            className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
+            className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 ${
               activeTab === 'employer'
-                ? 'border-indigo-600 ring-2 ring-indigo-500/20 bg-white shadow-md'
-                : 'border-slate-200 bg-white/70 hover:bg-white hover:border-slate-300 shadow-sm'
+                ? 'border-indigo-500 ring-2 ring-indigo-500/20 bg-white shadow-md'
+                : 'border-slate-200 bg-white hover:border-slate-300 shadow-xs'
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Employers / HR</span>
-              <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Employers / HR</span>
+              <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center">
                 <Building2 className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-2xl font-bold text-slate-900 mt-2">
-              {directoryUsers.filter(u => u.role === 'EMPLOYER').length || '—'}
-            </div>
-            <div className="text-xs text-indigo-600 font-medium mt-1">Hospitals & Clinics</div>
-          </Card>
+            <div className="text-2xl font-extrabold text-indigo-900 mt-2">{employerCount}</div>
+            <div className="text-xs text-indigo-600 font-semibold mt-0.5">Hospitals &amp; Clinics</div>
+          </div>
 
-          <Card
+          <div
             onClick={() => setActiveTab('candidate')}
-            className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
+            className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 ${
               activeTab === 'candidate'
-                ? 'border-emerald-600 ring-2 ring-emerald-500/20 bg-white shadow-md'
-                : 'border-slate-200 bg-white/70 hover:bg-white hover:border-slate-300 shadow-sm'
+                ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-white shadow-md'
+                : 'border-slate-200 bg-white hover:border-slate-300 shadow-xs'
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Candidates / Doctors</span>
-              <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Candidates / Doctors</span>
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center">
                 <Stethoscope className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-2xl font-bold text-slate-900 mt-2">
-              {directoryUsers.filter(u => u.role === 'CANDIDATE').length || '—'}
-            </div>
-            <div className="text-xs text-emerald-600 font-medium mt-1">Clinical talent pool</div>
-          </Card>
+            <div className="text-2xl font-extrabold text-emerald-900 mt-2">{candidateCount}</div>
+            <div className="text-xs text-emerald-600 font-semibold mt-0.5">Medical Talent Pool</div>
+          </div>
 
-          <Card
+          <div
             onClick={() => setActiveTab('admin')}
-            className={`p-4 rounded-xl border cursor-pointer transition-all duration-200 ${
+            className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 ${
               activeTab === 'admin'
-                ? 'border-sky-600 ring-2 ring-sky-500/20 bg-white shadow-md'
-                : 'border-slate-200 bg-white/70 hover:bg-white hover:border-slate-300 shadow-sm'
+                ? 'border-sky-500 ring-2 ring-sky-500/20 bg-white shadow-md'
+                : 'border-slate-200 bg-white hover:border-slate-300 shadow-xs'
             }`}
           >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Administrators</span>
-              <div className="w-8 h-8 rounded-lg bg-sky-50 text-sky-700 flex items-center justify-center">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Administrators</span>
+              <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center">
                 <ShieldCheck className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-2xl font-bold text-slate-900 mt-2">{admins.length || '—'}</div>
-            <div className="text-xs text-sky-600 font-medium mt-1">Super & Staff access</div>
-          </Card>
+            <div className="text-2xl font-extrabold text-sky-900 mt-2">{adminCount}</div>
+            <div className="text-xs text-sky-600 font-semibold mt-0.5">Super &amp; Staff Access</div>
+          </div>
         </div>
 
         {/* Search & Tabs Toolbar */}
-        <Card className="p-4 bg-white border border-slate-200 shadow-sm rounded-xl">
+        <div className="p-4 bg-white border border-slate-200 shadow-sm rounded-2xl space-y-3">
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
             
             {/* Tabs */}
-            <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-lg border border-slate-200/80 overflow-x-auto">
+            <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200 overflow-x-auto">
               <button
                 onClick={() => setActiveTab('all')}
-                className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
+                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   activeTab === 'all'
-                    ? 'bg-white text-slate-900 shadow-sm'
+                    ? 'bg-white text-slate-900 shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                All Accounts
+                All Accounts ({totalCount})
               </button>
 
               <button
                 onClick={() => setActiveTab('employer')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   activeTab === 'employer'
-                    ? 'bg-indigo-600 text-white shadow-sm'
+                    ? 'bg-indigo-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <Building2 className="w-3.5 h-3.5" />
-                Healthcare Employers
+                Employers / HR ({employerCount})
               </button>
 
               <button
                 onClick={() => setActiveTab('candidate')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   activeTab === 'candidate'
-                    ? 'bg-emerald-600 text-white shadow-sm'
+                    ? 'bg-emerald-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <Stethoscope className="w-3.5 h-3.5" />
-                Clinical Candidates
+                Candidates / Doctors ({candidateCount})
               </button>
 
               <button
                 onClick={() => setActiveTab('admin')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all whitespace-nowrap ${
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   activeTab === 'admin'
-                    ? 'bg-teal-700 text-white shadow-sm'
+                    ? 'bg-teal-700 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
-                Administrators
+                Administrators ({adminCount})
               </button>
             </div>
 
-            {/* Search Box */}
-            <div className="relative w-full md:w-80">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder={
-                  activeTab === 'admin'
-                    ? "Search admins by name or email..."
-                    : "Search name, email, specialization, org..."
-                }
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 pr-8 h-9 text-xs rounded-lg border-slate-200"
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm('')}
-                  className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
+            {/* Search Box with explicit Search button */}
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <div className="relative flex-1 md:w-80">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Search by email, name, hospital, skill..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setSubmittedSearch(searchTerm);
+                      void loadDirectory(activeTab, searchTerm);
+                    }
+                  }}
+                  className="pl-9 pr-8 h-9 text-xs rounded-xl border-slate-300"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => {
+                      setSearchTerm('');
+                      setSubmittedSearch('');
+                      void loadDirectory(activeTab, '');
+                    }}
+                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              <Button
+                size="sm"
+                onClick={() => {
+                  setSubmittedSearch(searchTerm);
+                  void loadDirectory(activeTab, searchTerm);
+                }}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold h-9 px-4 rounded-xl shadow-xs"
+              >
+                Search
+              </Button>
             </div>
 
           </div>
-        </Card>
+        </div>
 
-        {/* Content Area */}
+        {/* Directory Listing */}
         {activeTab !== 'admin' ? (
-          /* Directory Users Table */
-          <Card className="border border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white">
-            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+          <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden bg-white">
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <h2 className="text-base font-bold text-slate-900">
+                <h2 className="text-base font-extrabold text-slate-900">
                   {activeTab === 'all'
-                    ? `Platform Directory (${filteredDirectory.length})`
+                    ? `Registered Users Directory (${filteredDirectory.length})`
                     : activeTab === 'employer'
                     ? `Healthcare Employers & Hospitals (${filteredDirectory.length})`
-                    : `Clinical Candidates & Doctors (${filteredDirectory.length})`}
+                    : `Clinical Doctors & Candidates (${filteredDirectory.length})`}
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Click <strong className="text-indigo-700 font-semibold">"View as HR / User"</strong> to seamlessly log in and inspect their portal.
+                  Click <strong className="text-indigo-700 font-bold">"View as HR"</strong> or <strong className="text-emerald-700 font-bold">"View as Candidate"</strong> to enter their portal with full permissions.
                 </p>
               </div>
             </div>
 
             {loadingDirectory ? (
               <div className="text-center py-16">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
-                <p className="mt-3 text-sm text-slate-500">Loading directory accounts...</p>
+                <div className="inline-block animate-spin rounded-full h-9 w-9 border-3 border-teal-600 border-t-transparent"></div>
+                <p className="mt-3 text-sm font-medium text-slate-600">Loading platform user directory...</p>
               </div>
             ) : filteredDirectory.length === 0 ? (
               <div className="text-center py-16 text-slate-500">
-                <Users className="w-10 h-10 mx-auto text-slate-300 mb-2" />
-                <p className="font-medium text-sm">No accounts found</p>
-                <p className="text-xs text-slate-400 mt-1">Try adjusting your search criteria or switch tabs</p>
+                <Users className="w-12 h-12 mx-auto text-slate-300 mb-2" />
+                <p className="font-bold text-base text-slate-700">No accounts match your criteria</p>
+                <p className="text-xs text-slate-400 mt-1">Try clearing the search box or switching tabs above.</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSubmittedSearch('');
+                    void loadDirectory(activeTab, '');
+                  }}
+                  className="mt-3 text-xs"
+                >
+                  Clear Filters
+                </Button>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50/75 text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
-                      <th className="py-3 px-4">User</th>
-                      <th className="py-3 px-4">Account Type</th>
-                      <th className="py-3 px-4">Profile & Background</th>
-                      <th className="py-3 px-4">CV Status</th>
+                    <tr className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wider text-slate-600 font-bold">
+                      <th className="py-3 px-4">User / Contact</th>
+                      <th className="py-3 px-4">Role &amp; Organization</th>
+                      <th className="py-3 px-4">Clinical Background / City</th>
                       <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4 text-right">Actions</th>
+                      <th className="py-3 px-4 text-right">Actions &amp; Impersonation</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-sm">
                     {filteredDirectory.map((userItem) => {
-                      const isCandidate = userItem.role === 'CANDIDATE';
-                      const isEmployer = userItem.role === 'EMPLOYER';
-                      const isCurrentlyImpersonatingThis = impersonatingId === userItem.id;
+                      const roleLower = String(userItem.role || '').toLowerCase();
+                      const isCandidate = roleLower === 'candidate';
+                      const isEmployer = roleLower === 'employer';
+                      const isCurrentlyImpersonating = impersonatingId === userItem.id;
+                      const isSpecialVIP = userItem.email === 'cricketloverayush9999@gmail.com';
 
                       return (
                         <tr
                           key={userItem.id}
-                          className="hover:bg-slate-50/75 transition-colors group"
+                          className={`hover:bg-slate-50/90 transition-colors ${
+                            isSpecialVIP ? 'bg-amber-50/40 border-l-4 border-l-amber-500' : ''
+                          }`}
                         >
                           {/* User Avatar + Name + Contact */}
                           <td className="py-3.5 px-4">
                             <div className="flex items-center gap-3">
-                              <div
-                                className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs uppercase shadow-sm ${
-                                  isEmployer
-                                    ? 'bg-indigo-100 text-indigo-700'
-                                    : isCandidate
-                                    ? 'bg-emerald-100 text-emerald-700'
-                                    : 'bg-sky-100 text-sky-700'
-                                }`}
-                              >
-                                {userItem.name
-                                  ? userItem.name
-                                      .split(' ')
-                                      .slice(0, 2)
-                                      .map((n) => n[0])
-                                      .join('')
-                                  : 'U'}
-                              </div>
-                              <div>
-                                <div className="font-semibold text-slate-900 leading-tight">
-                                  {userItem.name || 'Unnamed User'}
+                              {userItem.profilePhotoUrl ? (
+                                <img
+                                  src={userItem.profilePhotoUrl}
+                                  alt={userItem.name || 'User'}
+                                  className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0"
+                                />
+                              ) : (
+                                <div
+                                  className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs uppercase shadow-xs shrink-0 ${
+                                    isEmployer
+                                      ? 'bg-indigo-100 text-indigo-800'
+                                      : isCandidate
+                                      ? 'bg-emerald-100 text-emerald-800'
+                                      : 'bg-sky-100 text-sky-800'
+                                  }`}
+                                >
+                                  {userItem.name
+                                    ? userItem.name.split(' ').slice(0, 2).map((n) => n[0]).join('')
+                                    : 'U'}
                                 </div>
-                                <div className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
-                                  <span>{userItem.email}</span>
-                                  {userItem.phone && (
-                                    <>
-                                      <span>•</span>
-                                      <span>{userItem.phone}</span>
-                                    </>
+                              )}
+                              <div className="min-w-0">
+                                <div className="font-bold text-slate-900 leading-tight flex items-center gap-1.5">
+                                  <span>{userItem.name || 'Unnamed Account'}</span>
+                                  {isSpecialVIP && (
+                                    <Badge className="bg-amber-100 text-amber-900 border-amber-300 text-[10px] px-1.5 py-0">
+                                      Active Account
+                                    </Badge>
                                   )}
                                 </div>
+                                <div className="text-xs text-slate-600 font-mono mt-0.5 break-all">
+                                  {userItem.email}
+                                </div>
+                                {userItem.phone && (
+                                  <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                                    <Phone size={10} />
+                                    <span>{userItem.phone}</span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </td>
 
-                          {/* Role Badge */}
+                          {/* Role Badge & Organization */}
                           <td className="py-3.5 px-4">
                             {isEmployer && (
-                              <Badge className="bg-indigo-50 text-indigo-700 border-indigo-200 text-xs font-medium gap-1 hover:bg-indigo-100">
-                                <Building2 className="w-3 h-3" /> Healthcare HR
-                              </Badge>
+                              <div className="space-y-1">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                  <Building2 className="w-3.5 h-3.5" /> Healthcare HR
+                                </span>
+                                {userItem.companyName && (
+                                  <div className="text-xs font-semibold text-slate-800 flex items-center gap-1">
+                                    <span>🏥 {userItem.companyName}</span>
+                                  </div>
+                                )}
+                              </div>
                             )}
+
                             {isCandidate && (
-                              <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs font-medium gap-1 hover:bg-emerald-100">
-                                <Stethoscope className="w-3 h-3" /> Clinical Candidate
-                              </Badge>
+                              <div className="space-y-1">
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  <Stethoscope className="w-3.5 h-3.5" /> Candidate / Doctor
+                                </span>
+                                {userItem.currentOrganization && (
+                                  <div className="text-xs text-slate-600 truncate">
+                                    🏢 {userItem.currentOrganization}
+                                  </div>
+                                )}
+                              </div>
                             )}
+
                             {!isEmployer && !isCandidate && (
-                              <Badge className="bg-sky-50 text-sky-700 border-sky-200 text-xs font-medium gap-1 hover:bg-sky-100">
-                                <ShieldCheck className="w-3 h-3" /> Admin Staff
-                              </Badge>
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-sky-50 text-sky-700 border border-sky-200">
+                                <ShieldCheck className="w-3.5 h-3.5" /> Admin Staff
+                              </span>
                             )}
                           </td>
 
-                          {/* Profile & Background */}
+                          {/* Profile & Location */}
                           <td className="py-3.5 px-4">
                             {isCandidate && (
-                              <div className="space-y-0.5">
-                                <div className="text-xs font-medium text-slate-800">
-                                  {userItem.qualification || 'Qualification not set'}
-                                  {userItem.specialization ? ` • ${userItem.specialization}` : ''}
+                              <div className="space-y-1">
+                                <div className="text-xs font-bold text-slate-800">
+                                  {[userItem.qualification, userItem.speciality].filter(Boolean).join(' • ') || 'Qualifications not added'}
                                 </div>
                                 <div className="text-[11px] text-slate-500 flex items-center gap-2">
-                                  {userItem.experienceYears !== undefined && userItem.experienceYears > 0 && (
-                                    <span>{userItem.experienceYears} yrs exp</span>
+                                  {userItem.yearsExperience != null && (
+                                    <span className="font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                                      {userItem.yearsExperience} yrs exp
+                                    </span>
                                   )}
-                                  {userItem.location && <span>📍 {userItem.location}</span>}
-                                  {userItem.organization && <span>🏢 {userItem.organization}</span>}
+                                  {[userItem.currentCity, userItem.state].filter(Boolean).join(', ') && (
+                                    <span>📍 {[userItem.currentCity, userItem.state].filter(Boolean).join(', ')}</span>
+                                  )}
                                 </div>
                               </div>
                             )}
 
                             {isEmployer && (
-                              <div className="space-y-0.5">
-                                <div className="text-xs font-medium text-slate-800">
-                                  {userItem.organization || 'Organization info pending'}
-                                </div>
-                                {userItem.location && (
-                                  <div className="text-[11px] text-slate-500">📍 {userItem.location}</div>
+                              <div className="space-y-0.5 text-xs text-slate-600">
+                                {userItem.city || userItem.state ? (
+                                  <div>📍 {[userItem.city, userItem.state].filter(Boolean).join(', ')}</div>
+                                ) : (
+                                  <div>Location not set</div>
+                                )}
+                                {userItem.verificationStatus && (
+                                  <span className="text-[10px] uppercase font-bold text-teal-700">
+                                    Status: {userItem.verificationStatus}
+                                  </span>
                                 )}
                               </div>
                             )}
 
                             {!isCandidate && !isEmployer && (
-                              <span className="text-xs text-slate-400">System Admin</span>
-                            )}
-                          </td>
-
-                          {/* CV Status */}
-                          <td className="py-3.5 px-4">
-                            {isCandidate ? (
-                              userItem.hasResume ? (
-                                <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[11px] font-semibold gap-1">
-                                  <FileText className="w-3 h-3" /> CV Available
-                                </Badge>
-                              ) : (
-                                <span className="text-xs text-slate-400">No CV</span>
-                              )
-                            ) : (
-                              <span className="text-xs text-slate-400">—</span>
+                              <span className="text-xs text-slate-400">System Administrator</span>
                             )}
                           </td>
 
                           {/* Status */}
                           <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5">
                               {userItem.isActive !== false ? (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
                                   Active
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600">
                                   Inactive
                                 </span>
                               )}
-                              {userItem.isVerified && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800">
-                                  Verified
+                              {userItem.resumeUrl && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200">
+                                  CV
                                 </span>
                               )}
                             </div>
                           </td>
 
-                          {/* Actions: Impersonate, Full Details, Toggle */}
+                          {/* Actions: View as HR / View as Candidate, Details, Toggle */}
                           <td className="py-3.5 px-4 text-right">
                             <div className="flex items-center justify-end gap-2">
-                              {/* View as User (Impersonate) */}
+                              {/* VIEW AS USER / HR (IMPERSONATE) BUTTON */}
                               <Button
                                 size="sm"
                                 onClick={() => handleImpersonate(userItem)}
-                                disabled={isCurrentlyImpersonatingThis}
-                                className={`h-8 text-xs font-medium gap-1.5 shadow-sm ${
+                                disabled={isCurrentlyImpersonating}
+                                className={`h-8 text-xs font-bold gap-1.5 shadow-sm ${
                                   isEmployer
                                     ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
                                     : 'bg-emerald-600 hover:bg-emerald-700 text-white'
                                 }`}
-                                title={`Switch to view dashboard as ${userItem.name || 'this user'}`}
+                                title={`Switch view to ${userItem.name || userItem.email}`}
                               >
-                                {isCurrentlyImpersonatingThis ? (
+                                {isCurrentlyImpersonating ? (
                                   <div className="animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full" />
                                 ) : (
                                   <Eye className="w-3.5 h-3.5" />
                                 )}
-                                <span>{isEmployer ? 'View as HR' : isCandidate ? 'View as Candidate' : 'View as User'}</span>
+                                <span>
+                                  {isEmployer ? 'View as HR' : isCandidate ? 'View as Candidate' : 'View Portal'}
+                                </span>
                               </Button>
 
-                              {/* Full Profile modal trigger */}
+                              {/* Full Profile Modal Trigger */}
                               <Button
                                 size="sm"
                                 variant="outline"
                                 onClick={() => handleViewFullProfile(userItem.id)}
-                                className="h-8 text-xs font-medium gap-1 border-slate-200 text-slate-700 hover:bg-slate-100"
-                                title="View complete clinical or organization details"
+                                className="h-8 text-xs font-semibold gap-1 border-slate-300 text-slate-700 hover:bg-slate-100"
+                                title="View complete clinical credentials or hospital profile"
                               >
                                 <FileText className="w-3.5 h-3.5 text-slate-500" />
                                 Details
                               </Button>
 
-                              {/* Toggle active switch */}
+                              {/* Toggle active status */}
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => handleToggleStatus(userItem)}
-                                className={`h-8 w-8 p-0 rounded-lg ${
+                                className={`h-8 w-8 p-0 rounded-lg cursor-pointer ${
                                   userItem.isActive !== false
                                     ? 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'
                                     : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'
@@ -919,18 +954,18 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
           </Card>
         ) : (
           /* Admins Management Table */
-          <Card className="border border-slate-200 shadow-sm rounded-xl overflow-hidden bg-white">
+          <Card className="border border-slate-200 shadow-sm rounded-2xl overflow-hidden bg-white">
             <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
               <div>
-                <h2 className="text-base font-bold text-slate-900">Administrator Accounts ({filteredAdmins.length})</h2>
+                <h2 className="text-base font-extrabold text-slate-900">Administrator Accounts ({filteredAdmins.length})</h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Accounts with privileged moderation and configuration access to the platform.
+                  Accounts with privileged administrative and moderation access.
                 </p>
               </div>
               <Button
                 size="sm"
                 onClick={() => setIsAddDialogOpen(true)}
-                className="bg-teal-700 hover:bg-teal-800 text-white text-xs h-8"
+                className="bg-teal-700 hover:bg-teal-800 text-white text-xs h-8 font-semibold"
               >
                 <Plus className="w-3.5 h-3.5 mr-1" /> Add Admin
               </Button>
@@ -938,19 +973,19 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
             {loading ? (
               <div className="text-center py-16">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-3 border-teal-600 border-t-transparent"></div>
                 <p className="mt-3 text-sm text-slate-500">Loading administrators...</p>
               </div>
             ) : filteredAdmins.length === 0 ? (
               <div className="text-center py-16 text-slate-500">
                 <ShieldCheck className="w-10 h-10 mx-auto text-slate-300 mb-2" />
-                <p className="font-medium text-sm">No administrators found</p>
+                <p className="font-bold text-sm">No administrators found</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50/75 text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
+                    <tr className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wider text-slate-600 font-bold">
                       <th className="py-3 px-4">Name</th>
                       <th className="py-3 px-4">Email</th>
                       <th className="py-3 px-4">Phone</th>
@@ -961,30 +996,22 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                   <tbody className="divide-y divide-slate-100 text-sm">
                     {filteredAdmins.map((admin) => (
                       <tr key={admin.id} className="hover:bg-slate-50/75 transition-colors">
-                        <td className="py-3 px-4 font-medium text-slate-900">
+                        <td className="py-3 px-4 font-bold text-slate-900">
                           <div className="flex items-center gap-2">
                             <span>{admin.name || 'N/A'}</span>
                             {isCurrentUser(admin) && (
-                              <Badge className="bg-teal-100 text-teal-800 text-[10px] font-semibold border-teal-200">
+                              <Badge className="bg-teal-100 text-teal-800 text-[10px] font-bold border-teal-200">
                                 You
                               </Badge>
                             )}
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-slate-600">{admin.email || 'N/A'}</td>
-                        <td className="py-3 px-4 text-slate-600">{admin.phone || 'N/A'}</td>
+                        <td className="py-3 px-4 text-slate-600 font-mono text-xs">{admin.email || 'N/A'}</td>
+                        <td className="py-3 px-4 text-slate-600 text-xs">{admin.phone || 'N/A'}</td>
                         <td className="py-3 px-4">
-                          <div className="flex gap-2">
-                            {admin.isActive !== false ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-                                Active
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
-                                Inactive
-                              </span>
-                            )}
-                          </div>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                            Active
+                          </span>
                         </td>
                         <td className="py-3 px-4 text-right">
                           <div className="flex items-center justify-end gap-1.5">
@@ -1056,12 +1083,12 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
               <div className="py-5 space-y-5">
                 {/* If candidate clinical profile */}
-                {viewingProfile.user?.role === 'CANDIDATE' && viewingProfile.profile && (
+                {String(viewingProfile.user?.role || '').toLowerCase() === 'candidate' && viewingProfile.profile && (
                   <>
                     {/* Clinical Credentials */}
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3">
-                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                        <GraduationCap className="w-4 h-4 text-emerald-600" /> Clinical Qualifications & Background
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                      <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                        <GraduationCap className="w-4 h-4 text-emerald-600" /> Clinical Qualifications &amp; Background
                       </h4>
                       <div className="grid grid-cols-2 gap-3 text-xs">
                         <div>
@@ -1074,13 +1101,13 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                         </div>
                         <div>
                           <span className="text-slate-400 block">Specialization</span>
-                          <span className="font-semibold text-slate-800">{viewingProfile.profile.specialization || '—'}</span>
+                          <span className="font-semibold text-slate-800">{viewingProfile.profile.speciality || viewingProfile.profile.specialization || '—'}</span>
                         </div>
                         <div>
                           <span className="text-slate-400 block">Clinical Experience</span>
                           <span className="font-semibold text-slate-800">
-                            {viewingProfile.profile.experienceYears !== undefined
-                              ? `${viewingProfile.profile.experienceYears} Years`
+                            {viewingProfile.profile.yearsExperience != null
+                              ? `${viewingProfile.profile.yearsExperience} Years`
                               : '—'}
                           </span>
                         </div>
@@ -1091,105 +1118,39 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                         <div>
                           <span className="text-slate-400 block">Current Location</span>
                           <span className="font-semibold text-slate-800">
-                            {[viewingProfile.profile.city, viewingProfile.profile.state].filter(Boolean).join(', ') || '—'}
+                            {[viewingProfile.profile.currentCity || viewingProfile.profile.city, viewingProfile.profile.state].filter(Boolean).join(', ') || '—'}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Career Preferences */}
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3">
-                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                        <Briefcase className="w-4 h-4 text-indigo-600" /> Career Preferences
-                      </h4>
-                      <div className="grid grid-cols-2 gap-3 text-xs">
-                        <div>
-                          <span className="text-slate-400 block">Preferred Job Role</span>
-                          <span className="font-semibold text-slate-800">{viewingProfile.profile.preferredJobRole || '—'}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400 block">Preferred Location</span>
-                          <span className="font-semibold text-slate-800">{viewingProfile.profile.preferredLocation || '—'}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Medical Registration */}
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3">
-                      <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                        <ShieldCheck className="w-4 h-4 text-sky-600" /> Professional Council Registration
-                      </h4>
-                      <div className="grid grid-cols-2 gap-3 text-xs">
-                        <div>
-                          <span className="text-slate-400 block">Registration Council</span>
-                          <span className="font-semibold text-slate-800">{viewingProfile.profile.registrationCouncil || '—'}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400 block">Registration Number</span>
-                          <span className="font-semibold text-slate-800">{viewingProfile.profile.registrationNumber || '—'}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400 block">Registration State</span>
-                          <span className="font-semibold text-slate-800">{viewingProfile.profile.registrationState || '—'}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400 block">Registration Year</span>
-                          <span className="font-semibold text-slate-800">{viewingProfile.profile.registrationYear || '—'}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Skills */}
-                    {viewingProfile.profile.skills && (
-                      <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
-                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                          Key Clinical Skills & Competencies
-                        </h4>
-                        <div className="flex flex-wrap gap-1.5">
-                          {viewingProfile.profile.skills.split(',').map((skill: string, idx: number) => (
-                            <Badge key={idx} variant="secondary" className="text-xs">
-                              {skill.trim()}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* CV Download / Preview */}
-                    {viewingProfile.profile.resumeUrl ? (
-                      <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
+                    {/* Resume / CV */}
+                    {viewingProfile.profile.resumeUrl && (
+                      <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-300 flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center">
-                            <FileText className="w-5 h-5" />
-                          </div>
+                          <FileText className="w-6 h-6 text-emerald-600" />
                           <div>
-                            <div className="text-xs font-bold text-emerald-900">
-                              {viewingProfile.profile.resumeFileName || 'Clinical CV Document'}
-                            </div>
-                            <div className="text-[11px] text-emerald-700">Uploaded candidate resume</div>
+                            <div className="text-xs font-bold text-emerald-950">Candidate CV Document</div>
+                            <div className="text-[11px] text-emerald-700">{viewingProfile.profile.resumeFileName || 'Resume.pdf'}</div>
                           </div>
                         </div>
                         <a
                           href={viewingProfile.profile.resumeUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm"
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1"
                         >
-                          <Download className="w-3.5 h-3.5" /> Download CV
+                          <Download size={13} /> Download CV
                         </a>
-                      </div>
-                    ) : (
-                      <div className="p-3 bg-slate-50 rounded-xl text-center text-xs text-slate-400">
-                        No CV document uploaded by this candidate yet.
                       </div>
                     )}
                   </>
                 )}
 
                 {/* If employer profile */}
-                {viewingProfile.user?.role === 'EMPLOYER' && viewingProfile.profile && (
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3">
-                    <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                {String(viewingProfile.user?.role || '').toLowerCase() === 'employer' && viewingProfile.profile && (
+                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                       <Building2 className="w-4 h-4 text-indigo-600" /> Hospital / Healthcare Organization
                     </h4>
                     <div className="grid grid-cols-2 gap-3 text-xs">
@@ -1234,7 +1195,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                     setViewingProfile(null);
                     handleImpersonate(u);
                   }}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 text-xs font-semibold shadow-sm"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 text-xs font-bold shadow-sm"
                 >
                   <Eye className="w-4 h-4" /> View as this User
                 </Button>
@@ -1310,7 +1271,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={formLoading} className="bg-teal-700 hover:bg-teal-800 text-white">
+              <Button type="submit" disabled={formLoading} className="bg-teal-700 hover:bg-teal-800 text-white font-bold">
                 {formLoading ? 'Creating...' : 'Create Admin'}
               </Button>
             </DialogFooter>
@@ -1369,7 +1330,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={formLoading} className="bg-teal-700 hover:bg-teal-800 text-white">
+              <Button type="submit" disabled={formLoading} className="bg-teal-700 hover:bg-teal-800 text-white font-bold">
                 {formLoading ? 'Updating...' : 'Update Admin'}
               </Button>
             </DialogFooter>
@@ -1446,7 +1407,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={formLoading} className="bg-teal-700 hover:bg-teal-800 text-white">
+              <Button type="submit" disabled={formLoading} className="bg-teal-700 hover:bg-teal-800 text-white font-bold">
                 {formLoading ? 'Resetting...' : 'Reset Password'}
               </Button>
             </DialogFooter>

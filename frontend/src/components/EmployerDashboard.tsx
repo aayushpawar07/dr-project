@@ -15,7 +15,9 @@ import {
   Edit,
   Eye,
   FileText,
+  Filter,
   Globe,
+  GraduationCap,
   LayoutDashboard,
   LogOut,
   Mail,
@@ -24,6 +26,7 @@ import {
   Phone,
   Plus,
   RefreshCw,
+  Search,
   ShieldCheck,
   Sparkles,
   Star,
@@ -215,6 +218,9 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
   const [updatingApplicationId, setUpdatingApplicationId] = useState<string | null>(null);
   const [selectedJobId, setSelectedJobId] = useState<string>('all');
   const [applicationFilter, setApplicationFilter] = useState<ApplicationFilter>('all');
+  const [appMinExpFilter, setAppMinExpFilter] = useState<string>('all');
+  const [appQualFilter, setAppQualFilter] = useState<string>('');
+  const [appSearchFilter, setAppSearchFilter] = useState<string>('');
   const [seedingTestJobs, setSeedingTestJobs] = useState(false);
   const [interviewDraft, setInterviewDraft] = useState<{
     application: ApplicationResponse;
@@ -518,10 +524,42 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
 
   const visibleApplicationsByJob = useMemo(() => {
     const matchesFilter = (application: ApplicationResponse) => {
+      // 1. Status Filter
       const status = normalizeApplicationStatus(application.status);
-      if (applicationFilter === 'all') return true;
-      if (applicationFilter === 'new') return status === 'applied';
-      return status === applicationFilter;
+      if (applicationFilter !== 'all') {
+        if (applicationFilter === 'new' && status !== 'applied') return false;
+        if (applicationFilter !== 'new' && status !== applicationFilter) return false;
+      }
+
+      // 2. Minimum Experience Filter (> 2 years, etc.)
+      if (appMinExpFilter !== 'all') {
+        const requiredExp = Number(appMinExpFilter);
+        const candExp = application.candidateYearsExperience ?? 0;
+        if (candExp < requiredExp) return false;
+      }
+
+      // 3. Qualification / Domain Filter
+      if (appQualFilter.trim()) {
+        const term = appQualFilter.trim().toLowerCase();
+        const qual = (application.candidateQualification || '').toLowerCase();
+        const spec = (application.candidateSpeciality || '').toLowerCase();
+        if (!qual.includes(term) && !spec.includes(term)) return false;
+      }
+
+      // 4. Candidate Search Keyword (name, email, phone, city, registration)
+      if (appSearchFilter.trim()) {
+        const term = appSearchFilter.trim().toLowerCase();
+        const name = (application.candidateName || '').toLowerCase();
+        const email = (application.candidateEmail || '').toLowerCase();
+        const phone = (application.candidatePhone || '').toLowerCase();
+        const city = (application.candidateCity || '').toLowerCase();
+        const reg = (application.candidateRegistrationNumber || '').toLowerCase();
+        if (!name.includes(term) && !email.includes(term) && !phone.includes(term) && !city.includes(term) && !reg.includes(term)) {
+          return false;
+        }
+      }
+
+      return true;
     };
 
     if (selectedJobId !== 'all') {
@@ -532,7 +570,11 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
     return applicationsByJob
       .map(([jobId, applications]) => [jobId, applications.filter(matchesFilter)] as [string, ApplicationResponse[]])
       .filter(([, applications]) => applications.length > 0);
-  }, [applicationFilter, applicationsByJob, myApplications, selectedJobId]);
+  }, [applicationFilter, applicationsByJob, myApplications, selectedJobId, appMinExpFilter, appQualFilter, appSearchFilter]);
+
+  const totalFilteredApplications = useMemo(() => {
+    return visibleApplicationsByJob.reduce((sum, [, apps]) => sum + apps.length, 0);
+  }, [visibleApplicationsByJob]);
 
   const openApplications = (filter: ApplicationFilter = 'all', jobId = 'all') => {
     setApplicationFilter(filter);
@@ -1257,6 +1299,196 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                 })}
               </div>
 
+              {/* Advanced Applicant Filter Bar */}
+              <div style={{
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '14px',
+                padding: '16px',
+                margin: '16px 0 20px 0',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.03)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Filter size={17} style={{ color: '#0d9488' }} />
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Filter Applicants by Job &amp; Experience</span>
+                    <span style={{
+                      fontSize: '11px',
+                      background: '#ecfdf5',
+                      color: '#065f46',
+                      border: '1px solid #a7f3d0',
+                      padding: '2px 8px',
+                      borderRadius: '12px',
+                      fontWeight: 700
+                    }}>
+                      {totalFilteredApplications} Applicants Found
+                    </span>
+                  </div>
+                  {(selectedJobId !== 'all' || appMinExpFilter !== 'all' || appQualFilter || appSearchFilter || applicationFilter !== 'all') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedJobId('all');
+                        setAppMinExpFilter('all');
+                        setAppQualFilter('');
+                        setAppSearchFilter('');
+                        setApplicationFilter('all');
+                      }}
+                      style={{
+                        background: '#fee2e2',
+                        border: '1px solid #fca5a5',
+                        borderRadius: '6px',
+                        padding: '4px 10px',
+                        color: '#b91c1c',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Reset All Filters
+                    </button>
+                  )}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+                  {/* 1. Job Dropdown */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                      Selected Job Post
+                    </label>
+                    <select
+                      value={selectedJobId}
+                      onChange={(e) => setSelectedJobId(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 10px',
+                        borderRadius: '8px',
+                        border: selectedJobId !== 'all' ? '1px solid #0d9488' : '1px solid #cbd5e1',
+                        fontSize: '12px',
+                        color: '#0f172a',
+                        background: '#fff',
+                        fontWeight: selectedJobId !== 'all' ? 600 : 400
+                      }}
+                    >
+                      <option value="all">All Jobs ({myApplications.length} total)</option>
+                      {myJobs.map((j) => {
+                        const count = myApplications.filter((a) => a.jobId === j.id).length;
+                        return (
+                          <option key={j.id} value={j.id}>
+                            {j.title} ({count} applicants)
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+
+                  {/* 2. Minimum Experience Filter (e.g. > 2 Years) */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                      Candidate Experience
+                    </label>
+                    <select
+                      value={appMinExpFilter}
+                      onChange={(e) => setAppMinExpFilter(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 10px',
+                        borderRadius: '8px',
+                        border: appMinExpFilter !== 'all' ? '1px solid #059669' : '1px solid #cbd5e1',
+                        fontSize: '12px',
+                        color: appMinExpFilter !== 'all' ? '#047857' : '#0f172a',
+                        background: appMinExpFilter !== 'all' ? '#ecfdf5' : '#fff',
+                        fontWeight: appMinExpFilter !== 'all' ? 700 : 400
+                      }}
+                    >
+                      <option value="all">Any Experience</option>
+                      <option value="1">1+ Years Experience</option>
+                      <option value="2">2+ Years Experience (&gt; 2 yrs)</option>
+                      <option value="3">3+ Years Experience</option>
+                      <option value="5">5+ Years Experience</option>
+                      <option value="8">8+ Years Experience</option>
+                      <option value="10">10+ Years Experience</option>
+                    </select>
+                  </div>
+
+                  {/* 3. Qualification / Speciality */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                      Qualification / Speciality
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. MBBS, MD, MS, DNB..."
+                      value={appQualFilter}
+                      onChange={(e) => setAppQualFilter(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 10px',
+                        borderRadius: '8px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '12px',
+                        color: '#0f172a',
+                        background: '#fff'
+                      }}
+                    />
+                  </div>
+
+                  {/* 4. Candidate Search Keyword */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                      Search Candidate
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Name, email, phone, city..."
+                      value={appSearchFilter}
+                      onChange={(e) => setAppSearchFilter(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 10px',
+                        borderRadius: '8px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '12px',
+                        color: '#0f172a',
+                        background: '#fff'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Active Filter Pills */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '12px', paddingTop: '10px', borderTop: '1px dashed #e2e8f0' }}>
+                  <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>Active Filters:</span>
+                  {selectedJobId !== 'all' && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', padding: '2px 8px', borderRadius: '9999px', fontWeight: 600 }}>
+                      Job: {myJobs.find(j => j.id === selectedJobId)?.title?.slice(0, 22)}...
+                      <button type="button" onClick={() => setSelectedJobId('all')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1d4ed8', padding: 0 }}>×</button>
+                    </span>
+                  )}
+                  {appMinExpFilter !== 'all' && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '9999px', fontWeight: 700 }}>
+                      🎯 Min {appMinExpFilter}+ Yrs Experience
+                      <button type="button" onClick={() => setAppMinExpFilter('all')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#047857', padding: 0 }}>×</button>
+                    </span>
+                  )}
+                  {appQualFilter && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', background: '#f5f3ff', color: '#6d28d9', border: '1px solid #ddd6fe', padding: '2px 8px', borderRadius: '9999px', fontWeight: 600 }}>
+                      Qual: {appQualFilter}
+                      <button type="button" onClick={() => setAppQualFilter('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6d28d9', padding: 0 }}>×</button>
+                    </span>
+                  )}
+                  {appSearchFilter && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', background: '#f8fafc', color: '#334155', border: '1px solid #cbd5e1', padding: '2px 8px', borderRadius: '9999px', fontWeight: 600 }}>
+                      Keyword: "{appSearchFilter}"
+                      <button type="button" onClick={() => setAppSearchFilter('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#334155', padding: 0 }}>×</button>
+                    </span>
+                  )}
+                  {selectedJobId === 'all' && appMinExpFilter === 'all' && !appQualFilter && !appSearchFilter && (
+                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>Showing all candidates across all posted jobs</span>
+                  )}
+                </div>
+              </div>
+
               {visibleApplicationsByJob.length === 0 ? (
                 <div className="dashboard-empty-state">
                   <div className="dashboard-empty-state__icon"><Users size={26} /></div>
@@ -1308,10 +1540,17 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                                   <MapPin size={13} />
                                   {[application.candidateCity, application.candidateState].filter(Boolean).join(', ') || 'Location not added'}
                                 </span>
-                                <span>
+                                <span style={application.candidateYearsExperience != null && application.candidateYearsExperience >= 2 ? {
+                                  background: '#ecfdf5',
+                                  color: '#047857',
+                                  border: '1px solid #a7f3d0',
+                                  fontWeight: 700,
+                                  borderRadius: '6px',
+                                  padding: '2px 8px'
+                                } : {}}>
                                   <Briefcase size={13} />
                                   {application.candidateYearsExperience != null
-                                    ? `${application.candidateYearsExperience} year${application.candidateYearsExperience === 1 ? '' : 's'}`
+                                    ? `${application.candidateYearsExperience >= 2 ? '🎯 ' : ''}${application.candidateYearsExperience} year${application.candidateYearsExperience === 1 ? '' : 's'} exp`
                                     : 'Experience not added'}
                                 </span>
                                 <span className={application.candidateRegistrationNumber ? 'is-verified' : 'is-missing'}>
@@ -1426,246 +1665,513 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
 
           {activeSection === 'candidates' && (
             <section className="dashboard-panel">
-              <div className="dashboard-panel__header flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                <div>
-                  <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                    <UserCheck className="h-5 w-5 text-teal-600" />
-                    Candidate Talent Pool &amp; CV Search
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Search clinical professionals by qualification, speciality, job role, and download CVs.
-                  </p>
+              {/* Clinical Header Banner */}
+              <div style={{
+                background: 'linear-gradient(135deg, #0a3350 0%, #0c577e 55%, #0d7f78 100%)',
+                borderRadius: '16px',
+                padding: '22px 24px',
+                color: '#ffffff',
+                marginBottom: '20px',
+                boxShadow: '0 8px 24px rgba(10, 51, 80, 0.16)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '16px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div style={{
+                    width: '46px',
+                    height: '46px',
+                    borderRadius: '12px',
+                    background: 'rgba(255, 255, 255, 0.16)',
+                    backdropFilter: 'blur(8px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '1px solid rgba(255, 255, 255, 0.25)',
+                    flexShrink: 0
+                  }}>
+                    <UserCheck size={24} style={{ color: '#5eead4' }} />
+                  </div>
+                  <div>
+                    <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em', color: '#ffffff' }}>
+                      Candidate Talent Pool &amp; Medical CV Bank
+                    </h2>
+                    <p style={{ fontSize: '13px', margin: '4px 0 0 0', color: 'rgba(255, 255, 255, 0.82)' }}>
+                      Search registered doctors, specialists, residents, and healthcare professionals across India.
+                    </p>
+                  </div>
                 </div>
-                <div className="text-xs font-semibold px-3 py-1.5 bg-teal-50 text-teal-800 rounded-full border border-teal-200 w-fit">
-                  {candidatesTotal} Candidates Available
+                <div style={{
+                  background: 'rgba(255, 255, 255, 0.18)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  padding: '7px 15px',
+                  borderRadius: '30px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  color: '#ffffff',
+                  backdropFilter: 'blur(6px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}>
+                  <Star size={14} style={{ color: '#fef08a' }} />
+                  {candidatesTotal} Verified Candidates Available
                 </div>
               </div>
 
-              {/* Filters Bar */}
-              <div className="bg-slate-50/90 p-4 rounded-2xl border border-slate-200 mb-6 space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+              {/* Advanced Candidate Filters Bar */}
+              <div style={{
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '16px',
+                padding: '18px',
+                marginBottom: '22px',
+                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Search size={16} style={{ color: '#0d9488' }} />
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>Search &amp; Filter Candidate Profiles</span>
+                  </div>
+                  <span style={{ fontSize: '11px', color: '#64748b' }}>
+                    Instant clinical filtering by experience, qualification, domain &amp; state
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '12px', marginBottom: '14px' }}>
                   <div>
-                    <label className="text-[11px] font-bold text-slate-600 block mb-1">Search Keyword / Name</label>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                      Search Keyword / Doctor Name
+                    </label>
                     <input
                       type="text"
-                      className="w-full text-xs p-2 rounded-lg border border-slate-200 bg-white"
-                      placeholder="Doctor name, hospital, skill..."
+                      placeholder="Doctor name, hospital, skills..."
                       value={candidateSearch}
                       onChange={(e) => setCandidateSearch(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && void fetchCandidates()}
+                      style={{
+                        width: '100%',
+                        padding: '8px 11px',
+                        borderRadius: '8px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '12px',
+                        color: '#0f172a',
+                        background: '#fff'
+                      }}
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-bold text-slate-600 block mb-1">Qualification</label>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                      Qualification
+                    </label>
                     <input
                       type="text"
-                      className="w-full text-xs p-2 rounded-lg border border-slate-200 bg-white"
-                      placeholder="e.g. MBBS, MD, MS, DNB, BDS"
+                      placeholder="e.g. MBBS, MD, MS, DNB, BDS..."
                       value={candidateQualification}
                       onChange={(e) => setCandidateQualification(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 11px',
+                        borderRadius: '8px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '12px',
+                        color: '#0f172a',
+                        background: '#fff'
+                      }}
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-bold text-slate-600 block mb-1">Speciality</label>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                      Speciality / Department
+                    </label>
                     <input
                       type="text"
-                      className="w-full text-xs p-2 rounded-lg border border-slate-200 bg-white"
-                      placeholder="e.g. Cardiology, Surgery"
+                      placeholder="e.g. Cardiology, Surgery, ICU..."
                       value={candidateSpeciality}
                       onChange={(e) => setCandidateSpeciality(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 11px',
+                        borderRadius: '8px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '12px',
+                        color: '#0f172a',
+                        background: '#fff'
+                      }}
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-bold text-slate-600 block mb-1">Job Role</label>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                      Preferred Job Role
+                    </label>
                     <input
                       type="text"
-                      className="w-full text-xs p-2 rounded-lg border border-slate-200 bg-white"
-                      placeholder="e.g. Senior Resident, Consultant"
+                      placeholder="e.g. Senior Resident, Consultant..."
                       value={candidateJobRole}
                       onChange={(e) => setCandidateJobRole(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 11px',
+                        borderRadius: '8px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '12px',
+                        color: '#0f172a',
+                        background: '#fff'
+                      }}
                     />
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   <div>
-                    <label className="text-[11px] font-bold text-slate-600 block mb-1">Min Experience (Years)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      className="w-full text-xs p-2 rounded-lg border border-slate-200 bg-white"
-                      placeholder="e.g. 2"
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                      Min Experience
+                    </label>
+                    <select
                       value={candidateMinExp ?? ''}
                       onChange={(e) => setCandidateMinExp(e.target.value ? Number(e.target.value) : undefined)}
-                    />
+                      style={{
+                        width: '100%',
+                        padding: '8px 11px',
+                        borderRadius: '8px',
+                        border: candidateMinExp !== undefined ? '1px solid #059669' : '1px solid #cbd5e1',
+                        fontSize: '12px',
+                        color: candidateMinExp !== undefined ? '#047857' : '#0f172a',
+                        background: candidateMinExp !== undefined ? '#ecfdf5' : '#fff',
+                        fontWeight: candidateMinExp !== undefined ? 700 : 400
+                      }}
+                    >
+                      <option value="">Any Experience</option>
+                      <option value="1">1+ Years Experience</option>
+                      <option value="2">2+ Years Experience (&gt; 2 yrs)</option>
+                      <option value="3">3+ Years Experience</option>
+                      <option value="5">5+ Years Experience</option>
+                      <option value="8">8+ Years Experience</option>
+                      <option value="10">10+ Years Experience</option>
+                    </select>
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-bold text-slate-600 block mb-1">State / Location</label>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                      State / Location
+                    </label>
                     <input
                       type="text"
-                      className="w-full text-xs p-2 rounded-lg border border-slate-200 bg-white"
-                      placeholder="e.g. Delhi, Maharashtra"
+                      placeholder="e.g. Delhi, Maharashtra, MP..."
                       value={candidateState}
                       onChange={(e) => setCandidateState(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 11px',
+                        borderRadius: '8px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '12px',
+                        color: '#0f172a',
+                        background: '#fff'
+                      }}
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-bold text-slate-600 block mb-1">Medical Domain</label>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                      Medical Domain
+                    </label>
                     <select
-                      className="w-full text-xs p-2 rounded-lg border border-slate-200 bg-white"
                       value={candidateType}
                       onChange={(e) => setCandidateType(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 11px',
+                        borderRadius: '8px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '12px',
+                        color: '#0f172a',
+                        background: '#fff'
+                      }}
                     >
                       <option value="">All Domains</option>
                       <option value="Modern Medicine">Allopathy / Modern Medicine</option>
                       <option value="Dental">Dental Surgery</option>
-                      <option value="AYUSH">AYUSH</option>
-                      <option value="Nursing">Nursing</option>
+                      <option value="AYUSH">AYUSH (Ayurveda/Homeo)</option>
+                      <option value="Nursing">Nursing Services</option>
                       <option value="Pharmacy">Pharmacy</option>
-                      <option value="Paramedical">Paramedical</option>
+                      <option value="Paramedical">Paramedical &amp; Allied</option>
                       <option value="Administration">Hospital Administration</option>
                     </select>
                   </div>
+                </div>
 
-                  <div className="flex items-end gap-2">
-                    <button
-                      type="button"
-                      onClick={() => void fetchCandidates()}
-                      disabled={loadingCandidates}
-                      className="flex-1 bg-teal-600 text-white text-xs font-bold py-2 px-3 rounded-lg hover:bg-teal-700 transition cursor-pointer"
-                    >
-                      {loadingCandidates ? 'Searching…' : 'Apply Filters'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCandidateSearch('');
-                        setCandidateQualification('');
-                        setCandidateSpeciality('');
-                        setCandidateJobRole('');
-                        setCandidateMinExp(undefined);
-                        setCandidateState('');
-                        setCandidateType('');
-                        setTimeout(() => void fetchCandidates(), 50);
-                      }}
-                      className="bg-slate-200 text-slate-700 text-xs font-semibold py-2 px-3 rounded-lg hover:bg-slate-300 transition cursor-pointer"
-                    >
-                      Reset
-                    </button>
-                  </div>
+                {/* Filter Action Buttons */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCandidateSearch('');
+                      setCandidateQualification('');
+                      setCandidateSpeciality('');
+                      setCandidateJobRole('');
+                      setCandidateMinExp(undefined);
+                      setCandidateState('');
+                      setCandidateType('');
+                      setTimeout(() => void fetchCandidates(), 50);
+                    }}
+                    style={{
+                      background: '#f1f5f9',
+                      color: '#475569',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      padding: '9px 18px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Reset Filters
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => void fetchCandidates()}
+                    disabled={loadingCandidates}
+                    style={{
+                      background: 'linear-gradient(135deg, #0f766e 0%, #0d9488 100%)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '9px 24px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      boxShadow: '0 3px 10px rgba(13, 148, 136, 0.3)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <Search size={14} />
+                    {loadingCandidates ? 'Filtering Candidates…' : '🔍 Apply Filters'}
+                  </button>
                 </div>
               </div>
 
               {/* Candidates Grid */}
               {loadingCandidates ? (
-                <div className="text-center py-12 text-slate-500 text-sm">Searching candidates…</div>
+                <div style={{ textAlign: 'center', padding: '48px 20px', color: '#64748b', fontSize: '14px' }}>
+                  <RefreshCw size={22} className="spin-icon" style={{ margin: '0 auto 8px auto', color: '#0d9488' }} />
+                  Searching medical candidate directory…
+                </div>
               ) : candidatesList.length === 0 ? (
-                <div className="text-center py-12 bg-slate-50 rounded-2xl border border-slate-200">
-                  <UserCheck className="h-10 w-10 text-slate-400 mx-auto mb-2" />
-                  <h3 className="text-sm font-bold text-slate-700">No candidates match your search</h3>
-                  <p className="text-xs text-slate-500 mt-1">Try broadening your filter criteria or clearing the search keyword.</p>
+                <div style={{ textAlign: 'center', padding: '48px 20px', background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                  <UserCheck size={36} style={{ color: '#94a3b8', margin: '0 auto 10px auto' }} />
+                  <h3 style={{ fontSize: '15px', fontWeight: 700, color: '#1e293b' }}>No candidates match your search criteria</h3>
+                  <p style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>Try lowering minimum experience or clearing the search keyword.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
                   {candidatesList.map((cand) => (
                     <div
                       key={cand.id || cand.candidateId || cand.email}
-                      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs hover:border-teal-300 hover:shadow-md transition flex flex-col justify-between"
+                      style={{
+                        background: '#ffffff',
+                        borderRadius: '16px',
+                        border: '1px solid #e2e8f0',
+                        boxShadow: '0 3px 14px rgba(15, 23, 42, 0.04)',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between'
+                      }}
                     >
-                      <div>
-                        <div className="flex items-start gap-3 mb-3">
+                      {/* Top Accent Line */}
+                      <div style={{
+                        height: '4px',
+                        background: cand.yearsExperience && cand.yearsExperience >= 2
+                          ? 'linear-gradient(90deg, #10b981 0%, #0d9488 100%)'
+                          : 'linear-gradient(90deg, #0d9488 0%, #3b82f6 100%)'
+                      }} />
+
+                      <div style={{ padding: '16px 16px 12px 16px' }}>
+                        {/* Avatar & Header */}
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '12px' }}>
                           {cand.profilePhotoUrl ? (
                             <img
                               src={cand.profilePhotoUrl}
                               alt={cand.name || 'Candidate'}
-                              className="w-12 h-12 rounded-xl object-cover border border-teal-200 shrink-0"
+                              style={{ width: '48px', height: '48px', borderRadius: '12px', objectFit: 'cover', border: '2px solid #0d9488', flexShrink: 0 }}
                             />
                           ) : (
-                            <div className="w-12 h-12 rounded-xl bg-teal-100 text-teal-800 font-bold text-sm flex items-center justify-center shrink-0">
+                            <div style={{
+                              width: '48px',
+                              height: '48px',
+                              borderRadius: '12px',
+                              background: 'linear-gradient(135deg, #0d9488 0%, #1e3a8a 100%)',
+                              color: '#ffffff',
+                              fontWeight: 800,
+                              fontSize: '16px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0
+                            }}>
                               {getInitials(cand.name || 'MD')}
                             </div>
                           )}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-1">
-                              <h3 className="text-sm font-bold text-slate-900 truncate">
+
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                              <h3 style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {cand.name || 'Clinical Candidate'}
                               </h3>
                               {cand.yearsExperience != null && (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 shrink-0">
-                                  {cand.yearsExperience} yrs exp
+                                <span style={{
+                                  fontSize: '11px',
+                                  fontWeight: 800,
+                                  padding: '2px 8px',
+                                  borderRadius: '9999px',
+                                  flexShrink: 0,
+                                  background: cand.yearsExperience >= 2 ? '#ecfdf5' : '#f1f5f9',
+                                  color: cand.yearsExperience >= 2 ? '#047857' : '#475569',
+                                  border: cand.yearsExperience >= 2 ? '1px solid #a7f3d0' : '1px solid #cbd5e1'
+                                }}>
+                                  {cand.yearsExperience >= 2 ? '🎯 ' : ''}{cand.yearsExperience} yrs exp
                                 </span>
                               )}
                             </div>
-                            <div className="text-xs font-semibold text-teal-700 truncate">
-                              {[cand.qualification, cand.speciality].filter(Boolean).join(' • ') || 'Medical Professional'}
+
+                            {/* Qualification & Speciality */}
+                            <div style={{ fontSize: '12px', fontWeight: 700, color: '#0d9488', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {[cand.qualification, cand.speciality].filter(Boolean).join(' • ') || 'Healthcare Professional'}
                             </div>
+
+                            {/* Current Hospital */}
                             {cand.currentOrganization && (
-                              <div className="text-[11px] text-slate-500 truncate flex items-center gap-1 mt-0.5">
-                                <Building2 size={11} className="shrink-0" />
-                                <span>{cand.currentOrganization}</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                                <Building2 size={12} style={{ flexShrink: 0, color: '#94a3b8' }} />
+                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cand.currentOrganization}</span>
                               </div>
                             )}
                           </div>
                         </div>
 
-                        {/* Location & Preferred Role */}
-                        <div className="grid grid-cols-2 gap-2 text-[11px] bg-slate-50 p-2.5 rounded-xl border border-slate-100 mb-3">
+                        {/* Location & Preferred Role Box */}
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(2, 1fr)',
+                          gap: '8px',
+                          background: '#f8fafc',
+                          padding: '9px 11px',
+                          borderRadius: '10px',
+                          border: '1px solid #f1f5f9',
+                          marginBottom: '10px'
+                        }}>
                           <div>
-                            <span className="text-slate-400 block text-[10px]">Location</span>
-                            <span className="font-medium text-slate-700 truncate block">
-                              {[cand.currentCity, cand.state].filter(Boolean).join(', ') || 'Not specified'}
+                            <span style={{ display: 'block', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#94a3b8', fontWeight: 700 }}>
+                              Location
+                            </span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 600, color: '#334155', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              <MapPin size={11} style={{ color: '#64748b', flexShrink: 0 }} />
+                              {[cand.currentCity, cand.state].filter(Boolean).join(', ') || 'India'}
                             </span>
                           </div>
                           <div>
-                            <span className="text-slate-400 block text-[10px]">Preferred Role</span>
-                            <span className="font-medium text-slate-700 truncate block">
-                              {cand.preferredJobRole || 'Any Role'}
+                            <span style={{ display: 'block', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#94a3b8', fontWeight: 700 }}>
+                              Preferred Role
+                            </span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 600, color: '#334155', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              <Briefcase size={11} style={{ color: '#64748b', flexShrink: 0 }} />
+                              {cand.preferredJobRole || 'Clinical Practice'}
                             </span>
                           </div>
                         </div>
 
                         {/* Skills Chips */}
                         {cand.skills && (
-                          <div className="mb-3">
-                            <div className="flex flex-wrap gap-1">
-                              {cand.skills.split(',').slice(0, 4).map((s, idx) => (
-                                <span key={idx} className="text-[10px] bg-indigo-50 text-indigo-700 font-medium px-2 py-0.5 rounded-md">
-                                  {s.trim()}
-                                </span>
-                              ))}
-                            </div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }}>
+                            {cand.skills.split(',').slice(0, 4).map((s, idx) => (
+                              <span key={idx} style={{
+                                fontSize: '10px',
+                                fontWeight: 600,
+                                background: '#eff6ff',
+                                color: '#1d4ed8',
+                                border: '1px solid #dbeafe',
+                                padding: '2px 6px',
+                                borderRadius: '5px'
+                              }}>
+                                {s.trim()}
+                              </span>
+                            ))}
                           </div>
                         )}
                       </div>
 
-                      {/* Action buttons */}
-                      <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
+                      {/* Action Buttons */}
+                      <div style={{
+                        padding: '10px 16px',
+                        background: '#fafbfc',
+                        borderTop: '1px solid #f1f5f9',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}>
                         {cand.resumeUrl ? (
                           <a
                             href={cand.resumeUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex-1 inline-flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-xl bg-teal-600 text-white text-xs font-bold hover:bg-teal-700 transition"
+                            style={{
+                              flex: 1,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px',
+                              padding: '8px 12px',
+                              borderRadius: '8px',
+                              background: '#059669',
+                              color: '#ffffff',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              textDecoration: 'none',
+                              boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
+                              cursor: 'pointer'
+                            }}
                           >
-                            <FileText size={13} />
-                            View CV
+                            <FileText size={13} /> View / Download CV
                           </a>
                         ) : (
-                          <span className="flex-1 text-center py-1.5 text-xs text-slate-400 bg-slate-50 rounded-xl">
-                            No CV uploaded
+                          <span style={{
+                            flex: 1,
+                            textAlign: 'center',
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            background: '#f1f5f9',
+                            color: '#94a3b8',
+                            fontSize: '11px',
+                            fontWeight: 600
+                          }}>
+                            No CV Uploaded
                           </span>
                         )}
                         <button
                           type="button"
                           onClick={() => setViewingCandidate(cand)}
-                          className="py-1.5 px-3 rounded-xl border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition cursor-pointer"
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            background: '#ffffff',
+                            border: '1px solid #cbd5e1',
+                            color: '#1e293b',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
                         >
-                          Full Profile
+                          <Eye size={13} /> Full Profile
                         </button>
                       </div>
                     </div>

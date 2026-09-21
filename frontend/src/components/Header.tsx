@@ -79,7 +79,7 @@ export function Header({ currentPage, onNavigate, isAuthenticated }: HeaderProps
   };
 
   return (
-    <header className="medex-site-header sticky top-0 z-[1000] w-full border-b bg-white">
+    <header className="medex-site-header w-full border-b bg-white">
       <div className="container mx-auto px-3 sm:px-4">
         <div className="flex h-14 sm:h-16 items-center justify-between gap-2">
           <div className="flex items-center cursor-pointer flex-shrink-0 px-1 sm:px-2 hover:opacity-95 transition-opacity" onClick={() => navigateAndClose('home')} aria-label="MedExJob Home">

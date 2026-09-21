@@ -130,15 +130,17 @@ function AppContent() {
   };
 
   return (
-    <div className={`flex flex-col min-h-screen ${isImpersonating ? 'pt-[48px]' : ''}`}>
-      <ImpersonationBanner onNavigate={handleNavigate} />
-      <Header
-        currentPage={currentPage}
-        onNavigate={handleNavigate}
-        isAuthenticated={isAuthenticated}
-        userRole={user?.role}
-      />
-      <main className="flex-1">
+    <div className={`flex flex-col min-h-screen ${isImpersonating ? 'is-impersonating' : ''}`}>
+      <div className="sticky top-0 z-[1000] w-full bg-white">
+        <ImpersonationBanner onNavigate={handleNavigate} />
+        <Header
+          currentPage={currentPage}
+          onNavigate={handleNavigate}
+          isAuthenticated={isAuthenticated}
+          userRole={user?.role}
+        />
+      </div>
+      <main className="flex-1 flex flex-col min-h-0">
         <Routes>
           <Route path="/" element={<HomePage onNavigate={handleNavigate} />} />
           <Route path="/home" element={<HomePage onNavigate={handleNavigate} />} />
@@ -371,7 +373,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AppContent />
-      <Toaster position="top-right" richColors />
+      <Toaster position="bottom-right" richColors />
     </BrowserRouter>
   );
 }

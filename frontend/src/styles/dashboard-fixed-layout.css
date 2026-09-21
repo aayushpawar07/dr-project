@@ -8,6 +8,13 @@
   --medex-dashboard-header-height: 64px;
 }
 
+body.is-impersonating,
+body:has(.is-impersonating),
+body:has(.impersonation-active),
+.is-impersonating {
+  --medex-dashboard-header-height: 112px;
+}
+
 /* Prevent the document/footer from becoming the dashboard scroll container. */
 body:has(.candidate-dashboard),
 body:has(.employer-dashboard),

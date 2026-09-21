@@ -31,16 +31,12 @@ export function ImpersonationBanner({ onNavigate }: ImpersonationBannerProps) {
   return (
     <div
       style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 999999,
+        width: '100%',
         backgroundColor: '#fffbeb',
         borderBottom: '2px solid #f59e0b',
-        boxShadow: '0 4px 14px rgba(245, 158, 11, 0.22)',
+        boxShadow: '0 2px 8px rgba(245, 158, 11, 0.18)',
       }}
-      className="px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm font-sans"
+      className="impersonation-active px-4 py-2 sm:py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm font-sans"
     >
       <div className="flex items-center gap-2.5 min-w-0">
         <span

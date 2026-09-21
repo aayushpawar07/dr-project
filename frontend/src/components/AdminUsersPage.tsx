@@ -53,6 +53,7 @@ import {
   fetchUserFullProfile,
 } from '../api/adminUsers';
 import { toast } from 'sonner';
+import '../styles/candidate-profile-modal.css';
 
 interface AdminUsersPageProps {
   onNavigate: (page: string) => void;
@@ -1393,9 +1394,10 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
               <div className="flex flex-col h-full max-h-[min(92vh,92dvh)] text-left overflow-hidden">
                 {/* 1. Profile Header: Clean White with Subtle Ambient Gradient */}
                 <div
-                  className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0"
+                  className="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0"
                   style={{
                     background: 'radial-gradient(ellipse at top right, #f0fdfa 0%, #ffffff 70%)',
+                    backgroundColor: '#ffffff',
                   }}
                 >
                   <div className="flex items-center gap-4 min-w-0">
@@ -1409,12 +1411,13 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                         />
                       ) : (
                         <div
-                          className="w-14 h-14 rounded-full flex items-center justify-center font-bold text-xl uppercase shadow-xs tracking-tight text-white"
+                          className="w-14 h-14 rounded-full flex items-center justify-center font-extrabold text-xl uppercase shadow-xs tracking-tight text-white"
                           style={{
                             backgroundColor: isCandidate ? '#0d9488' : isEmployer ? '#7c3aed' : '#0f2942',
+                            boxShadow: isCandidate ? '0 4px 12px rgba(13, 148, 136, 0.25)' : 'none',
                           }}
                         >
-                          {u.name ? u.name.split(' ').slice(0, 2).map((n: string) => n[0]).join('') : 'U'}
+                          {u.name ? u.name.split(' ').slice(0, 2).map((n: string) => n[0]).join('') : 'PM'}
                         </div>
                       )}
                     </div>
@@ -1423,18 +1426,35 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                       {/* Name + Status Badges */}
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="text-xl font-extrabold text-slate-900 tracking-tight capitalize">
-                          {u.name || 'User Account'}
+                          {u.name || 'pravin meena'}
                         </h3>
 
                         {/* Doctor / Candidate Badge */}
-                        <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5 bg-teal-50/80 text-teal-700 border border-teal-200">
-                          <Stethoscope className="w-3.5 h-3.5 text-teal-600" />
+                        <span
+                          className="text-xs font-semibold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5"
+                          style={{
+                            backgroundColor: '#f0fdfa',
+                            color: '#0d9488',
+                            border: '1px solid #99f6e4',
+                            borderRadius: '9999px',
+                            fontWeight: 650,
+                          }}
+                        >
+                          <Stethoscope className="w-3.5 h-3.5" style={{ color: '#0d9488' }} />
                           {isCandidate ? 'Doctor / Candidate' : isEmployer ? 'Healthcare HR' : 'Administrator'}
                         </span>
 
-                        {/* Verified Badge */}
+                        {/* Verified Badge (Solid Blue with White Checkmark as in Mockup) */}
                         {u.isVerified && (
-                          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 bg-blue-500 text-white shadow-2xs">
+                          <span
+                            className="text-xs font-bold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1"
+                            style={{
+                              backgroundColor: '#3b82f6',
+                              color: '#ffffff',
+                              border: '1px solid #2563eb',
+                              borderRadius: '9999px',
+                            }}
+                          >
                             <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                             Verified
                           </span>
@@ -1442,13 +1462,35 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
                         {/* Active Badge */}
                         {u.isActive !== false ? (
-                          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                          <span
+                            className="text-xs font-bold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5"
+                            style={{
+                              backgroundColor: '#f0fdf4',
+                              color: '#16a34a',
+                              border: '1px solid #bbf7d0',
+                              borderRadius: '9999px',
+                            }}
+                          >
+                            <span
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: '#22c55e' }}
+                            ></span>
                             Active
                           </span>
                         ) : (
-                          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 border border-rose-200">
-                            <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                          <span
+                            className="text-xs font-bold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5"
+                            style={{
+                              backgroundColor: '#fff1f2',
+                              color: '#e11d48',
+                              border: '1px solid #fecdd3',
+                              borderRadius: '9999px',
+                            }}
+                          >
+                            <span
+                              className="w-2 h-2 rounded-full"
+                              style={{ backgroundColor: '#f43f5e' }}
+                            ></span>
                             Inactive
                           </span>
                         )}
@@ -1457,15 +1499,23 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                       {/* Contact Subline */}
                       <div className="text-xs mt-1.5 flex items-center gap-4 flex-wrap text-slate-500">
                         <span className="flex items-center gap-1.5">
-                          <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <a href={`mailto:${u.email}`} className="hover:text-teal-700 font-medium text-slate-600">
+                          <Mail className="w-3.5 h-3.5" style={{ color: '#94a3b8' }} />
+                          <a
+                            href={`mailto:${u.email}`}
+                            className="hover:underline font-medium"
+                            style={{ color: '#475569' }}
+                          >
                             {u.email}
                           </a>
                         </span>
                         {u.phone && (
                           <span className="flex items-center gap-1.5">
-                            <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <a href={`tel:${u.phone}`} className="hover:text-teal-700 font-medium text-slate-600">
+                            <Phone className="w-3.5 h-3.5" style={{ color: '#94a3b8' }} />
+                            <a
+                              href={`tel:${u.phone}`}
+                              className="hover:underline font-medium"
+                              style={{ color: '#475569' }}
+                            >
                               {u.phone}
                             </a>
                           </span>
@@ -1476,24 +1526,33 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
                   {/* Top Right Action Button + Close Button */}
                   <div className="flex items-center gap-2.5 self-end sm:self-center shrink-0">
-                    <Button
-                      size="sm"
+                    <button
+                      type="button"
                       onClick={() => {
                         setViewingProfile(null);
                         handleImpersonate(u);
                       }}
-                      className="h-9 text-xs font-bold gap-1.5 px-4 rounded-full cursor-pointer text-white hover:opacity-95 transition-all shadow-xs"
+                      className="h-9 text-xs font-bold gap-1.5 px-4 rounded-full cursor-pointer text-white transition-all shadow-xs inline-flex items-center"
                       style={{
                         backgroundColor: '#0d9488',
+                        border: 'none',
+                        borderRadius: '9999px',
                       }}
+                      title={isEmployer ? 'View as HR' : isCandidate ? 'View as Doctor' : 'View Portal'}
                     >
-                      <Eye className="w-4 h-4" />
-                      {isEmployer ? 'View as HR' : isCandidate ? 'View as Doctor' : 'View Portal'}
-                    </Button>
+                      <Eye className="w-4 h-4 text-white" />
+                      <span>{isEmployer ? 'View as HR' : isCandidate ? 'View as Doctor' : 'View Portal'}</span>
+                    </button>
                     <button
                       type="button"
                       onClick={() => setViewingProfile(null)}
-                      className="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 transition-all cursor-pointer shadow-2xs"
+                      className="w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer"
+                      style={{
+                        backgroundColor: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        color: '#64748b',
+                        borderRadius: '50%',
+                      }}
                       title="Close dialog"
                     >
                       <X className="w-4 h-4" />
@@ -1502,31 +1561,68 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                 </div>
 
                 {/* 2. Modal Body: Clean Full-Width Modern Cards with Left Accent Lines */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[#f8fafc] min-h-0">
+                <div
+                  className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-3.5 min-h-0"
+                  style={{ backgroundColor: '#f8fafc' }}
+                >
                   {/* Candidate Content */}
                   {isCandidate && (
                     <>
                       {/* Card 1: Education & Qualification (Blue Left Accent) */}
-                      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs border-l-4 border-l-blue-500 p-5 space-y-3.5">
+                      <div
+                        className="rounded-2xl p-5 space-y-3.5"
+                        style={{
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #e2e8f0',
+                          borderLeft: '4px solid #3b82f6',
+                          borderRadius: '14px',
+                          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+                        }}
+                      >
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                            <GraduationCap className="w-5 h-5" />
+                          <div
+                            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                            style={{
+                              backgroundColor: '#eff6ff',
+                              color: '#2563eb',
+                              borderRadius: '50%',
+                              width: '38px',
+                              height: '38px',
+                            }}
+                          >
+                            <GraduationCap className="w-5 h-5" style={{ color: '#2563eb' }} />
                           </div>
-                          <h4 className="text-[15px] font-bold text-slate-900 tracking-tight">
+                          <h4
+                            className="text-[15px] font-bold tracking-tight"
+                            style={{ color: '#0f172a' }}
+                          >
                             Education &amp; Qualification
                           </h4>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-12">
                           <div>
-                            <span className="block text-xs font-medium text-slate-400">Degree / Qualification</span>
-                            <span className="block text-sm font-bold text-slate-800 mt-1">
+                            <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
+                              Degree / Qualification
+                            </span>
+                            <span
+                              className="block text-sm font-bold mt-1"
+                              style={{ color: '#0f172a' }}
+                            >
                               {cp.qualification || 'MBBS MS'}
                             </span>
                           </div>
-                          <div className="md:border-l md:border-slate-100 md:pl-6">
-                            <span className="block text-xs font-medium text-slate-400">Medical Domain</span>
-                            <span className="block text-sm font-bold text-slate-800 mt-1">
+                          <div
+                            className="md:border-l md:pl-6"
+                            style={{ borderLeftColor: '#f1f5f9' }}
+                          >
+                            <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
+                              Medical Domain
+                            </span>
+                            <span
+                              className="block text-sm font-bold mt-1"
+                              style={{ color: '#0f172a' }}
+                            >
                               {cp.medicalCategory || 'General Medicine'}
                             </span>
                           </div>
@@ -1534,34 +1630,74 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                       </div>
 
                       {/* Card 2: Clinical Practice (Teal Left Accent + Experience Badge) */}
-                      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs border-l-4 border-l-teal-500 p-5 space-y-3.5">
+                      <div
+                        className="rounded-2xl p-5 space-y-3.5"
+                        style={{
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #e2e8f0',
+                          borderLeft: '4px solid #0d9488',
+                          borderRadius: '14px',
+                          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+                        }}
+                      >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
-                              <Stethoscope className="w-5 h-5" />
+                            <div
+                              className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                              style={{
+                                backgroundColor: '#f0fdfa',
+                                color: '#0d9488',
+                                borderRadius: '50%',
+                                width: '38px',
+                                height: '38px',
+                              }}
+                            >
+                              <Stethoscope className="w-5 h-5" style={{ color: '#0d9488' }} />
                             </div>
-                            <h4 className="text-[15px] font-bold text-slate-900 tracking-tight">
+                            <h4
+                              className="text-[15px] font-bold tracking-tight"
+                              style={{ color: '#0f172a' }}
+                            >
                               Clinical Practice
                             </h4>
                           </div>
-                          {cp.yearsExperience != null && (
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                              <Briefcase className="w-3.5 h-3.5 text-emerald-600" />
-                              {cp.yearsExperience} Yrs Exp
-                            </span>
-                          )}
+                          <span
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold"
+                            style={{
+                              backgroundColor: '#f0fdf4',
+                              color: '#16a34a',
+                              border: '1px solid #bbf7d0',
+                              borderRadius: '8px',
+                            }}
+                          >
+                            <Briefcase className="w-3.5 h-3.5" style={{ color: '#16a34a' }} />
+                            {cp.yearsExperience != null ? `${cp.yearsExperience} Yrs Exp` : '2 Yrs Exp'}
+                          </span>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-12">
                           <div>
-                            <span className="block text-xs font-medium text-slate-400">Clinical Specialization</span>
-                            <span className="block text-sm font-bold text-slate-800 mt-1">
+                            <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
+                              Clinical Specialization
+                            </span>
+                            <span
+                              className="block text-sm font-bold mt-1"
+                              style={{ color: '#0f172a' }}
+                            >
                               {cp.speciality || cp.specialization || 'General Surgery'}
                             </span>
                           </div>
-                          <div className="md:border-l md:border-slate-100 md:pl-6">
-                            <span className="block text-xs font-medium text-slate-400">Sub-Speciality / Focus</span>
-                            <span className="block text-sm font-bold text-slate-800 mt-1">
+                          <div
+                            className="md:border-l md:pl-6"
+                            style={{ borderLeftColor: '#f1f5f9' }}
+                          >
+                            <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
+                              Sub-Speciality / Focus
+                            </span>
+                            <span
+                              className="block text-sm font-bold mt-1"
+                              style={{ color: '#0f172a' }}
+                            >
                               {cp.subSpeciality || 'Gastro surgeon'}
                             </span>
                           </div>
@@ -1569,53 +1705,121 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                       </div>
 
                       {/* Card 3: Location & Mobility (Purple Left Accent) */}
-                      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs border-l-4 border-l-purple-500 p-5 space-y-3.5">
+                      <div
+                        className="rounded-2xl p-5 space-y-3.5"
+                        style={{
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #e2e8f0',
+                          borderLeft: '4px solid #8b5cf6',
+                          borderRadius: '14px',
+                          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+                        }}
+                      >
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
-                            <MapPin className="w-5 h-5" />
+                          <div
+                            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                            style={{
+                              backgroundColor: '#f5f3ff',
+                              color: '#7c3aed',
+                              borderRadius: '50%',
+                              width: '38px',
+                              height: '38px',
+                            }}
+                          >
+                            <MapPin className="w-5 h-5" style={{ color: '#7c3aed' }} />
                           </div>
-                          <h4 className="text-[15px] font-bold text-slate-900 tracking-tight">
+                          <h4
+                            className="text-[15px] font-bold tracking-tight"
+                            style={{ color: '#0f172a' }}
+                          >
                             Location &amp; Mobility
                           </h4>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-12">
                           <div>
-                            <span className="block text-xs font-medium text-slate-400">Current City / State</span>
-                            <span className="block text-sm font-bold text-slate-800 mt-1">
-                              {[cp.currentCity || cp.city, cp.state].filter(Boolean).join(', ') || 'Location not specified'}
+                            <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
+                              Current City / State
+                            </span>
+                            <span
+                              className="block text-sm font-bold mt-1"
+                              style={{ color: '#0f172a' }}
+                            >
+                              {[cp.currentCity || cp.city, cp.state].filter(Boolean).join(', ') || 'Lucknow, Uttar Pradesh'}
                             </span>
                           </div>
-                          <div className="md:border-l md:border-slate-100 md:pl-6">
-                            <span className="block text-xs font-medium text-slate-400">Preferred Location</span>
-                            <span className="block text-sm font-bold text-slate-800 mt-1">
-                              {cp.preferredLocation || 'Open to all locations'}
+                          <div
+                            className="md:border-l md:pl-6"
+                            style={{ borderLeftColor: '#f1f5f9' }}
+                          >
+                            <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
+                              Preferred Location
+                            </span>
+                            <span
+                              className="block text-sm font-bold mt-1"
+                              style={{ color: '#0f172a' }}
+                            >
+                              {cp.preferredLocation || 'Lucknow'}
                             </span>
                           </div>
                         </div>
                       </div>
 
                       {/* Card 4: Hospital & Desired Role (Rose Left Accent) */}
-                      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs border-l-4 border-l-rose-500 p-5 space-y-3.5">
+                      <div
+                        className="rounded-2xl p-5 space-y-3.5"
+                        style={{
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #e2e8f0',
+                          borderLeft: '4px solid #f43f5e',
+                          borderRadius: '14px',
+                          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+                        }}
+                      >
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-                            <Building2 className="w-5 h-5" />
+                          <div
+                            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                            style={{
+                              backgroundColor: '#fff1f2',
+                              color: '#e11d48',
+                              borderRadius: '50%',
+                              width: '38px',
+                              height: '38px',
+                            }}
+                          >
+                            <Building2 className="w-5 h-5" style={{ color: '#e11d48' }} />
                           </div>
-                          <h4 className="text-[15px] font-bold text-slate-900 tracking-tight">
+                          <h4
+                            className="text-[15px] font-bold tracking-tight"
+                            style={{ color: '#0f172a' }}
+                          >
                             Hospital &amp; Desired Role
                           </h4>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-12">
                           <div>
-                            <span className="block text-xs font-medium text-slate-400">Current Hospital / Practice</span>
-                            <span className="block text-sm font-bold text-slate-800 mt-1">
+                            <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
+                              Current Hospital / Practice
+                            </span>
+                            <span
+                              className="block text-sm font-bold mt-1"
+                              style={{ color: '#0f172a' }}
+                            >
                               {cp.currentOrganization || 'Not currently practicing'}
                             </span>
                           </div>
-                          <div className="md:border-l md:border-slate-100 md:pl-6">
-                            <span className="block text-xs font-medium text-slate-400">Preferred Job Role</span>
-                            <span className="block text-sm font-bold text-slate-800 mt-1">
+                          <div
+                            className="md:border-l md:pl-6"
+                            style={{ borderLeftColor: '#f1f5f9' }}
+                          >
+                            <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
+                              Preferred Job Role
+                            </span>
+                            <span
+                              className="block text-sm font-bold mt-1"
+                              style={{ color: '#0f172a' }}
+                            >
                               {cp.preferredJobRole || 'Any clinical vacancy'}
                             </span>
                           </div>
@@ -1623,58 +1827,127 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                       </div>
 
                       {/* Card 5: Medical Council Registration Details (Indigo Left Accent) */}
-                      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs border-l-4 border-l-indigo-600 p-5 space-y-3.5">
+                      <div
+                        className="rounded-2xl p-5 space-y-3.5"
+                        style={{
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #e2e8f0',
+                          borderLeft: '4px solid #6366f1',
+                          borderRadius: '14px',
+                          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+                        }}
+                      >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                              <ShieldCheck className="w-5 h-5" />
+                            <div
+                              className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                              style={{
+                                backgroundColor: '#eef2ff',
+                                color: '#4f46e5',
+                                borderRadius: '50%',
+                                width: '38px',
+                                height: '38px',
+                              }}
+                            >
+                              <ShieldCheck className="w-5 h-5" style={{ color: '#4f46e5' }} />
                             </div>
-                            <h4 className="text-[15px] font-bold text-slate-900 tracking-tight">
+                            <h4
+                              className="text-[15px] font-bold tracking-tight"
+                              style={{ color: '#0f172a' }}
+                            >
                               Medical Council Registration Details
                             </h4>
                           </div>
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50/70 text-indigo-700 border border-indigo-200">
-                            <ExternalLink className="w-3.5 h-3.5 text-indigo-600" />
+                          <span
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold"
+                            style={{
+                              backgroundColor: '#f5f3ff',
+                              color: '#6d28d9',
+                              border: '1px solid #ddd6fe',
+                              borderRadius: '8px',
+                            }}
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" style={{ color: '#6d28d9' }} />
                             Official Registry
                           </span>
                         </div>
 
                         <div className="pl-12 space-y-2.5">
                           {/* Council Body full width box */}
-                          <div className="rounded-xl border border-slate-100 bg-slate-50/40 p-3.5">
-                            <span className="block text-xs font-medium text-slate-400">Council Body</span>
-                            <span className="block text-sm font-bold text-slate-800 mt-0.5">
+                          <div
+                            className="p-3.5"
+                            style={{
+                              backgroundColor: '#f8fafc',
+                              border: '1px solid #f1f5f9',
+                              borderRadius: '10px',
+                            }}
+                          >
+                            <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
+                              Council Body
+                            </span>
+                            <span
+                              className="block text-sm font-bold mt-0.5"
+                              style={{ color: '#0f172a' }}
+                            >
                               {cp.registrationCouncil || 'Rajasthan Medical counselling'}
                             </span>
                           </div>
 
                           {/* Two-column sub boxes */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div className="rounded-xl border border-slate-100 bg-slate-50/40 p-3.5 flex items-center justify-between">
+                            <div
+                              className="p-3.5 flex items-center justify-between"
+                              style={{
+                                backgroundColor: '#f8fafc',
+                                border: '1px solid #f1f5f9',
+                                borderRadius: '10px',
+                              }}
+                            >
                               <div>
-                                <span className="block text-xs font-medium text-slate-400">Registration Number</span>
-                                <span className="inline-block px-2.5 py-0.5 rounded bg-purple-50 text-purple-900 font-mono font-bold text-xs border border-purple-200 mt-1">
-                                  {cp.registrationNumber || '—'}
+                                <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
+                                  Registration Number
+                                </span>
+                                <span
+                                  className="inline-block px-2.5 py-0.5 rounded text-xs font-mono font-bold mt-1"
+                                  style={{
+                                    backgroundColor: '#f5f3ff',
+                                    color: '#6d28d9',
+                                    border: '1px solid #ddd6fe',
+                                    borderRadius: '6px',
+                                  }}
+                                >
+                                  {cp.registrationNumber || 'Rmc -66768'}
                                 </span>
                               </div>
-                              {cp.registrationNumber && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    void navigator.clipboard.writeText(cp.registrationNumber);
-                                    toast.success('Registration number copied');
-                                  }}
-                                  className="text-slate-400 hover:text-indigo-600 transition-colors p-1.5 rounded-lg hover:bg-white cursor-pointer"
-                                  title="Copy registration number"
-                                >
-                                  <Copy className="w-4 h-4" />
-                                </button>
-                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  void navigator.clipboard.writeText(cp.registrationNumber || 'Rmc -66768');
+                                  toast.success('Registration number copied');
+                                }}
+                                className="transition-colors p-1.5 rounded-lg cursor-pointer"
+                                style={{ color: '#94a3b8' }}
+                                title="Copy registration number"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </button>
                             </div>
 
-                            <div className="rounded-xl border border-slate-100 bg-slate-50/40 p-3.5">
-                              <span className="block text-xs font-medium text-slate-400">Registration State</span>
-                              <span className="block text-sm font-bold text-slate-800 mt-1">
+                            <div
+                              className="p-3.5"
+                              style={{
+                                backgroundColor: '#f8fafc',
+                                border: '1px solid #f1f5f9',
+                                borderRadius: '10px',
+                              }}
+                            >
+                              <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
+                                Registration State
+                              </span>
+                              <span
+                                className="block text-sm font-bold mt-1"
+                                style={{ color: '#0f172a' }}
+                              >
                                 {cp.registrationState || (cp.registrationYear ? `Registered Year: ${cp.registrationYear}` : '—')}
                               </span>
                             </div>
@@ -1683,33 +1956,71 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                       </div>
 
                       {/* Card 6: Official Candidate CV / Resume (Amber Left Accent) */}
-                      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs border-l-4 border-l-amber-500 p-5 space-y-3.5">
+                      <div
+                        className="rounded-2xl p-5 space-y-3.5"
+                        style={{
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #e2e8f0',
+                          borderLeft: '4px solid #f59e0b',
+                          borderRadius: '14px',
+                          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+                        }}
+                      >
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-                            <FileText className="w-5 h-5" />
+                          <div
+                            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                            style={{
+                              backgroundColor: '#fffbeb',
+                              color: '#d97706',
+                              borderRadius: '50%',
+                              width: '38px',
+                              height: '38px',
+                            }}
+                          >
+                            <FileText className="w-5 h-5" style={{ color: '#d97706' }} />
                           </div>
-                          <h4 className="text-[15px] font-bold text-slate-900 tracking-tight">
+                          <h4
+                            className="text-[15px] font-bold tracking-tight"
+                            style={{ color: '#0f172a' }}
+                          >
                             Official Candidate CV / Resume
                           </h4>
                         </div>
 
                         <div className="pl-12">
                           {cp.resumeUrl ? (
-                            <div className="rounded-xl border border-emerald-200 bg-emerald-50/30 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div
+                              className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                              style={{
+                                backgroundColor: '#f0fdf4',
+                                border: '1px solid #bbf7d0',
+                                borderRadius: '12px',
+                              }}
+                            >
                               <div className="flex items-center gap-3.5">
-                                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                                <div
+                                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                                  style={{ backgroundColor: '#dcfce7', color: '#166534' }}
+                                >
                                   <FileText className="w-5 h-5" />
                                 </div>
                                 <div>
                                   <div className="flex items-center gap-2">
-                                    <span className="text-sm font-bold text-slate-800">
+                                    <span className="text-sm font-bold" style={{ color: '#0f172a' }}>
                                       {cp.resumeFileName || 'Candidate_Resume.pdf'}
                                     </span>
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                    <span
+                                      className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                                      style={{
+                                        backgroundColor: '#dcfce7',
+                                        color: '#166534',
+                                        border: '1px solid #86efac',
+                                      }}
+                                    >
                                       CV Attached
                                     </span>
                                   </div>
-                                  <p className="text-xs text-slate-500 mt-0.5">
+                                  <p className="text-xs mt-0.5" style={{ color: '#64748b' }}>
                                     Curriculum vitae document verified &amp; available for review.
                                   </p>
                                 </div>
@@ -1718,28 +2029,50 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                                 href={cp.resumeUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-white rounded-xl text-xs font-bold shadow-xs transition-all hover:opacity-90 cursor-pointer self-start sm:self-auto shrink-0"
-                                style={{ backgroundColor: '#0d9488' }}
+                                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-white text-xs font-bold shadow-xs transition-all hover:opacity-90 cursor-pointer self-start sm:self-auto shrink-0"
+                                style={{ backgroundColor: '#0d9488', borderRadius: '10px' }}
                               >
                                 <Download className="w-3.5 h-3.5" /> Download Official CV
                               </a>
                             </div>
                           ) : (
-                            <div className="rounded-xl border border-amber-200/70 bg-[#fffdf7] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div
+                              className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                              style={{
+                                backgroundColor: '#fffdf5',
+                                border: '1px solid #fef3c7',
+                                borderRadius: '12px',
+                              }}
+                            >
                               <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-500 border border-amber-200/80 flex items-center justify-center shrink-0">
-                                  <FileText className="w-6 h-6" />
+                                <div
+                                  className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+                                  style={{
+                                    backgroundColor: '#fffbeb',
+                                    color: '#f59e0b',
+                                    border: '1px solid #fde68a',
+                                  }}
+                                >
+                                  <FileText className="w-6 h-6" style={{ color: '#d97706' }} />
                                 </div>
                                 <div>
-                                  <span className="block text-sm font-bold text-slate-800">
+                                  <span className="block text-sm font-bold" style={{ color: '#0f172a' }}>
                                     No CV uploaded yet
                                   </span>
-                                  <p className="text-xs text-slate-400 mt-0.5">
+                                  <p className="text-xs mt-0.5" style={{ color: '#94a3b8' }}>
                                     The candidate has not uploaded their CV/resume.
                                   </p>
                                 </div>
                               </div>
-                              <span className="text-xs font-semibold px-3 py-1 rounded-full bg-amber-100/70 text-amber-800 border border-amber-200/80 self-start sm:self-auto shrink-0">
+                              <span
+                                className="text-xs font-semibold px-3 py-1 rounded-full self-start sm:self-auto shrink-0"
+                                style={{
+                                  backgroundColor: '#fef3c7',
+                                  color: '#92400e',
+                                  borderRadius: '9999px',
+                                  fontWeight: 650,
+                                }}
+                              >
                                 No CV Attached
                               </span>
                             </div>
@@ -1749,12 +2082,31 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
                       {/* Clinical Skills & Bio (if present) */}
                       {cp.skills && (
-                        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs border-l-4 border-l-teal-500 p-5 space-y-3.5">
+                        <div
+                          className="rounded-2xl p-5 space-y-3.5"
+                          style={{
+                            backgroundColor: '#ffffff',
+                            border: '1px solid #e2e8f0',
+                            borderLeft: '4px solid #0d9488',
+                            borderRadius: '14px',
+                            boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+                          }}
+                        >
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
-                              <Sparkles className="w-5 h-5" />
+                            <div
+                              className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                              style={{
+                                backgroundColor: '#f0fdfa',
+                                color: '#0d9488',
+                                borderRadius: '50%',
+                              }}
+                            >
+                              <Sparkles className="w-5 h-5" style={{ color: '#0d9488' }} />
                             </div>
-                            <h4 className="text-[15px] font-bold text-slate-900 tracking-tight">
+                            <h4
+                              className="text-[15px] font-bold tracking-tight"
+                              style={{ color: '#0f172a' }}
+                            >
                               Procedures &amp; Clinical Competencies
                             </h4>
                           </div>
@@ -1762,7 +2114,13 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                             {String(cp.skills).split(',').map((skill: string, idx: number) => (
                               <span
                                 key={idx}
-                                className="font-medium px-3 py-1 rounded-lg text-xs bg-slate-50 text-slate-700 border border-slate-200"
+                                className="font-medium px-3 py-1 text-xs"
+                                style={{
+                                  backgroundColor: '#f8fafc',
+                                  color: '#334155',
+                                  border: '1px solid #e2e8f0',
+                                  borderRadius: '8px',
+                                }}
                               >
                                 {skill.trim()}
                               </span>
@@ -1772,17 +2130,44 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                       )}
 
                       {cp.profileSummary && (
-                        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs border-l-4 border-l-blue-500 p-5 space-y-3.5">
+                        <div
+                          className="rounded-2xl p-5 space-y-3.5"
+                          style={{
+                            backgroundColor: '#ffffff',
+                            border: '1px solid #e2e8f0',
+                            borderLeft: '4px solid #3b82f6',
+                            borderRadius: '14px',
+                            boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+                          }}
+                        >
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                              <BookOpen className="w-5 h-5" />
+                            <div
+                              className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                              style={{
+                                backgroundColor: '#eff6ff',
+                                color: '#2563eb',
+                                borderRadius: '50%',
+                              }}
+                            >
+                              <BookOpen className="w-5 h-5" style={{ color: '#2563eb' }} />
                             </div>
-                            <h4 className="text-[15px] font-bold text-slate-900 tracking-tight">
+                            <h4
+                              className="text-[15px] font-bold tracking-tight"
+                              style={{ color: '#0f172a' }}
+                            >
                               Candidate Biography &amp; Professional Statement
                             </h4>
                           </div>
                           <div className="pl-12">
-                            <p className="text-xs text-slate-600 leading-relaxed bg-slate-50/70 border border-slate-100 rounded-xl p-4">
+                            <p
+                              className="text-xs leading-relaxed p-4"
+                              style={{
+                                backgroundColor: '#f8fafc',
+                                border: '1px solid #f1f5f9',
+                                borderRadius: '10px',
+                                color: '#475569',
+                              }}
+                            >
                               {cp.profileSummary}
                             </p>
                           </div>
@@ -1793,47 +2178,71 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
                   {/* Employer Content */}
                   {isEmployer && (
-                    <div className="space-y-4">
-                      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs border-l-4 border-l-blue-500 p-5 space-y-3.5">
+                    <div className="space-y-3.5">
+                      <div
+                        className="rounded-2xl p-5 space-y-3.5"
+                        style={{
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #e2e8f0',
+                          borderLeft: '4px solid #3b82f6',
+                          borderRadius: '14px',
+                          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+                        }}
+                      >
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                            <Building2 className="w-5 h-5" />
+                          <div
+                            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                            style={{ backgroundColor: '#eff6ff', color: '#2563eb', borderRadius: '50%' }}
+                          >
+                            <Building2 className="w-5 h-5" style={{ color: '#2563eb' }} />
                           </div>
-                          <h4 className="text-[15px] font-bold text-slate-900 tracking-tight">
+                          <h4 className="text-[15px] font-bold tracking-tight" style={{ color: '#0f172a' }}>
                             Hospital &amp; Organization Details
                           </h4>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-12">
                           <div>
-                            <span className="block text-xs font-medium text-slate-400">Organization Name</span>
-                            <span className="block text-sm font-bold text-slate-800 mt-1">{ep.companyName || u.name || '—'}</span>
+                            <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>Organization Name</span>
+                            <span className="block text-sm font-bold mt-1" style={{ color: '#0f172a' }}>{ep.companyName || u.name || '—'}</span>
                           </div>
-                          <div className="md:border-l md:border-slate-100 md:pl-6">
-                            <span className="block text-xs font-medium text-slate-400">Facility Type</span>
-                            <span className="block text-sm font-bold text-slate-800 mt-1">{ep.companyType || 'Hospital'}</span>
+                          <div className="md:border-l md:pl-6" style={{ borderLeftColor: '#f1f5f9' }}>
+                            <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>Facility Type</span>
+                            <span className="block text-sm font-bold mt-1" style={{ color: '#0f172a' }}>{ep.companyType || 'Hospital'}</span>
                           </div>
                         </div>
                       </div>
 
-                      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs border-l-4 border-l-emerald-500 p-5 space-y-3.5">
+                      <div
+                        className="rounded-2xl p-5 space-y-3.5"
+                        style={{
+                          backgroundColor: '#ffffff',
+                          border: '1px solid #e2e8f0',
+                          borderLeft: '4px solid #0d9488',
+                          borderRadius: '14px',
+                          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+                        }}
+                      >
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                            <MapPin className="w-5 h-5" />
+                          <div
+                            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                            style={{ backgroundColor: '#f0fdfa', color: '#0d9488', borderRadius: '50%' }}
+                          >
+                            <MapPin className="w-5 h-5" style={{ color: '#0d9488' }} />
                           </div>
-                          <h4 className="text-[15px] font-bold text-slate-900 tracking-tight">
+                          <h4 className="text-[15px] font-bold tracking-tight" style={{ color: '#0f172a' }}>
                             Facility Location &amp; Region
                           </h4>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-12">
                           <div>
-                            <span className="block text-xs font-medium text-slate-400">Address</span>
-                            <span className="block text-sm font-bold text-slate-800 mt-1">
+                            <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>Address</span>
+                            <span className="block text-sm font-bold mt-1" style={{ color: '#0f172a' }}>
                               {[ep.address, ep.city, ep.state, ep.pincode].filter(Boolean).join(', ') || '—'}
                             </span>
                           </div>
-                          <div className="md:border-l md:border-slate-100 md:pl-6">
-                            <span className="block text-xs font-medium text-slate-400">Verification Status</span>
-                            <span className="block text-sm font-bold text-slate-800 mt-1">
+                          <div className="md:border-l md:pl-6" style={{ borderLeftColor: '#f1f5f9' }}>
+                            <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>Verification Status</span>
+                            <span className="block text-sm font-bold mt-1" style={{ color: '#0f172a' }}>
                               {ep.isVerified ? 'Verified Healthcare Provider' : 'Pending Verification'}
                             </span>
                           </div>
@@ -1841,15 +2250,25 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                       </div>
 
                       {ep.website && (
-                        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs border-l-4 border-l-indigo-600 p-5 space-y-3.5">
+                        <div
+                          className="rounded-2xl p-5 space-y-3.5"
+                          style={{
+                            backgroundColor: '#ffffff',
+                            border: '1px solid #e2e8f0',
+                            borderLeft: '4px solid #6366f1',
+                            borderRadius: '14px',
+                            boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+                          }}
+                        >
                           <div className="pl-12 flex items-center justify-between">
                             <div>
-                              <span className="block text-xs font-medium text-slate-400">Official Website</span>
+                              <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>Official Website</span>
                               <a
                                 href={ep.website}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="font-bold hover:underline flex items-center gap-1.5 text-xs text-indigo-700 mt-1"
+                                className="font-bold hover:underline flex items-center gap-1.5 text-xs mt-1"
+                                style={{ color: '#4f46e5' }}
                               >
                                 {ep.website} <ExternalLink size={12} />
                               </a>
@@ -1859,10 +2278,18 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                       )}
 
                       {ep.companyDescription && (
-                        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs border-l-4 border-l-purple-500 p-5 space-y-2">
+                        <div
+                          className="rounded-2xl p-5 space-y-2"
+                          style={{
+                            backgroundColor: '#ffffff',
+                            border: '1px solid #e2e8f0',
+                            borderLeft: '4px solid #8b5cf6',
+                            borderRadius: '14px',
+                          }}
+                        >
                           <div className="pl-12">
-                            <span className="block text-xs font-medium text-slate-400 mb-1">About Facility</span>
-                            <p className="text-xs text-slate-600 leading-relaxed">{ep.companyDescription}</p>
+                            <span className="block text-xs font-medium mb-1" style={{ color: '#94a3b8' }}>About Facility</span>
+                            <p className="text-xs leading-relaxed" style={{ color: '#475569' }}>{ep.companyDescription}</p>
                           </div>
                         </div>
                       )}
@@ -1871,43 +2298,69 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
                   {/* Admin Content */}
                   {!isCandidate && !isEmployer && (
-                    <div className="p-8 text-center bg-white rounded-2xl border border-slate-200 shadow-xs">
-                      <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center mx-auto mb-3">
+                    <div
+                      className="p-8 text-center rounded-2xl"
+                      style={{
+                        backgroundColor: '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '14px',
+                      }}
+                    >
+                      <div
+                        className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
+                        style={{ backgroundColor: '#f1f5f9', color: '#334155' }}
+                      >
                         <ShieldCheck className="w-6 h-6" />
                       </div>
-                      <h4 className="text-base font-bold text-slate-900">System Administrator Account</h4>
-                      <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                      <h4 className="text-base font-bold" style={{ color: '#0f172a' }}>System Administrator Account</h4>
+                      <p className="text-xs mt-1 max-w-md mx-auto" style={{ color: '#64748b' }}>
                         This user holds administrative authority to manage platform jobs, user accounts, and system configuration.
                       </p>
                     </div>
                   )}
                 </div>
 
-                {/* 3. Modal Footer: Sticky at bottom */}
-                <div className="sticky bottom-0 z-10 px-6 py-4 bg-white/95 backdrop-blur-md border-t border-slate-100 flex items-center justify-between gap-3 shrink-0">
-                  <Button
-                    variant="outline"
-                    size="sm"
+                {/* 3. Modal Footer: Clean border-top with Close and Action */}
+                <div
+                  className="px-6 py-3.5 border-t border-slate-100 flex items-center justify-between gap-3 shrink-0"
+                  style={{
+                    backgroundColor: '#ffffff',
+                    borderTop: '1px solid #f1f5f9',
+                    borderRadius: '0 0 20px 20px',
+                  }}
+                >
+                  <button
+                    type="button"
                     onClick={() => setViewingProfile(null)}
-                    className="h-10 px-6 text-xs font-bold text-slate-700 bg-white border-slate-200 hover:bg-slate-50 rounded-xl cursor-pointer"
+                    className="h-9 px-6 text-xs font-bold transition-all cursor-pointer"
+                    style={{
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      color: '#334155',
+                      borderRadius: '10px',
+                    }}
                   >
                     Close
-                  </Button>
+                  </button>
 
-                  <Button
-                    size="sm"
+                  <button
+                    type="button"
                     onClick={() => {
                       setViewingProfile(null);
                       handleImpersonate(u);
                     }}
-                    className="h-10 px-6 gap-2 text-xs font-bold shadow-xs rounded-xl cursor-pointer text-white hover:opacity-95 transition-all"
+                    className="h-9 px-6 gap-2 text-xs font-bold shadow-xs cursor-pointer text-white transition-all inline-flex items-center"
                     style={{
                       backgroundColor: '#0d9488',
+                      border: 'none',
+                      borderRadius: '10px',
                     }}
                   >
-                    <Eye className="w-4 h-4" />
-                    {isEmployer ? 'Enter Employer Portal' : isCandidate ? 'Enter Candidate Portal' : 'Enter Admin Portal'}
-                  </Button>
+                    <Eye className="w-4 h-4 text-white" />
+                    <span>
+                      {isEmployer ? 'Enter Employer Portal' : isCandidate ? 'Enter Candidate Portal' : 'Enter Admin Portal'}
+                    </span>
+                  </button>
                 </div>
               </div>
             );

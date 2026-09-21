@@ -22,6 +22,7 @@ import "./styles/dashboard-theme-2026.css";
 import "./styles/dashboard-mobile-tablet.css";
 import "./styles/dashboard-mockup.css";
 import "./styles/candidate-dashboard-modern.css";
+import "./styles/candidate-profile-modal.css";
 import "./utils/dashboardNavigation";
 import "./utils/jobDetailPresentation";
 import "./utils/jobDetailSummaryLayout";

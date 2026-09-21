@@ -98,14 +98,7 @@ const SECTION_HEADING_PATTERN =
   /^(JOB DETAILS|JOB OVERVIEW|ABOUT THE ROLE|ELIGIBILITY(?:\s+CRITERIA)?|KEY RESPONSIBILITIES|RESPONSIBILITIES|APPLICATION PROCESS|APPLICATION DETAILS|SELECTION PROCESS|DOCUMENTS REQUIRED|IMPORTANT DOCUMENTS REQUIRED|IMPORTANT NOTES|IMPORTANT INSTRUCTIONS|CONTACT INFORMATION|CONTACT|PAY\s*\/\s*SALARY)\s*:?\s*/i;
 
 function normalizeDescription(raw: string): string {
-  let text = raw.replace(/\r\n?/g, "\n").replace(/\u00a0/g, " ").trim();
-
-  text = text
-    .replace(/\s*(JOB DETAILS|ELIGIBILITY(?:\s+CRITERIA)?|KEY RESPONSIBILITIES|RESPONSIBILITIES|APPLICATION PROCESS|APPLICATION DETAILS|SELECTION PROCESS|DOCUMENTS REQUIRED|IMPORTANT DOCUMENTS REQUIRED|IMPORTANT NOTES|IMPORTANT INSTRUCTIONS|CONTACT INFORMATION|PAY\s*\/\s*SALARY)\b/gi, "\n\n$1\n")
-    .replace(/\s+(STEP\s*[1-4]\s*:[^:]{2,80})/gi, "\n\n$1\n")
-    .replace(/\s+(Post|Organisation|Organization|Department|Speciality|Specialty|Location|Number of Posts|Job Type|Advertisement|Qualification|Experience|Age Limit|Pay\/Salary|Application Start Date|Last Date to Apply|Application Fee|Mode of Application)\s*:/gi, "\n$1:")
-    .replace(/\s+-\s+/g, "\n- ")
-    .replace(/\s+[•●▪·]\s*/g, "\n· ");
+  const text = raw.replace(/\r\n?/g, "\n").replace(/\u00a0/g, " ").trim();
 
   return text
     .split("\n")
@@ -114,6 +107,19 @@ function normalizeDescription(raw: string): string {
     .join("\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+}
+
+function detectKeySection(key: string): DescriptionSectionKey | null {
+  const k = key.toLowerCase().trim();
+  if (/qualification|experience|age\s*limit|eligibility|internship|council\s*registration/i.test(k)) return "eligibility";
+  if (/job\s*description|responsibilities|duties|scope\s*of\s*work|role\s*description/i.test(k)) return "responsibilities";
+  if (/selection|interview\s*mode|interview\s*schedule|exam\s*pattern/i.test(k)) return "selection";
+  if (/last\s*date|closing\s*date|apply\s*before|application\s*fee|apply\s*link|application\s*link|online\s*apply|how\s*to\s*apply|start\s*date/i.test(k)) return "application";
+  if (/benefits|perks|important\s*notes|important\s*instructions|terms\s*&\s*conditions/i.test(k)) return "notes";
+  if (/contact\s*email|contact\s*phone|helpline|helpdesk|contact/i.test(k)) return "contact";
+  if (/documents\s*required|required\s*documents/i.test(k)) return "documents";
+  if (/post|organization|hospital|sector|role|category|location|city|state|department|speciality|specialty|employment\s*type|duty\s*type|salary|pay|posts|vacanc/i.test(k)) return "details";
+  return null;
 }
 
 function detectSection(line: string): DescriptionSectionKey | null {
@@ -135,21 +141,65 @@ function parseSections(raw: string): DescriptionSection[] {
   SECTION_ORDER.forEach(({ key }) => buckets.set(key, []));
   let current: DescriptionSectionKey = "details";
 
-  normalizeDescription(raw)
-    .split("\n")
-    .forEach((line) => {
-      const trimmed = line.trim();
-      if (!trimmed || /^-{3,}$/.test(trimmed)) return;
-      const headingMatch = trimmed.replace(BULLET_PATTERN, "").match(SECTION_HEADING_PATTERN);
-      const detected = detectSection(headingMatch ? headingMatch[1] : trimmed);
-      if (detected) {
-        current = detected;
-        const rest = headingMatch ? trimmed.replace(BULLET_PATTERN, "").slice(headingMatch[0].length).trim() : "";
-        if (rest) buckets.get(current)?.push(rest);
-        return;
+  const lines = normalizeDescription(raw).split("\n");
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i].trim();
+    if (!rawLine || /^-{3,}$/.test(rawLine)) continue;
+
+    // Check if line is a table row: keep in details
+    if (rawLine.startsWith('|') && rawLine.endsWith('|')) {
+      buckets.get("details")?.push(rawLine);
+      continue;
+    }
+
+    // Check if it's a section heading line, e.g. "### Department-Wise Vacancy Breakdown:" or "ELIGIBILITY CRITERIA"
+    const headingMatch = rawLine.replace(BULLET_PATTERN, "").match(SECTION_HEADING_PATTERN);
+    const cleanHeading = rawLine.replace(/^[#*\-•\s]+/, '').replace(/[:：]+$/, '').trim();
+    if (/department|breakdown|vacanc/i.test(cleanHeading) && /^#+/.test(rawLine)) {
+      current = "details";
+      buckets.get("details")?.push(rawLine);
+      continue;
+    }
+
+    const detected = detectSection(headingMatch ? headingMatch[1] : cleanHeading);
+    if (detected) {
+      current = detected;
+      const rest = headingMatch ? rawLine.replace(BULLET_PATTERN, "").slice(headingMatch[0].length).trim() : "";
+      if (rest && rest.length > 2 && !/^[:：\s]+$/.test(rest)) {
+        buckets.get(current)?.push(rest.replace(/^[:：\s]+/, ''));
       }
-      buckets.get(current)?.push(trimmed);
-    });
+      continue;
+    }
+
+    // Check if line is a Key: Value line (e.g. "* Qualification: MBBS" or "* Job Description: ...")
+    const cleanForKv = rawLine.replace(BULLET_PATTERN, "").trim();
+    const colonIdx = cleanForKv.indexOf(":");
+    if (colonIdx > 0 && colonIdx <= 55) {
+      const keyPart = cleanForKv.slice(0, colonIdx).trim();
+      const valPart = cleanForKv.slice(colonIdx + 1).trim();
+
+      if (valPart.length > 0) {
+        const keySection = detectKeySection(keyPart);
+        if (keySection) {
+          // Special handling for "Job Description:"
+          if (/job\s*description/i.test(keyPart)) {
+            buckets.get("responsibilities")?.push(valPart);
+          } else {
+            buckets.get(keySection)?.push(rawLine);
+          }
+          continue;
+        }
+      }
+    }
+
+    // Filter out orphan/garbage lines like "Speciality /", "Additional", empty bullets
+    const cleanLine = rawLine.replace(BULLET_PATTERN, "").replace(/^[:：\s]+/, '').trim();
+    if (!cleanLine || cleanLine.length < 2 || /^[-*•·:/\\|]+$/.test(cleanLine)) continue;
+    if (/^(additional|speciality\s*\/|speciality)$/i.test(cleanLine)) continue;
+
+    buckets.get(current)?.push(rawLine);
+  }
 
   return SECTION_ORDER.map(({ key, label }) => ({ key, label, lines: buckets.get(key) || [] })).filter(
     (section) => section.lines.length > 0,
@@ -313,9 +363,12 @@ function createContentBlock(section: DescriptionSection): HTMLElement {
       return;
     }
 
-    const clean = stripBullet(line);
+    const clean = stripBullet(line).replace(/^[:：\s]+/, '').trim();
+    if (!clean || clean.length < 2 || /^[-*•·:/\\|]+$/.test(clean)) return;
+    if (/^(additional|speciality\s*\/|speciality)$/i.test(clean)) return;
+
     const colonIndex = clean.indexOf(":");
-    if (colonIndex > 0 && colonIndex <= 42 && clean.slice(colonIndex + 1).trim()) {
+    if (colonIndex > 0 && colonIndex <= 55 && clean.slice(colonIndex + 1).trim()) {
       flushList();
       if (!kvGrid) {
         kvGrid = document.createElement("div");
@@ -467,53 +520,6 @@ function createSectionPanel(section: DescriptionSection, index: number): HTMLEle
   return panel;
 }
 
-function createPreviewCard(
-  title: string,
-  section: DescriptionSection | undefined,
-  tone: "overview" | "documents" | "notes",
-): HTMLElement | null {
-  if (!section || section.lines.length === 0) return null;
-
-  const iconName: IconName = tone === "documents" ? "fileText" : tone === "notes" ? "alertTriangle" : "briefcase";
-  const card = document.createElement("div");
-  card.className = `medex-summary-card medex-summary-${tone}`;
-
-  const heading = document.createElement("div");
-  heading.className = "medex-summary-heading";
-  heading.append(iconElement(iconName, "medex-summary-icon"));
-  const headingText = document.createElement("h4");
-  headingText.textContent = title;
-  heading.append(headingText);
-  card.append(heading);
-
-  const list = document.createElement("div");
-  list.className = "medex-summary-list";
-  section.lines
-    .filter((line) => !looksLikeSubheading(line) && !/^-{3,}$/.test(line))
-    .slice(0, 5)
-    .forEach((line) => {
-      const item = document.createElement("div");
-      item.className = "medex-summary-item";
-      item.append(iconElement(iconName, "medex-summary-item-icon"));
-      const copy = document.createElement("div");
-      const clean = stripBullet(line);
-      const colonIndex = clean.indexOf(":");
-      if (colonIndex > 0 && colonIndex <= 38) {
-        const strong = document.createElement("strong");
-        strong.textContent = `${clean.slice(0, colonIndex)}: `;
-        copy.append(strong);
-        appendLinkifiedText(copy, clean.slice(colonIndex + 1).trim());
-      } else {
-        appendLinkifiedText(copy, clean);
-      }
-      item.append(copy);
-      list.append(item);
-    });
-
-  card.append(list);
-  return card;
-}
-
 function enhanceDescription(root: ParentNode) {
   const descriptionHeading = Array.from(root.querySelectorAll("h2")).find(
     (heading) => heading.textContent?.trim().toLowerCase() === "job description",
@@ -592,21 +598,7 @@ function enhanceDescription(root: ParentNode) {
 
   shell.append(tabs, panels);
 
-  const details = sections.find((section) => section.key === "details");
-  const documents = sections.find((section) => section.key === "documents");
-  const notes = sections.find((section) => section.key === "notes");
-  const summaryGrid = document.createElement("div");
-  summaryGrid.className = "medex-description-summary-grid";
-  [
-    createPreviewCard("Job Overview", details, "overview"),
-    createPreviewCard("Documents Required", documents, "documents"),
-    createPreviewCard("Important Notes", notes, "notes"),
-  ].forEach((summaryCard) => {
-    if (summaryCard) summaryGrid.append(summaryCard);
-  });
-
   original.replaceWith(intro, shell);
-  if (summaryGrid.children.length) card.append(summaryGrid);
 }
 
 function findLinkByText(root: ParentNode, labels: string[]): HTMLAnchorElement | null {

@@ -36,6 +36,7 @@ import {
   Layers,
   Award,
   BookOpen,
+  Copy,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
@@ -1361,10 +1362,10 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
       </div>
 
-      {/* RESTRUCTURED USER DETAILS MODAL (MODERN REFINED CARDS & STICKY FOOTER) */}
+      {/* RESTRUCTURED USER DETAILS MODAL MATCHING REFERENCE UI */}
       <Dialog open={!!viewingProfile} onOpenChange={(open) => { if (!open) setViewingProfile(null); }}>
         <DialogContent
-          className="p-0 gap-0 border border-slate-200/90 shadow-2xl overflow-hidden flex flex-col"
+          className="p-0 gap-0 border border-slate-200/80 shadow-2xl overflow-hidden flex flex-col"
           style={{
             position: 'fixed',
             top: '50%',
@@ -1372,11 +1373,11 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
             transform: 'translate(-50%, -50%)',
             zIndex: 99999,
             maxHeight: 'min(92vh, 92dvh)',
-            maxWidth: 'min(860px, 95vw)',
+            maxWidth: 'min(840px, 95vw)',
             width: '100%',
             margin: '0',
             backgroundColor: '#ffffff',
-            borderRadius: '20px',
+            borderRadius: '24px',
             display: 'flex',
             flexDirection: 'column',
           }}
@@ -1390,340 +1391,378 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
             return (
               <div className="flex flex-col h-full max-h-[min(92vh,92dvh)] text-left overflow-hidden">
-                {/* 1. Profile Header: Subtle Gradient Container with Polished Circular Avatar */}
-                <div className="p-5 sm:p-6 bg-gradient-to-r from-slate-50 via-sky-50/40 to-slate-50 border-b border-slate-200/80 shrink-0">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      {/* Polished Circular Avatar */}
-                      <div className="relative shrink-0">
-                        {cp.profilePhotoUrl ? (
-                          <img
-                            src={cp.profilePhotoUrl}
-                            alt={u.name || 'User'}
-                            className="w-14 h-14 rounded-full object-cover ring-2 ring-slate-200 shadow-md"
-                          />
+                {/* 1. Profile Header: Clean White with Subtle Ambient Gradient */}
+                <div
+                  className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0"
+                  style={{
+                    background: 'radial-gradient(ellipse at top right, #f0fdfa 0%, #ffffff 70%)',
+                  }}
+                >
+                  <div className="flex items-center gap-4 min-w-0">
+                    {/* Circular Avatar */}
+                    <div className="relative shrink-0">
+                      {cp.profilePhotoUrl ? (
+                        <img
+                          src={cp.profilePhotoUrl}
+                          alt={u.name || 'User'}
+                          className="w-14 h-14 rounded-full object-cover ring-2 ring-slate-100 shadow-2xs"
+                        />
+                      ) : (
+                        <div
+                          className="w-14 h-14 rounded-full flex items-center justify-center font-bold text-xl uppercase shadow-xs tracking-tight text-white"
+                          style={{
+                            backgroundColor: isCandidate ? '#0d9488' : isEmployer ? '#7c3aed' : '#0f2942',
+                          }}
+                        >
+                          {u.name ? u.name.split(' ').slice(0, 2).map((n: string) => n[0]).join('') : 'U'}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="min-w-0">
+                      {/* Name + Status Badges */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-xl font-extrabold text-slate-900 tracking-tight capitalize">
+                          {u.name || 'User Account'}
+                        </h3>
+
+                        {/* Doctor / Candidate Badge */}
+                        <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5 bg-teal-50/80 text-teal-700 border border-teal-200">
+                          <Stethoscope className="w-3.5 h-3.5 text-teal-600" />
+                          {isCandidate ? 'Doctor / Candidate' : isEmployer ? 'Healthcare HR' : 'Administrator'}
+                        </span>
+
+                        {/* Verified Badge */}
+                        {u.isVerified && (
+                          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 bg-blue-500 text-white shadow-2xs">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                            Verified
+                          </span>
+                        )}
+
+                        {/* Active Badge */}
+                        {u.isActive !== false ? (
+                          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            Active
+                          </span>
                         ) : (
-                          <div
-                            className="w-14 h-14 rounded-full flex items-center justify-center font-black text-lg uppercase shadow-sm tracking-wider text-white"
-                            style={{
-                              background: isCandidate
-                                ? 'linear-gradient(135deg, #0d9488 0%, #0f766e 100%)'
-                                : isEmployer
-                                ? 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)'
-                                : 'linear-gradient(135deg, #0f2942 0%, #1e3a8a 100%)',
-                              boxShadow: isCandidate
-                                ? '0 4px 12px rgba(13, 148, 136, 0.25)'
-                                : isEmployer
-                                ? '0 4px 12px rgba(124, 58, 237, 0.25)'
-                                : '0 4px 12px rgba(15, 41, 66, 0.25)',
-                              border: '2px solid #ffffff',
-                            }}
-                          >
-                            {u.name ? u.name.split(' ').slice(0, 2).map((n: string) => n[0]).join('') : 'U'}
-                          </div>
+                          <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5 bg-rose-50 text-rose-700 border border-rose-200">
+                            <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                            Inactive
+                          </span>
                         )}
                       </div>
 
-                      <div className="min-w-0">
-                        {/* Name + Status Badges */}
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="text-xl font-extrabold text-slate-900 tracking-tight capitalize">
-                            {u.name || 'User Account'}
-                          </h3>
-
-                          <span
-                            className="text-[11px] font-bold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5 shadow-2xs"
-                            style={{
-                              backgroundColor: isCandidate ? '#f0fdfa' : isEmployer ? '#faf5ff' : '#f1f5f9',
-                              color: isCandidate ? '#0f766e' : isEmployer ? '#6d28d9' : '#334155',
-                              border: isCandidate ? '1px solid #99f6e4' : isEmployer ? '1px solid #ddd6fe' : '1px solid #cbd5e1',
-                            }}
-                          >
-                            {isCandidate ? <Stethoscope className="w-3 h-3 text-teal-600" /> : isEmployer ? <Building2 className="w-3 h-3 text-purple-600" /> : <ShieldCheck className="w-3 h-3 text-slate-600" />}
-                            {isCandidate ? 'Doctor / Candidate' : isEmployer ? 'Healthcare HR' : 'Administrator'}
-                          </span>
-
-                          {u.isVerified && (
-                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200 shadow-2xs">
-                              <CheckCircle2 className="w-3 h-3 text-blue-600" />
-                              Verified
-                            </span>
-                          )}
-
-                          {u.isActive !== false ? (
-                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                              Active
-                            </span>
-                          ) : (
-                            <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200 shadow-2xs">
-                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                              Inactive
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Subtitle: Organization / Hospital */}
-                        {(isCandidate && cp.currentOrganization) || (isEmployer && (ep.companyName || u.name)) ? (
-                          <div className="text-xs font-semibold text-slate-600 mt-1 flex items-center gap-1.5">
-                            <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                            <span>
-                              {isCandidate ? cp.currentOrganization : `${ep.companyName || u.name} ${ep.companyType ? `(${ep.companyType})` : ''}`}
-                            </span>
-                          </div>
-                        ) : null}
-
-                        {/* Contact details */}
-                        <div className="text-xs mt-1.5 flex items-center gap-3.5 flex-wrap text-slate-600">
+                      {/* Contact Subline */}
+                      <div className="text-xs mt-1.5 flex items-center gap-4 flex-wrap text-slate-500">
+                        <span className="flex items-center gap-1.5">
+                          <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                          <a href={`mailto:${u.email}`} className="hover:text-teal-700 font-medium text-slate-600">
+                            {u.email}
+                          </a>
+                        </span>
+                        {u.phone && (
                           <span className="flex items-center gap-1.5">
-                            <Mail className="w-3.5 h-3.5 text-sky-600 shrink-0" />
-                            <a href={`mailto:${u.email}`} className="hover:text-sky-700 hover:underline font-medium text-slate-700">
-                              {u.email}
+                            <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <a href={`tel:${u.phone}`} className="hover:text-teal-700 font-medium text-slate-600">
+                              {u.phone}
                             </a>
                           </span>
-                          {u.phone && (
-                            <span className="flex items-center gap-1.5">
-                              <Phone className="w-3.5 h-3.5 text-sky-600 shrink-0" />
-                              <a href={`tel:${u.phone}`} className="hover:text-sky-700 hover:underline font-medium text-slate-700">
-                                {u.phone}
-                              </a>
-                            </span>
-                          )}
-                        </div>
+                        )}
                       </div>
                     </div>
+                  </div>
 
-                    {/* Top Right Action Button + Close Button */}
-                    <div className="flex items-center gap-2.5 self-end sm:self-center shrink-0">
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          setViewingProfile(null);
-                          handleImpersonate(u);
-                        }}
-                        className="h-9 text-xs font-bold gap-1.5 px-4 shadow-sm rounded-xl cursor-pointer text-white hover:opacity-95 transition-all"
-                        style={{
-                          backgroundColor: isCandidate ? '#0d9488' : isEmployer ? '#6366f1' : '#0f2942',
-                        }}
-                      >
-                        <Eye className="w-4 h-4" />
-                        {isEmployer ? 'View as HR' : isCandidate ? 'View as Doctor' : 'View Portal'}
-                      </Button>
-                      <button
-                        type="button"
-                        onClick={() => setViewingProfile(null)}
-                        className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-200/70 border border-slate-200/80 transition-all cursor-pointer shadow-2xs"
-                        title="Close dialog"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
+                  {/* Top Right Action Button + Close Button */}
+                  <div className="flex items-center gap-2.5 self-end sm:self-center shrink-0">
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setViewingProfile(null);
+                        handleImpersonate(u);
+                      }}
+                      className="h-9 text-xs font-bold gap-1.5 px-4 rounded-full cursor-pointer text-white hover:opacity-95 transition-all shadow-xs"
+                      style={{
+                        backgroundColor: '#0d9488',
+                      }}
+                    >
+                      <Eye className="w-4 h-4" />
+                      {isEmployer ? 'View as HR' : isCandidate ? 'View as Doctor' : 'View Portal'}
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => setViewingProfile(null)}
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 transition-all cursor-pointer shadow-2xs"
+                      title="Close dialog"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
 
-                {/* 2. Modal Body: Structured Clean Modern Cards */}
-                <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 bg-slate-50/50 min-h-0">
+                {/* 2. Modal Body: Clean Full-Width Modern Cards with Left Accent Lines */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-[#f8fafc] min-h-0">
                   {/* Candidate Content */}
                   {isCandidate && (
                     <>
-                      {/* Clinical Qualifications 2x2 Thematic Grid with Top Colored Accents */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* Group 1: Education & Qualification (Blue Accent) */}
-                        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden border-t-[3px] border-t-blue-500 flex flex-col justify-between">
-                          <div className="px-4 py-2.5 bg-slate-50/70 border-b border-slate-100 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0">
-                                <GraduationCap className="w-4 h-4" />
-                              </div>
-                              <span className="text-xs font-bold text-slate-900 tracking-wide">
-                                Education &amp; Qualification
-                              </span>
-                            </div>
+                      {/* Card 1: Education & Qualification (Blue Left Accent) */}
+                      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs border-l-4 border-l-blue-500 p-5 space-y-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                            <GraduationCap className="w-5 h-5" />
                           </div>
-                          <div className="p-4 space-y-3">
-                            <div>
-                              <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                                Degree / Qualification
-                              </span>
-                              <span className="font-bold text-sm text-slate-900 block mt-0.5">
-                                {cp.qualification || 'MBBS'}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                                Medical Domain
-                              </span>
-                              <span className="font-semibold text-xs text-slate-700 block mt-0.5">
-                                {cp.medicalCategory || 'General Medicine'}
-                              </span>
-                            </div>
-                          </div>
+                          <h4 className="text-[15px] font-bold text-slate-900 tracking-tight">
+                            Education &amp; Qualification
+                          </h4>
                         </div>
 
-                        {/* Group 2: Clinical Practice (Teal Accent + Experience Badge) */}
-                        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden border-t-[3px] border-t-teal-500 flex flex-col justify-between">
-                          <div className="px-4 py-2.5 bg-slate-50/70 border-b border-slate-100 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 rounded-lg bg-teal-50 text-teal-600 border border-teal-100 flex items-center justify-center shrink-0">
-                                <Stethoscope className="w-4 h-4" />
-                              </div>
-                              <span className="text-xs font-bold text-slate-900 tracking-wide">
-                                Clinical Practice
-                              </span>
-                            </div>
-                            {cp.yearsExperience != null && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-teal-50 text-teal-700 border border-teal-200/80 shadow-2xs">
-                                <Clock className="w-3 h-3 text-teal-600" />
-                                {cp.yearsExperience} Yrs Exp
-                              </span>
-                            )}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-12">
+                          <div>
+                            <span className="block text-xs font-medium text-slate-400">Degree / Qualification</span>
+                            <span className="block text-sm font-bold text-slate-800 mt-1">
+                              {cp.qualification || 'MBBS MS'}
+                            </span>
                           </div>
-                          <div className="p-4 space-y-3">
-                            <div>
-                              <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                                Clinical Specialization
-                              </span>
-                              <span className="font-bold text-sm text-slate-900 block mt-0.5">
-                                {cp.speciality || cp.specialization || 'Clinical Practitioner'}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                                Sub-Speciality / Focus
-                              </span>
-                              <span className="font-semibold text-xs text-slate-700 block mt-0.5">
-                                {cp.subSpeciality || 'General Clinical Scope'}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Group 3: Location & Mobility (Emerald Accent) */}
-                        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden border-t-[3px] border-t-emerald-500 flex flex-col justify-between">
-                          <div className="px-4 py-2.5 bg-slate-50/70 border-b border-slate-100 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
-                                <MapPin className="w-4 h-4" />
-                              </div>
-                              <span className="text-xs font-bold text-slate-900 tracking-wide">
-                                Location &amp; Mobility
-                              </span>
-                            </div>
-                          </div>
-                          <div className="p-4 space-y-3">
-                            <div>
-                              <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                                Current City / State
-                              </span>
-                              <span className="font-bold text-sm text-slate-900 block mt-0.5">
-                                {[cp.currentCity || cp.city, cp.state].filter(Boolean).join(', ') || 'Location not specified'}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                                Preferred Location
-                              </span>
-                              <span className="font-semibold text-xs text-slate-700 block mt-0.5">
-                                {cp.preferredLocation || 'Open to all locations'}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Group 4: Hospital & Desired Role (Indigo Accent) */}
-                        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden border-t-[3px] border-t-indigo-500 flex flex-col justify-between">
-                          <div className="px-4 py-2.5 bg-slate-50/70 border-b border-slate-100 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center shrink-0">
-                                <Briefcase className="w-4 h-4" />
-                              </div>
-                              <span className="text-xs font-bold text-slate-900 tracking-wide">
-                                Hospital &amp; Desired Role
-                              </span>
-                            </div>
-                          </div>
-                          <div className="p-4 space-y-3">
-                            <div>
-                              <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                                Current Hospital / Practice
-                              </span>
-                              <span className="font-bold text-sm text-slate-900 block mt-0.5">
-                                {cp.currentOrganization || 'Not currently practicing'}
-                              </span>
-                            </div>
-                            <div>
-                              <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                                Preferred Job Role
-                              </span>
-                              <span className="font-semibold text-xs text-slate-700 block mt-0.5">
-                                {cp.preferredJobRole || 'Any clinical vacancy'}
-                              </span>
-                            </div>
+                          <div className="md:border-l md:border-slate-100 md:pl-6">
+                            <span className="block text-xs font-medium text-slate-400">Medical Domain</span>
+                            <span className="block text-sm font-bold text-slate-800 mt-1">
+                              {cp.medicalCategory || 'General Medicine'}
+                            </span>
                           </div>
                         </div>
                       </div>
 
-                      {/* 3. Medical Council Registration: Official Verification Block */}
-                      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden border-t-[3px] border-t-purple-600">
-                        <div className="px-4 py-2.5 bg-purple-50/40 border-b border-purple-100/70 flex items-center justify-between flex-wrap gap-2">
-                          <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 border border-purple-200/80 flex items-center justify-center shrink-0">
-                              <Award className="w-4 h-4" />
+                      {/* Card 2: Clinical Practice (Teal Left Accent + Experience Badge) */}
+                      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs border-l-4 border-l-teal-500 p-5 space-y-3.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+                              <Stethoscope className="w-5 h-5" />
                             </div>
-                            <span className="text-xs font-bold text-slate-900 tracking-wide">
-                              Medical Council Registration Details
+                            <h4 className="text-[15px] font-bold text-slate-900 tracking-tight">
+                              Clinical Practice
+                            </h4>
+                          </div>
+                          {cp.yearsExperience != null && (
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                              <Briefcase className="w-3.5 h-3.5 text-emerald-600" />
+                              {cp.yearsExperience} Yrs Exp
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-12">
+                          <div>
+                            <span className="block text-xs font-medium text-slate-400">Clinical Specialization</span>
+                            <span className="block text-sm font-bold text-slate-800 mt-1">
+                              {cp.speciality || cp.specialization || 'General Surgery'}
                             </span>
                           </div>
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-50 text-purple-700 border border-purple-200 shadow-2xs">
-                            <CheckCircle2 className="w-3 h-3 text-purple-600" />
+                          <div className="md:border-l md:border-slate-100 md:pl-6">
+                            <span className="block text-xs font-medium text-slate-400">Sub-Speciality / Focus</span>
+                            <span className="block text-sm font-bold text-slate-800 mt-1">
+                              {cp.subSpeciality || 'Gastro surgeon'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Card 3: Location & Mobility (Purple Left Accent) */}
+                      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs border-l-4 border-l-purple-500 p-5 space-y-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                            <MapPin className="w-5 h-5" />
+                          </div>
+                          <h4 className="text-[15px] font-bold text-slate-900 tracking-tight">
+                            Location &amp; Mobility
+                          </h4>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-12">
+                          <div>
+                            <span className="block text-xs font-medium text-slate-400">Current City / State</span>
+                            <span className="block text-sm font-bold text-slate-800 mt-1">
+                              {[cp.currentCity || cp.city, cp.state].filter(Boolean).join(', ') || 'Location not specified'}
+                            </span>
+                          </div>
+                          <div className="md:border-l md:border-slate-100 md:pl-6">
+                            <span className="block text-xs font-medium text-slate-400">Preferred Location</span>
+                            <span className="block text-sm font-bold text-slate-800 mt-1">
+                              {cp.preferredLocation || 'Open to all locations'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Card 4: Hospital & Desired Role (Rose Left Accent) */}
+                      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs border-l-4 border-l-rose-500 p-5 space-y-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                            <Building2 className="w-5 h-5" />
+                          </div>
+                          <h4 className="text-[15px] font-bold text-slate-900 tracking-tight">
+                            Hospital &amp; Desired Role
+                          </h4>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-12">
+                          <div>
+                            <span className="block text-xs font-medium text-slate-400">Current Hospital / Practice</span>
+                            <span className="block text-sm font-bold text-slate-800 mt-1">
+                              {cp.currentOrganization || 'Not currently practicing'}
+                            </span>
+                          </div>
+                          <div className="md:border-l md:border-slate-100 md:pl-6">
+                            <span className="block text-xs font-medium text-slate-400">Preferred Job Role</span>
+                            <span className="block text-sm font-bold text-slate-800 mt-1">
+                              {cp.preferredJobRole || 'Any clinical vacancy'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Card 5: Medical Council Registration Details (Indigo Left Accent) */}
+                      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs border-l-4 border-l-indigo-600 p-5 space-y-3.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                              <ShieldCheck className="w-5 h-5" />
+                            </div>
+                            <h4 className="text-[15px] font-bold text-slate-900 tracking-tight">
+                              Medical Council Registration Details
+                            </h4>
+                          </div>
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50/70 text-indigo-700 border border-indigo-200">
+                            <ExternalLink className="w-3.5 h-3.5 text-indigo-600" />
                             Official Registry
                           </span>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4">
-                          <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-200/70 space-y-0.5">
-                            <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-400">Council Body</span>
-                            <span className="font-bold text-xs block text-slate-800">
-                              {cp.registrationCouncil || '—'}
+                        <div className="pl-12 space-y-2.5">
+                          {/* Council Body full width box */}
+                          <div className="rounded-xl border border-slate-100 bg-slate-50/40 p-3.5">
+                            <span className="block text-xs font-medium text-slate-400">Council Body</span>
+                            <span className="block text-sm font-bold text-slate-800 mt-0.5">
+                              {cp.registrationCouncil || 'Rajasthan Medical counselling'}
                             </span>
                           </div>
-                          <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-200/70 space-y-0.5">
-                            <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-400">Registration Number</span>
-                            <div>
-                              <span className="inline-block px-2.5 py-0.5 rounded bg-purple-50 text-purple-900 font-mono font-black text-xs border border-purple-200 mt-0.5 tracking-wider">
-                                {cp.registrationNumber || '—'}
+
+                          {/* Two-column sub boxes */}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div className="rounded-xl border border-slate-100 bg-slate-50/40 p-3.5 flex items-center justify-between">
+                              <div>
+                                <span className="block text-xs font-medium text-slate-400">Registration Number</span>
+                                <span className="inline-block px-2.5 py-0.5 rounded bg-purple-50 text-purple-900 font-mono font-bold text-xs border border-purple-200 mt-1">
+                                  {cp.registrationNumber || '—'}
+                                </span>
+                              </div>
+                              {cp.registrationNumber && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    void navigator.clipboard.writeText(cp.registrationNumber);
+                                    toast.success('Registration number copied');
+                                  }}
+                                  className="text-slate-400 hover:text-indigo-600 transition-colors p-1.5 rounded-lg hover:bg-white cursor-pointer"
+                                  title="Copy registration number"
+                                >
+                                  <Copy className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="rounded-xl border border-slate-100 bg-slate-50/40 p-3.5">
+                              <span className="block text-xs font-medium text-slate-400">Registration State</span>
+                              <span className="block text-sm font-bold text-slate-800 mt-1">
+                                {cp.registrationState || (cp.registrationYear ? `Registered Year: ${cp.registrationYear}` : '—')}
                               </span>
                             </div>
-                          </div>
-                          <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-200/70 space-y-0.5">
-                            <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-400">Registration State</span>
-                            <span className="font-bold text-xs block text-slate-800">
-                              {cp.registrationState || '—'}
-                            </span>
-                          </div>
-                          <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-200/70 space-y-0.5">
-                            <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-400">Year of Registration</span>
-                            <span className="font-bold text-xs block text-slate-800">
-                              {cp.registrationYear || '—'}
-                            </span>
                           </div>
                         </div>
                       </div>
 
-                      {/* 4. Clinical Skills & Bio */}
-                      {cp.skills && (
-                        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-2 border-t-[3px] border-t-teal-500">
-                          <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-                            <div className="w-6 h-6 rounded-md bg-teal-50 text-teal-600 border border-teal-100 flex items-center justify-center shrink-0">
-                              <Sparkles className="w-3.5 h-3.5" />
-                            </div>
-                            <span>Procedures &amp; Clinical Competencies</span>
+                      {/* Card 6: Official Candidate CV / Resume (Amber Left Accent) */}
+                      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs border-l-4 border-l-amber-500 p-5 space-y-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                            <FileText className="w-5 h-5" />
                           </div>
-                          <div className="flex flex-wrap gap-1.5 pt-1">
+                          <h4 className="text-[15px] font-bold text-slate-900 tracking-tight">
+                            Official Candidate CV / Resume
+                          </h4>
+                        </div>
+
+                        <div className="pl-12">
+                          {cp.resumeUrl ? (
+                            <div className="rounded-xl border border-emerald-200 bg-emerald-50/30 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                              <div className="flex items-center gap-3.5">
+                                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                                  <FileText className="w-5 h-5" />
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-bold text-slate-800">
+                                      {cp.resumeFileName || 'Candidate_Resume.pdf'}
+                                    </span>
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                      CV Attached
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-slate-500 mt-0.5">
+                                    Curriculum vitae document verified &amp; available for review.
+                                  </p>
+                                </div>
+                              </div>
+                              <a
+                                href={cp.resumeUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-white rounded-xl text-xs font-bold shadow-xs transition-all hover:opacity-90 cursor-pointer self-start sm:self-auto shrink-0"
+                                style={{ backgroundColor: '#0d9488' }}
+                              >
+                                <Download className="w-3.5 h-3.5" /> Download Official CV
+                              </a>
+                            </div>
+                          ) : (
+                            <div className="rounded-xl border border-amber-200/70 bg-[#fffdf7] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                              <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-500 border border-amber-200/80 flex items-center justify-center shrink-0">
+                                  <FileText className="w-6 h-6" />
+                                </div>
+                                <div>
+                                  <span className="block text-sm font-bold text-slate-800">
+                                    No CV uploaded yet
+                                  </span>
+                                  <p className="text-xs text-slate-400 mt-0.5">
+                                    The candidate has not uploaded their CV/resume.
+                                  </p>
+                                </div>
+                              </div>
+                              <span className="text-xs font-semibold px-3 py-1 rounded-full bg-amber-100/70 text-amber-800 border border-amber-200/80 self-start sm:self-auto shrink-0">
+                                No CV Attached
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Clinical Skills & Bio (if present) */}
+                      {cp.skills && (
+                        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs border-l-4 border-l-teal-500 p-5 space-y-3.5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+                              <Sparkles className="w-5 h-5" />
+                            </div>
+                            <h4 className="text-[15px] font-bold text-slate-900 tracking-tight">
+                              Procedures &amp; Clinical Competencies
+                            </h4>
+                          </div>
+                          <div className="pl-12 flex flex-wrap gap-2 pt-1">
                             {String(cp.skills).split(',').map((skill: string, idx: number) => (
                               <span
                                 key={idx}
-                                className="font-semibold px-2.5 py-1 rounded-lg text-xs bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs"
+                                className="font-medium px-3 py-1 rounded-lg text-xs bg-slate-50 text-slate-700 border border-slate-200"
                               >
                                 {skill.trim()}
                               </span>
@@ -1733,144 +1772,98 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                       )}
 
                       {cp.profileSummary && (
-                        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-2 border-t-[3px] border-t-sky-500">
-                          <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-                            <div className="w-6 h-6 rounded-md bg-sky-50 text-sky-600 border border-sky-100 flex items-center justify-center shrink-0">
-                              <BookOpen className="w-3.5 h-3.5" />
+                        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs border-l-4 border-l-blue-500 p-5 space-y-3.5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                              <BookOpen className="w-5 h-5" />
                             </div>
-                            <span>Candidate Biography &amp; Professional Statement</span>
+                            <h4 className="text-[15px] font-bold text-slate-900 tracking-tight">
+                              Candidate Biography &amp; Professional Statement
+                            </h4>
                           </div>
-                          <p className="text-xs text-slate-600 leading-relaxed bg-slate-50/70 border border-slate-200/70 rounded-lg p-3">
-                            {cp.profileSummary}
-                          </p>
+                          <div className="pl-12">
+                            <p className="text-xs text-slate-600 leading-relaxed bg-slate-50/70 border border-slate-100 rounded-xl p-4">
+                              {cp.profileSummary}
+                            </p>
+                          </div>
                         </div>
                       )}
-
-                      {/* 5. CV / Resume Section: Amber Top Accent with Polished Empty/Attached State */}
-                      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs overflow-hidden border-t-[3px] border-t-amber-500">
-                        {cp.resumeUrl ? (
-                          <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div className="flex items-center gap-3.5">
-                              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center shrink-0 shadow-2xs">
-                                <FileText className="w-5 h-5 text-amber-600" />
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs font-bold text-slate-900">Official Candidate CV / Resume</span>
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                    CV Attached
-                                  </span>
-                                </div>
-                                <div className="text-[11px] text-slate-600 font-mono mt-0.5">
-                                  {cp.resumeFileName || 'Candidate_Curriculum_Vitae.pdf'}
-                                </div>
-                              </div>
-                            </div>
-                            <a
-                              href={cp.resumeUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-white rounded-xl text-xs font-bold shadow-xs transition-all hover:opacity-90 cursor-pointer self-start sm:self-auto"
-                              style={{ backgroundColor: '#0f2942' }}
-                            >
-                              <Download className="w-3.5 h-3.5" /> Download Official CV
-                            </a>
-                          </div>
-                        ) : (
-                          <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-amber-50/15">
-                            <div className="flex items-center gap-3.5">
-                              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 border border-amber-200/80 flex items-center justify-center shrink-0 shadow-2xs">
-                                <FileText className="w-5 h-5 text-amber-600" />
-                              </div>
-                              <div>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="text-xs font-bold text-slate-900">Official Candidate CV / Resume</span>
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
-                                    No CV Attached
-                                  </span>
-                                </div>
-                                <p className="text-xs text-slate-500 mt-0.5">
-                                  No digital curriculum vitae document has been uploaded for this candidate yet.
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
                     </>
                   )}
 
-                  {/* Employer Content: Matching Clean Modern Cards */}
+                  {/* Employer Content */}
                   {isEmployer && (
                     <div className="space-y-4">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-1.5 border-t-[3px] border-t-blue-500">
-                          <div className="flex items-center gap-2 text-xs font-bold text-slate-900 mb-1">
-                            <div className="w-6 h-6 rounded-md bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center shrink-0">
-                              <Building2 className="w-3.5 h-3.5" />
-                            </div>
-                            <span>Hospital / Facility</span>
+                      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs border-l-4 border-l-blue-500 p-5 space-y-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                            <Building2 className="w-5 h-5" />
                           </div>
-                          <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-400">Organization Name</span>
-                          <span className="font-bold text-sm block text-slate-900">{ep.companyName || u.name || '—'}</span>
+                          <h4 className="text-[15px] font-bold text-slate-900 tracking-tight">
+                            Hospital &amp; Organization Details
+                          </h4>
                         </div>
-
-                        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-1.5 border-t-[3px] border-t-purple-500">
-                          <div className="flex items-center gap-2 text-xs font-bold text-slate-900 mb-1">
-                            <div className="w-6 h-6 rounded-md bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center shrink-0">
-                              <Briefcase className="w-3.5 h-3.5" />
-                            </div>
-                            <span>Facility Type</span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-12">
+                          <div>
+                            <span className="block text-xs font-medium text-slate-400">Organization Name</span>
+                            <span className="block text-sm font-bold text-slate-800 mt-1">{ep.companyName || u.name || '—'}</span>
                           </div>
-                          <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-400">Classification</span>
-                          <span className="font-bold text-sm block text-slate-900">{ep.companyType || 'Hospital / Healthcare Provider'}</span>
+                          <div className="md:border-l md:border-slate-100 md:pl-6">
+                            <span className="block text-xs font-medium text-slate-400">Facility Type</span>
+                            <span className="block text-sm font-bold text-slate-800 mt-1">{ep.companyType || 'Hospital'}</span>
+                          </div>
                         </div>
-
-                        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-1.5 border-t-[3px] border-t-emerald-500">
-                          <div className="flex items-center gap-2 text-xs font-bold text-slate-900 mb-1">
-                            <div className="w-6 h-6 rounded-md bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center shrink-0">
-                              <MapPin className="w-3.5 h-3.5" />
-                            </div>
-                            <span>Facility Location</span>
-                          </div>
-                          <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-400">Address &amp; Region</span>
-                          <span className="font-bold text-sm block text-slate-900">
-                            {[ep.address, ep.city, ep.state, ep.pincode].filter(Boolean).join(', ') || '—'}
-                          </span>
-                        </div>
-
-                        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-1.5 border-t-[3px] border-t-teal-500">
-                          <div className="flex items-center gap-2 text-xs font-bold text-slate-900 mb-1">
-                            <div className="w-6 h-6 rounded-md bg-teal-50 text-teal-600 border border-teal-100 flex items-center justify-center shrink-0">
-                              <ShieldCheck className="w-3.5 h-3.5" />
-                            </div>
-                            <span>Compliance Status</span>
-                          </div>
-                          <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-400">Verification</span>
-                          <span className="font-bold text-sm block text-slate-900">
-                            {ep.isVerified ? 'Verified Healthcare Provider' : 'Pending Verification'}
-                          </span>
-                        </div>
-
-                        {ep.website && (
-                          <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-1 sm:col-span-2 border-t-[3px] border-t-indigo-500">
-                            <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-400">Official Website</span>
-                            <a
-                              href={ep.website}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="font-bold hover:underline flex items-center gap-1.5 text-xs text-indigo-700"
-                            >
-                              {ep.website} <ExternalLink size={12} />
-                            </a>
-                          </div>
-                        )}
                       </div>
 
+                      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs border-l-4 border-l-emerald-500 p-5 space-y-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                            <MapPin className="w-5 h-5" />
+                          </div>
+                          <h4 className="text-[15px] font-bold text-slate-900 tracking-tight">
+                            Facility Location &amp; Region
+                          </h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-12">
+                          <div>
+                            <span className="block text-xs font-medium text-slate-400">Address</span>
+                            <span className="block text-sm font-bold text-slate-800 mt-1">
+                              {[ep.address, ep.city, ep.state, ep.pincode].filter(Boolean).join(', ') || '—'}
+                            </span>
+                          </div>
+                          <div className="md:border-l md:border-slate-100 md:pl-6">
+                            <span className="block text-xs font-medium text-slate-400">Verification Status</span>
+                            <span className="block text-sm font-bold text-slate-800 mt-1">
+                              {ep.isVerified ? 'Verified Healthcare Provider' : 'Pending Verification'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {ep.website && (
+                        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs border-l-4 border-l-indigo-600 p-5 space-y-3.5">
+                          <div className="pl-12 flex items-center justify-between">
+                            <div>
+                              <span className="block text-xs font-medium text-slate-400">Official Website</span>
+                              <a
+                                href={ep.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-bold hover:underline flex items-center gap-1.5 text-xs text-indigo-700 mt-1"
+                              >
+                                {ep.website} <ExternalLink size={12} />
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       {ep.companyDescription && (
-                        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 text-xs text-slate-700 leading-relaxed border-t-[3px] border-t-slate-400">
-                          <span className="block text-[10px] uppercase font-bold tracking-wider mb-1 text-slate-400">About Facility</span>
-                          {ep.companyDescription}
+                        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs border-l-4 border-l-purple-500 p-5 space-y-2">
+                          <div className="pl-12">
+                            <span className="block text-xs font-medium text-slate-400 mb-1">About Facility</span>
+                            <p className="text-xs text-slate-600 leading-relaxed">{ep.companyDescription}</p>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1891,12 +1884,12 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                 </div>
 
                 {/* 3. Modal Footer: Sticky at bottom */}
-                <div className="sticky bottom-0 z-10 px-5 sm:px-6 py-3.5 bg-white/95 backdrop-blur-md border-t border-slate-200/90 flex items-center justify-between gap-3 shadow-[0_-4px_14px_rgba(0,0,0,0.03)] shrink-0">
+                <div className="sticky bottom-0 z-10 px-6 py-4 bg-white/95 backdrop-blur-md border-t border-slate-100 flex items-center justify-between gap-3 shrink-0">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setViewingProfile(null)}
-                    className="h-10 px-5 text-xs font-bold text-slate-700 bg-white border-slate-300 hover:bg-slate-100 rounded-xl cursor-pointer shadow-2xs"
+                    className="h-10 px-6 text-xs font-bold text-slate-700 bg-white border-slate-200 hover:bg-slate-50 rounded-xl cursor-pointer"
                   >
                     Close
                   </Button>
@@ -1907,9 +1900,9 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                       setViewingProfile(null);
                       handleImpersonate(u);
                     }}
-                    className="h-10 px-5 gap-2 text-xs font-extrabold shadow-md rounded-xl cursor-pointer text-white hover:opacity-95 transition-all"
+                    className="h-10 px-6 gap-2 text-xs font-bold shadow-xs rounded-xl cursor-pointer text-white hover:opacity-95 transition-all"
                     style={{
-                      backgroundColor: isCandidate ? '#0d9488' : isEmployer ? '#6366f1' : '#0f2942',
+                      backgroundColor: '#0d9488',
                     }}
                   >
                     <Eye className="w-4 h-4" />

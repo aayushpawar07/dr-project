@@ -64,27 +64,9 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
           return;
         }
 
-        // Check if notice has multi-department table or list
-        const textToParse = [data?.description, data?.requirements].filter(Boolean).join('\n\n');
-        const parsed = parseRawVacancyNotice(textToParse);
-        let depts = parsed.departmentsList || [];
-
-        // Fallback: check comma/slash-separated specialties in data.speciality
-        if (depts.length < 2 && data?.speciality) {
-          const specItems = data.speciality
-            .split(/[,;/]/)
-            .map((s: string) => s.trim())
-            .filter((s: string) => s.length > 2 && !/^(all|general|various|allied)$/i.test(s));
-          if (specItems.length >= 2) {
-            depts = specItems.map((sp: string) => ({
-              department: sp,
-              numberOfVacancies: 1,
-              postName: data.title,
-            }));
-          }
-        }
-
-        if (depts.length >= 2) {
+        // Check if description has multi-department table
+        const parsed = parseRawVacancyNotice(data?.description || '');
+        if (parsed.isMultiDepartment && parsed.departmentsList && parsed.departmentsList.length >= 2) {
           const org =
             data.organization ||
             data.companyName ||
@@ -103,7 +85,7 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
             title: data.title,
             sector: (String(data.sector || '').toLowerCase() === 'private' ? 'private' : 'government'),
             location: loc || 'India',
-            totalVacancies: depts.reduce((s, d) => s + (d.numberOfVacancies || 1), 0) || data.numberOfPosts || 1,
+            totalVacancies: parsed.departmentsList.reduce((s, d) => s + (d.numberOfVacancies || 1), 0) || data.numberOfPosts || 1,
             applicationLastDate: data.lastDate,
             officialApplicationUrl: data.applyLink || notificationUrl || officialWeb,
             officialNotificationUrl: notificationUrl,
@@ -113,7 +95,7 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
             jobDescription: data.description,
             officialSourceVerified: true,
             status: 'PUBLISHED',
-            vacancies: depts.map((d, index) => ({
+            vacancies: parsed.departmentsList.map((d, index) => ({
               id: `${data.id}-dept-${index}`,
               postName: d.postName || data.title,
               department: d.department,

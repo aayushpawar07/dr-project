@@ -991,7 +991,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                           }}
                         >
                           {/* 1. User / Contact: Compact Profile Block */}
-                          <td className="py-3 px-4">
+                          <td className="py-3.5 px-4 align-middle">
                             <div className="flex items-center gap-3">
                               {userItem.profilePhotoUrl ? (
                                 <img
@@ -1001,11 +1001,11 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                                 />
                               ) : (
                                 <div
-                                  className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs uppercase shrink-0"
+                                  className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs uppercase shrink-0 shadow-2xs"
                                   style={{
-                                    backgroundColor: isEmployer ? '#ede9fe' : isCandidate ? '#ccfbf1' : '#f1f5f9',
-                                    color: isEmployer ? '#5b21b6' : isCandidate ? '#0f766e' : '#475569',
-                                    border: isEmployer ? '1px solid #ddd6fe' : isCandidate ? '1px solid #99f6e4' : '1px solid #cbd5e1',
+                                    backgroundColor: isEmployer ? '#f3e8ff' : isCandidate ? '#e6fffa' : '#f1f5f9',
+                                    color: isEmployer ? '#6b21a8' : isCandidate ? '#0f766e' : '#475569',
+                                    border: isEmployer ? '1px solid #d8b4fe' : isCandidate ? '1px solid #99f6e4' : '1px solid #cbd5e1',
                                   }}
                                 >
                                   {userItem.name
@@ -1013,21 +1013,21 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                                     : 'U'}
                                 </div>
                               )}
-                              <div className="min-w-0">
+                              <div className="min-w-0 max-w-[210px]">
                                 <div className="font-extrabold text-slate-900 text-sm leading-tight flex items-center gap-1.5">
-                                  <span className="truncate">{userItem.name || 'Unnamed Account'}</span>
+                                  <span className="truncate" title={userItem.name || 'Unnamed Account'}>{userItem.name || 'Unnamed Account'}</span>
                                   {isSpecialVIP && (
                                     <span
-                                      className="text-[10px] font-black px-1.5 py-0.2 rounded"
+                                      className="text-[10px] font-black px-1.5 py-0.2 rounded shrink-0"
                                       style={{ backgroundColor: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}
                                     >
                                       VIP
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-xs text-slate-600 font-mono mt-0.5 break-all flex items-center gap-1">
+                                <div className="text-xs text-slate-600 font-mono mt-0.5 flex items-center gap-1 truncate" title={userItem.email}>
                                   <Mail size={11} className="text-slate-400 shrink-0" />
-                                  <span>{userItem.email}</span>
+                                  <span className="truncate">{userItem.email}</span>
                                 </div>
                                 {userItem.phone && (
                                   <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
@@ -1040,18 +1040,19 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                           </td>
 
                           {/* 2. Role & Organization: Clear Spacing & Hierarchy */}
-                          <td className="py-3 px-4">
+                          <td className="py-3.5 px-4 align-middle">
                             {isEmployer && (
-                              <div className="space-y-1">
+                              <div className="space-y-1.5">
                                 <span
-                                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-bold"
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-bold"
                                   style={{ backgroundColor: '#faf5ff', color: '#6b21a8', border: '1px solid #e9d5ff' }}
                                 >
-                                  <Building2 className="w-3.5 h-3.5" /> Healthcare HR
+                                  <Building2 className="w-3.5 h-3.5 text-purple-600" /> Healthcare HR
                                 </span>
                                 {userItem.companyName ? (
-                                  <div className="text-xs font-semibold text-slate-800 flex items-center gap-1 truncate max-w-[220px]">
-                                    <span>🏥 {userItem.companyName}</span>
+                                  <div className="text-xs font-semibold text-slate-800 flex items-center gap-1.5 max-w-[220px]" title={userItem.companyName}>
+                                    <Building2 size={12} className="text-slate-400 shrink-0" />
+                                    <span className="truncate">{userItem.companyName}</span>
                                   </div>
                                 ) : (
                                   <div className="text-[11px] text-slate-400 italic">Hospital name not set</div>
@@ -1060,16 +1061,17 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                             )}
 
                             {isCandidate && (
-                              <div className="space-y-1">
+                              <div className="space-y-1.5">
                                 <span
-                                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-bold"
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-bold"
                                   style={{ backgroundColor: '#f0fdfa', color: '#0f766e', border: '1px solid #99f6e4' }}
                                 >
-                                  <Stethoscope className="w-3.5 h-3.5" /> Candidate / Doctor
+                                  <Stethoscope className="w-3.5 h-3.5 text-teal-600" /> Candidate / Doctor
                                 </span>
                                 {userItem.currentOrganization ? (
-                                  <div className="text-xs font-semibold text-slate-700 truncate max-w-[220px]">
-                                    🏢 {userItem.currentOrganization}
+                                  <div className="text-xs font-semibold text-slate-700 flex items-center gap-1.5 max-w-[220px]" title={userItem.currentOrganization}>
+                                    <Building2 size={12} className="text-slate-400 shrink-0" />
+                                    <span className="truncate">{userItem.currentOrganization}</span>
                                   </div>
                                 ) : (
                                   <div className="text-[11px] text-slate-400 italic">No hospital listed</div>
@@ -1079,34 +1081,38 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
                             {!isEmployer && !isCandidate && (
                               <span
-                                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-bold"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-bold"
                                 style={{ backgroundColor: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3' }}
                               >
-                                <ShieldCheck className="w-3.5 h-3.5" /> System Admin
+                                <ShieldCheck className="w-3.5 h-3.5 text-rose-600" /> System Admin
                               </span>
                             )}
                           </td>
 
-                          {/* 3. Clinical Background: Prominent Qualifications & Muted Location */}
-                          <td className="py-3 px-4">
+                          {/* 3. Clinical Background: Prominent Qualifications & Location */}
+                          <td className="py-3.5 px-4 align-middle">
                             {isCandidate && (
                               <div className="space-y-1">
-                                <div className="text-xs font-extrabold text-slate-900">
-                                  {[userItem.qualification, userItem.speciality].filter(Boolean).join(' • ') || 'Qualifications not added'}
+                                <div className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5" title={[userItem.qualification, userItem.speciality].filter(Boolean).join(' • ')}>
+                                  <GraduationCap size={13} className="text-blue-600 shrink-0" />
+                                  <span className="truncate max-w-[210px]">
+                                    {[userItem.qualification, userItem.speciality].filter(Boolean).join(' • ') || 'Qualifications not added'}
+                                  </span>
                                 </div>
-                                <div className="text-[11px] text-slate-500 flex items-center gap-2 flex-wrap">
+                                <div className="text-[11px] text-slate-500 flex items-center gap-2 flex-wrap mt-0.5">
                                   {userItem.yearsExperience != null && (
                                     <span
-                                      className="font-bold px-1.5 py-0.5 rounded text-[10px]"
+                                      className="font-bold px-2 py-0.5 rounded text-[10px] inline-flex items-center gap-1"
                                       style={{ backgroundColor: '#ccfbf1', color: '#0f766e', border: '1px solid #99f6e4' }}
                                     >
+                                      <Briefcase size={10} />
                                       {userItem.yearsExperience} yrs exp
                                     </span>
                                   )}
                                   {[userItem.currentCity, userItem.state].filter(Boolean).join(', ') && (
-                                    <span className="flex items-center gap-0.5 text-slate-500">
-                                      <MapPin size={11} className="text-slate-400" />
-                                      {[userItem.currentCity, userItem.state].filter(Boolean).join(', ')}
+                                    <span className="flex items-center gap-1 text-slate-500 font-medium">
+                                      <MapPin size={11} className="text-purple-500 shrink-0" />
+                                      <span>{[userItem.currentCity, userItem.state].filter(Boolean).join(', ')}</span>
                                     </span>
                                   )}
                                 </div>
@@ -1115,13 +1121,13 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
                             {isEmployer && (
                               <div className="space-y-1 text-xs text-slate-600">
-                                <div className="flex items-center gap-1 text-slate-700 font-medium">
-                                  <MapPin size={11} className="text-slate-400" />
+                                <div className="flex items-center gap-1.5 text-slate-700 font-semibold">
+                                  <MapPin size={12} className="text-purple-500 shrink-0" />
                                   <span>{[userItem.city, userItem.state].filter(Boolean).join(', ') || 'Location not set'}</span>
                                 </div>
-                                {userItem.verificationStatus && (
+                                {userItem.verificationStatus && userItem.verificationStatus !== 'approved' && (
                                   <span
-                                    className="inline-block text-[10px] uppercase font-bold px-1.5 py-0.5 rounded"
+                                    className="inline-block text-[10px] uppercase font-bold px-2 py-0.5 rounded mt-1"
                                     style={{ backgroundColor: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}
                                   >
                                     {userItem.verificationStatus}
@@ -1131,24 +1137,24 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                             )}
 
                             {!isCandidate && !isEmployer && (
-                              <span className="text-xs text-slate-400">System Administrator</span>
+                              <span className="text-xs text-slate-400 italic">System Administrator</span>
                             )}
                           </td>
 
                           {/* 4. Status: Clear Colored Badges */}
-                          <td className="py-3 px-4">
-                            <div className="flex flex-col gap-1 items-start">
+                          <td className="py-3.5 px-4 align-middle">
+                            <div className="flex flex-col gap-1.5 items-start">
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 {userItem.isActive !== false ? (
                                   <span
-                                    className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold"
+                                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold"
                                     style={{ backgroundColor: '#dcfce7', color: '#15803d', border: '1px solid #86efac' }}
                                   >
                                     Active
                                   </span>
                                 ) : (
                                   <span
-                                    className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold"
+                                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold"
                                     style={{ backgroundColor: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5' }}
                                   >
                                     Inactive
@@ -1156,11 +1162,11 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                                 )}
                                 {userItem.isVerified && (
                                   <span
-                                    className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold"
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-bold"
                                     style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}
                                     title="Account Verified"
                                   >
-                                    Verified
+                                    <CheckCircle2 size={10} /> Verified
                                   </span>
                                 )}
                               </div>
@@ -1169,7 +1175,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                                   href={userItem.resumeUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold transition-colors"
+                                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-bold transition-colors"
                                   style={{ backgroundColor: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}
                                   title="Download candidate CV"
                                 >
@@ -1180,14 +1186,14 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                           </td>
 
                           {/* 5. Actions: Primary Button, Secondary Details, Power Icon */}
-                          <td className="py-3 px-4 text-right">
+                          <td className="py-3.5 px-4 text-right align-middle">
                             <div className="flex items-center justify-end gap-2">
                               {/* Primary: View as Doctor / View as HR */}
                               <Button
                                 size="sm"
                                 onClick={() => handleImpersonate(userItem)}
                                 disabled={isCurrentlyImpersonating}
-                                className="h-8.5 px-3 text-xs font-bold gap-1.5 shadow-sm rounded-xl transition-all cursor-pointer text-white hover:opacity-95"
+                                className="h-8.5 px-3.5 text-xs font-bold gap-1.5 shadow-xs rounded-xl transition-all cursor-pointer text-white hover:opacity-95"
                                 style={{
                                   backgroundColor: isEmployer ? '#6366f1' : isCandidate ? '#0d9488' : '#0f2942',
                                 }}
@@ -1366,6 +1372,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
       {/* RESTRUCTURED USER DETAILS MODAL MATCHING REFERENCE UI */}
       <Dialog open={!!viewingProfile} onOpenChange={(open) => { if (!open) setViewingProfile(null); }}>
         <DialogContent
+          hideCloseButton={true}
           className="p-0 gap-0 border border-slate-200/80 shadow-2xl overflow-hidden flex flex-col"
           style={{
             position: 'fixed',
@@ -1872,84 +1879,55 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                           </span>
                         </div>
 
-                        <div className="pl-12 space-y-2.5">
-                          {/* Council Body full width box */}
-                          <div
-                            className="p-3.5"
-                            style={{
-                              backgroundColor: '#f8fafc',
-                              border: '1px solid #f1f5f9',
-                              borderRadius: '10px',
-                            }}
-                          >
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-12">
+                          <div>
                             <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
                               Council Body
                             </span>
                             <span
-                              className="block text-sm font-bold mt-0.5"
+                              className="block text-sm font-bold mt-1"
                               style={{ color: '#0f172a' }}
                             >
                               {cp.registrationCouncil || 'Rajasthan Medical counselling'}
                             </span>
                           </div>
 
-                          {/* Two-column sub boxes */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div
-                              className="p-3.5 flex items-center justify-between"
-                              style={{
-                                backgroundColor: '#f8fafc',
-                                border: '1px solid #f1f5f9',
-                                borderRadius: '10px',
-                              }}
-                            >
-                              <div>
-                                <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
-                                  Registration Number
-                                </span>
-                                <span
-                                  className="inline-block px-2.5 py-0.5 rounded text-xs font-mono font-bold mt-1"
-                                  style={{
-                                    backgroundColor: '#f5f3ff',
-                                    color: '#6d28d9',
-                                    border: '1px solid #ddd6fe',
-                                    borderRadius: '6px',
-                                  }}
-                                >
-                                  {cp.registrationNumber || 'Rmc -66768'}
-                                </span>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  void navigator.clipboard.writeText(cp.registrationNumber || 'Rmc -66768');
-                                  toast.success('Registration number copied');
-                                }}
-                                className="transition-colors p-1.5 rounded-lg cursor-pointer"
-                                style={{ color: '#94a3b8' }}
-                                title="Copy registration number"
-                              >
-                                <Copy className="w-4 h-4" />
-                              </button>
-                            </div>
-
-                            <div
-                              className="p-3.5"
-                              style={{
-                                backgroundColor: '#f8fafc',
-                                border: '1px solid #f1f5f9',
-                                borderRadius: '10px',
-                              }}
-                            >
-                              <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
-                                Registration State
-                              </span>
+                          <div
+                            className="md:border-l md:pl-6"
+                            style={{ borderLeftColor: '#f1f5f9' }}
+                          >
+                            <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
+                              Registration Number &amp; Details
+                            </span>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <span
-                                className="block text-sm font-bold mt-1"
-                                style={{ color: '#0f172a' }}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-mono font-bold"
+                                style={{
+                                  backgroundColor: '#f5f3ff',
+                                  color: '#6d28d9',
+                                  border: '1px solid #ddd6fe',
+                                  borderRadius: '6px',
+                                }}
                               >
-                                {cp.registrationState || (cp.registrationYear ? `Registered Year: ${cp.registrationYear}` : '—')}
+                                {cp.registrationNumber || 'Rmc -66768'}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    void navigator.clipboard.writeText(cp.registrationNumber || 'Rmc -66768');
+                                    toast.success('Registration number copied');
+                                  }}
+                                  className="hover:opacity-80 transition-opacity p-0.5 cursor-pointer"
+                                  style={{ color: '#6d28d9' }}
+                                  title="Copy registration number"
+                                >
+                                  <Copy className="w-3.5 h-3.5" />
+                                </button>
                               </span>
+                              {(cp.registrationState || cp.registrationYear) && (
+                                <span className="text-xs font-semibold" style={{ color: '#475569' }}>
+                                  ({[cp.registrationState, cp.registrationYear ? `Year ${cp.registrationYear}` : null].filter(Boolean).join(', ')})
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>

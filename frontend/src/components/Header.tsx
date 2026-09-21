@@ -23,7 +23,7 @@ const publicNavItems = [
 ];
 
 export function Header({ currentPage, onNavigate, isAuthenticated }: HeaderProps) {
-  const { user, logout, token } = useAuth();
+  const { user, logout, token, isImpersonating, exitImpersonation } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -72,6 +72,11 @@ export function Header({ currentPage, onNavigate, isAuthenticated }: HeaderProps
 
   const navigateAndClose = (page: string) => { setMobileMenuOpen(false); onNavigate(page); };
   const handleLogout = () => { setMobileMenuOpen(false); logout(); onNavigate('logout'); };
+  const handleExitView = () => {
+    setMobileMenuOpen(false);
+    exitImpersonation();
+    onNavigate(localStorage.getItem('admin_return_page') || 'admin-users');
+  };
 
   return (
     <header className="medex-site-header sticky top-0 z-[1000] w-full border-b bg-white">
@@ -107,7 +112,20 @@ export function Header({ currentPage, onNavigate, isAuthenticated }: HeaderProps
                   {unreadCount > 0 && <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold leading-none rounded-full border border-white">{unreadCount > 99 ? '99+' : unreadCount}</span>}
                 </Button>
                 <Button variant="ghost" size="icon" onClick={() => onNavigate('dashboard')} title="Dashboard" aria-label="Dashboard" className="h-9 w-9 sm:h-10 sm:w-10"><User className="w-4 h-4 sm:w-5 sm:h-5" /></Button>
-                <Button variant="outline" size="sm" onClick={handleLogout} className="hidden sm:inline-flex text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 h-9 px-3 gap-1.5" title="Logout"><LogOut className="w-4 h-4" /><span className="hidden lg:inline">Logout</span></Button>
+                {isImpersonating ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExitView}
+                    className="hidden sm:inline-flex text-amber-900 hover:text-amber-950 bg-amber-50 hover:bg-amber-100 border-amber-300 h-9 px-3 gap-1.5 font-bold cursor-pointer shadow-xs"
+                    title="Exit view and return to admin"
+                  >
+                    <LogOut className="w-4 h-4 text-amber-700" />
+                    <span className="hidden lg:inline">Exit User View</span>
+                  </Button>
+                ) : (
+                  <Button variant="outline" size="sm" onClick={handleLogout} className="hidden sm:inline-flex text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 h-9 px-3 gap-1.5" title="Logout"><LogOut className="w-4 h-4" /><span className="hidden lg:inline">Logout</span></Button>
+                )}
               </>
             ) : (
               <div className="hidden sm:flex items-center gap-2"><Button variant="outline" onClick={() => onNavigate('login')} className="h-9 px-3 lg:px-4 text-sm">Login</Button><Button onClick={() => onNavigate('register')} className="bg-blue-600 hover:bg-blue-700 h-9 px-3 lg:px-4 text-sm">Register</Button></div>
@@ -135,7 +153,14 @@ export function Header({ currentPage, onNavigate, isAuthenticated }: HeaderProps
                     )}
                     <button onClick={() => navigateAndClose('dashboard')} className="w-full text-left rounded-lg px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50">Dashboard</button>
                     <button onClick={() => navigateAndClose('notifications')} className="w-full text-left rounded-lg px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50">Notifications{unreadCount > 0 ? ` (${unreadCount > 99 ? '99+' : unreadCount})` : ''}</button>
-                    <button onClick={handleLogout} className="w-full text-left rounded-lg px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50">Logout</button>
+                    {isImpersonating ? (
+                      <button onClick={handleExitView} className="w-full text-left rounded-lg px-4 py-3 text-sm font-bold text-amber-900 bg-amber-50 border border-amber-200 flex items-center justify-between">
+                        <span>Exit User View (Back to Admin)</span>
+                        <ArrowLeft className="w-4 h-4 text-amber-700" />
+                      </button>
+                    ) : (
+                      <button onClick={handleLogout} className="w-full text-left rounded-lg px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50">Logout</button>
+                    )}
                   </>
                 ) : (
                   <div className="grid grid-cols-2 gap-2 px-1"><Button variant="outline" onClick={() => navigateAndClose('login')} className="w-full">Login</Button><Button onClick={() => navigateAndClose('register')} className="w-full bg-blue-600 hover:bg-blue-700">Register</Button></div>

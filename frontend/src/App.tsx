@@ -72,7 +72,7 @@ function EmployerManagementPageWrapper({
 function AppContent() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, user, logout, token } = useAuth();
+  const { isAuthenticated, user, logout, token, isImpersonating } = useAuth();
   const [currentPage, setCurrentPage] = useState(
     location.pathname.substring(1) || "home",
   );
@@ -130,7 +130,7 @@ function AppContent() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className={`flex flex-col min-h-screen ${isImpersonating ? 'pt-[48px]' : ''}`}>
       <ImpersonationBanner onNavigate={handleNavigate} />
       <Header
         currentPage={currentPage}

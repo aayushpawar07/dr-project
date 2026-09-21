@@ -177,3 +177,53 @@ export async function fetchPublishedRecruitment(id: string): Promise<Recruitment
   const res = await apiClient.get(`/recruitments/${id}`);
   return res.data;
 }
+
+export interface ManualVacancyPayload {
+  postName: string;
+  department?: string;
+  speciality?: string;
+  subSpeciality?: string;
+  numberOfVacancies?: number;
+  category?: string;
+  qualification?: string;
+  experience?: string;
+  ageLimit?: string;
+  salary?: string;
+  payLevel?: string;
+  payScale?: string;
+  jobType?: string;
+  location?: string;
+  otherEligibilityRequirements?: string;
+}
+
+export interface ManualRecruitmentPayload {
+  organisationName: string;
+  title: string;
+  advertisementNumber?: string;
+  recruitmentYear?: number;
+  sector?: 'government' | 'private';
+  location?: string;
+  totalVacancies?: number;
+  applicationStartDate?: string;
+  applicationLastDate?: string;
+  applicationFee?: string;
+  selectionProcess?: string;
+  officialNotificationUrl?: string;
+  officialApplicationUrl?: string;
+  officialWebsite?: string;
+  importantInstructions?: string;
+  jobDescription?: string;
+  qualification?: string;
+  experience?: string;
+  ageLimit?: string;
+  salary?: string;
+  jobType?: string;
+  publishImmediately?: boolean;
+  vacancies: ManualVacancyPayload[];
+}
+
+export async function createManualRecruitment(payload: ManualRecruitmentPayload): Promise<Recruitment> {
+  const res = await apiClient.post('/recruitments/manual', payload);
+  return res.data;
+}
+

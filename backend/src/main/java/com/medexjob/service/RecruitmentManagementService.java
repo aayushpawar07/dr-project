@@ -82,6 +82,79 @@ public class RecruitmentManagementService {
         return new UploadResult(saved, duplicate.isPresent(), true);
     }
 
+    @Transactional
+    public Recruitment createManualRecruitment(ManualRecruitmentRequest req, String userEmail) {
+        Recruitment r = new Recruitment();
+        r.setOrganisationName(nonBlank(req.getOrganisationName(), "Government Organisation"));
+
+        String rawTitle = nonBlank(req.getTitle(), "Medical Staff Recruitment");
+        String cleanTitle = rawTitle.trim();
+        if (!cleanTitle.toLowerCase(Locale.ROOT).contains("recruitment") && !cleanTitle.toLowerCase(Locale.ROOT).contains("departments")) {
+            cleanTitle = cleanTitle + " Recruitment " + LocalDate.now().getYear() + " - Multiple Departments";
+        }
+        r.setTitle(cleanTitle);
+        r.setAdvertisementNumber(req.getAdvertisementNumber());
+        r.setRecruitmentYear(req.getRecruitmentYear() != null ? req.getRecruitmentYear() : LocalDate.now().getYear());
+        r.setSector(parseSector(req.getSector()));
+        r.setLocation(nonBlank(req.getLocation(), "India"));
+        r.setApplicationStartDate(req.getApplicationStartDate());
+        r.setApplicationLastDate(req.getApplicationLastDate());
+        r.setApplicationFee(req.getApplicationFee());
+        r.setSelectionProcess(req.getSelectionProcess());
+        r.setOfficialNotificationUrl(normalizeUrl(req.getOfficialNotificationUrl()));
+        r.setOfficialApplicationUrl(normalizeUrl(req.getOfficialApplicationUrl()));
+        r.setOfficialWebsite(normalizeUrl(req.getOfficialWebsite()));
+        r.setImportantInstructions(req.getImportantInstructions());
+        r.setJobDescription(req.getJobDescription());
+        r.setSourcePdfName("Direct_Notice_Input.txt");
+
+        String randId = UUID.randomUUID().toString().replace("-", "");
+        r.setPdfFingerprint("manual-" + randId.substring(0, 32));
+        r.setSlug(slug(cleanTitle + "-" + r.getRecruitmentYear() + "-" + randId.substring(0, 8)));
+        r.setExtractionMethod("DIRECT_PASTE");
+        r.setStatus(Recruitment.RecruitmentStatus.REVIEW);
+        r.setOfficialSourceVerified(true);
+        r.setVerifiedBy(nonBlank(userEmail, "Admin"));
+        r.setVerificationDate(LocalDate.now());
+
+        int index = 0;
+        List<ManualVacancyRequest> vList = req.getVacancies() != null ? req.getVacancies() : List.of();
+        for (ManualVacancyRequest vr : vList) {
+            VacancyRecord v = new VacancyRecord();
+            v.setPostName(nonBlank(vr.getPostName(), nonBlank(rawTitle, nonBlank(r.getTitle(), "Medical Staff"))));
+            v.setDepartment(vr.getDepartment());
+            v.setSpeciality(nonBlank(vr.getSpeciality(), vr.getDepartment()));
+            v.setSubSpeciality(vr.getSubSpeciality());
+            v.setNumberOfVacancies(vr.getNumberOfVacancies() != null && vr.getNumberOfVacancies() > 0 ? vr.getNumberOfVacancies() : 1);
+            v.setCategory(vr.getCategory());
+            v.setQualification(firstNonBlank(vr.getQualification(), req.getQualification()));
+            v.setExperience(firstNonBlank(vr.getExperience(), req.getExperience()));
+            v.setAgeLimit(firstNonBlank(vr.getAgeLimit(), req.getAgeLimit()));
+            v.setSalary(firstNonBlank(vr.getSalary(), req.getSalary()));
+            v.setPayLevel(vr.getPayLevel());
+            v.setPayScale(vr.getPayScale());
+            v.setJobType(firstNonBlank(vr.getJobType(), req.getJobType(), "Full Time"));
+            v.setLocation(firstNonBlank(vr.getLocation(), req.getLocation(), r.getLocation()));
+            v.setOtherEligibilityRequirements(firstNonBlank(vr.getOtherEligibilityRequirements(), req.getImportantInstructions()));
+            v.setConfidenceScore(1.0);
+            v.setStatus(Boolean.TRUE.equals(req.getPublishImmediately()) ? VacancyRecord.VacancyStatus.APPROVED : VacancyRecord.VacancyStatus.NEEDS_REVIEW);
+            v.setSlug(buildSlug(v, String.valueOf(++index)));
+            r.addVacancy(v);
+        }
+
+        int totalFromVacancies = r.getVacancies().stream().mapToInt(VacancyRecord::getNumberOfVacancies).sum();
+        r.setTotalVacancies(req.getTotalVacancies() != null && req.getTotalVacancies() > 0 ? req.getTotalVacancies() : Math.max(1, totalFromVacancies));
+
+        Recruitment saved = recruitmentRepository.save(r);
+
+        if (Boolean.TRUE.equals(req.getPublishImmediately())) {
+            publishApproved(saved.getId(), userEmail);
+            return get(saved.getId());
+        }
+
+        return saved;
+    }
+
     @Transactional(readOnly = true)
     public List<Recruitment> list() {
         return recruitmentRepository.findAllByOrderByCreatedAtDesc();
@@ -601,6 +674,128 @@ public class RecruitmentManagementService {
     public record UploadResult(Recruitment recruitment, boolean duplicate, boolean created) {}
     public record PublishResult(int publishedCount, int failedCount, List<String> failures, boolean vacancyTotalMatches, Recruitment recruitment) {}
     public record BulkMutationResult(int updatedCount, int skippedPublished, Recruitment recruitment) {}
+
+    public static class ManualRecruitmentRequest {
+        private String organisationName;
+        private String title;
+        private String advertisementNumber;
+        private Integer recruitmentYear;
+        private String sector;
+        private String location;
+        private Integer totalVacancies;
+        private LocalDate applicationStartDate;
+        private LocalDate applicationLastDate;
+        private String applicationFee;
+        private String selectionProcess;
+        private String officialNotificationUrl;
+        private String officialApplicationUrl;
+        private String officialWebsite;
+        private String importantInstructions;
+        private String jobDescription;
+        private String qualification;
+        private String experience;
+        private String ageLimit;
+        private String salary;
+        private String jobType;
+        private Boolean publishImmediately = true;
+        private List<ManualVacancyRequest> vacancies = new ArrayList<>();
+
+        public String getOrganisationName() { return organisationName; }
+        public void setOrganisationName(String organisationName) { this.organisationName = organisationName; }
+        public String getTitle() { return title; }
+        public void setTitle(String title) { this.title = title; }
+        public String getAdvertisementNumber() { return advertisementNumber; }
+        public void setAdvertisementNumber(String advertisementNumber) { this.advertisementNumber = advertisementNumber; }
+        public Integer getRecruitmentYear() { return recruitmentYear; }
+        public void setRecruitmentYear(Integer recruitmentYear) { this.recruitmentYear = recruitmentYear; }
+        public String getSector() { return sector; }
+        public void setSector(String sector) { this.sector = sector; }
+        public String getLocation() { return location; }
+        public void setLocation(String location) { this.location = location; }
+        public Integer getTotalVacancies() { return totalVacancies; }
+        public void setTotalVacancies(Integer totalVacancies) { this.totalVacancies = totalVacancies; }
+        public LocalDate getApplicationStartDate() { return applicationStartDate; }
+        public void setApplicationStartDate(LocalDate applicationStartDate) { this.applicationStartDate = applicationStartDate; }
+        public LocalDate getApplicationLastDate() { return applicationLastDate; }
+        public void setApplicationLastDate(LocalDate applicationLastDate) { this.applicationLastDate = applicationLastDate; }
+        public String getApplicationFee() { return applicationFee; }
+        public void setApplicationFee(String applicationFee) { this.applicationFee = applicationFee; }
+        public String getSelectionProcess() { return selectionProcess; }
+        public void setSelectionProcess(String selectionProcess) { this.selectionProcess = selectionProcess; }
+        public String getOfficialNotificationUrl() { return officialNotificationUrl; }
+        public void setOfficialNotificationUrl(String officialNotificationUrl) { this.officialNotificationUrl = officialNotificationUrl; }
+        public String getOfficialApplicationUrl() { return officialApplicationUrl; }
+        public void setOfficialApplicationUrl(String officialApplicationUrl) { this.officialApplicationUrl = officialApplicationUrl; }
+        public String getOfficialWebsite() { return officialWebsite; }
+        public void setOfficialWebsite(String officialWebsite) { this.officialWebsite = officialWebsite; }
+        public String getImportantInstructions() { return importantInstructions; }
+        public void setImportantInstructions(String importantInstructions) { this.importantInstructions = importantInstructions; }
+        public String getJobDescription() { return jobDescription; }
+        public void setJobDescription(String jobDescription) { this.jobDescription = jobDescription; }
+        public String getQualification() { return qualification; }
+        public void setQualification(String qualification) { this.qualification = qualification; }
+        public String getExperience() { return experience; }
+        public void setExperience(String experience) { this.experience = experience; }
+        public String getAgeLimit() { return ageLimit; }
+        public void setAgeLimit(String ageLimit) { this.ageLimit = ageLimit; }
+        public String getSalary() { return salary; }
+        public void setSalary(String salary) { this.salary = salary; }
+        public String getJobType() { return jobType; }
+        public void setJobType(String jobType) { this.jobType = jobType; }
+        public Boolean getPublishImmediately() { return publishImmediately; }
+        public void setPublishImmediately(Boolean publishImmediately) { this.publishImmediately = publishImmediately; }
+        public List<ManualVacancyRequest> getVacancies() { return vacancies; }
+        public void setVacancies(List<ManualVacancyRequest> vacancies) { this.vacancies = vacancies; }
+    }
+
+    public static class ManualVacancyRequest {
+        private String postName;
+        private String department;
+        private String speciality;
+        private String subSpeciality;
+        private Integer numberOfVacancies = 1;
+        private String category;
+        private String qualification;
+        private String experience;
+        private String ageLimit;
+        private String salary;
+        private String payLevel;
+        private String payScale;
+        private String jobType;
+        private String location;
+        private String otherEligibilityRequirements;
+
+        public String getPostName() { return postName; }
+        public void setPostName(String postName) { this.postName = postName; }
+        public String getDepartment() { return department; }
+        public void setDepartment(String department) { this.department = department; }
+        public String getSpeciality() { return speciality; }
+        public void setSpeciality(String speciality) { this.speciality = speciality; }
+        public String getSubSpeciality() { return subSpeciality; }
+        public void setSubSpeciality(String subSpeciality) { this.subSpeciality = subSpeciality; }
+        public Integer getNumberOfVacancies() { return numberOfVacancies; }
+        public void setNumberOfVacancies(Integer numberOfVacancies) { this.numberOfVacancies = numberOfVacancies; }
+        public String getCategory() { return category; }
+        public void setCategory(String category) { this.category = category; }
+        public String getQualification() { return qualification; }
+        public void setQualification(String qualification) { this.qualification = qualification; }
+        public String getExperience() { return experience; }
+        public void setExperience(String experience) { this.experience = experience; }
+        public String getAgeLimit() { return ageLimit; }
+        public void setAgeLimit(String ageLimit) { this.ageLimit = ageLimit; }
+        public String getSalary() { return salary; }
+        public void setSalary(String salary) { this.salary = salary; }
+        public String getPayLevel() { return payLevel; }
+        public void setPayLevel(String payLevel) { this.payLevel = payLevel; }
+        public String getPayScale() { return payScale; }
+        public void setPayScale(String payScale) { this.payScale = payScale; }
+        public String getJobType() { return jobType; }
+        public void setJobType(String jobType) { this.jobType = jobType; }
+        public String getLocation() { return location; }
+        public void setLocation(String location) { this.location = location; }
+        public String getOtherEligibilityRequirements() { return otherEligibilityRequirements; }
+        public void setOtherEligibilityRequirements(String otherEligibilityRequirements) { this.otherEligibilityRequirements = otherEligibilityRequirements; }
+    }
 
     private Optional<Recruitment> findPossibleDuplicate(Recruitment recruitment, String fingerprint) {
         Optional<Recruitment> duplicate = recruitmentRepository

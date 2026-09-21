@@ -54,6 +54,20 @@ public class AdminRecruitmentController {
         }
     }
 
+    @PostMapping("/manual")
+    public ResponseEntity<?> createManual(
+            @RequestBody RecruitmentManagementService.ManualRecruitmentRequest request,
+            Authentication auth
+    ) {
+        try {
+            String email = auth != null ? auth.getName() : "Admin";
+            Recruitment created = service.createManualRecruitment(request, email);
+            return ResponseEntity.ok(toResponse(created, true));
+        } catch (Exception ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage() != null ? ex.getMessage() : "Unable to create recruitment"));
+        }
+    }
+
     @GetMapping
     public ResponseEntity<List<Map<String, Object>>> list() {
         return ResponseEntity.ok(service.list().stream().map(r -> toResponse(r, false)).toList());

@@ -5,7 +5,9 @@ import com.medexjob.entity.Recruitment;
 import com.medexjob.entity.VacancyRecord;
 import com.medexjob.repository.JobRepository;
 import com.medexjob.repository.RecruitmentRepository;
+import com.medexjob.service.RecruitmentManagementService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -16,10 +18,26 @@ import java.util.*;
 public class RecruitmentController {
     private final RecruitmentRepository repository;
     private final JobRepository jobRepository;
+    private final RecruitmentManagementService service;
 
-    public RecruitmentController(RecruitmentRepository repository, JobRepository jobRepository) {
+    public RecruitmentController(RecruitmentRepository repository, JobRepository jobRepository, RecruitmentManagementService service) {
         this.repository = repository;
         this.jobRepository = jobRepository;
+        this.service = service;
+    }
+
+    @PostMapping("/manual")
+    public ResponseEntity<?> createManual(
+            @RequestBody RecruitmentManagementService.ManualRecruitmentRequest request,
+            Authentication auth
+    ) {
+        try {
+            String email = auth != null ? auth.getName() : "Admin";
+            Recruitment created = service.createManualRecruitment(request, email);
+            return ResponseEntity.ok(toResponse(created));
+        } catch (Exception ex) {
+            return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage() != null ? ex.getMessage() : "Unable to create recruitment"));
+        }
     }
 
     @GetMapping("/{id}")

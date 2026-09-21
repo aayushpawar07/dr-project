@@ -259,8 +259,45 @@ function createContentBlock(section: DescriptionSection): HTMLElement {
     }
   };
 
+  type LineGroup = { type: 'table'; rows: string[] } | { type: 'line'; line: string };
+  const groups: LineGroup[] = [];
+  let currentTable: string[] = [];
+
   section.lines.forEach((rawLine) => {
     const line = rawLine.trim();
+    if (line.startsWith('|') && line.endsWith('|')) {
+      currentTable.push(line);
+    } else {
+      if (currentTable.length > 0) {
+        if (currentTable.length >= 2) {
+          groups.push({ type: 'table', rows: currentTable });
+        } else {
+          currentTable.forEach((r) => groups.push({ type: 'line', line: r }));
+        }
+        currentTable = [];
+      }
+      if (line) {
+        groups.push({ type: 'line', line });
+      }
+    }
+  });
+  if (currentTable.length > 0) {
+    if (currentTable.length >= 2) {
+      groups.push({ type: 'table', rows: currentTable });
+    } else {
+      currentTable.forEach((r) => groups.push({ type: 'line', line: r }));
+    }
+  }
+
+  groups.forEach((group) => {
+    if (group.type === 'table') {
+      flushList();
+      flushGrid();
+      block.append(renderMarkdownTable(group.rows));
+      return;
+    }
+
+    const line = group.line;
     if (!line || /^-{3,}$/.test(line)) return;
 
     if (looksLikeSubheading(line)) {
@@ -330,6 +367,47 @@ function createContentBlock(section: DescriptionSection): HTMLElement {
   flushList();
   flushGrid();
   return block;
+}
+
+function renderMarkdownTable(rows: string[]): HTMLElement {
+  const container = document.createElement("div");
+  container.className = "medex-table-wrapper";
+  const table = document.createElement("table");
+  table.className = "medex-breakdown-table";
+
+  if (rows.length === 0) return container;
+
+  const headerCells = rows[0].split('|').slice(1, -1).map((c) => c.trim());
+  const thead = document.createElement("thead");
+  const trHead = document.createElement("tr");
+  headerCells.forEach((cell) => {
+    const th = document.createElement("th");
+    th.textContent = cell;
+    trHead.append(th);
+  });
+  thead.append(trHead);
+  table.append(thead);
+
+  const tbody = document.createElement("tbody");
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (/^[|:\-\s]+$/.test(r)) continue;
+    const cells = r.split('|').slice(1, -1).map((c) => c.trim());
+    const tr = document.createElement("tr");
+    const isTotalRow = cells.some((c) => /^total$/i.test(c));
+    if (isTotalRow) {
+      tr.className = "medex-table-total-row";
+    }
+    cells.forEach((cell) => {
+      const td = document.createElement("td");
+      td.textContent = cell;
+      tr.append(td);
+    });
+    tbody.append(tr);
+  }
+  table.append(tbody);
+  container.append(table);
+  return container;
 }
 
 function createTabButton(section: DescriptionSection, index: number): HTMLButtonElement {

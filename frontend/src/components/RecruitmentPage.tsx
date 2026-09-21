@@ -742,10 +742,6 @@ export function RecruitmentPage() {
   const navigate = useNavigate();
   const [recruitment, setRecruitment] = useState<Recruitment | null>(null);
   const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState('');
-  const [activePost, setActivePost] = useState('');
-  const [selectedVacancyId, setSelectedVacancyId] = useState('');
-  const [applyByDate, setApplyByDate] = useState('');
 
   useEffect(() => {
     if (!recruitmentId) return;
@@ -753,14 +749,70 @@ export function RecruitmentPage() {
     fetchPublishedRecruitment(recruitmentId)
       .then((data) => {
         setRecruitment(data);
-        setActivePost(data.vacancies?.[0]?.postName || '');
-        setSelectedVacancyId(data.vacancies?.[0]?.id || '');
       })
       .catch(() => setRecruitment(null))
       .finally(() => setLoading(false));
   }, [recruitmentId]);
 
+  if (loading) {
+    return (
+      <div className="recruit-page" style={{ display: 'grid', placeItems: 'center', minHeight: '70vh' }}>
+        <div style={{ textAlign: 'center', color: '#64748b' }}>
+          <Stethoscope size={34} color="#1463ff" />
+          <div style={{ marginTop: 10, fontWeight: 800 }}>Loading recruitment...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!recruitment) {
+    return (
+      <div className="recruit-page" style={{ display: 'grid', placeItems: 'center', minHeight: '70vh' }}>
+        <div style={{ textAlign: 'center' }}>
+          <h2>Recruitment not found</h2>
+          <button className="action-btn primary" onClick={() => navigate('/jobs')}>Browse Jobs</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <RecruitmentExplorerView
+      recruitment={recruitment}
+      onNavigate={(page, id) => navigate(id ? `/${page}/${id}` : `/${page}`)}
+    />
+  );
+}
+
+export function RecruitmentExplorerView({
+  recruitment,
+  applyByDateOverride,
+  onNavigate,
+  onViewStandardDetail,
+}: {
+  recruitment: Recruitment;
+  applyByDateOverride?: string;
+  onNavigate?: (page: string, entityId?: string) => void;
+  onViewStandardDetail?: () => void;
+}) {
+  const navigate = useNavigate();
+  const [query, setQuery] = useState('');
+  const [activePost, setActivePost] = useState('');
+  const [selectedVacancyId, setSelectedVacancyId] = useState('');
+  const [applyByDate, setApplyByDate] = useState(applyByDateOverride || '');
+
   useEffect(() => {
+    if (recruitment?.vacancies?.length) {
+      setActivePost(recruitment.vacancies[0]?.postName || '');
+      setSelectedVacancyId(recruitment.vacancies[0]?.id || '');
+    }
+  }, [recruitment]);
+
+  useEffect(() => {
+    if (applyByDateOverride) {
+      setApplyByDate(applyByDateOverride);
+      return;
+    }
     if (!recruitment) {
       setApplyByDate('');
       return;
@@ -779,7 +831,7 @@ export function RecruitmentPage() {
         if (job?.lastDate) setApplyByDate(job.lastDate);
       })
       .catch(() => undefined);
-  }, [recruitment]);
+  }, [recruitment, applyByDateOverride]);
 
   const postGroups = useMemo(() => {
     const groups = new Map<string, VacancyRecord[]>();
@@ -826,28 +878,6 @@ export function RecruitmentPage() {
     [recruitment],
   );
 
-  if (loading) {
-    return (
-      <div className="recruit-page" style={{ display: 'grid', placeItems: 'center', minHeight: '70vh' }}>
-        <div style={{ textAlign: 'center', color: '#64748b' }}>
-          <Stethoscope size={34} color="#1463ff" />
-          <div style={{ marginTop: 10, fontWeight: 800 }}>Loading recruitment...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!recruitment) {
-    return (
-      <div className="recruit-page" style={{ display: 'grid', placeItems: 'center', minHeight: '70vh' }}>
-        <div style={{ textAlign: 'center' }}>
-          <h2>Recruitment not found</h2>
-          <button className="action-btn primary" onClick={() => navigate('/jobs')}>Browse Jobs</button>
-        </div>
-      </div>
-    );
-  }
-
   const isGovernment = recruitment.sector === 'government';
   const applyByLabel = applyByDate ? formatDate(applyByDate) : 'See Notification';
   const daysLeft = applyByDate
@@ -871,7 +901,17 @@ export function RecruitmentPage() {
   };
 
   const openSelectedJob = () => {
-    if (selectedVacancy?.publishedJobId) navigate(`/job-detail/${selectedVacancy.publishedJobId}`);
+    if (onViewStandardDetail) {
+      onViewStandardDetail();
+      return;
+    }
+    if (selectedVacancy?.publishedJobId) {
+      if (onNavigate) {
+        onNavigate('job-detail', selectedVacancy.publishedJobId);
+      } else {
+        navigate(`/job-detail/${selectedVacancy.publishedJobId}`);
+      }
+    }
   };
 
   return (
@@ -944,7 +984,13 @@ export function RecruitmentPage() {
 
           <main className="vacancy-pane">
             {selectedVacancy ? (
-              <VacancyPanel vacancy={selectedVacancy} recruitment={recruitment} isGovernment={isGovernment} applyByLabel={applyByLabel} onViewJob={openSelectedJob} />
+              <VacancyPanel
+                vacancy={selectedVacancy}
+                recruitment={recruitment}
+                isGovernment={isGovernment}
+                applyByLabel={applyByLabel}
+                onViewJob={openSelectedJob}
+              />
             ) : (
               <div style={{ minHeight: 420, display: 'grid', placeItems: 'center', color: '#667085' }}>Select a department to view details.</div>
             )}
@@ -962,7 +1008,6 @@ export function RecruitmentPage() {
 
         <OfficialSourcesFooter recruitment={recruitment} />
       </div>
-
     </div>
   );
 }
@@ -1048,6 +1093,23 @@ function VacancyPanel({ vacancy, recruitment, isGovernment, applyByLabel, onView
           <span className="tiny-chip chip-green"><Users size={11} />{vacancy.postName} Role</span>
           <span className="tiny-chip chip-purple"><Stethoscope size={11} />Clinical Department</span>
           {vacancy.jobType && <span className="tiny-chip chip-orange"><BriefcaseBusiness size={11} />{vacancy.jobType}</span>}
+          {vacancy.category && (
+            <div className="flex flex-wrap gap-1.5 items-center my-1 w-full">
+              <span className="text-[11px] font-bold text-gray-500 mr-1">Category Quota:</span>
+              {vacancy.category.split(',').map((cat, ci) => {
+                const cTrim = cat.trim();
+                if (!cTrim) return null;
+                return (
+                  <span
+                    key={ci}
+                    className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200"
+                  >
+                    {cTrim}
+                  </span>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 

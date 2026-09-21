@@ -18,6 +18,7 @@ import {
 import { fetchJob } from '../api/jobs';
 import { fetchPublishedRecruitment, Recruitment } from '../api/recruitments';
 import { RecruitmentExplorerView } from './RecruitmentPage';
+import { RecruitmentViewSwitcher } from './RecruitmentViewSwitcher';
 import { parseRawVacancyNotice } from '../utils/rawNoticeParser';
 import { JobDetailPage } from './JobDetailPage';
 import { Button } from './ui/button';
@@ -64,9 +65,18 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
           return;
         }
 
-        // Check if description has multi-department table
+        // Check if description has multi-department table or multiple job roles
         const parsed = parseRawVacancyNotice(data?.description || '');
-        if (parsed.isMultiDepartment && parsed.departmentsList && parsed.departmentsList.length >= 2) {
+        let depts = parsed.departmentsList || [];
+        if (depts.length < 2 && Array.isArray(data?.jobRoles) && data.jobRoles.length >= 2) {
+          depts = data.jobRoles.map((role: string) => ({
+            department: role,
+            numberOfVacancies: 1,
+            postName: data.title,
+          }));
+        }
+
+        if (depts.length >= 2) {
           const org =
             data.organization ||
             data.companyName ||
@@ -85,7 +95,7 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
             title: data.title,
             sector: (String(data.sector || '').toLowerCase() === 'private' ? 'private' : 'government'),
             location: loc || 'India',
-            totalVacancies: parsed.departmentsList.reduce((s, d) => s + (d.numberOfVacancies || 1), 0) || data.numberOfPosts || 1,
+            totalVacancies: depts.reduce((s, d) => s + (d.numberOfVacancies || 1), 0) || data.numberOfPosts || 1,
             applicationLastDate: data.lastDate,
             officialApplicationUrl: data.applyLink || notificationUrl || officialWeb,
             officialNotificationUrl: notificationUrl,
@@ -95,7 +105,7 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
             jobDescription: data.description,
             officialSourceVerified: true,
             status: 'PUBLISHED',
-            vacancies: parsed.departmentsList.map((d, index) => ({
+            vacancies: depts.map((d, index) => ({
               id: `${data.id}-dept-${index}`,
               postName: d.postName || data.title,
               department: d.department,
@@ -151,45 +161,12 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
   if (recruitment && recruitment.vacancies && recruitment.vacancies.length >= 2) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-gray-200 px-4 py-2">
-          <div className="container mx-auto flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">View Mode:</span>
-              <div className="inline-flex rounded-lg bg-gray-100 p-0.5">
-                <button
-                  type="button"
-                  onClick={() => setViewMode('explorer')}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
-                    viewMode === 'explorer'
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Department Explorer ({recruitment.vacancies.length})</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode('standard')}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
-                    viewMode === 'standard'
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  <FileText className="w-3.5 h-3.5" />
-                  <span>Standard Notice View</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 text-xs text-gray-500">
-              <span>{recruitment.totalVacancies} Total Vacancies</span>
-              <span>•</span>
-              <span>{recruitment.vacancies.length} Specialties</span>
-            </div>
-          </div>
-        </div>
+        <RecruitmentViewSwitcher
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          totalVacancies={recruitment.totalVacancies}
+          specialtiesCount={recruitment.vacancies.length}
+        />
 
         {viewMode === 'explorer' ? (
           <RecruitmentExplorerView
@@ -214,7 +191,7 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
   return <GovernmentJobDetail job={job} onNavigate={onNavigate} />;
 }
 
-function GovernmentJobDetail({
+export function GovernmentJobDetail({
   job,
   onNavigate,
 }: {

@@ -36,6 +36,8 @@ import {
   VacancyRecord,
 } from '../api/recruitments';
 import { fetchJob } from '../api/jobs';
+import { RecruitmentViewSwitcher } from './RecruitmentViewSwitcher';
+import { GovernmentJobDetail } from './SectorAwareJobDetailPage';
 import {
   cleanExtractedName,
   departmentSubtitle,
@@ -47,7 +49,7 @@ const PAGE_STYLES = `
     min-height: 100vh;
     min-width: 0;
     background: #f7f9fc;
-    color: #111827;
+    color: #334155;
     padding-bottom: 28px;
     overflow-x: clip;
   }
@@ -186,7 +188,7 @@ const PAGE_STYLES = `
 
   .recruit-title {
     margin: 0;
-    color: #0f172a;
+    color: #1e293b;
     font-size: clamp(25px, 2vw, 31px);
     line-height: 1.22;
     letter-spacing: -.45px;
@@ -218,7 +220,7 @@ const PAGE_STYLES = `
     display: flex;
     align-items: center;
     gap: 7px;
-    color: #667085;
+    color: #64748b;
     font-size: 14px;
   }
 
@@ -238,7 +240,7 @@ const PAGE_STYLES = `
 
   .recruit-meta-item:last-child { border-right: 0; }
   .meta-label { color: #64748b; font-size: 12px; }
-  .meta-value { margin-top: 3px; color: #0f172a; font-size: 14px; font-weight: 800; }
+  .meta-value { margin-top: 3px; color: #1e293b; font-size: 14px; font-weight: 800; }
   .meta-value.deadline { color: #ef4444; }
   .recruit-action-desktop {
     display: block;
@@ -276,7 +278,7 @@ const PAGE_STYLES = `
 
   .action-copy {
     margin: 12px 0;
-    color: #667085;
+    color: #64748b;
     font-size: 12px;
     line-height: 1.45;
   }
@@ -290,7 +292,7 @@ const PAGE_STYLES = `
     border-radius: 7px;
     border: 1px solid #dbe4ef;
     background: #ffffff;
-    color: #1f2937;
+    color: #334155;
     font-size: 13px;
     font-weight: 700;
     display: flex;
@@ -307,7 +309,7 @@ const PAGE_STYLES = `
   .action-btn.share { color: #1463ff; }
 
   .summary-shell { margin-top: 12px; padding: 12px 14px; }
-  .section-eyebrow { margin: 0 0 11px; font-size: 12px; font-weight: 800; color: #0f172a; }
+  .section-eyebrow { margin: 0 0 11px; font-size: 12px; font-weight: 800; color: #334155; }
 
   .summary-grid {
     display: grid;
@@ -342,9 +344,9 @@ const PAGE_STYLES = `
   .icon-indigo { background: #eef2ff; color: #4f46e5; }
   .icon-teal { background: #ecfdf8; color: #0f9f8f; }
 
-  .summary-label { color: #667085; font-size: 11px; }
-  .summary-value { color: #101828; font-size: 14px; font-weight: 800; line-height: 1.25; }
-  .summary-helper { margin-top: 2px; color: #7b8797; font-size: 10.5px; }
+  .summary-label { color: #64748b; font-size: 11px; }
+  .summary-value { color: #1e293b; font-size: 14px; font-weight: 800; line-height: 1.25; }
+  .summary-helper { margin-top: 2px; color: #64748b; font-size: 10.5px; }
 
   .explorer-shell {
     margin-top: 12px;
@@ -361,8 +363,8 @@ const PAGE_STYLES = `
     min-width: 0;
   }
 
-  .explore-title { font-size: 14px; font-weight: 800; color: #101828; }
-  .explore-subtitle { margin-top: 2px; font-size: 11px; color: #7b8797; }
+  .explore-title { font-size: 14px; font-weight: 800; color: #1e293b; }
+  .explore-subtitle { margin-top: 2px; font-size: 11px; color: #64748b; }
 
   .department-controls {
     margin-top: 10px;
@@ -379,7 +381,7 @@ const PAGE_STYLES = `
     border: 1px solid #dbe4ef;
     border-radius: 7px;
     background: #ffffff;
-    color: #344054;
+    color: #334155;
     font-size: 11px;
     outline: none;
   }
@@ -452,8 +454,8 @@ const PAGE_STYLES = `
 
   .department-icon { width: 40px; height: 40px; }
   .department-text { min-width: 0; flex: 1; }
-  .department-name { font-size: 12.5px; font-weight: 800; color: #101828; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .department-sub { margin-top: 2px; font-size: 10.5px; color: #667085; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .department-name { font-size: 12.5px; font-weight: 800; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .department-sub { margin-top: 2px; font-size: 10.5px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .department-count {
     min-width: 25px;
     height: 25px;
@@ -491,7 +493,7 @@ const PAGE_STYLES = `
 
   .vacancy-title {
     margin: 0;
-    color: #101828;
+    color: #1e293b;
     font-size: 21px;
     font-weight: 850;
     line-height: 1.15;
@@ -500,13 +502,13 @@ const PAGE_STYLES = `
   }
   .vacancy-subtitle {
     margin-top: 2px;
-    color: #344054;
+    color: #475467;
     font-size: 12px;
     font-weight: 750;
     overflow-wrap: anywhere;
     word-break: break-word;
   }
-  .vacancy-meta { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 6px 12px; color: #667085; font-size: 10.5px; min-width: 0; }
+  .vacancy-meta { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 6px 12px; color: #64748b; font-size: 10.5px; min-width: 0; }
   .vacancy-meta span { display: inline-flex; align-items: center; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
 
   .vacancy-count-box {
@@ -548,7 +550,7 @@ const PAGE_STYLES = `
   }
   .detail-icon { width: 34px; height: 34px; }
   .detail-copy { min-width: 0; flex: 1; }
-  .detail-label { color: #344054; font-size: 10px; font-weight: 800; }
+  .detail-label { color: #475467; font-size: 10px; font-weight: 800; }
   .detail-value {
     margin-top: 4px;
     color: #475467;
@@ -566,12 +568,12 @@ const PAGE_STYLES = `
     border-radius: 9px;
     background: linear-gradient(180deg, #f5f9ff 0%, #edf5ff 100%);
   }
-  .dates-title { display: flex; align-items: center; gap: 6px; color: #344054; font-size: 11px; font-weight: 800; }
+  .dates-title { display: flex; align-items: center; gap: 6px; color: #475467; font-size: 11px; font-weight: 800; }
   .dates-title svg { color: #1463ff; }
   .dates-grid { margin-top: 7px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; text-align: center; }
   .dates-grid > * { min-width: 0; }
-  .date-label { color: #667085; font-size: 9.5px; overflow-wrap: anywhere; }
-  .date-value { margin-top: 2px; color: #101828; font-size: 10.5px; font-weight: 850; overflow-wrap: anywhere; }
+  .date-label { color: #64748b; font-size: 9.5px; overflow-wrap: anywhere; }
+  .date-value { margin-top: 2px; color: #1e293b; font-size: 10.5px; font-weight: 850; overflow-wrap: anywhere; }
 
   .vacancy-actions {
     margin-top: 14px;
@@ -742,6 +744,8 @@ export function RecruitmentPage() {
   const navigate = useNavigate();
   const [recruitment, setRecruitment] = useState<Recruitment | null>(null);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'explorer' | 'standard'>('explorer');
+  const [job, setJob] = useState<any | null>(null);
 
   useEffect(() => {
     if (!recruitmentId) return;
@@ -749,10 +753,50 @@ export function RecruitmentPage() {
     fetchPublishedRecruitment(recruitmentId)
       .then((data) => {
         setRecruitment(data);
+        if (data?.vacancies?.length) {
+          const publishedId = data.vacancies.find((v) => v.publishedJobId)?.publishedJobId;
+          if (publishedId) {
+            fetchJob(publishedId)
+              .then((j) => {
+                if (j) setJob(j);
+              })
+              .catch(() => undefined);
+          }
+        }
       })
       .catch(() => setRecruitment(null))
       .finally(() => setLoading(false));
   }, [recruitmentId]);
+
+  const effectiveJob = useMemo(() => {
+    if (job) return job;
+    if (!recruitment) return null;
+    const v0 = recruitment.vacancies?.[0];
+    return {
+      id: v0?.publishedJobId || recruitment.id,
+      title: recruitment.title,
+      organization: recruitment.organisationName,
+      companyName: recruitment.organisationName,
+      location: recruitment.location || 'India',
+      sector: recruitment.sector || 'government',
+      category: v0?.category || 'Medical',
+      numberOfPosts: recruitment.totalVacancies || recruitment.vacancies?.length || 1,
+      qualification: v0?.qualification,
+      experience: v0?.experience,
+      salary: v0?.salary,
+      ageLimit: v0?.ageLimit,
+      lastDate: recruitment.applicationLastDate || v0?.lastDate,
+      applyLink: recruitment.officialApplicationUrl,
+      jobDocumentUrl: recruitment.officialNotificationUrl,
+      pdfUrl: recruitment.officialNotificationUrl,
+      officialWebsite: recruitment.officialWebsite,
+      description: recruitment.jobDescription || (recruitment as any).description || '',
+      requirements: recruitment.importantInstructions,
+      selectionProcess: recruitment.selectionProcess,
+      sourceRecruitmentId: recruitment.id,
+      sourceRecruitment: recruitment,
+    };
+  }, [job, recruitment]);
 
   if (loading) {
     return (
@@ -776,11 +820,49 @@ export function RecruitmentPage() {
     );
   }
 
+  const hasMultipleDepartments = (recruitment.vacancies?.length || 0) >= 2;
+
   return (
-    <RecruitmentExplorerView
-      recruitment={recruitment}
-      onNavigate={(page, id) => navigate(id ? `/${page}/${id}` : `/${page}`)}
-    />
+    <div className="min-h-screen bg-[#f7f9fc]">
+      {hasMultipleDepartments && (
+        <RecruitmentViewSwitcher
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          totalVacancies={recruitment.totalVacancies || recruitment.vacancies?.length || 0}
+          specialtiesCount={recruitment.vacancies?.length || 0}
+        />
+      )}
+
+      {viewMode === 'explorer' ? (
+        <RecruitmentExplorerView
+          recruitment={recruitment}
+          onNavigate={(page, id) => {
+            if (page === 'job-detail' || page === 'job') {
+              setViewMode('standard');
+            } else {
+              navigate(id ? `/${page}/${id}` : `/${page}`);
+            }
+          }}
+          onViewStandardDetail={() => setViewMode('standard')}
+        />
+      ) : effectiveJob ? (
+        <GovernmentJobDetail
+          job={effectiveJob}
+          onNavigate={(page, id) => {
+            if (page === 'recruitment') {
+              setViewMode('explorer');
+            } else {
+              navigate(id ? `/${page}/${id}` : `/${page}`);
+            }
+          }}
+        />
+      ) : (
+        <RecruitmentExplorerView
+          recruitment={recruitment}
+          onNavigate={(page, id) => navigate(id ? `/${page}/${id}` : `/${page}`)}
+        />
+      )}
+    </div>
   );
 }
 

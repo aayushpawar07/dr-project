@@ -131,7 +131,7 @@ function AppContent() {
 
   return (
     <div className={`flex flex-col min-h-screen ${isImpersonating ? 'is-impersonating' : ''}`}>
-      <div className="sticky top-0 z-[1000] w-full bg-white">
+      <div className="sticky top-0 z-[1000] w-full bg-white shadow-xs">
         <ImpersonationBanner onNavigate={handleNavigate} />
         <Header
           currentPage={currentPage}

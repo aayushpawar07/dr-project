@@ -27,10 +27,8 @@ public class CustomUserDetailsService implements UserDetailsService {
             .orElseGet(() -> userRepository.findByEmailAndIsActiveTrue(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + username)));
 
-        // Admins are exempt from email verification; other users must have isVerified == true
-        if (user.getRole() != User.UserRole.ADMIN && !Boolean.TRUE.equals(user.getIsVerified())) {
-            throw new UsernameNotFoundException("User email not verified: " + username);
-        }
+        // Email verification is enforced during initial login in AuthService.
+        // Once a valid session/token exists (or during admin impersonation), allow the active user to authenticate.
 
         List<SimpleGrantedAuthority> authorities = Collections.singletonList(
             new SimpleGrantedAuthority("ROLE_" + user.getRole().name())

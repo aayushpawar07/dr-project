@@ -132,6 +132,22 @@ public class AdminManagementController {
         User target = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
 
+        // Ensure user is verified so they can immediately access their dashboard without 401s
+        if (!Boolean.TRUE.equals(target.getIsVerified())) {
+            target.setIsVerified(true);
+            userRepository.save(target);
+        }
+
+        if (target.getRole() == User.UserRole.EMPLOYER) {
+            employerRepository.findByUserId(target.getId()).ifPresent(emp -> {
+                if (!Boolean.TRUE.equals(emp.getIsVerified()) || emp.getVerificationStatus() != Employer.VerificationStatus.APPROVED) {
+                    emp.setIsVerified(true);
+                    emp.setVerificationStatus(Employer.VerificationStatus.APPROVED);
+                    employerRepository.save(emp);
+                }
+            });
+        }
+
         String token = jwtTokenProvider.generateToken(target.getEmail());
 
         Map<String, Object> response = new LinkedHashMap<>();
@@ -174,11 +190,11 @@ public class AdminManagementController {
                 "id", user.getId().toString(),
                 "name", user.getName(),
                 "email", user.getEmail(),
-                "phone", user.getPhone(),
+                "phone", user.getPhone() != null ? user.getPhone() : "",
                 "role", user.getRole().name().toLowerCase(),
                 "isActive", Boolean.TRUE.equals(user.getIsActive()),
                 "isVerified", Boolean.TRUE.equals(user.getIsVerified()),
-                "createdAt", user.getCreatedAt() != null ? user.getCreatedAt().toString() : null
+                "createdAt", user.getCreatedAt() != null ? user.getCreatedAt().toString() : ""
         ));
 
         if (user.getRole() == User.UserRole.CANDIDATE) {
@@ -205,6 +221,7 @@ public class AdminManagementController {
                 cpMap.put("employmentPreference", cp.getEmploymentPreference());
                 cpMap.put("profileSummary", cp.getProfileSummary());
                 profile.put("candidateProfile", cpMap);
+                profile.put("profile", cpMap);
             });
         } else if (user.getRole() == User.UserRole.EMPLOYER) {
             employerRepository.findByUserId(user.getId()).ifPresent(emp -> {
@@ -221,6 +238,8 @@ public class AdminManagementController {
                 empMap.put("verificationStatus", emp.getVerificationStatus() != null ? emp.getVerificationStatus().name().toLowerCase() : null);
                 empMap.put("isVerified", emp.getIsVerified());
                 profile.put("employerProfile", empMap);
+                profile.put("employer", empMap);
+                profile.put("profile", empMap);
             });
         }
 

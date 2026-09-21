@@ -2181,8 +2181,29 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
 
               {/* Full Candidate Modal */}
               {viewingCandidate && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
-                  <div className="w-full max-w-xl bg-white rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+                <div
+                  style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    zIndex: 99999,
+                    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+                    backdropFilter: 'blur(4px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '16px'
+                  }}
+                  onClick={(e) => {
+                    if (e.target === e.currentTarget) setViewingCandidate(null);
+                  }}
+                >
+                  <div
+                    style={{ maxHeight: '90vh' }}
+                    className="w-full max-w-xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+                  >
                     <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                       <div className="flex items-center gap-3">
                         {viewingCandidate.profilePhotoUrl ? (

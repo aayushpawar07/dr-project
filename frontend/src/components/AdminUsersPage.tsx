@@ -78,6 +78,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
   const [loadingDirectory, setLoadingDirectory] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [submittedSearch, setSubmittedSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'verified' | 'hasResume' | 'active'>('all');
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -214,11 +215,68 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
   };
 
   // Fetch full clinical profile / employer info for modal
-  const handleViewFullProfile = async (userId: string) => {
+  const handleViewFullProfile = async (userItem: DirectoryUser) => {
     try {
       setLoadingProfile(true);
-      const profileData = await fetchUserFullProfile(userId, token || '');
-      setViewingProfile(profileData);
+      let profileData: any = {};
+      try {
+        profileData = await fetchUserFullProfile(userItem.id, token || '');
+      } catch (err) {
+        console.warn('Backend full profile fetch returned error, using directory data', err);
+      }
+
+      const cp = profileData?.candidateProfile || profileData?.profile || {};
+      const ep = profileData?.employerProfile || profileData?.employer || profileData?.profile || {};
+
+      setViewingProfile({
+        user: profileData?.user || {
+          id: userItem.id,
+          name: userItem.name,
+          email: userItem.email,
+          phone: userItem.phone,
+          role: userItem.role,
+          isActive: userItem.isActive,
+          isVerified: userItem.isVerified,
+        },
+        candidateProfile: {
+          qualification: cp.qualification || userItem.qualification,
+          speciality: cp.speciality || userItem.speciality,
+          subSpeciality: cp.subSpeciality,
+          medicalCategory: cp.medicalCategory || userItem.medicalCategory,
+          yearsExperience: cp.yearsExperience ?? userItem.yearsExperience,
+          currentOrganization: cp.currentOrganization || userItem.currentOrganization,
+          currentCity: cp.currentCity || userItem.currentCity,
+          state: cp.state || userItem.state,
+          preferredJobRole: cp.preferredJobRole || userItem.preferredJobRole,
+          preferredLocation: cp.preferredLocation,
+          skills: cp.skills,
+          registrationCouncil: cp.registrationCouncil,
+          registrationNumber: cp.registrationNumber,
+          registrationYear: cp.registrationYear,
+          registrationState: cp.registrationState,
+          resumeUrl: cp.resumeUrl || userItem.resumeUrl,
+          resumeFileName: cp.resumeFileName || userItem.resumeFileName,
+          profilePhotoUrl: cp.profilePhotoUrl || userItem.profilePhotoUrl,
+          profileSummary: cp.profileSummary,
+        },
+        employerProfile: {
+          companyName: ep.companyName || userItem.companyName,
+          companyType: ep.companyType || userItem.companyType,
+          companyDescription: ep.companyDescription,
+          website: ep.website,
+          address: ep.address,
+          city: ep.city || userItem.city,
+          state: ep.state || userItem.state,
+          pincode: ep.pincode,
+          verificationStatus: ep.verificationStatus || userItem.verificationStatus,
+          isVerified: ep.isVerified ?? userItem.isVerified,
+        },
+        profile: {
+          ...userItem,
+          ...cp,
+          ...ep,
+        }
+      });
     } catch (err: any) {
       console.error('Error fetching profile:', err);
       toast.error(err.message || 'Failed to load user profile');
@@ -422,6 +480,11 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
     if (activeTab === 'employer' && roleLower !== 'employer') return false;
     if (activeTab === 'candidate' && roleLower !== 'candidate') return false;
 
+    // Quick status filters
+    if (statusFilter === 'verified' && !user.isVerified) return false;
+    if (statusFilter === 'hasResume' && !user.resumeUrl) return false;
+    if (statusFilter === 'active' && user.isActive === false) return false;
+
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
     return (
@@ -584,65 +647,90 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
         </div>
 
         {/* Search & Tabs Toolbar */}
-        <div className="p-4 bg-white border border-slate-200 shadow-sm rounded-2xl space-y-3">
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-            
-            {/* Tabs */}
-            <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200 overflow-x-auto">
+        <div className="p-5 bg-white border border-slate-200 shadow-sm rounded-2xl space-y-4">
+          {/* Top Row: Responsive Role Tabs */}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-2 p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200 overflow-x-auto max-w-full">
               <button
+                type="button"
                 onClick={() => setActiveTab('all')}
-                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   activeTab === 'all'
-                    ? 'bg-white text-slate-900 shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-300'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                 }`}
               >
-                All Accounts ({totalCount})
+                <Users className="w-3.5 h-3.5 text-slate-500" />
+                All Accounts
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${activeTab === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-700'}`}>
+                  {totalCount}
+                </span>
               </button>
 
               <button
+                type="button"
                 onClick={() => setActiveTab('employer')}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   activeTab === 'employer'
-                    ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-indigo-600 text-white shadow-sm ring-2 ring-indigo-500/30'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                 }`}
               >
                 <Building2 className="w-3.5 h-3.5" />
-                Employers / HR ({employerCount})
+                Employers / HR
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${activeTab === 'employer' ? 'bg-indigo-800 text-white' : 'bg-indigo-100 text-indigo-700'}`}>
+                  {employerCount}
+                </span>
               </button>
 
               <button
+                type="button"
                 onClick={() => setActiveTab('candidate')}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   activeTab === 'candidate'
-                    ? 'bg-emerald-600 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-500/30'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                 }`}
               >
                 <Stethoscope className="w-3.5 h-3.5" />
-                Candidates / Doctors ({candidateCount})
+                Candidates / Doctors
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${activeTab === 'candidate' ? 'bg-emerald-800 text-white' : 'bg-emerald-100 text-emerald-700'}`}>
+                  {candidateCount}
+                </span>
               </button>
 
               <button
+                type="button"
                 onClick={() => setActiveTab('admin')}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   activeTab === 'admin'
-                    ? 'bg-teal-700 text-white shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-teal-700 text-white shadow-sm ring-2 ring-teal-600/30'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                 }`}
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
-                Administrators ({adminCount})
+                Administrators
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${activeTab === 'admin' ? 'bg-teal-900 text-white' : 'bg-teal-100 text-teal-800'}`}>
+                  {adminCount}
+                </span>
               </button>
             </div>
 
+            {/* Quick helper tag */}
+            <div className="text-xs text-slate-500 hidden xl:flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+              <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+              <span>One-click portal login &amp; clinical dossier</span>
+            </div>
+          </div>
+
+          {/* Bottom Row: Search Box & Quick Status Filter Pills */}
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
             {/* Search Box with explicit Search button */}
-            <div className="flex items-center gap-2 w-full md:w-auto">
-              <div className="relative flex-1 md:w-80">
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <div className="flex items-center gap-2 flex-1 max-w-xl">
+              <div className="relative flex-1">
+                <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
                 <Input
-                  placeholder="Search by email, name, hospital, skill..."
+                  placeholder="Search by name, email, hospital, qualification, city..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyDown={(e) => {
@@ -651,16 +739,17 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                       void loadDirectory(activeTab, searchTerm);
                     }
                   }}
-                  className="pl-9 pr-8 h-9 text-xs rounded-xl border-slate-300"
+                  className="pl-10 pr-9 h-10 text-xs rounded-xl border-slate-300 focus-visible:ring-teal-500 bg-slate-50/50"
                 />
                 {searchTerm && (
                   <button
+                    type="button"
                     onClick={() => {
                       setSearchTerm('');
                       setSubmittedSearch('');
                       void loadDirectory(activeTab, '');
                     }}
-                    className="absolute right-2.5 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 cursor-pointer"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -673,10 +762,59 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                   setSubmittedSearch(searchTerm);
                   void loadDirectory(activeTab, searchTerm);
                 }}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold h-9 px-4 rounded-xl shadow-xs"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold h-10 px-4 rounded-xl shadow-xs cursor-pointer"
               >
                 Search
               </Button>
+            </div>
+
+            {/* Quick Status Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1 hidden sm:inline">Filter:</span>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('all')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  statusFilter === 'all'
+                    ? 'bg-slate-900 text-white shadow-xs font-bold'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('hasResume')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer ${
+                  statusFilter === 'hasResume'
+                    ? 'bg-emerald-600 text-white shadow-xs font-bold'
+                    : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                }`}
+              >
+                <FileText className="w-3 h-3" /> With CV
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('verified')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer ${
+                  statusFilter === 'verified'
+                    ? 'bg-teal-600 text-white shadow-xs font-bold'
+                    : 'bg-teal-50 text-teal-800 hover:bg-teal-100'
+                }`}
+              >
+                <ShieldCheck className="w-3 h-3" /> Verified
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('active')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                  statusFilter === 'active'
+                    ? 'bg-slate-800 text-white shadow-xs font-bold'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Active Only
+              </button>
             </div>
 
           </div>
@@ -751,22 +889,22 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                           }`}
                         >
                           {/* User Avatar + Name + Contact */}
-                          <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-3">
+                          <td className="py-4 px-4">
+                            <div className="flex items-center gap-3.5">
                               {userItem.profilePhotoUrl ? (
                                 <img
                                   src={userItem.profilePhotoUrl}
                                   alt={userItem.name || 'User'}
-                                  className="w-10 h-10 rounded-full object-cover border border-slate-200 shrink-0"
+                                  className="w-11 h-11 rounded-xl object-cover border-2 border-slate-200 shrink-0 shadow-xs"
                                 />
                               ) : (
                                 <div
-                                  className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs uppercase shadow-xs shrink-0 ${
+                                  className={`w-11 h-11 rounded-xl flex items-center justify-center font-extrabold text-sm uppercase shadow-xs shrink-0 ${
                                     isEmployer
-                                      ? 'bg-indigo-100 text-indigo-800'
+                                      ? 'bg-indigo-100 text-indigo-800 border border-indigo-200'
                                       : isCandidate
-                                      ? 'bg-emerald-100 text-emerald-800'
-                                      : 'bg-sky-100 text-sky-800'
+                                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                      : 'bg-sky-100 text-sky-800 border border-sky-200'
                                   }`}
                                 >
                                   {userItem.name
@@ -775,20 +913,21 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                                 </div>
                               )}
                               <div className="min-w-0">
-                                <div className="font-bold text-slate-900 leading-tight flex items-center gap-1.5">
-                                  <span>{userItem.name || 'Unnamed Account'}</span>
+                                <div className="font-extrabold text-slate-900 text-sm leading-tight flex items-center gap-1.5">
+                                  <span className="truncate">{userItem.name || 'Unnamed Account'}</span>
                                   {isSpecialVIP && (
                                     <Badge className="bg-amber-100 text-amber-900 border-amber-300 text-[10px] px-1.5 py-0">
-                                      Active Account
+                                      VIP Account
                                     </Badge>
                                   )}
                                 </div>
-                                <div className="text-xs text-slate-600 font-mono mt-0.5 break-all">
-                                  {userItem.email}
+                                <div className="text-xs text-slate-600 font-mono mt-0.5 break-all flex items-center gap-1">
+                                  <Mail size={11} className="text-slate-400 shrink-0" />
+                                  <span>{userItem.email}</span>
                                 </div>
                                 {userItem.phone && (
                                   <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                                    <Phone size={10} />
+                                    <Phone size={10} className="text-slate-400 shrink-0" />
                                     <span>{userItem.phone}</span>
                                   </div>
                                 )}
@@ -797,70 +936,76 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                           </td>
 
                           {/* Role Badge & Organization */}
-                          <td className="py-3.5 px-4">
+                          <td className="py-4 px-4">
                             {isEmployer && (
                               <div className="space-y-1">
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80">
                                   <Building2 className="w-3.5 h-3.5" /> Healthcare HR
                                 </span>
-                                {userItem.companyName && (
-                                  <div className="text-xs font-semibold text-slate-800 flex items-center gap-1">
+                                {userItem.companyName ? (
+                                  <div className="text-xs font-bold text-slate-800 flex items-center gap-1 truncate max-w-[200px]">
                                     <span>🏥 {userItem.companyName}</span>
                                   </div>
+                                ) : (
+                                  <div className="text-[11px] text-slate-400 italic">Hospital name not set</div>
                                 )}
                               </div>
                             )}
 
                             {isCandidate && (
                               <div className="space-y-1">
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
                                   <Stethoscope className="w-3.5 h-3.5" /> Candidate / Doctor
                                 </span>
-                                {userItem.currentOrganization && (
-                                  <div className="text-xs text-slate-600 truncate">
+                                {userItem.currentOrganization ? (
+                                  <div className="text-xs font-medium text-slate-700 truncate max-w-[200px]">
                                     🏢 {userItem.currentOrganization}
                                   </div>
+                                ) : (
+                                  <div className="text-[11px] text-slate-400 italic">No hospital listed</div>
                                 )}
                               </div>
                             )}
 
                             {!isEmployer && !isCandidate && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-bold bg-sky-50 text-sky-700 border border-sky-200">
-                                <ShieldCheck className="w-3.5 h-3.5" /> Admin Staff
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-sky-50 text-sky-700 border border-sky-200">
+                                <ShieldCheck className="w-3.5 h-3.5" /> System Admin
                               </span>
                             )}
                           </td>
 
                           {/* Profile & Location */}
-                          <td className="py-3.5 px-4">
+                          <td className="py-4 px-4">
                             {isCandidate && (
                               <div className="space-y-1">
-                                <div className="text-xs font-bold text-slate-800">
+                                <div className="text-xs font-bold text-slate-900">
                                   {[userItem.qualification, userItem.speciality].filter(Boolean).join(' • ') || 'Qualifications not added'}
                                 </div>
-                                <div className="text-[11px] text-slate-500 flex items-center gap-2">
+                                <div className="text-[11px] text-slate-500 flex items-center gap-2 flex-wrap">
                                   {userItem.yearsExperience != null && (
-                                    <span className="font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+                                    <span className="font-bold text-emerald-800 bg-emerald-100/70 border border-emerald-200 px-1.5 py-0.5 rounded text-[10px]">
                                       {userItem.yearsExperience} yrs exp
                                     </span>
                                   )}
                                   {[userItem.currentCity, userItem.state].filter(Boolean).join(', ') && (
-                                    <span>📍 {[userItem.currentCity, userItem.state].filter(Boolean).join(', ')}</span>
+                                    <span className="flex items-center gap-0.5 text-slate-600">
+                                      <MapPin size={11} className="text-slate-400" />
+                                      {[userItem.currentCity, userItem.state].filter(Boolean).join(', ')}
+                                    </span>
                                   )}
                                 </div>
                               </div>
                             )}
 
                             {isEmployer && (
-                              <div className="space-y-0.5 text-xs text-slate-600">
-                                {userItem.city || userItem.state ? (
-                                  <div>📍 {[userItem.city, userItem.state].filter(Boolean).join(', ')}</div>
-                                ) : (
-                                  <div>Location not set</div>
-                                )}
+                              <div className="space-y-1 text-xs text-slate-600">
+                                <div className="flex items-center gap-1 text-slate-700 font-medium">
+                                  <MapPin size={11} className="text-slate-400" />
+                                  <span>{[userItem.city, userItem.state].filter(Boolean).join(', ') || 'Location not set'}</span>
+                                </div>
                                 {userItem.verificationStatus && (
-                                  <span className="text-[10px] uppercase font-bold text-teal-700">
-                                    Status: {userItem.verificationStatus}
+                                  <span className="inline-block text-[10px] uppercase font-bold text-teal-800 bg-teal-50 border border-teal-200 px-1.5 py-0.5 rounded">
+                                    {userItem.verificationStatus}
                                   </span>
                                 )}
                               </div>
@@ -872,37 +1017,52 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                           </td>
 
                           {/* Status */}
-                          <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-1.5">
-                              {userItem.isActive !== false ? (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
-                                  Active
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600">
-                                  Inactive
-                                </span>
-                              )}
+                          <td className="py-4 px-4">
+                            <div className="flex flex-col gap-1 items-start">
+                              <div className="flex items-center gap-1.5">
+                                {userItem.isActive !== false ? (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                    Active
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                                    Inactive
+                                  </span>
+                                )}
+                                {userItem.isVerified && (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200" title="Account / Email Verified">
+                                    Verified
+                                  </span>
+                                )}
+                              </div>
                               {userItem.resumeUrl && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200">
-                                  CV
-                                </span>
+                                <a
+                                  href={userItem.resumeUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                                  title="Download candidate CV"
+                                >
+                                  <FileText size={10} /> CV Available
+                                </a>
                               )}
                             </div>
                           </td>
 
                           {/* Actions: View as HR / View as Candidate, Details, Toggle */}
-                          <td className="py-3.5 px-4 text-right">
+                          <td className="py-4 px-4 text-right">
                             <div className="flex items-center justify-end gap-2">
                               {/* VIEW AS USER / HR (IMPERSONATE) BUTTON */}
                               <Button
                                 size="sm"
                                 onClick={() => handleImpersonate(userItem)}
                                 disabled={isCurrentlyImpersonating}
-                                className={`h-8 text-xs font-bold gap-1.5 shadow-sm ${
+                                className={`h-8.5 px-3 text-xs font-bold gap-1.5 shadow-sm rounded-xl transition-all cursor-pointer ${
                                   isEmployer
                                     ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                                    : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                    : isCandidate
+                                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                    : 'bg-teal-700 hover:bg-teal-800 text-white'
                                 }`}
                                 title={`Switch view to ${userItem.name || userItem.email}`}
                               >
@@ -912,7 +1072,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                                   <Eye className="w-3.5 h-3.5" />
                                 )}
                                 <span>
-                                  {isEmployer ? 'View as HR' : isCandidate ? 'View as Candidate' : 'View Portal'}
+                                  {isEmployer ? 'View as HR' : isCandidate ? 'View as Doctor' : 'View Portal'}
                                 </span>
                               </Button>
 
@@ -920,9 +1080,9 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => handleViewFullProfile(userItem.id)}
-                                className="h-8 text-xs font-semibold gap-1 border-slate-300 text-slate-700 hover:bg-slate-100"
-                                title="View complete clinical credentials or hospital profile"
+                                onClick={() => handleViewFullProfile(userItem)}
+                                className="h-8.5 px-3 text-xs font-bold gap-1.5 border-slate-300 text-slate-700 hover:bg-slate-100 hover:text-slate-900 rounded-xl cursor-pointer"
+                                title="View complete clinical credentials, registration & CV"
                               >
                                 <FileText className="w-3.5 h-3.5 text-slate-500" />
                                 Details
@@ -933,7 +1093,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => handleToggleStatus(userItem)}
-                                className={`h-8 w-8 p-0 rounded-lg cursor-pointer ${
+                                className={`h-8.5 w-8.5 p-0 rounded-xl cursor-pointer ${
                                   userItem.isActive !== false
                                     ? 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'
                                     : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'
@@ -1062,146 +1222,327 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
       {/* FULL USER PROFILE / CV MODAL */}
       <Dialog open={!!viewingProfile} onOpenChange={(open) => { if (!open) setViewingProfile(null); }}>
-        <DialogContent className="sm:max-w-2xl max-h-[88vh] overflow-y-auto">
-          {viewingProfile && (
-            <div>
-              <DialogHeader className="border-b border-slate-100 pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <DialogTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                      {viewingProfile.user?.name || 'User Profile'}
-                      <Badge className="text-xs uppercase tracking-wider bg-slate-100 text-slate-700">
-                        {viewingProfile.user?.role}
-                      </Badge>
-                    </DialogTitle>
-                    <DialogDescription className="text-xs text-slate-500 mt-1">
-                      {viewingProfile.user?.email} {viewingProfile.user?.phone ? `• ${viewingProfile.user?.phone}` : ''}
-                    </DialogDescription>
+        <DialogContent
+          className="sm:max-w-3xl max-h-[90vh] overflow-y-auto p-0 gap-0 rounded-2xl border border-slate-200 bg-white shadow-2xl"
+          style={{
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            zIndex: 99999,
+            maxHeight: 'min(90vh, 90dvh)',
+            maxWidth: 'min(820px, 95vw)',
+            overflowY: 'auto',
+            margin: '0',
+          }}
+        >
+          {viewingProfile && (() => {
+            const u = viewingProfile.user || {};
+            const isCandidate = String(u.role || '').toLowerCase() === 'candidate';
+            const isEmployer = String(u.role || '').toLowerCase() === 'employer';
+            const cp = viewingProfile.candidateProfile || viewingProfile.profile || {};
+            const ep = viewingProfile.employerProfile || viewingProfile.employer || viewingProfile.profile || {};
+
+            return (
+              <div className="flex flex-col">
+                {/* Header Banner */}
+                <div className={`p-6 border-b ${
+                  isCandidate 
+                    ? 'bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white' 
+                    : isEmployer
+                    ? 'bg-gradient-to-r from-indigo-950 via-slate-900 to-teal-950 text-white'
+                    : 'bg-gradient-to-r from-slate-900 to-teal-950 text-white'
+                }`}>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      {cp.profilePhotoUrl ? (
+                        <img
+                          src={cp.profilePhotoUrl}
+                          alt={u.name || 'User'}
+                          className="w-16 h-16 rounded-2xl object-cover border-2 border-white/30 shadow-md"
+                        />
+                      ) : (
+                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center font-extrabold text-xl uppercase shadow-md ${
+                          isCandidate ? 'bg-emerald-500 text-white' : isEmployer ? 'bg-indigo-500 text-white' : 'bg-teal-500 text-white'
+                        }`}>
+                          {u.name ? u.name.split(' ').slice(0, 2).map((n: string) => n[0]).join('') : 'U'}
+                        </div>
+                      )}
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-xl font-extrabold text-white">
+                            {u.name || 'User Account'}
+                          </h3>
+                          <Badge className={`text-[11px] font-bold uppercase tracking-wider ${
+                            isCandidate ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
+                          }`}>
+                            {isCandidate ? 'Doctor / Candidate' : isEmployer ? 'Healthcare HR / Employer' : 'Administrator'}
+                          </Badge>
+                          {u.isVerified && (
+                            <Badge className="bg-teal-500/20 text-teal-300 border-teal-500/40 text-[10px]">
+                              Verified
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-300 mt-1 flex items-center gap-4 flex-wrap">
+                          <span className="flex items-center gap-1.5 font-mono">
+                            <Mail className="w-3.5 h-3.5 text-teal-400" />
+                            <a href={`mailto:${u.email}`} className="hover:underline hover:text-white">{u.email}</a>
+                          </span>
+                          {u.phone && (
+                            <span className="flex items-center gap-1.5">
+                              <Phone className="w-3.5 h-3.5 text-teal-400" />
+                              <a href={`tel:${u.phone}`} className="hover:underline hover:text-white">{u.phone}</a>
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex sm:flex-col items-end gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setViewingProfile(null);
+                          handleImpersonate(u);
+                        }}
+                        className={`h-9 text-xs font-bold gap-2 px-4 shadow-lg rounded-xl cursor-pointer ${
+                          isCandidate 
+                            ? 'bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-extrabold' 
+                            : 'bg-indigo-500 hover:bg-indigo-600 text-white'
+                        }`}
+                      >
+                        <Eye className="w-4 h-4" />
+                        {isEmployer ? 'View as HR' : isCandidate ? 'View as Doctor' : 'View Portal'}
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </DialogHeader>
 
-              <div className="py-5 space-y-5">
-                {/* If candidate clinical profile */}
-                {String(viewingProfile.user?.role || '').toLowerCase() === 'candidate' && viewingProfile.profile && (
-                  <>
-                    {/* Clinical Credentials */}
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-                      <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                        <GraduationCap className="w-4 h-4 text-emerald-600" /> Clinical Qualifications &amp; Background
-                      </h4>
-                      <div className="grid grid-cols-2 gap-3 text-xs">
-                        <div>
-                          <span className="text-slate-400 block">Medical Category</span>
-                          <span className="font-semibold text-slate-800">{viewingProfile.profile.medicalCategory || '—'}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400 block">Qualification</span>
-                          <span className="font-semibold text-slate-800">{viewingProfile.profile.qualification || '—'}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400 block">Specialization</span>
-                          <span className="font-semibold text-slate-800">{viewingProfile.profile.speciality || viewingProfile.profile.specialization || '—'}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400 block">Clinical Experience</span>
-                          <span className="font-semibold text-slate-800">
-                            {viewingProfile.profile.yearsExperience != null
-                              ? `${viewingProfile.profile.yearsExperience} Years`
-                              : '—'}
+                {/* Modal Body */}
+                <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-160px)]">
+                  {/* If Candidate */}
+                  {isCandidate && (
+                    <>
+                      {/* Clinical Credentials Card */}
+                      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-200/80 pb-2.5">
+                          <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                            <Stethoscope className="w-4 h-4 text-emerald-600" /> Clinical Qualifications &amp; Specialization
+                          </h4>
+                          <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
+                            {cp.yearsExperience != null ? `${cp.yearsExperience} Years Clinical Practice` : 'Experience Not Specified'}
                           </span>
                         </div>
-                        <div>
-                          <span className="text-slate-400 block">Current Organization</span>
-                          <span className="font-semibold text-slate-800">{viewingProfile.profile.currentOrganization || '—'}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400 block">Current Location</span>
-                          <span className="font-semibold text-slate-800">
-                            {[viewingProfile.profile.currentCity || viewingProfile.profile.city, viewingProfile.profile.state].filter(Boolean).join(', ') || '—'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Resume / CV */}
-                    {viewingProfile.profile.resumeUrl && (
-                      <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-300 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <FileText className="w-6 h-6 text-emerald-600" />
-                          <div>
-                            <div className="text-xs font-bold text-emerald-950">Candidate CV Document</div>
-                            <div className="text-[11px] text-emerald-700">{viewingProfile.profile.resumeFileName || 'Resume.pdf'}</div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 text-xs pt-1">
+                          <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs">
+                            <span className="text-slate-400 block text-[10px] uppercase font-bold">Medical Domain</span>
+                            <span className="font-bold text-slate-900 text-sm mt-0.5 block">{cp.medicalCategory || 'General Medicine'}</span>
+                          </div>
+                          <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs">
+                            <span className="text-slate-400 block text-[10px] uppercase font-bold">Degree / Qualification</span>
+                            <span className="font-bold text-slate-900 text-sm mt-0.5 block">{cp.qualification || 'MBBS'}</span>
+                          </div>
+                          <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs">
+                            <span className="text-slate-400 block text-[10px] uppercase font-bold">Clinical Specialization</span>
+                            <span className="font-bold text-slate-900 text-sm mt-0.5 block">{cp.speciality || cp.specialization || 'Clinical Practitioner'}</span>
+                          </div>
+                          <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs">
+                            <span className="text-slate-400 block text-[10px] uppercase font-bold">Current Hospital / Practice</span>
+                            <span className="font-bold text-slate-900 text-sm mt-0.5 block">{cp.currentOrganization || 'Not specified'}</span>
+                          </div>
+                          <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs">
+                            <span className="text-slate-400 block text-[10px] uppercase font-bold">Current City / State</span>
+                            <span className="font-bold text-slate-900 text-sm mt-0.5 block">
+                              {[cp.currentCity || cp.city, cp.state].filter(Boolean).join(', ') || 'Not specified'}
+                            </span>
+                          </div>
+                          <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs">
+                            <span className="text-slate-400 block text-[10px] uppercase font-bold">Preferred Job Role</span>
+                            <span className="font-bold text-slate-900 text-sm mt-0.5 block">{cp.preferredJobRole || 'Any Clinical Role'}</span>
                           </div>
                         </div>
-                        <a
-                          href={viewingProfile.profile.resumeUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1"
-                        >
-                          <Download size={13} /> Download CV
-                        </a>
                       </div>
-                    )}
-                  </>
-                )}
 
-                {/* If employer profile */}
-                {String(viewingProfile.user?.role || '').toLowerCase() === 'employer' && viewingProfile.profile && (
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                      <Building2 className="w-4 h-4 text-indigo-600" /> Hospital / Healthcare Organization
-                    </h4>
-                    <div className="grid grid-cols-2 gap-3 text-xs">
-                      <div>
-                        <span className="text-slate-400 block">Organization Name</span>
-                        <span className="font-semibold text-slate-800">{viewingProfile.profile.companyName || '—'}</span>
+                      {/* Professional Medical Council Registration */}
+                      <div className="bg-indigo-50/50 border border-indigo-200/80 rounded-2xl p-4 sm:p-5 space-y-3">
+                        <div className="flex items-center justify-between border-b border-indigo-200/60 pb-2.5">
+                          <h4 className="text-xs font-extrabold text-indigo-950 uppercase tracking-wider flex items-center gap-2">
+                            <ShieldCheck className="w-4 h-4 text-indigo-600" /> Medical Council Registration Details
+                          </h4>
+                          <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-md">
+                            Official Registry
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-1">
+                          <div>
+                            <span className="text-indigo-400 block text-[10px] uppercase font-semibold">Council Body</span>
+                            <span className="font-bold text-indigo-950">{cp.registrationCouncil || '—'}</span>
+                          </div>
+                          <div>
+                            <span className="text-indigo-400 block text-[10px] uppercase font-semibold">Registration Number</span>
+                            <span className="font-bold text-indigo-950 font-mono">{cp.registrationNumber || '—'}</span>
+                          </div>
+                          <div>
+                            <span className="text-indigo-400 block text-[10px] uppercase font-semibold">Registration State</span>
+                            <span className="font-bold text-indigo-950">{cp.registrationState || '—'}</span>
+                          </div>
+                          <div>
+                            <span className="text-indigo-400 block text-[10px] uppercase font-semibold">Year of Registration</span>
+                            <span className="font-bold text-indigo-950">{cp.registrationYear || '—'}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-slate-400 block">Organization Type</span>
-                        <span className="font-semibold text-slate-800">{viewingProfile.profile.companyType || '—'}</span>
+
+                      {/* Clinical Skills */}
+                      {cp.skills && (
+                        <div className="space-y-2">
+                          <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-teal-600" /> Core Procedures &amp; Clinical Skills
+                          </h4>
+                          <div className="flex flex-wrap gap-1.5">
+                            {String(cp.skills).split(',').map((skill: string, idx: number) => (
+                              <span key={idx} className="bg-teal-50 text-teal-800 border border-teal-200 font-semibold px-2.5 py-1 rounded-lg text-xs">
+                                {skill.trim()}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Profile Summary / CV Intro */}
+                      {cp.profileSummary && (
+                        <div className="space-y-1.5">
+                          <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Candidate Bio &amp; Professional Summary
+                          </h4>
+                          <p className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 leading-relaxed font-sans">
+                            {cp.profileSummary}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Resume / CV Document */}
+                      <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm shrink-0">
+                            <FileText className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <div className="text-sm font-bold text-emerald-950">Official Candidate CV / Resume</div>
+                            <div className="text-xs text-emerald-700 font-mono">
+                              {cp.resumeFileName || (cp.resumeUrl ? 'Doctor_Resume.pdf' : 'No CV document uploaded yet')}
+                            </div>
+                          </div>
+                        </div>
+                        {cp.resumeUrl ? (
+                          <a
+                            href={cp.resumeUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors cursor-pointer"
+                          >
+                            <Download size={14} /> Download Official CV
+                          </a>
+                        ) : (
+                          <span className="text-xs font-medium text-slate-500 italic">No CV Attached</span>
+                        )}
                       </div>
-                      <div>
-                        <span className="text-slate-400 block">Location</span>
-                        <span className="font-semibold text-slate-800">
-                          {[viewingProfile.profile.city, viewingProfile.profile.state].filter(Boolean).join(', ') || '—'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block">Verification Status</span>
-                        <span className="font-semibold text-slate-800">
-                          {viewingProfile.profile.isVerified ? 'Verified Hospital' : 'Pending Verification'}
-                        </span>
+                    </>
+                  )}
+
+                  {/* If Employer */}
+                  {isEmployer && (
+                    <div className="space-y-4">
+                      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
+                        <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                          <Building2 className="w-4 h-4 text-indigo-600" /> Healthcare Hospital / Clinic Profile
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                          <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs">
+                            <span className="text-slate-400 block text-[10px] uppercase font-bold">Organization / Hospital Name</span>
+                            <span className="font-bold text-slate-900 text-sm mt-0.5 block">{ep.companyName || u.name || '—'}</span>
+                          </div>
+                          <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs">
+                            <span className="text-slate-400 block text-[10px] uppercase font-bold">Facility Type</span>
+                            <span className="font-bold text-slate-900 text-sm mt-0.5 block">{ep.companyType || 'Hospital'}</span>
+                          </div>
+                          <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs">
+                            <span className="text-slate-400 block text-[10px] uppercase font-bold">Location</span>
+                            <span className="font-bold text-slate-900 text-sm mt-0.5 block">
+                              {[ep.address, ep.city, ep.state, ep.pincode].filter(Boolean).join(', ') || '—'}
+                            </span>
+                          </div>
+                          <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs">
+                            <span className="text-slate-400 block text-[10px] uppercase font-bold">Verification Status</span>
+                            <span className="font-bold text-slate-900 text-sm mt-0.5 block">
+                              {ep.isVerified ? 'Verified Healthcare Provider' : 'Pending Verification'}
+                            </span>
+                          </div>
+                          {ep.website && (
+                            <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs sm:col-span-2">
+                              <span className="text-slate-400 block text-[10px] uppercase font-bold">Official Website</span>
+                              <a href={ep.website} target="_blank" rel="noopener noreferrer" className="text-indigo-600 font-bold hover:underline flex items-center gap-1 mt-0.5">
+                                {ep.website} <ExternalLink size={12} />
+                              </a>
+                            </div>
+                          )}
+                        </div>
+
+                        {ep.companyDescription && (
+                          <div className="pt-2">
+                            <span className="text-slate-400 block text-[10px] uppercase font-bold mb-1">About Facility</span>
+                            <p className="p-3 bg-white rounded-xl border border-slate-100 text-xs text-slate-700 leading-relaxed">
+                              {ep.companyDescription}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
+
+                  {/* If Admin */}
+                  {!isCandidate && !isEmployer && (
+                    <div className="p-6 text-center bg-slate-50 rounded-2xl border border-slate-200">
+                      <ShieldCheck className="w-12 h-12 text-teal-600 mx-auto mb-2" />
+                      <h4 className="text-base font-bold text-slate-900">System Administrator Account</h4>
+                      <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                        This user holds administrative authority to manage platform jobs, user accounts, and system configuration.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Modal Footer */}
+                <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between rounded-b-2xl">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setViewingProfile(null)}
+                    className="text-xs font-semibold text-slate-600 cursor-pointer"
+                  >
+                    Close
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setViewingProfile(null);
+                      handleImpersonate(u);
+                    }}
+                    className={`gap-1.5 text-xs font-bold shadow-md cursor-pointer ${
+                      isCandidate ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                    }`}
+                  >
+                    <Eye className="w-4 h-4" />
+                    {isEmployer ? 'Enter Employer Portal' : isCandidate ? 'Enter Candidate Portal' : 'View Portal'}
+                  </Button>
+                </div>
               </div>
-
-              <DialogFooter className="border-t border-slate-100 pt-4 flex items-center justify-between sm:justify-between">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setViewingProfile(null)}
-                >
-                  Close
-                </Button>
-
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    const u = viewingProfile.user;
-                    setViewingProfile(null);
-                    handleImpersonate(u);
-                  }}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5 text-xs font-bold shadow-sm"
-                >
-                  <Eye className="w-4 h-4" /> View as this User
-                </Button>
-              </DialogFooter>
-            </div>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
 

@@ -579,120 +579,128 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
           </div>
         )}
 
-        {/* Metric Summary Ribbon with Role Accent Colors & Subtle Tinted Backgrounds */}
+        {/* Metric Summary Ribbon with Role Accent Colors & Vibrant Ambient Gradients */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {/* Card 1: All Accounts (Blue Theme) */}
           <div
             onClick={() => setActiveTab('all')}
-            className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 ${
+            className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 hover:-translate-y-0.5 ${
               activeTab === 'all'
                 ? 'ring-2 ring-blue-500 shadow-md'
-                : 'hover:border-blue-300 shadow-xs'
+                : 'hover:border-blue-400 shadow-xs'
             }`}
             style={{
-              borderTop: '4px solid #2563eb',
-              backgroundColor: activeTab === 'all' ? '#e0f2fe' : '#eff6ff',
-              borderColor: activeTab === 'all' ? '#38bdf8' : '#bfdbfe',
+              borderLeft: '5px solid #2563eb',
+              background: activeTab === 'all'
+                ? 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)'
+                : 'linear-gradient(135deg, #ffffff 60%, #eff6ff 100%)',
+              borderColor: activeTab === 'all' ? '#3b82f6' : '#cbd5e1',
             }}
           >
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700">All Accounts</span>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-800">All Accounts</span>
               <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs"
-                style={{ backgroundColor: '#dbeafe', color: '#1d4ed8' }}
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+                style={{ background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#ffffff' }}
               >
-                <Users className="w-4 h-4" />
+                <Users className="w-5 h-5 text-white" />
               </div>
             </div>
-            <div className="text-2xl font-black mt-2" style={{ color: '#1e40af' }}>{totalCount}</div>
-            <div className="text-xs font-medium text-blue-600 mt-0.5">Total registered accounts</div>
+            <div className="text-3xl font-black mt-2 text-slate-900">{totalCount}</div>
+            <div className="text-xs font-bold text-blue-600 mt-0.5">Total registered accounts</div>
           </div>
 
           {/* Card 2: Employers / HR (Purple Theme) */}
           <div
             onClick={() => setActiveTab('employer')}
-            className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 ${
+            className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 hover:-translate-y-0.5 ${
               activeTab === 'employer'
                 ? 'ring-2 ring-purple-500 shadow-md'
-                : 'hover:border-purple-300 shadow-xs'
+                : 'hover:border-purple-400 shadow-xs'
             }`}
             style={{
-              borderTop: '4px solid #7c3aed',
-              backgroundColor: activeTab === 'employer' ? '#f3e8ff' : '#faf5ff',
-              borderColor: activeTab === 'employer' ? '#c084fc' : '#e9d5ff',
+              borderLeft: '5px solid #7c3aed',
+              background: activeTab === 'employer'
+                ? 'linear-gradient(135deg, #f3e8ff 0%, #ede9fe 100%)'
+                : 'linear-gradient(135deg, #ffffff 60%, #faf5ff 100%)',
+              borderColor: activeTab === 'employer' ? '#8b5cf6' : '#cbd5e1',
             }}
           >
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#7c3aed' }}>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-purple-900">
                 Employers / HR
               </span>
               <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs"
-                style={{ backgroundColor: '#ede9fe', color: '#6d28d9' }}
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+                style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: '#ffffff' }}
               >
-                <Building2 className="w-4 h-4" />
+                <Building2 className="w-5 h-5 text-white" />
               </div>
             </div>
-            <div className="text-2xl font-black mt-2" style={{ color: '#5b21b6' }}>{employerCount}</div>
-            <div className="text-xs font-medium mt-0.5" style={{ color: '#6d28d9' }}>Hospitals &amp; clinics</div>
+            <div className="text-3xl font-black mt-2 text-slate-900">{employerCount}</div>
+            <div className="text-xs font-bold text-purple-700 mt-0.5">Hospitals &amp; clinics</div>
           </div>
 
-          {/* Card 3: Candidates / Doctors (Cyan/Teal Theme) */}
+          {/* Card 3: Candidates / Doctors (Teal Theme) */}
           <div
             onClick={() => setActiveTab('candidate')}
-            className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 ${
+            className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 hover:-translate-y-0.5 ${
               activeTab === 'candidate'
                 ? 'ring-2 ring-teal-500 shadow-md'
-                : 'hover:border-teal-300 shadow-xs'
+                : 'hover:border-teal-400 shadow-xs'
             }`}
             style={{
-              borderTop: '4px solid #0d9488',
-              backgroundColor: activeTab === 'candidate' ? '#ccfbf1' : '#f0fdfa',
-              borderColor: activeTab === 'candidate' ? '#2dd4bf' : '#99f6e4',
+              borderLeft: '5px solid #0d9488',
+              background: activeTab === 'candidate'
+                ? 'linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%)'
+                : 'linear-gradient(135deg, #ffffff 60%, #f0fdfa 100%)',
+              borderColor: activeTab === 'candidate' ? '#14b8a6' : '#cbd5e1',
             }}
           >
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#0d9488' }}>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-teal-900">
                 Candidates / Doctors
               </span>
               <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs"
-                style={{ backgroundColor: '#ccfbf1', color: '#0f766e' }}
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+                style={{ background: 'linear-gradient(135deg, #0d9488, #0f766e)', color: '#ffffff' }}
               >
-                <Stethoscope className="w-4 h-4" />
+                <Stethoscope className="w-5 h-5 text-white" />
               </div>
             </div>
-            <div className="text-2xl font-black mt-2" style={{ color: '#115e59' }}>{candidateCount}</div>
-            <div className="text-xs font-medium mt-0.5" style={{ color: '#0f766e' }}>Verified clinical pool</div>
+            <div className="text-3xl font-black mt-2 text-slate-900">{candidateCount}</div>
+            <div className="text-xs font-bold text-teal-700 mt-0.5">Verified clinical pool</div>
           </div>
 
-          {/* Card 4: Administrators (Red/Orange Theme) */}
+          {/* Card 4: Administrators (Rose Theme) */}
           <div
             onClick={() => setActiveTab('admin')}
-            className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 ${
+            className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 hover:-translate-y-0.5 ${
               activeTab === 'admin'
                 ? 'ring-2 ring-rose-500 shadow-md'
-                : 'hover:border-rose-300 shadow-xs'
+                : 'hover:border-rose-400 shadow-xs'
             }`}
             style={{
-              borderTop: '4px solid #e11d48',
-              backgroundColor: activeTab === 'admin' ? '#ffe4e6' : '#fff1f2',
-              borderColor: activeTab === 'admin' ? '#fb7185' : '#fecdd3',
+              borderLeft: '5px solid #e11d48',
+              background: activeTab === 'admin'
+                ? 'linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%)'
+                : 'linear-gradient(135deg, #ffffff 60%, #fff1f2 100%)',
+              borderColor: activeTab === 'admin' ? '#f43f5e' : '#cbd5e1',
             }}
           >
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#e11d48' }}>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-rose-900">
                 Administrators
               </span>
               <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs"
-                style={{ backgroundColor: '#ffe4e6', color: '#be123c' }}
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+                style={{ background: 'linear-gradient(135deg, #f43f5e, #be123c)', color: '#ffffff' }}
               >
-                <ShieldCheck className="w-4 h-4" />
+                <ShieldCheck className="w-5 h-5 text-white" />
               </div>
             </div>
-            <div className="text-2xl font-black mt-2" style={{ color: '#9f1239' }}>{adminCount}</div>
-            <div className="text-xs font-medium mt-0.5" style={{ color: '#be123c' }}>Platform admin access</div>
+            <div className="text-3xl font-black mt-2 text-slate-900">{adminCount}</div>
+            <div className="text-xs font-bold text-rose-700 mt-0.5">Platform admin access</div>
           </div>
         </div>
 
@@ -962,14 +970,14 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr
-                      className="border-b border-slate-200 text-[11px] uppercase tracking-wider font-extrabold"
-                      style={{ backgroundColor: '#f8fafc', color: '#475569' }}
+                      className="border-b border-slate-700 text-[11.5px] uppercase tracking-wider font-extrabold shadow-xs"
+                      style={{ backgroundColor: '#0f2942', color: '#ffffff' }}
                     >
-                      <th className="py-3.5 px-4">User / Contact</th>
-                      <th className="py-3.5 px-4">Role &amp; Organization</th>
-                      <th className="py-3.5 px-4">Clinical Background / City</th>
-                      <th className="py-3.5 px-4">Status</th>
-                      <th className="py-3.5 px-4 text-right">Actions &amp; Impersonation</th>
+                      <th className="py-4 px-4 font-black">User / Contact</th>
+                      <th className="py-4 px-4 font-black">Role &amp; Organization</th>
+                      <th className="py-4 px-4 font-black">Clinical Background / City</th>
+                      <th className="py-4 px-4 font-black">Status</th>
+                      <th className="py-4 px-4 text-right font-black">Actions &amp; Impersonation</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-sm">
@@ -1577,30 +1585,26 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                     <>
                       {/* Card 1: Education & Qualification (Blue Left Accent) */}
                       <div
-                        className="rounded-2xl p-5 space-y-3.5"
+                        className="rounded-2xl p-5 space-y-3.5 transition-all shadow-xs"
                         style={{
-                          backgroundColor: '#ffffff',
-                          border: '1px solid #e2e8f0',
-                          borderLeft: '4px solid #3b82f6',
-                          borderRadius: '14px',
-                          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+                          background: 'linear-gradient(135deg, #ffffff 65%, #eff6ff 100%)',
+                          border: '1px solid #dbeafe',
+                          borderLeft: '5px solid #2563eb',
+                          borderRadius: '16px',
                         }}
                       >
                         <div className="flex items-center gap-3">
                           <div
-                            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                            className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm"
                             style={{
-                              backgroundColor: '#eff6ff',
-                              color: '#2563eb',
-                              borderRadius: '50%',
-                              width: '38px',
-                              height: '38px',
+                              background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                              color: '#ffffff',
                             }}
                           >
-                            <GraduationCap className="w-5 h-5" style={{ color: '#2563eb' }} />
+                            <GraduationCap className="w-5 h-5 text-white" />
                           </div>
                           <h4
-                            className="text-[15px] font-bold tracking-tight"
+                            className="text-[15px] font-extrabold tracking-tight"
                             style={{ color: '#0f172a' }}
                           >
                             Education &amp; Qualification
@@ -1609,11 +1613,11 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-12">
                           <div>
-                            <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
+                            <span className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-600 mb-1">
                               Degree / Qualification
                             </span>
                             <span
-                              className="block text-sm font-bold mt-1"
+                              className="block text-[15px] font-black"
                               style={{ color: '#0f172a' }}
                             >
                               {cp.qualification || 'MBBS MS'}
@@ -1621,13 +1625,13 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                           </div>
                           <div
                             className="md:border-l md:pl-6"
-                            style={{ borderLeftColor: '#f1f5f9' }}
+                            style={{ borderLeftColor: '#cbd5e1' }}
                           >
-                            <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
+                            <span className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-600 mb-1">
                               Medical Domain
                             </span>
                             <span
-                              className="block text-sm font-bold mt-1"
+                              className="block text-[15px] font-black"
                               style={{ color: '#0f172a' }}
                             >
                               {cp.medicalCategory || 'General Medicine'}
@@ -1638,57 +1642,52 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
                       {/* Card 2: Clinical Practice (Teal Left Accent + Experience Badge) */}
                       <div
-                        className="rounded-2xl p-5 space-y-3.5"
+                        className="rounded-2xl p-5 space-y-3.5 transition-all shadow-xs"
                         style={{
-                          backgroundColor: '#ffffff',
-                          border: '1px solid #e2e8f0',
-                          borderLeft: '4px solid #0d9488',
-                          borderRadius: '14px',
-                          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+                          background: 'linear-gradient(135deg, #ffffff 65%, #f0fdfa 100%)',
+                          border: '1px solid #ccfbf1',
+                          borderLeft: '5px solid #0d9488',
+                          borderRadius: '16px',
                         }}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div
-                              className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                              className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm"
                               style={{
-                                backgroundColor: '#f0fdfa',
-                                color: '#0d9488',
-                                borderRadius: '50%',
-                                width: '38px',
-                                height: '38px',
+                                background: 'linear-gradient(135deg, #0d9488, #0f766e)',
+                                color: '#ffffff',
                               }}
                             >
-                              <Stethoscope className="w-5 h-5" style={{ color: '#0d9488' }} />
+                              <Stethoscope className="w-5 h-5 text-white" />
                             </div>
                             <h4
-                              className="text-[15px] font-bold tracking-tight"
+                              className="text-[15px] font-extrabold tracking-tight"
                               style={{ color: '#0f172a' }}
                             >
                               Clinical Practice
                             </h4>
                           </div>
                           <span
-                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold"
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold shadow-2xs"
                             style={{
-                              backgroundColor: '#f0fdf4',
-                              color: '#16a34a',
-                              border: '1px solid #bbf7d0',
-                              borderRadius: '8px',
+                              backgroundColor: '#dcfce7',
+                              color: '#15803d',
+                              border: '1px solid #86efac',
                             }}
                           >
-                            <Briefcase className="w-3.5 h-3.5" style={{ color: '#16a34a' }} />
+                            <Briefcase className="w-3.5 h-3.5" style={{ color: '#15803d' }} />
                             {cp.yearsExperience != null ? `${cp.yearsExperience} Yrs Exp` : '2 Yrs Exp'}
                           </span>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-12">
                           <div>
-                            <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
+                            <span className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-600 mb-1">
                               Clinical Specialization
                             </span>
                             <span
-                              className="block text-sm font-bold mt-1"
+                              className="block text-[15px] font-black"
                               style={{ color: '#0f172a' }}
                             >
                               {cp.speciality || cp.specialization || 'General Surgery'}
@@ -1696,13 +1695,13 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                           </div>
                           <div
                             className="md:border-l md:pl-6"
-                            style={{ borderLeftColor: '#f1f5f9' }}
+                            style={{ borderLeftColor: '#cbd5e1' }}
                           >
-                            <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
+                            <span className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-600 mb-1">
                               Sub-Speciality / Focus
                             </span>
                             <span
-                              className="block text-sm font-bold mt-1"
+                              className="block text-[15px] font-black"
                               style={{ color: '#0f172a' }}
                             >
                               {cp.subSpeciality || 'Gastro surgeon'}
@@ -1713,30 +1712,26 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
                       {/* Card 3: Location & Mobility (Purple Left Accent) */}
                       <div
-                        className="rounded-2xl p-5 space-y-3.5"
+                        className="rounded-2xl p-5 space-y-3.5 transition-all shadow-xs"
                         style={{
-                          backgroundColor: '#ffffff',
-                          border: '1px solid #e2e8f0',
-                          borderLeft: '4px solid #8b5cf6',
-                          borderRadius: '14px',
-                          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+                          background: 'linear-gradient(135deg, #ffffff 65%, #f5f3ff 100%)',
+                          border: '1px solid #e9d5ff',
+                          borderLeft: '5px solid #7c3aed',
+                          borderRadius: '16px',
                         }}
                       >
                         <div className="flex items-center gap-3">
                           <div
-                            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                            className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm"
                             style={{
-                              backgroundColor: '#f5f3ff',
-                              color: '#7c3aed',
-                              borderRadius: '50%',
-                              width: '38px',
-                              height: '38px',
+                              background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                              color: '#ffffff',
                             }}
                           >
-                            <MapPin className="w-5 h-5" style={{ color: '#7c3aed' }} />
+                            <MapPin className="w-5 h-5 text-white" />
                           </div>
                           <h4
-                            className="text-[15px] font-bold tracking-tight"
+                            className="text-[15px] font-extrabold tracking-tight"
                             style={{ color: '#0f172a' }}
                           >
                             Location &amp; Mobility
@@ -1745,11 +1740,11 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-12">
                           <div>
-                            <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
+                            <span className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-600 mb-1">
                               Current City / State
                             </span>
                             <span
-                              className="block text-sm font-bold mt-1"
+                              className="block text-[15px] font-black"
                               style={{ color: '#0f172a' }}
                             >
                               {[cp.currentCity || cp.city, cp.state].filter(Boolean).join(', ') || 'Lucknow, Uttar Pradesh'}
@@ -1757,13 +1752,13 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                           </div>
                           <div
                             className="md:border-l md:pl-6"
-                            style={{ borderLeftColor: '#f1f5f9' }}
+                            style={{ borderLeftColor: '#cbd5e1' }}
                           >
-                            <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
+                            <span className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-600 mb-1">
                               Preferred Location
                             </span>
                             <span
-                              className="block text-sm font-bold mt-1"
+                              className="block text-[15px] font-black"
                               style={{ color: '#0f172a' }}
                             >
                               {cp.preferredLocation || 'Lucknow'}
@@ -1774,30 +1769,26 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
                       {/* Card 4: Hospital & Desired Role (Rose Left Accent) */}
                       <div
-                        className="rounded-2xl p-5 space-y-3.5"
+                        className="rounded-2xl p-5 space-y-3.5 transition-all shadow-xs"
                         style={{
-                          backgroundColor: '#ffffff',
-                          border: '1px solid #e2e8f0',
-                          borderLeft: '4px solid #f43f5e',
-                          borderRadius: '14px',
-                          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+                          background: 'linear-gradient(135deg, #ffffff 65%, #fff1f2 100%)',
+                          border: '1px solid #fecdd3',
+                          borderLeft: '5px solid #e11d48',
+                          borderRadius: '16px',
                         }}
                       >
                         <div className="flex items-center gap-3">
                           <div
-                            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                            className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm"
                             style={{
-                              backgroundColor: '#fff1f2',
-                              color: '#e11d48',
-                              borderRadius: '50%',
-                              width: '38px',
-                              height: '38px',
+                              background: 'linear-gradient(135deg, #f43f5e, #be123c)',
+                              color: '#ffffff',
                             }}
                           >
-                            <Building2 className="w-5 h-5" style={{ color: '#e11d48' }} />
+                            <Building2 className="w-5 h-5 text-white" />
                           </div>
                           <h4
-                            className="text-[15px] font-bold tracking-tight"
+                            className="text-[15px] font-extrabold tracking-tight"
                             style={{ color: '#0f172a' }}
                           >
                             Hospital &amp; Desired Role
@@ -1806,11 +1797,11 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-12">
                           <div>
-                            <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
+                            <span className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-600 mb-1">
                               Current Hospital / Practice
                             </span>
                             <span
-                              className="block text-sm font-bold mt-1"
+                              className="block text-[15px] font-black"
                               style={{ color: '#0f172a' }}
                             >
                               {cp.currentOrganization || 'Not currently practicing'}
@@ -1818,13 +1809,13 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                           </div>
                           <div
                             className="md:border-l md:pl-6"
-                            style={{ borderLeftColor: '#f1f5f9' }}
+                            style={{ borderLeftColor: '#cbd5e1' }}
                           >
-                            <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
+                            <span className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-600 mb-1">
                               Preferred Job Role
                             </span>
                             <span
-                              className="block text-sm font-bold mt-1"
+                              className="block text-[15px] font-black"
                               style={{ color: '#0f172a' }}
                             >
                               {cp.preferredJobRole || 'Any clinical vacancy'}
@@ -1835,43 +1826,38 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
                       {/* Card 5: Medical Council Registration Details (Indigo Left Accent) */}
                       <div
-                        className="rounded-2xl p-5 space-y-3.5"
+                        className="rounded-2xl p-5 space-y-3.5 transition-all shadow-xs"
                         style={{
-                          backgroundColor: '#ffffff',
-                          border: '1px solid #e2e8f0',
-                          borderLeft: '4px solid #6366f1',
-                          borderRadius: '14px',
-                          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+                          background: 'linear-gradient(135deg, #ffffff 65%, #eef2ff 100%)',
+                          border: '1px solid #c7d2fe',
+                          borderLeft: '5px solid #4f46e5',
+                          borderRadius: '16px',
                         }}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div
-                              className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                              className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm"
                               style={{
-                                backgroundColor: '#eef2ff',
-                                color: '#4f46e5',
-                                borderRadius: '50%',
-                                width: '38px',
-                                height: '38px',
+                                background: 'linear-gradient(135deg, #6366f1, #3730a3)',
+                                color: '#ffffff',
                               }}
                             >
-                              <ShieldCheck className="w-5 h-5" style={{ color: '#4f46e5' }} />
+                              <ShieldCheck className="w-5 h-5 text-white" />
                             </div>
                             <h4
-                              className="text-[15px] font-bold tracking-tight"
+                              className="text-[15px] font-extrabold tracking-tight"
                               style={{ color: '#0f172a' }}
                             >
                               Medical Council Registration Details
                             </h4>
                           </div>
                           <span
-                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold"
+                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold shadow-2xs"
                             style={{
-                              backgroundColor: '#f5f3ff',
+                              backgroundColor: '#ede9fe',
                               color: '#6d28d9',
                               border: '1px solid #ddd6fe',
-                              borderRadius: '8px',
                             }}
                           >
                             <ExternalLink className="w-3.5 h-3.5" style={{ color: '#6d28d9' }} />
@@ -1881,11 +1867,11 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-12">
                           <div>
-                            <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
+                            <span className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-600 mb-1">
                               Council Body
                             </span>
                             <span
-                              className="block text-sm font-bold mt-1"
+                              className="block text-[15px] font-black"
                               style={{ color: '#0f172a' }}
                             >
                               {cp.registrationCouncil || 'Rajasthan Medical counselling'}
@@ -1894,18 +1880,18 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
                           <div
                             className="md:border-l md:pl-6"
-                            style={{ borderLeftColor: '#f1f5f9' }}
+                            style={{ borderLeftColor: '#cbd5e1' }}
                           >
-                            <span className="block text-xs font-medium" style={{ color: '#94a3b8' }}>
+                            <span className="block text-[11px] font-extrabold uppercase tracking-wider text-slate-600 mb-1">
                               Registration Number &amp; Details
                             </span>
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
                               <span
-                                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-xs font-mono font-bold"
+                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-black"
                                 style={{
-                                  backgroundColor: '#f5f3ff',
-                                  color: '#6d28d9',
-                                  border: '1px solid #ddd6fe',
+                                  backgroundColor: '#ede9fe',
+                                  color: '#5b21b6',
+                                  border: '1px solid #c084fc',
                                   borderRadius: '6px',
                                 }}
                               >
@@ -1917,14 +1903,14 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                                     toast.success('Registration number copied');
                                   }}
                                   className="hover:opacity-80 transition-opacity p-0.5 cursor-pointer"
-                                  style={{ color: '#6d28d9' }}
+                                  style={{ color: '#5b21b6' }}
                                   title="Copy registration number"
                                 >
                                   <Copy className="w-3.5 h-3.5" />
                                 </button>
                               </span>
                               {(cp.registrationState || cp.registrationYear) && (
-                                <span className="text-xs font-semibold" style={{ color: '#475569' }}>
+                                <span className="text-xs font-bold" style={{ color: '#475569' }}>
                                   ({[cp.registrationState, cp.registrationYear ? `Year ${cp.registrationYear}` : null].filter(Boolean).join(', ')})
                                 </span>
                               )}
@@ -1935,30 +1921,26 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
                       {/* Card 6: Official Candidate CV / Resume (Amber Left Accent) */}
                       <div
-                        className="rounded-2xl p-5 space-y-3.5"
+                        className="rounded-2xl p-5 space-y-3.5 transition-all shadow-xs"
                         style={{
-                          backgroundColor: '#ffffff',
-                          border: '1px solid #e2e8f0',
-                          borderLeft: '4px solid #f59e0b',
-                          borderRadius: '14px',
-                          boxShadow: '0 1px 3px rgba(15, 23, 42, 0.03)',
+                          background: 'linear-gradient(135deg, #ffffff 65%, #fffbeb 100%)',
+                          border: '1px solid #fde68a',
+                          borderLeft: '5px solid #d97706',
+                          borderRadius: '16px',
                         }}
                       >
                         <div className="flex items-center gap-3">
                           <div
-                            className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                            className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm"
                             style={{
-                              backgroundColor: '#fffbeb',
-                              color: '#d97706',
-                              borderRadius: '50%',
-                              width: '38px',
-                              height: '38px',
+                              background: 'linear-gradient(135deg, #f59e0b, #b45309)',
+                              color: '#ffffff',
                             }}
                           >
-                            <FileText className="w-5 h-5" style={{ color: '#d97706' }} />
+                            <FileText className="w-5 h-5 text-white" />
                           </div>
                           <h4
-                            className="text-[15px] font-bold tracking-tight"
+                            className="text-[15px] font-extrabold tracking-tight"
                             style={{ color: '#0f172a' }}
                           >
                             Official Candidate CV / Resume

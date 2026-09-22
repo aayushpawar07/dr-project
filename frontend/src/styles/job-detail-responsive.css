@@ -8,16 +8,23 @@
  * The description is plain text, so keeping whitespace makes headings,
  * blank lines and bullet lines readable without rendering unsafe HTML.
  */
+.job-detail-description p,
+.min-h-screen.bg-gray-50
+  > .container.mx-auto.px-4.py-8
+  > .grid.md\:grid-cols-3.gap-6
+  > .md\:col-span-2.space-y-6
+  > .p-6:nth-child(3)
+  > p,
 .min-h-screen.bg-gray-50
   > .container.mx-auto.px-4.py-8
   > .grid.md\:grid-cols-3.gap-6
   > .md\:col-span-2.space-y-6
   > .p-6:nth-child(3)
   > p.text-gray-700.leading-relaxed {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  word-break: normal;
-  line-height: 1.75;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+  line-height: 1.75 !important;
 }
 
 @media (max-width: 1024px) {

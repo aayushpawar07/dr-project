@@ -373,9 +373,17 @@ export function GovernmentJobDetail({
               </div>
             </Card>
 
-            <Card className="p-4 sm:p-6 job-detail-description border-slate-200 shadow-none">
-              <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-bold text-slate-800">Job Description</h2>
-              <p className="whitespace-pre-wrap text-slate-600 leading-relaxed text-sm sm:text-base">
+            <Card className="p-4 sm:p-6 job-detail-description">
+              <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-bold text-gray-900">Job Description</h2>
+              <p
+                className="whitespace-pre-wrap text-gray-700 leading-relaxed text-sm sm:text-base"
+                style={{
+                  whiteSpace: 'pre-wrap',
+                  overflowWrap: 'anywhere',
+                  wordBreak: 'normal',
+                  lineHeight: 1.75,
+                }}
+              >
                 {displayJobDescription(job) ||
                   'Refer to the official notification for complete eligibility, selection process and application instructions.'}
               </p>

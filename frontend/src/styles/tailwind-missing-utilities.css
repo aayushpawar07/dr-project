@@ -14,6 +14,9 @@
  */
 
 @layer utilities {
+  .whitespace-pre-wrap {
+    white-space: pre-wrap;
+  }
 
   @media (width >= 40rem) {
     .sm\:block {

@@ -373,7 +373,7 @@ export function GovernmentJobDetail({
               </div>
             </Card>
 
-            <Card className="p-4 sm:p-6 job-detail-description" data-medex-description-enhanced="true">
+            <Card className="p-4 sm:p-6 job-detail-description">
               <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-bold text-gray-900">Job Description</h2>
               <p
                 className="whitespace-pre-wrap text-gray-700 leading-relaxed text-sm sm:text-base"

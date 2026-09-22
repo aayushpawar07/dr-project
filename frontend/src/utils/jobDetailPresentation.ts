@@ -97,8 +97,28 @@ function sectionConfig(key: DescriptionSectionKey) {
 const SECTION_HEADING_PATTERN =
   /^(JOB DETAILS|JOB OVERVIEW|ABOUT THE ROLE|ELIGIBILITY(?:\s+CRITERIA)?|KEY RESPONSIBILITIES|RESPONSIBILITIES|APPLICATION PROCESS|APPLICATION DETAILS|SELECTION PROCESS|DOCUMENTS REQUIRED|IMPORTANT DOCUMENTS REQUIRED|IMPORTANT NOTES|IMPORTANT INSTRUCTIONS|CONTACT INFORMATION|CONTACT|PAY\s*\/\s*SALARY)\s*:?\s*/i;
 
+function convertHtmlTablesToMarkdown(text: string): string {
+  if (!/<table[\s>]/i.test(text) || !/<tr[\s>]/i.test(text)) return text;
+  return text.replace(/<table[^>]*>([\s\S]*?)<\/table>/gi, (_, tableContent) => {
+    const rowMatches = tableContent.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi);
+    if (!rowMatches || rowMatches.length === 0) return '';
+    const rows: string[] = [];
+    rowMatches.forEach((rm: string, idx: number) => {
+      const cellMatches = rm.match(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi);
+      if (!cellMatches) return;
+      const cells = cellMatches.map((c) => c.replace(/<[^>]+>/g, '').trim());
+      rows.push(`| ${cells.join(' | ')} |`);
+      if (idx === 0) {
+        rows.push(`| ${cells.map(() => '---').join(' | ')} |`);
+      }
+    });
+    return '\n\n' + rows.join('\n') + '\n\n';
+  });
+}
+
 function normalizeDescription(raw: string): string {
-  const text = raw.replace(/\r\n?/g, "\n").replace(/\u00a0/g, " ").trim();
+  const converted = convertHtmlTablesToMarkdown(raw);
+  const text = converted.replace(/\r\n?/g, "\n").replace(/\u00a0/g, " ").trim();
 
   return text
     .split("\n")
@@ -109,16 +129,96 @@ function normalizeDescription(raw: string): string {
     .trim();
 }
 
+function extractCategoryBreakdown(input: string): { items: Array<{ category: string; count: number }>; pwbdNote?: string; total?: number } | null {
+  const match = input.match(/(?:Category\s*(?:Breakdown|Quota|Wise|Reservation)|Categories)\s*[:\-]\s*([^\n\r;)]+)/i);
+  if (!match) return null;
+
+  const rawCats = match[1];
+  const items: Array<{ category: string; count: number }> = [];
+  const catRegex = /\b(UR|GEN|GENERAL|OBC|SC|ST|EWS|PWBD|PWD|PH|SEBC|MBC|OPEN)\b\s*[:=\-]?\s*(\d+)/gi;
+  let m: RegExpExecArray | null;
+  while ((m = catRegex.exec(rawCats)) !== null) {
+    items.push({ category: m[1].toUpperCase(), count: parseInt(m[2], 10) });
+  }
+
+  const pwbdMatch = input.match(/(\d+%\s*reserved\s*for\s*(?:PwBD|PWD|PH)|(?:PwBD|PWD|PH)\s*:\s*\d+%\s*reserved)/i);
+
+  if (items.length > 0) {
+    const totalMatch = input.match(/(?:Total|Total\s*Posts|Number\s*of\s*Posts)\s*[:\-]?\s*(\d+)/i);
+    const total = totalMatch ? parseInt(totalMatch[1], 10) : items.reduce((s, i) => s + i.count, 0);
+    return {
+      items,
+      pwbdNote: pwbdMatch ? pwbdMatch[1].trim() : undefined,
+      total,
+    };
+  }
+  return null;
+}
+
+function extractDepartmentBreakdown(input: string): Array<{ department: string; count: number }> | null {
+  const parenMatch = input.match(/\(([^;)]+)(?:;|\))/);
+  const target = parenMatch ? parenMatch[1] : input;
+
+  const items: Array<{ department: string; count: number }> = [];
+  const deptRegex = /([A-Za-z0-9\s&./()\-]+?)\s*:\s*(\d{1,4})\b/g;
+  let m: RegExpExecArray | null;
+  while ((m = deptRegex.exec(target)) !== null) {
+    const dName = m[1].replace(/^[,\s;]+/, '').trim();
+    const count = parseInt(m[2], 10);
+    if (!/^(posts?|number of posts|category|sc|st|obc|ur|ews|pwbd|total)$/i.test(dName) && dName.length >= 2) {
+      items.push({ department: dName, count });
+    }
+  }
+  return items.length >= 2 ? items : null;
+}
+
+function generateCategoryTableMarkdown(cb: { items: Array<{ category: string; count: number }>; pwbdNote?: string; total?: number }): string[] {
+  const rows: string[] = [];
+  rows.push("### Category-Wise Vacancy Quota");
+  rows.push("| Category | Reserved Posts |");
+  rows.push("|---|---|");
+  const order = ["UR", "GEN", "GENERAL", "OBC", "SC", "ST", "EWS"];
+  const sorted = [...cb.items].sort((a, b) => {
+    const idxA = order.indexOf(a.category);
+    const idxB = order.indexOf(b.category);
+    return (idxA >= 0 ? idxA : 99) - (idxB >= 0 ? idxB : 99);
+  });
+  sorted.forEach((item) => {
+    const label = item.category === "UR" ? "UR (Unreserved)" : item.category;
+    rows.push(`| ${label} | ${item.count} |`);
+  });
+  if (cb.pwbdNote) {
+    rows.push(`| PwBD (Horizontal) | ${cb.pwbdNote} |`);
+  }
+  if (cb.total) {
+    rows.push(`| Total | ${cb.total} |`);
+  }
+  return rows;
+}
+
+function generateDepartmentTableMarkdown(items: Array<{ department: string; count: number }>, total?: number): string[] {
+  const rows: string[] = [];
+  rows.push("### Department-Wise Vacancies");
+  rows.push("| Department / Speciality | Posts |");
+  rows.push("|---|---|");
+  items.forEach((item) => {
+    rows.push(`| ${item.department} | ${item.count} |`);
+  });
+  const sum = total || items.reduce((s, i) => s + i.count, 0);
+  rows.push(`| Total | ${sum} |`);
+  return rows;
+}
+
 function detectKeySection(key: string): DescriptionSectionKey | null {
   const k = key.toLowerCase().trim();
-  if (/qualification|experience|age\s*limit|eligibility|internship|council\s*registration/i.test(k)) return "eligibility";
-  if (/job\s*description|responsibilities|duties|scope\s*of\s*work|role\s*description/i.test(k)) return "responsibilities";
-  if (/selection|interview\s*mode|interview\s*schedule|exam\s*pattern/i.test(k)) return "selection";
-  if (/last\s*date|closing\s*date|apply\s*before|application\s*fee|apply\s*link|application\s*link|online\s*apply|how\s*to\s*apply|start\s*date/i.test(k)) return "application";
-  if (/benefits|perks|important\s*notes|important\s*instructions|terms\s*&\s*conditions/i.test(k)) return "notes";
-  if (/contact\s*email|contact\s*phone|helpline|helpdesk|contact/i.test(k)) return "contact";
+  if (/qualification|experience|age\s*limit|eligibility|internship|council|registration|fitness|certificate|in\s*service/i.test(k)) return "eligibility";
+  if (/job\s*description|nature\s*of\s*role|responsibilities|duties|scope\s*of\s*work|role\s*description/i.test(k)) return "responsibilities";
+  if (/selection|interview|exam\s*pattern/i.test(k)) return "selection";
+  if (/last\s*date|closing\s*date|apply\s*before|application\s*fee|apply\s*link|application\s*link|online\s*apply|how\s*to\s*apply|start\s*date|schedule|reporting/i.test(k)) return "application";
+  if (/benefits|perks|important\s*notes|important\s*instructions|instructions|terms\s*&\s*conditions/i.test(k)) return "notes";
+  if (/contact\s*email|contact\s*phone|helpline|helpdesk|contact|email|phone/i.test(k)) return "contact";
   if (/documents\s*required|required\s*documents/i.test(k)) return "documents";
-  if (/post|organization|hospital|sector|role|category|location|city|state|department|speciality|specialty|employment\s*type|duty\s*type|salary|pay|posts|vacanc/i.test(k)) return "details";
+  if (/title|post|organization|hospital|sector|role|category|location|city|state|department|speciality|specialty|employment\s*type|duty\s*type|salary|pay|posts|vacanc/i.test(k)) return "details";
   return null;
 }
 
@@ -126,11 +226,11 @@ function detectSection(line: string): DescriptionSectionKey | null {
   const value = line.replace(BULLET_PATTERN, "").replace(/[:：]+$/, "").trim().toLowerCase();
 
   if (/^step\s*1\b/.test(value) || ["job details", "job overview", "about the role", "pay / salary", "pay/salary", "basic job information"].includes(value)) return "details";
-  if (/^step\s*2\b/.test(value) || ["eligibility", "eligibility criteria", "additional requirements", "requirements & details"].includes(value)) return "eligibility";
-  if (value === "key responsibilities" || value === "responsibilities") return "responsibilities";
-  if (/^step\s*[34]\b/.test(value) || ["application process", "application details", "walk-in interview", "interview schedule", "important dates", "extra details"].includes(value)) return "application";
-  if (value === "selection process") return "selection";
-  if (value === "documents required" || value === "important documents required") return "documents";
+  if (/^step\s*2\b/.test(value) || ["eligibility", "eligibility criteria", "additional requirements", "requirements & details", "additional eligibility & requirements", "additional eligibility and requirements", "additional eligibility"].includes(value)) return "eligibility";
+  if (value === "key responsibilities" || value === "responsibilities" || value === "job description") return "responsibilities";
+  if (/^step\s*[34]\b/.test(value) || ["application process", "application details", "walk-in interview", "interview schedule", "reporting schedule", "important dates", "extra details"].includes(value)) return "application";
+  if (value === "selection process" || value === "mode of selection") return "selection";
+  if (value === "documents required" || value === "important documents required" || value === "instructions & reporting") return "documents";
   if (["important notes", "important instructions", "benefits", "benefits & perks"].includes(value)) return "notes";
   if (value === "contact information" || value === "contact") return "contact";
   return null;
@@ -147,10 +247,36 @@ function parseSections(raw: string): DescriptionSection[] {
     const rawLine = lines[i].trim();
     if (!rawLine || /^-{3,}$/.test(rawLine)) continue;
 
-    // Check if line is a table row: keep in details
-    if (rawLine.startsWith('|') && rawLine.endsWith('|')) {
-      buckets.get("details")?.push(rawLine);
+    // Check if line is a table row: keep in current section
+    if (rawLine.startsWith('|') && (rawLine.endsWith('|') || rawLine.split('|').length >= 3)) {
+      buckets.get(current)?.push(rawLine);
       continue;
+    }
+
+    // Check if line is Number of Posts with embedded breakdown or category breakdown
+    if (/^Number\s*of\s*Posts/i.test(rawLine)) {
+      const catBreakdown = extractCategoryBreakdown(rawLine);
+      const deptBreakdown = extractDepartmentBreakdown(rawLine);
+      const numMatch = rawLine.match(/^Number\s*of\s*Posts\s*[:\-]?\s*(\d+)/i);
+      const cleanPostsLine = numMatch ? `Number of Posts: ${numMatch[1]}` : rawLine;
+      buckets.get("details")?.push(cleanPostsLine);
+
+      if (catBreakdown) {
+        generateCategoryTableMarkdown(catBreakdown).forEach((r) => buckets.get("details")?.push(r));
+      }
+      if (deptBreakdown) {
+        generateDepartmentTableMarkdown(deptBreakdown, catBreakdown ? catBreakdown.total : undefined).forEach((r) => buckets.get("details")?.push(r));
+      }
+      continue;
+    }
+
+    // Check standalone Category breakdown or Category Quota line
+    if (/^(?:Category\s*(?:Breakdown|Quota|Wise|Reservation)|Categories)\s*[:\-]/i.test(rawLine)) {
+      const catBreakdown = extractCategoryBreakdown(rawLine);
+      if (catBreakdown) {
+        generateCategoryTableMarkdown(catBreakdown).forEach((r) => buckets.get("details")?.push(r));
+        continue;
+      }
     }
 
     // Check if it's a section heading line, e.g. "### Department-Wise Vacancy Breakdown:" or "ELIGIBILITY CRITERIA"
@@ -169,6 +295,12 @@ function parseSections(raw: string): DescriptionSection[] {
       if (rest && rest.length > 2 && !/^[:：\s]+$/.test(rest)) {
         buckets.get(current)?.push(rest.replace(/^[:：\s]+/, ''));
       }
+      continue;
+    }
+
+    // Check if line is interview / schedule date line (e.g. "* 05-10-2026: Medicine, Neurology...")
+    if (/^\*?\s*\d{2}[-/.]\d{2}[-/.]\d{2,4}\s*:/i.test(rawLine)) {
+      buckets.get("application")?.push(rawLine);
       continue;
     }
 
@@ -528,7 +660,9 @@ function enhanceDescription(root: ParentNode) {
   const card = descriptionHeading?.parentElement;
   if (!card || card.dataset.medexDescriptionEnhanced === "true") return;
 
-  const original = card.querySelector("p.text-gray-700") as HTMLParagraphElement | null;
+  const original = (card.querySelector("p.text-gray-700") ||
+    card.querySelector("p.whitespace-pre-wrap") ||
+    card.querySelector("p")) as HTMLParagraphElement | null;
   if (!original) return;
   const raw = original.textContent || "";
   if (!raw.trim()) return;

@@ -131,7 +131,15 @@ function AppContent() {
 
   return (
     <div className={`flex flex-col min-h-screen ${isImpersonating ? 'is-impersonating' : ''}`}>
-      <div className="sticky top-0 z-[1000] w-full bg-white shadow-xs">
+      <div
+        className="w-full bg-white shadow-xs"
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 1000,
+          backgroundColor: '#ffffff',
+        }}
+      >
         <ImpersonationBanner onNavigate={handleNavigate} />
         <Header
           currentPage={currentPage}

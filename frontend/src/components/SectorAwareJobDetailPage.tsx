@@ -298,8 +298,8 @@ export function GovernmentJobDetail({
                 </div>
 
                 <div>
-                  <h1 className="mb-2 text-3xl text-gray-900">{job.title}</h1>
-                  <div className="flex items-center gap-2 text-gray-700">
+                  <h1 className="mb-2 text-2xl sm:text-3xl font-bold text-slate-800">{job.title}</h1>
+                  <div className="flex items-center gap-2 text-slate-600">
                     <Building2 className="h-5 w-5 shrink-0 text-amber-700" />
                     <span className="medex-org-highlight rounded-md bg-amber-100 px-2.5 py-0.5 text-lg font-semibold text-amber-900">{organization}</span>
                   </div>
@@ -308,7 +308,7 @@ export function GovernmentJobDetail({
                     <Button
                       variant="outline"
                       size="sm"
-                      className="mt-3"
+                      className="mt-3 text-slate-600 border-slate-300 hover:bg-slate-50"
                       onClick={() => onNavigate('recruitment', job.sourceRecruitmentId)}
                     >
                       View Full Recruitment
@@ -316,7 +316,7 @@ export function GovernmentJobDetail({
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-5 text-sm text-gray-500">
+                <div className="flex flex-wrap items-center gap-5 text-sm text-slate-500">
                   {locationText && (
                     <div className="flex items-center gap-1.5">
                       <MapPin className="h-4 w-4" />
@@ -340,8 +340,8 @@ export function GovernmentJobDetail({
             </Card>
 
             {/* Same card/grid treatment as Private job details */}
-            <Card className="p-4 sm:p-6 job-detail-facts">
-              <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-bold text-gray-900">Job Details</h2>
+            <Card className="p-4 sm:p-6 job-detail-facts border-slate-200 shadow-none">
+              <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-bold text-slate-800">Job Details</h2>
               <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
                 <PrivateStyleDetail icon={MapPin} label="Location" value={locationText || 'See notification'} />
                 <PrivateStyleDetail
@@ -373,9 +373,9 @@ export function GovernmentJobDetail({
               </div>
             </Card>
 
-            <Card className="p-4 sm:p-6 job-detail-description">
-              <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-bold text-gray-900">Job Description</h2>
-              <p className="whitespace-pre-wrap text-gray-700 leading-relaxed text-sm sm:text-base">
+            <Card className="p-4 sm:p-6 job-detail-description border-slate-200 shadow-none">
+              <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-bold text-slate-800">Job Description</h2>
+              <p className="whitespace-pre-wrap text-slate-600 leading-relaxed text-sm sm:text-base">
                 {displayJobDescription(job) ||
                   'Refer to the official notification for complete eligibility, selection process and application instructions.'}
               </p>
@@ -421,16 +421,16 @@ export function GovernmentJobDetail({
               </div>
             </Card>
 
-            <Card className="p-6 job-detail-about-org medex-about-organization-card hidden lg:block">
-              <h3 className="mb-4 font-semibold text-gray-900">About Organization</h3>
-              <div className="space-y-3 text-sm text-gray-700">
+            <Card className="p-6 job-detail-about-org medex-about-organization-card hidden lg:block border-slate-200 shadow-none">
+              <h3 className="mb-4 font-semibold text-slate-800">About Organization</h3>
+              <div className="space-y-3 text-sm text-slate-600">
                 <div className="flex items-start gap-2">
-                  <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+                  <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
                   <span className="medex-org-highlight">{organization}</span>
                 </div>
                 {locationText && (
                   <div className="flex items-start gap-2">
-                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
                     <span>{locationText}</span>
                   </div>
                 )}
@@ -438,8 +438,8 @@ export function GovernmentJobDetail({
             </Card>
 
             {(notificationUrl || officialWebsite) && (
-              <Card className="p-6 job-detail-docs">
-                <h3 className="mb-4 font-semibold text-gray-900">Official Documents</h3>
+              <Card className="p-6 job-detail-docs border-slate-200 shadow-none">
+                <h3 className="mb-4 font-semibold text-slate-800">Official Documents</h3>
                 <div className="space-y-3">
                   {notificationUrl && (
                     <OfficialLinkBox href={notificationUrl} icon={FileText} label="Notification PDF" tone="pdf" />
@@ -469,13 +469,13 @@ function PrivateStyleDetail({
   className?: string;
 }) {
   return (
-    <div className={`flex items-start gap-2 sm:gap-3 rounded-lg border border-gray-200 bg-white p-2.5 sm:p-3.5 shadow-none ${className}`}>
+    <div className={`flex items-start gap-2 sm:gap-3 rounded-lg border border-slate-200 bg-white p-2.5 sm:p-3.5 shadow-none ${className}`}>
       <div className="rounded-md bg-blue-50 p-1.5 sm:p-2 text-blue-600 shrink-0">
         <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500">{label}</p>
-        <p className="mt-0.5 text-xs sm:text-sm font-medium leading-tight sm:leading-snug text-gray-900 break-words">{value}</p>
+        <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+        <p className="mt-0.5 text-xs sm:text-sm font-medium leading-tight sm:leading-snug text-slate-700 break-words">{value}</p>
       </div>
     </div>
   );

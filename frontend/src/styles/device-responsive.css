@@ -137,8 +137,9 @@ main h2 {
 
 /* Site header mobile drawer. */
 .medex-site-header {
-  isolation: isolate;
+  position: relative;
   z-index: 1000 !important;
+  background-color: #ffffff !important;
 }
 
 .medex-mobile-nav {

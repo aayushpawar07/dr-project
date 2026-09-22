@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Briefcase,
@@ -20,6 +20,10 @@ import { fetchPublishedRecruitment, Recruitment } from '../api/recruitments';
 import { RecruitmentExplorerView } from './RecruitmentPage';
 import { RecruitmentViewSwitcher } from './RecruitmentViewSwitcher';
 import { parseRawVacancyNotice } from '../utils/rawNoticeParser';
+import {
+  parseRecruitmentBreakdown,
+  getVacancyPositionMatch,
+} from '../utils/recruitmentBreakdown';
 import { JobDetailPage } from './JobDetailPage';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
@@ -157,6 +161,38 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
     );
   }
 
+  const [selectedPosition, setSelectedPosition] = useState<string>('All Positions');
+
+  const { breakdownMap, availablePositions } = useMemo(() => {
+    const desc = recruitment?.jobDescription || job?.description || '';
+    return parseRecruitmentBreakdown(desc, recruitment?.vacancies);
+  }, [recruitment, job]);
+
+  const { filteredTotalVacancies, filteredSpecialtiesCount } = useMemo(() => {
+    if (!recruitment?.vacancies) return { filteredTotalVacancies: 0, filteredSpecialtiesCount: 0 };
+    if (!selectedPosition || selectedPosition === 'All Positions') {
+      return {
+        filteredTotalVacancies:
+          recruitment.totalVacancies ||
+          recruitment.vacancies.reduce((sum, v) => sum + Number(v.numberOfVacancies || 0), 0),
+        filteredSpecialtiesCount: recruitment.vacancies.length,
+      };
+    }
+    let total = 0;
+    let specCount = 0;
+    for (const v of recruitment.vacancies) {
+      const match = getVacancyPositionMatch(v, selectedPosition, breakdownMap);
+      if (match.matches && match.count > 0) {
+        total += match.count;
+        specCount += 1;
+      }
+    }
+    return {
+      filteredTotalVacancies: total,
+      filteredSpecialtiesCount: specCount,
+    };
+  }, [recruitment, selectedPosition, breakdownMap]);
+
   // If multi-department recruitment is detected (either synthesized or linked)
   if (recruitment && recruitment.vacancies && recruitment.vacancies.length >= 2) {
     return (
@@ -164,8 +200,11 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
         <RecruitmentViewSwitcher
           viewMode={viewMode}
           setViewMode={setViewMode}
-          totalVacancies={recruitment.totalVacancies}
-          specialtiesCount={recruitment.vacancies.length}
+          totalVacancies={filteredTotalVacancies}
+          specialtiesCount={filteredSpecialtiesCount}
+          selectedPosition={selectedPosition}
+          onPositionChange={setSelectedPosition}
+          availablePositions={availablePositions}
         />
 
         {viewMode === 'explorer' ? (
@@ -174,6 +213,10 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
             applyByDateOverride={job.lastDate}
             onNavigate={onNavigate}
             onViewStandardDetail={() => setViewMode('standard')}
+            selectedPosition={selectedPosition}
+            onPositionChange={setSelectedPosition}
+            availablePositions={availablePositions}
+            breakdownMap={breakdownMap}
           />
         ) : String(job.sector || '').toLowerCase() === 'government' ? (
           <GovernmentJobDetail job={job} onNavigate={onNavigate} />

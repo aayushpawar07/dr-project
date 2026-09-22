@@ -43,6 +43,11 @@ import {
   departmentSubtitle,
   detailFieldText,
 } from '../utils/extractedFieldDisplay';
+import {
+  parseRecruitmentBreakdown,
+  getVacancyPositionMatch,
+  type DepartmentBreakdown,
+} from '../utils/recruitmentBreakdown';
 
 const PAGE_STYLES = `
   .recruit-page {
@@ -821,20 +826,59 @@ export function RecruitmentPage() {
 
   const hasMultipleDepartments = (recruitment.vacancies?.length || 0) >= 2;
 
+  const [selectedPosition, setSelectedPosition] = useState<string>('All Positions');
+
+  const { breakdownMap, availablePositions } = useMemo(() => {
+    const desc = recruitment?.jobDescription || (effectiveJob && effectiveJob.description) || '';
+    return parseRecruitmentBreakdown(desc, recruitment?.vacancies);
+  }, [recruitment, effectiveJob]);
+
+  const { filteredTotalVacancies, filteredSpecialtiesCount } = useMemo(() => {
+    if (!recruitment?.vacancies) return { filteredTotalVacancies: 0, filteredSpecialtiesCount: 0 };
+    if (!selectedPosition || selectedPosition === 'All Positions') {
+      return {
+        filteredTotalVacancies:
+          recruitment.totalVacancies ||
+          recruitment.vacancies.reduce((sum, v) => sum + Number(v.numberOfVacancies || 0), 0),
+        filteredSpecialtiesCount: recruitment.vacancies.length,
+      };
+    }
+    let total = 0;
+    let specCount = 0;
+    for (const v of recruitment.vacancies) {
+      const match = getVacancyPositionMatch(v, selectedPosition, breakdownMap);
+      if (match.matches && match.count > 0) {
+        total += match.count;
+        specCount += 1;
+      }
+    }
+    return {
+      filteredTotalVacancies: total,
+      filteredSpecialtiesCount: specCount,
+    };
+  }, [recruitment, selectedPosition, breakdownMap]);
+
   return (
     <div className="min-h-screen bg-[#f7f9fc]">
       {hasMultipleDepartments && (
         <RecruitmentViewSwitcher
           viewMode={viewMode}
           setViewMode={setViewMode}
-          totalVacancies={recruitment.totalVacancies || recruitment.vacancies?.length || 0}
-          specialtiesCount={recruitment.vacancies?.length || 0}
+          totalVacancies={filteredTotalVacancies}
+          specialtiesCount={filteredSpecialtiesCount}
+          selectedPosition={selectedPosition}
+          onPositionChange={setSelectedPosition}
+          availablePositions={availablePositions}
         />
       )}
 
       {viewMode === 'explorer' ? (
         <RecruitmentExplorerView
           recruitment={recruitment}
+          selectedPosition={selectedPosition}
+          onPositionChange={setSelectedPosition}
+          availablePositions={availablePositions}
+          breakdownMap={breakdownMap}
           onNavigate={(page, id) => {
             if (page === 'job-detail' || page === 'job') {
               setViewMode('standard');
@@ -858,6 +902,10 @@ export function RecruitmentPage() {
       ) : (
         <RecruitmentExplorerView
           recruitment={recruitment}
+          selectedPosition={selectedPosition}
+          onPositionChange={setSelectedPosition}
+          availablePositions={availablePositions}
+          breakdownMap={breakdownMap}
           onNavigate={(page, id) => navigate(id ? `/${page}/${id}` : `/${page}`)}
         />
       )}
@@ -870,17 +918,36 @@ export function RecruitmentExplorerView({
   applyByDateOverride,
   onNavigate,
   onViewStandardDetail,
+  selectedPosition: externalSelectedPosition,
+  onPositionChange: externalOnPositionChange,
+  availablePositions: externalAvailablePositions,
+  breakdownMap: externalBreakdownMap,
 }: {
   recruitment: Recruitment;
   applyByDateOverride?: string;
   onNavigate?: (page: string, entityId?: string) => void;
   onViewStandardDetail?: () => void;
+  selectedPosition?: string;
+  onPositionChange?: (position: string) => void;
+  availablePositions?: string[];
+  breakdownMap?: Map<string, DepartmentBreakdown>;
 }) {
   const navigate = useNavigate();
+  const [internalPosition, setInternalPosition] = useState('All Positions');
+  const selectedPosition = externalSelectedPosition ?? internalPosition;
+  const onPositionChange = externalOnPositionChange ?? setInternalPosition;
+
   const [query, setQuery] = useState('');
   const [activePost, setActivePost] = useState('');
   const [selectedVacancyId, setSelectedVacancyId] = useState('');
   const [applyByDate, setApplyByDate] = useState(applyByDateOverride || '');
+
+  const { breakdownMap } = useMemo(() => {
+    if (externalBreakdownMap) {
+      return { breakdownMap: externalBreakdownMap };
+    }
+    return parseRecruitmentBreakdown(recruitment?.jobDescription, recruitment?.vacancies);
+  }, [externalBreakdownMap, recruitment]);
 
   useEffect(() => {
     if (recruitment?.vacancies?.length) {
@@ -930,14 +997,24 @@ export function RecruitmentExplorerView({
   const visibleVacancies = useMemo(() => {
     if (!recruitment) return [];
     const q = query.trim().toLowerCase();
-    return recruitment.vacancies.filter((vacancy) => {
-      if (activePost && vacancy.postName !== activePost) return false;
-      if (!q) return true;
-      return [vacancy.department, vacancy.speciality, vacancy.qualification, vacancy.location]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(q));
-    });
-  }, [recruitment, activePost, query]);
+    return (recruitment.vacancies || [])
+      .map((vacancy) => {
+        const { matches, count } = getVacancyPositionMatch(vacancy, selectedPosition, breakdownMap);
+        return {
+          ...vacancy,
+          displayCount: count,
+          isPositionMatch: matches,
+        };
+      })
+      .filter((v) => {
+        if (!v.isPositionMatch || v.displayCount <= 0) return false;
+        if (activePost && v.postName !== activePost) return false;
+        if (!q) return true;
+        return [v.department, v.speciality, v.qualification, v.location]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(q));
+      });
+  }, [recruitment, activePost, query, selectedPosition, breakdownMap]);
 
   useEffect(() => {
     if (!visibleVacancies.length) {
@@ -955,9 +1032,19 @@ export function RecruitmentExplorerView({
   );
 
   const departmentCount = useMemo(
-    () => new Set((recruitment?.vacancies || []).map((v) => v.department || v.speciality).filter(Boolean)).size,
-    [recruitment],
+    () => new Set(visibleVacancies.map((v) => v.department || v.speciality).filter(Boolean)).size,
+    [visibleVacancies],
   );
+
+  const explorerTotalVacancies = useMemo(() => {
+    if (!selectedPosition || selectedPosition === 'All Positions') {
+      return (
+        recruitment.totalVacancies ||
+        (recruitment.vacancies || []).reduce((sum, row) => sum + Number(row.numberOfVacancies || 0), 0)
+      );
+    }
+    return visibleVacancies.reduce((sum, row) => sum + Number(row.displayCount || 0), 0);
+  }, [recruitment, selectedPosition, visibleVacancies]);
 
   const isGovernment = recruitment.sector === 'government';
   const applyByLabel = applyByDate ? formatDate(applyByDate) : 'See Notification';
@@ -1014,7 +1101,7 @@ export function RecruitmentExplorerView({
         <section className="recruit-card summary-shell">
           <h2 className="section-eyebrow">Recruitment Summary</h2>
           <div className="summary-grid">
-            <SummaryCard icon={Users} tone="blue" label="Total Vacancies" value={String(recruitment.totalVacancies)} helper={`Across ${departmentCount} Departments`} />
+            <SummaryCard icon={Users} tone="blue" label="Total Vacancies" value={String(explorerTotalVacancies)} helper={`Across ${departmentCount} Departments`} />
             <SummaryCard icon={Building2} tone="green" label="Departments" value={String(departmentCount)} helper="Medical Specialties" />
             <SummaryCard icon={BriefcaseBusiness} tone="purple" label="Job Role" value={primaryPost} helper={selectedVacancy?.jobType || 'Full Time'} />
             <SummaryCard icon={CalendarDays} tone="orange" label="Application Mode" value={applicationMode} helper="Through Official Portal" />
@@ -1037,7 +1124,9 @@ export function RecruitmentExplorerView({
                   {postGroups.map((group) => <option key={group.name} value={group.name}>{group.name}</option>)}
                 </select>
               ) : (
-                <div className="post-label">All ({departmentCount})</div>
+                <div className="post-label">
+                  {selectedPosition && selectedPosition !== 'All Positions' ? selectedPosition : 'All'} ({departmentCount})
+                </div>
               )}
             </div>
 
@@ -1055,7 +1144,7 @@ export function RecruitmentExplorerView({
                       <span className="department-name">{name}</span>
                       {subtitle ? <span className="department-sub">{subtitle}</span> : null}
                     </span>
-                    <span className="department-count">{vacancy.numberOfVacancies}</span>
+                    <span className="department-count">{vacancy.displayCount}</span>
                     <ChevronRight size={16} color={selected ? '#1463ff' : '#98a2b3'} />
                   </button>
                 );
@@ -1071,6 +1160,7 @@ export function RecruitmentExplorerView({
                 isGovernment={isGovernment}
                 applyByLabel={applyByLabel}
                 onViewJob={openSelectedJob}
+                selectedPosition={selectedPosition}
               />
             ) : (
               <div style={{ minHeight: 420, display: 'grid', placeItems: 'center', color: '#667085' }}>Select a department to view details.</div>
@@ -1142,9 +1232,24 @@ function ApplicationPanel({ recruitment, isGovernment, daysLeft, onShare }: { re
   );
 }
 
-function VacancyPanel({ vacancy, recruitment, isGovernment, applyByLabel, onViewJob }: { vacancy: VacancyRecord; recruitment: Recruitment; isGovernment: boolean; applyByLabel: string; onViewJob: () => void }) {
+function VacancyPanel({
+  vacancy,
+  recruitment,
+  isGovernment,
+  applyByLabel,
+  onViewJob,
+  selectedPosition,
+}: {
+  vacancy: VacancyRecord & { displayCount?: number };
+  recruitment: Recruitment;
+  isGovernment: boolean;
+  applyByLabel: string;
+  onViewJob: () => void;
+  selectedPosition?: string;
+}) {
   const department = cleanExtractedName(vacancy.department || vacancy.speciality || vacancy.postName);
   const DepartmentIcon = getDepartmentIcon(department);
+  const displayCount = vacancy.displayCount ?? vacancy.numberOfVacancies;
   const details: Array<{ icon: LucideIcon; label: string; value: string; tone: string }> = [
     { icon: GraduationCap, label: 'Qualification', value: detailFieldText(vacancy.qualification) || 'As per official notification', tone: 'icon-blue' },
     { icon: Stethoscope, label: 'Experience', value: detailFieldText(vacancy.experience) || 'As per official notification', tone: 'icon-indigo' },
@@ -1167,11 +1272,14 @@ function VacancyPanel({ vacancy, recruitment, isGovernment, applyByLabel, onView
               {vacancy.jobType && <span><BriefcaseBusiness size={13} />{vacancy.jobType}</span>}
             </div>
           </div>
-          <div className="vacancy-count-box"><div className="vacancy-count-num">{vacancy.numberOfVacancies}</div><div className="vacancy-count-label">Vacancies</div></div>
+          <div className="vacancy-count-box"><div className="vacancy-count-num">{displayCount}</div><div className="vacancy-count-label">Vacancies</div></div>
         </div>
 
         <div className="vacancy-chips">
-          <span className="tiny-chip chip-green"><Users size={11} />{vacancy.postName} Role</span>
+          <span className="tiny-chip chip-green">
+            <Users size={11} />
+            {selectedPosition && selectedPosition !== 'All Positions' ? selectedPosition : vacancy.postName} Role
+          </span>
           <span className="tiny-chip chip-purple"><Stethoscope size={11} />Clinical Department</span>
           {vacancy.jobType && <span className="tiny-chip chip-orange"><BriefcaseBusiness size={11} />{vacancy.jobType}</span>}
         </div>

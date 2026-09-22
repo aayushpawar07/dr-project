@@ -346,55 +346,6 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
   // 13. Multi-Department & Breakdown Table Parsing
   const depts: ParsedDepartmentVacancy[] = [];
 
-  // Helper functions for detecting and parsing multi-post column tables
-  const isPostColumnHeader = (h: string): boolean => {
-    const norm = h.toLowerCase().trim().replace(/[\r\n\t]+/g, ' ');
-    if (/^(s\.?\s*no|sr\.?\s*no|sl\.?\s*no|serial|index|#|dept|department|speciality|specialty|discipline|subject|total|remark|remarks|category|quota)$/i.test(norm)) {
-      return false;
-    }
-    return /professor|associate\s*prof|assistant\s*prof|senior\s*resident|\bsr\b|junior\s*resident|\bjr\b|tutor|medical\s*officer|\bmo\b|gdmo|specialist|consultant|super\s*specialist|staff\s*nurse|nursing\s*officer|faculty|resident|lecturer/i.test(norm);
-  };
-
-  const cleanPostColumnName = (h: string): string => {
-    const norm = h.replace(/[\r\n\t]+/g, ' ').trim();
-    if (/associate\s*prof/i.test(norm)) return 'Associate Professor';
-    if (/assistant\s*prof/i.test(norm)) return 'Assistant Professor';
-    if (/professor/i.test(norm)) return 'Professor';
-    if (/senior\s*resid|\bsr\b/i.test(norm)) return 'Senior Resident';
-    if (/junior\s*resid|\bjr\b/i.test(norm)) return 'Junior Resident';
-    if (/tutor/i.test(norm)) return 'Tutor';
-    if (/medical\s*officer|\bmo\b/i.test(norm)) return 'Medical Officer';
-    if (/gdmo/i.test(norm)) return 'GDMO';
-    if (/specialist/i.test(norm)) return 'Specialist';
-    if (/consultant/i.test(norm)) return 'Consultant';
-    return norm.replace(/\b(vacancy|vacancies|posts?|seats?)\b/gi, '').trim();
-  };
-
-  const parseCellPostVacancies = (cellText: string): { count: number; category: string } => {
-    if (!cellText || /^[-\s\.,/NILnilNAna]+$/.test(cellText.trim())) {
-      return { count: 0, category: '' };
-    }
-    const clean = cellText.replace(/[\r\n\t]+/g, ' ').trim();
-    const catMatches = [...clean.matchAll(/(\d{1,3})\s*([A-Za-z]+)?/g)];
-    let total = 0;
-    const cats: string[] = [];
-    for (const m of catMatches) {
-      const num = parseInt(m[1], 10);
-      const cat = (m[2] || '').trim().toUpperCase();
-      if (!isNaN(num) && num > 0) {
-        total += num;
-        if (cat && /UR|OBC|SC|ST|EWS|GEN|PWD|PWBD|PH/i.test(cat)) {
-          cats.push(`${cat}: ${num}`);
-        }
-      }
-    }
-    if (total === 0) {
-      const singleNum = parseInt(clean, 10);
-      if (!isNaN(singleNum) && singleNum > 0) total = singleNum;
-    }
-    return { count: total, category: cats.join(', ') };
-  };
-
   // Check HTML table first
   if (/<table[\s>]/i.test(text) || /<tr[\s>]/i.test(text)) {
     const rowMatches = text.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi);
@@ -411,117 +362,12 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
         const deptCol = rawHeaders.findIndex((h) => /dept|department|speciality|specialty|specialization|discipline|subject|branch|post\s*name|name\s*of\s*post/i.test(h));
         const totalCol = rawHeaders.findIndex((h) => /total|posts?|vacanc/i.test(h));
         let dColIdx = deptCol >= 0 ? deptCol : 0;
-
-        // Check if table has multi-post columns (e.g. Professor, Associate Prof, Assistant Prof, Senior Resident)
-        const postCols = rawHeaders
-          .map((h, i) => ({ name: cleanPostColumnName(h), idx: i }))
-          .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && isPostColumnHeader(rawHeaders[c.idx]));
-
-        if (postCols.length >= 2) {
-          for (let r = 1; r < htmlTableRows.length; r++) {
-            const cells = htmlTableRows[r];
-            const dName = cells[dColIdx];
-            if (!dName || /^(total|grand\s*total|sum|s\.?\s*no|#)$/i.test(dName.trim())) continue;
-            for (const pCol of postCols) {
-              const cellVal = cells[pCol.idx] || '';
-              const parsedCell = parseCellPostVacancies(cellVal);
-              if (parsedCell.count > 0) {
-                depts.push({
-                  department: dName,
-                  numberOfVacancies: parsedCell.count,
-                  category: parsedCell.category,
-                  postName: pCol.name,
-                });
-              }
-            }
-          }
-        } else {
-          const catCols = rawHeaders
-            .map((h, i) => ({ name: h, idx: i }))
-            .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && /UR|ST|SC|OBC|EWS|GEN|PWD|PWBD|PH|SEBC|MBC|Unreserved|General|Open/i.test(c.name));
-
-          for (let r = 1; r < htmlTableRows.length; r++) {
-            const cells = htmlTableRows[r];
-            const dName = cells[dColIdx];
-            if (!dName || /^(total|grand\s*total|sum|s\.?\s*no|#)$/i.test(dName.trim())) continue;
-            let count = totalCol >= 0 ? parseInt(cells[totalCol], 10) || 0 : 0;
-            const catParts: string[] = [];
-            let catSum = 0;
-            for (const cat of catCols) {
-              const val = cells[cat.idx];
-              const num = parseInt(val, 10);
-              if (!isNaN(num) && num > 0) {
-                catParts.push(`${cat.name}: ${num}`);
-                catSum += num;
-              }
-            }
-            if (count === 0 && catSum > 0) count = catSum;
-            if (count === 0) count = 1;
-
-            depts.push({
-              department: dName,
-              numberOfVacancies: count,
-              category: catParts.join(', '),
-              postName: result.title,
-            });
-          }
-        }
-      }
-    }
-  }
-
-  // Check Markdown / Pipe separated table
-  if (depts.length === 0) {
-    const lines = text.split(/\r?\n/).map((l) => l.trim());
-    const tableLines = lines.filter((l) => l.includes('|') && l.split('|').length >= 3);
-
-    if (tableLines.length >= 2) {
-      const firstLine = tableLines[0].replace(/^\|/, '').replace(/\|$/, '');
-      const rawHeaders = firstLine.split('|').map((h) => h.trim());
-      const deptCol = rawHeaders.findIndex((h) => /dept|department|speciality|specialty|specialization|discipline|subject|branch|post\s*name|name\s*of\s*post/i.test(h));
-      const totalCol = rawHeaders.findIndex((h) => /total|posts?|vacanc/i.test(h));
-      let dColIdx = deptCol;
-      if (dColIdx < 0) {
-        dColIdx = rawHeaders.findIndex((h) => !/s\.?\s*no|sr\.?\s*no|sl\.?\s*no|serial|index|#|total|vacanc|posts?|ur|sc|st|obc|ews|gen/i.test(h));
-        if (dColIdx < 0) dColIdx = 0;
-      }
-
-      // Check if table has multi-post columns (e.g. Professor, Associate Prof, Assistant Prof, Senior Resident)
-      const postCols = rawHeaders
-        .map((h, i) => ({ name: cleanPostColumnName(h), idx: i }))
-        .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && isPostColumnHeader(rawHeaders[c.idx]));
-
-      if (postCols.length >= 2) {
-        for (let r = 1; r < tableLines.length; r++) {
-          const row = tableLines[r];
-          if (/^[|:\-\s]+$/.test(row)) continue;
-          const cleanRow = row.replace(/^\|/, '').replace(/\|$/, '');
-          const cells = cleanRow.split('|').map((c) => c.trim());
-          const dName = cells[dColIdx];
-          if (!dName || /^(total|grand\s*total|sum|s\.?\s*no|#)$/i.test(dName.trim())) continue;
-          for (const pCol of postCols) {
-            const cellVal = cells[pCol.idx] || '';
-            const parsedCell = parseCellPostVacancies(cellVal);
-            if (parsedCell.count > 0) {
-              depts.push({
-                department: dName,
-                numberOfVacancies: parsedCell.count,
-                category: parsedCell.category,
-                postName: pCol.name,
-              });
-            }
-          }
-        }
-      } else {
         const catCols = rawHeaders
           .map((h, i) => ({ name: h, idx: i }))
           .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && /UR|ST|SC|OBC|EWS|GEN|PWD|PWBD|PH|SEBC|MBC|Unreserved|General|Open/i.test(c.name));
 
-        for (let r = 1; r < tableLines.length; r++) {
-          const row = tableLines[r];
-          if (/^[|:\-\s]+$/.test(row)) continue;
-          const cleanRow = row.replace(/^\|/, '').replace(/\|$/, '');
-          const cells = cleanRow.split('|').map((c) => c.trim());
+        for (let r = 1; r < htmlTableRows.length; r++) {
+          const cells = htmlTableRows[r];
           const dName = cells[dColIdx];
           if (!dName || /^(total|grand\s*total|sum|s\.?\s*no|#)$/i.test(dName.trim())) continue;
           let count = totalCol >= 0 ? parseInt(cells[totalCol], 10) || 0 : 0;
@@ -545,6 +391,56 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
             postName: result.title,
           });
         }
+      }
+    }
+  }
+
+  // Check Markdown / Pipe separated table
+  if (depts.length === 0) {
+    const lines = text.split(/\r?\n/).map((l) => l.trim());
+    const tableLines = lines.filter((l) => l.includes('|') && l.split('|').length >= 3);
+
+    if (tableLines.length >= 2) {
+      const firstLine = tableLines[0].replace(/^\|/, '').replace(/\|$/, '');
+      const rawHeaders = firstLine.split('|').map((h) => h.trim());
+      const deptCol = rawHeaders.findIndex((h) => /dept|department|speciality|specialty|specialization|discipline|subject|branch|post\s*name|name\s*of\s*post/i.test(h));
+      const totalCol = rawHeaders.findIndex((h) => /total|posts?|vacanc/i.test(h));
+      let dColIdx = deptCol;
+      if (dColIdx < 0) {
+        dColIdx = rawHeaders.findIndex((h) => !/s\.?\s*no|sr\.?\s*no|sl\.?\s*no|serial|index|#|total|vacanc|posts?|ur|sc|st|obc|ews|gen/i.test(h));
+        if (dColIdx < 0) dColIdx = 0;
+      }
+      const catCols = rawHeaders
+        .map((h, i) => ({ name: h, idx: i }))
+        .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && /UR|ST|SC|OBC|EWS|GEN|PWD|PWBD|PH|SEBC|MBC|Unreserved|General|Open/i.test(c.name));
+
+      for (let r = 1; r < tableLines.length; r++) {
+        const row = tableLines[r];
+        if (/^[|:\-\s]+$/.test(row)) continue;
+        const cleanRow = row.replace(/^\|/, '').replace(/\|$/, '');
+        const cells = cleanRow.split('|').map((c) => c.trim());
+        const dName = cells[dColIdx];
+        if (!dName || /^(total|grand\s*total|sum|s\.?\s*no|#)$/i.test(dName.trim())) continue;
+        let count = totalCol >= 0 ? parseInt(cells[totalCol], 10) || 0 : 0;
+        const catParts: string[] = [];
+        let catSum = 0;
+        for (const cat of catCols) {
+          const val = cells[cat.idx];
+          const num = parseInt(val, 10);
+          if (!isNaN(num) && num > 0) {
+            catParts.push(`${cat.name}: ${num}`);
+            catSum += num;
+          }
+        }
+        if (count === 0 && catSum > 0) count = catSum;
+        if (count === 0) count = 1;
+
+        depts.push({
+          department: dName,
+          numberOfVacancies: count,
+          category: catParts.join(', '),
+          postName: result.title,
+        });
       }
     }
   }
@@ -598,10 +494,6 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
     const totalCalculated = depts.reduce((sum, d) => sum + d.numberOfVacancies, 0);
     if (!result.numberOfPosts || result.numberOfPosts < totalCalculated) {
       result.numberOfPosts = totalCalculated;
-    }
-    const distinctRoles = [...new Set(depts.map((d) => d.postName).filter((p) => p && p !== result.title))];
-    if (distinctRoles.length >= 1) {
-      result.jobRoles = distinctRoles;
     }
   }
 

@@ -769,11 +769,10 @@ export function RecruitmentPage() {
   }, [recruitmentId]);
 
   const effectiveJob = useMemo(() => {
-    if (job) return job;
     if (!recruitment) return null;
     const v0 = recruitment.vacancies?.[0];
     return {
-      id: v0?.publishedJobId || recruitment.id,
+      id: recruitment.id,
       title: recruitment.title,
       organization: recruitment.organisationName,
       companyName: recruitment.organisationName,
@@ -790,9 +789,9 @@ export function RecruitmentPage() {
       jobDocumentUrl: recruitment.officialNotificationUrl,
       pdfUrl: recruitment.officialNotificationUrl,
       officialWebsite: recruitment.officialWebsite,
-      description: recruitment.jobDescription || (recruitment as any).description || '',
-      requirements: recruitment.importantInstructions,
-      selectionProcess: recruitment.selectionProcess,
+      description: recruitment.jobDescription || (job && job.description) || '',
+      requirements: recruitment.importantInstructions || (job && job.requirements),
+      selectionProcess: recruitment.selectionProcess || (job && job.selectionProcess),
       sourceRecruitmentId: recruitment.id,
       sourceRecruitment: recruitment,
     };
@@ -885,7 +884,7 @@ export function RecruitmentExplorerView({
 
   useEffect(() => {
     if (recruitment?.vacancies?.length) {
-      setActivePost('');
+      setActivePost(recruitment.vacancies[0]?.postName || '');
       setSelectedVacancyId(recruitment.vacancies[0]?.id || '');
     }
   }, [recruitment]);
@@ -918,11 +917,9 @@ export function RecruitmentExplorerView({
   const postGroups = useMemo(() => {
     const groups = new Map<string, VacancyRecord[]>();
     for (const vacancy of recruitment?.vacancies || []) {
-      const pName = (vacancy.postName || '').trim();
-      if (!pName) continue;
-      const rows = groups.get(pName) || [];
+      const rows = groups.get(vacancy.postName) || [];
       rows.push(vacancy);
-      groups.set(pName, rows);
+      groups.set(vacancy.postName, rows);
     }
     return [...groups.entries()].map(([name, rows]) => ({
       name,
@@ -930,18 +927,13 @@ export function RecruitmentExplorerView({
     }));
   }, [recruitment]);
 
-  const totalVacanciesCount = useMemo(
-    () => (recruitment?.vacancies || []).reduce((sum, v) => sum + Number(v.numberOfVacancies || 0), 0),
-    [recruitment],
-  );
-
   const visibleVacancies = useMemo(() => {
     if (!recruitment) return [];
     const q = query.trim().toLowerCase();
     return recruitment.vacancies.filter((vacancy) => {
       if (activePost && vacancy.postName !== activePost) return false;
       if (!q) return true;
-      return [vacancy.department, vacancy.speciality, vacancy.qualification, vacancy.location, vacancy.postName]
+      return [vacancy.department, vacancy.speciality, vacancy.qualification, vacancy.location]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(q));
     });
@@ -973,7 +965,7 @@ export function RecruitmentExplorerView({
     ? Math.ceil((parseRecruitmentDate(applyByDate).getTime() - Date.now()) / 86400000)
     : null;
   const applicationMode = recruitment.officialApplicationUrl ? 'Online' : 'As notified';
-  const primaryPost = activePost || (postGroups.length > 1 ? `${postGroups.length} Roles (Faculty & Residents)` : (postGroups[0]?.name || 'Medical Staff'));
+  const primaryPost = activePost || postGroups[0]?.name || 'Multiple Posts';
 
   const handleShare = async () => {
     const data = {
@@ -1035,42 +1027,18 @@ export function RecruitmentExplorerView({
             <div className="explore-title">Explore Departments</div>
             <div className="explore-subtitle">Select a department to view its vacancy details.</div>
 
-            {postGroups.length > 1 && (
-              <div className="role-filter-strip flex flex-wrap gap-1.5 my-2.5">
-                <button
-                  type="button"
-                  onClick={() => { setActivePost(''); setQuery(''); }}
-                  className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-all ${
-                    activePost === ''
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 border border-slate-200'
-                  }`}
-                >
-                  All Roles ({totalVacanciesCount})
-                </button>
-                {postGroups.map((group) => (
-                  <button
-                    key={group.name}
-                    type="button"
-                    onClick={() => { setActivePost(group.name); setQuery(''); }}
-                    className={`px-2.5 py-1 rounded-full text-xs font-semibold transition-all ${
-                      activePost === group.name
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900 border border-slate-200'
-                    }`}
-                  >
-                    {group.name} ({group.total})
-                  </button>
-                ))}
-              </div>
-            )}
-
             <div className="department-controls">
               <div className="search-wrap">
                 <Search size={16} />
                 <input className="department-search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search department or specialty..." />
               </div>
-              <div className="post-label text-xs text-slate-500 font-semibold">{visibleVacancies.length} Listed</div>
+              {postGroups.length > 1 ? (
+                <select className="post-select" value={activePost} onChange={(e) => { setActivePost(e.target.value); setQuery(''); }}>
+                  {postGroups.map((group) => <option key={group.name} value={group.name}>{group.name}</option>)}
+                </select>
+              ) : (
+                <div className="post-label">All ({departmentCount})</div>
+              )}
             </div>
 
             <DepartmentScroller>
@@ -1085,13 +1053,7 @@ export function RecruitmentExplorerView({
                     <span className={`department-icon ${tone}`}><DepartmentIcon size={20} strokeWidth={2} /></span>
                     <span className="department-text">
                       <span className="department-name">{name}</span>
-                      {vacancy.postName && postGroups.length > 1 ? (
-                        <span className="inline-flex items-center px-1.5 py-0.5 mt-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 w-fit">
-                          {vacancy.postName}
-                        </span>
-                      ) : subtitle ? (
-                        <span className="department-sub">{subtitle}</span>
-                      ) : null}
+                      {subtitle ? <span className="department-sub">{subtitle}</span> : null}
                     </span>
                     <span className="department-count">{vacancy.numberOfVacancies}</span>
                     <ChevronRight size={16} color={selected ? '#1463ff' : '#98a2b3'} />
@@ -1109,7 +1071,6 @@ export function RecruitmentExplorerView({
                 isGovernment={isGovernment}
                 applyByLabel={applyByLabel}
                 onViewJob={openSelectedJob}
-                onSelectVacancy={(id) => setSelectedVacancyId(id)}
               />
             ) : (
               <div style={{ minHeight: 420, display: 'grid', placeItems: 'center', color: '#667085' }}>Select a department to view details.</div>
@@ -1181,35 +1142,9 @@ function ApplicationPanel({ recruitment, isGovernment, daysLeft, onShare }: { re
   );
 }
 
-function VacancyPanel({
-  vacancy,
-  recruitment,
-  isGovernment,
-  applyByLabel,
-  onViewJob,
-  onSelectVacancy,
-}: {
-  vacancy: VacancyRecord;
-  recruitment: Recruitment;
-  isGovernment: boolean;
-  applyByLabel: string;
-  onViewJob: () => void;
-  onSelectVacancy?: (id: string) => void;
-}) {
+function VacancyPanel({ vacancy, recruitment, isGovernment, applyByLabel, onViewJob }: { vacancy: VacancyRecord; recruitment: Recruitment; isGovernment: boolean; applyByLabel: string; onViewJob: () => void }) {
   const department = cleanExtractedName(vacancy.department || vacancy.speciality || vacancy.postName);
   const DepartmentIcon = getDepartmentIcon(department);
-
-  const siblingVacancies = useMemo(() => {
-    if (!vacancy || !recruitment?.vacancies) return [];
-    const currentDept = cleanExtractedName(vacancy.department || vacancy.speciality);
-    return recruitment.vacancies.filter((v) => cleanExtractedName(v.department || v.speciality) === currentDept);
-  }, [vacancy, recruitment]);
-
-  const totalDeptVacancies = useMemo(() => {
-    if (siblingVacancies.length <= 1) return vacancy.numberOfVacancies;
-    return siblingVacancies.reduce((sum, sv) => sum + Number(sv.numberOfVacancies || 0), 0);
-  }, [siblingVacancies, vacancy]);
-
   const details: Array<{ icon: LucideIcon; label: string; value: string; tone: string }> = [
     { icon: GraduationCap, label: 'Qualification', value: detailFieldText(vacancy.qualification) || 'As per official notification', tone: 'icon-blue' },
     { icon: Stethoscope, label: 'Experience', value: detailFieldText(vacancy.experience) || 'As per official notification', tone: 'icon-indigo' },
@@ -1232,59 +1167,8 @@ function VacancyPanel({
               {vacancy.jobType && <span><BriefcaseBusiness size={13} />{vacancy.jobType}</span>}
             </div>
           </div>
-          <div className="vacancy-count-box">
-            <div className="vacancy-count-num">{totalDeptVacancies}</div>
-            <div className="vacancy-count-label">Vacancies</div>
-          </div>
+          <div className="vacancy-count-box"><div className="vacancy-count-num">{vacancy.numberOfVacancies}</div><div className="vacancy-count-label">Vacancies</div></div>
         </div>
-
-        {siblingVacancies.length > 1 && (
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 my-2.5">
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                <Users size={14} className="text-blue-600" />
-                Role Breakdown in {department} ({totalDeptVacancies} Total Vacancies):
-              </span>
-              <span className="text-[11px] font-semibold text-slate-500">Tap to view role details</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-              {siblingVacancies.map((sv) => {
-                const isCurrent = sv.id === vacancy.id;
-                return (
-                  <button
-                    key={sv.id}
-                    type="button"
-                    onClick={() => onSelectVacancy?.(sv.id)}
-                    className={`p-2.5 rounded-md border text-left transition-all ${
-                      isCurrent
-                        ? 'bg-white border-blue-500 ring-2 ring-blue-500/20 shadow-xs'
-                        : 'bg-white border-slate-200 hover:border-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-1">
-                      <span className={`text-xs font-bold ${isCurrent ? 'text-blue-700' : 'text-slate-800'}`}>
-                        {sv.postName || 'Vacancy'}
-                      </span>
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-extrabold bg-blue-50 text-blue-700 border border-blue-200">
-                        {sv.numberOfVacancies} {sv.numberOfVacancies === 1 ? 'post' : 'posts'}
-                      </span>
-                    </div>
-                    {sv.category && (
-                      <div className="text-[10.5px] text-slate-500 mt-1 truncate" title={sv.category}>
-                        {sv.category}
-                      </div>
-                    )}
-                    {sv.salary && (
-                      <div className="text-[10.5px] font-medium text-emerald-700 mt-0.5">
-                        {sv.salary}
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
         <div className="vacancy-chips">
           <span className="tiny-chip chip-green"><Users size={11} />{vacancy.postName} Role</span>

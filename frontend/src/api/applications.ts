@@ -22,6 +22,18 @@ export interface ApplicationQuery {
   page?: number;
   size?: number;
   sort?: string;
+  // Medical Eligibility Filters
+  qualification?: string;
+  speciality?: string;
+  minExp?: number;
+  maxExp?: number;
+  hasRegistration?: boolean;
+  registrationCouncil?: string;
+  registrationState?: string;
+  state?: string;
+  city?: string;
+  skills?: string;
+  eligibleOnly?: boolean;
 }
 
 export interface PostedByInfo {
@@ -29,6 +41,37 @@ export interface PostedByInfo {
   name: string;
   email?: string;
   company: string;
+}
+
+export interface JobCriteriaInfo {
+  qualifications: string[];
+  rawQualification?: string;
+  speciality?: string;
+  minExperience: number;
+  rawExperience?: string;
+  location?: string;
+  registrationRequired: boolean;
+}
+
+export interface JobEligibilitySummary {
+  jobId?: string;
+  jobTitle?: string;
+  totalApplications: number;
+  eligibleCount: number;
+  shortlistedCount: number;
+  interviewCount: number;
+  selectedCount: number;
+  rejectedCount: number;
+  jobCriteria?: JobCriteriaInfo;
+}
+
+export interface ApplicationsPaginatedResponse {
+  content: ApplicationResponse[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  eligibilitySummary?: JobEligibilitySummary;
 }
 
 export interface ApplicationResponse {
@@ -49,6 +92,9 @@ export interface ApplicationResponse {
   candidateCity?: string;
   candidateState?: string;
   candidateSummary?: string;
+  candidateSkills?: string;
+  candidateCurrentEmployer?: string;
+  candidateExpectedSalary?: number | null;
   resumeUrl?: string;
   status: 'pending' | 'shortlisted' | 'interview' | 'hired' | 'rejected' | 'applied' | 'selected';
   notes?: string;
@@ -57,6 +103,11 @@ export interface ApplicationResponse {
   interviewNotes?: string;
   appliedDate: string;
   postedBy?: PostedByInfo; // Only included for candidate requests
+  // Medical Eligibility evaluation fields
+  isEligible?: boolean;
+  eligibilityScore?: number;
+  matchingCriteria?: string[];
+  unmetCriteria?: string[];
 }
 
 export type NormalizedApplicationStatus = 'applied' | 'shortlisted' | 'interview' | 'selected' | 'rejected';
@@ -109,7 +160,7 @@ export async function applyForJob(payload: ApplicationPayload): Promise<Applicat
   return res.json();
 }
 
-export async function fetchApplications(params: ApplicationQuery = {}, token: string) {
+export async function fetchApplications(params: ApplicationQuery = {}, token: string): Promise<ApplicationsPaginatedResponse> {
   const qs = new URLSearchParams();
   if (params.jobId) qs.set('jobId', params.jobId);
   if (params.candidateId) qs.set('candidateId', params.candidateId);
@@ -124,8 +175,19 @@ export async function fetchApplications(params: ApplicationQuery = {}, token: st
   if (params.search) qs.set('search', params.search);
   if (params.startDate) qs.set('startDate', params.startDate);
   if (params.endDate) qs.set('endDate', params.endDate);
+  if (params.qualification) qs.set('qualification', params.qualification);
+  if (params.speciality) qs.set('speciality', params.speciality);
+  if (params.minExp !== undefined && params.minExp !== null) qs.set('minExp', String(params.minExp));
+  if (params.maxExp !== undefined && params.maxExp !== null) qs.set('maxExp', String(params.maxExp));
+  if (params.hasRegistration !== undefined && params.hasRegistration !== null) qs.set('hasRegistration', String(params.hasRegistration));
+  if (params.registrationCouncil) qs.set('registrationCouncil', params.registrationCouncil);
+  if (params.registrationState) qs.set('registrationState', params.registrationState);
+  if (params.state) qs.set('state', params.state);
+  if (params.city) qs.set('city', params.city);
+  if (params.skills) qs.set('skills', params.skills);
+  if (params.eligibleOnly) qs.set('eligibleOnly', 'true');
   qs.set('page', String(params.page ?? 0));
-  qs.set('size', String(params.size ?? 20));
+  qs.set('size', String(params.size ?? 50));
   qs.set('sort', params.sort || 'appliedDate,desc');
 
   const res = await authFetch(`${API_BASE}/applications?${qs.toString()}`, {
@@ -141,6 +203,18 @@ export async function fetchApplications(params: ApplicationQuery = {}, token: st
       : `Failed to fetch applications (${res.status})`;
     throw new Error(errorMessage);
   }
+  return res.json();
+}
+
+export async function fetchJobEligibilitySummary(jobId: string, token: string): Promise<JobEligibilitySummary> {
+  const res = await authFetch(`${API_BASE}/applications/job/${jobId}/eligibility-summary`, {
+    cache: 'no-store',
+    headers: {
+      'Cache-Control': 'no-cache',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  if (!res.ok) throw new Error(`Failed to fetch job eligibility summary (${res.status})`);
   return res.json();
 }
 

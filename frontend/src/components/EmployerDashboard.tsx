@@ -221,6 +221,7 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
   const [appMinExpFilter, setAppMinExpFilter] = useState<string>('all');
   const [appQualFilter, setAppQualFilter] = useState<string>('');
   const [appSearchFilter, setAppSearchFilter] = useState<string>('');
+  const [appEligibleOnly, setAppEligibleOnly] = useState<boolean>(false);
   const [seedingTestJobs, setSeedingTestJobs] = useState(false);
   const [interviewDraft, setInterviewDraft] = useState<{
     application: ApplicationResponse;
@@ -559,6 +560,11 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
         }
       }
 
+      // 5. Eligible Only Filter
+      if (appEligibleOnly && !application.isEligible) {
+        return false;
+      }
+
       return true;
     };
 
@@ -570,7 +576,7 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
     return applicationsByJob
       .map(([jobId, applications]) => [jobId, applications.filter(matchesFilter)] as [string, ApplicationResponse[]])
       .filter(([, applications]) => applications.length > 0);
-  }, [applicationFilter, applicationsByJob, myApplications, selectedJobId, appMinExpFilter, appQualFilter, appSearchFilter]);
+  }, [applicationFilter, applicationsByJob, myApplications, selectedJobId, appMinExpFilter, appQualFilter, appSearchFilter, appEligibleOnly]);
 
   const totalFilteredApplications = useMemo(() => {
     return visibleApplicationsByJob.reduce((sum, [, apps]) => sum + apps.length, 0);
@@ -1323,8 +1329,28 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                     }}>
                       {totalFilteredApplications} Applicants Found
                     </span>
+                    <button
+                      type="button"
+                      onClick={() => setAppEligibleOnly(prev => !prev)}
+                      style={{
+                        background: appEligibleOnly ? '#059669' : '#ecfdf5',
+                        color: appEligibleOnly ? '#ffffff' : '#047857',
+                        border: '1px solid #a7f3d0',
+                        borderRadius: '6px',
+                        padding: '4px 10px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        transition: 'all 0.15s'
+                      }}
+                    >
+                      🎯 {appEligibleOnly ? 'Showing 100% Eligible Only' : 'Show 100% Eligible Only'}
+                    </button>
                   </div>
-                  {(selectedJobId !== 'all' || appMinExpFilter !== 'all' || appQualFilter || appSearchFilter || applicationFilter !== 'all') && (
+                  {(selectedJobId !== 'all' || appMinExpFilter !== 'all' || appQualFilter || appSearchFilter || appEligibleOnly || applicationFilter !== 'all') && (
                     <button
                       type="button"
                       onClick={() => {
@@ -1332,6 +1358,7 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                         setAppMinExpFilter('all');
                         setAppQualFilter('');
                         setAppSearchFilter('');
+                        setAppEligibleOnly(false);
                         setApplicationFilter('all');
                       }}
                       style={{
@@ -1532,7 +1559,40 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                                     ].filter(Boolean).join(' | ') || 'Qualification not added'}
                                   </span>
                                 </div>
-                                <span className={getApplicationStatusClass(status)}>{statusLabel(status)}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  {application.isEligible ? (
+                                    <span style={{
+                                      background: '#ecfdf5',
+                                      color: '#065f46',
+                                      border: '1px solid #a7f3d0',
+                                      padding: '2px 8px',
+                                      borderRadius: '9999px',
+                                      fontSize: '11px',
+                                      fontWeight: 700,
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '3px'
+                                    }}>
+                                      🎯 100% Eligible
+                                    </span>
+                                  ) : (application.eligibilityScore ?? 0) >= 60 ? (
+                                    <span style={{
+                                      background: '#fffbeb',
+                                      color: '#b45309',
+                                      border: '1px solid #fde68a',
+                                      padding: '2px 8px',
+                                      borderRadius: '9999px',
+                                      fontSize: '11px',
+                                      fontWeight: 700,
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '3px'
+                                    }}>
+                                      ⚡ {application.eligibilityScore}% Match
+                                    </span>
+                                  ) : null}
+                                  <span className={getApplicationStatusClass(status)}>{statusLabel(status)}</span>
+                                </div>
                               </div>
 
                               <div className="mx-candidate__details">
@@ -1560,6 +1620,21 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                                     : 'Registration not provided'}
                                 </span>
                               </div>
+
+                              {((application.matchingCriteria && application.matchingCriteria.length > 0) || (application.unmetCriteria && application.unmetCriteria.length > 0)) && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', margin: '4px 0 8px 0' }}>
+                                  {application.matchingCriteria?.map((m, idx) => (
+                                    <span key={`m-${idx}`} style={{ fontSize: '10px', fontWeight: 600, background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', borderRadius: '4px', padding: '1px 6px' }}>
+                                      ✓ {m}
+                                    </span>
+                                  ))}
+                                  {application.unmetCriteria?.map((u, idx) => (
+                                    <span key={`u-${idx}`} style={{ fontSize: '10px', fontWeight: 600, background: '#fff1f2', color: '#9f1239', border: '1px solid #fecdd3', borderRadius: '4px', padding: '1px 6px' }}>
+                                      ✗ {u}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
 
                               {(application.candidateSpeciality || application.candidateSubSpeciality || application.candidateRegistrationCouncil) && (
                                 <div className="mx-candidate__skills">

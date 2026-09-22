@@ -16,6 +16,7 @@ import com.medexjob.repository.ResumeRepository;
 import com.medexjob.repository.CandidateProfileRepository;
 import com.medexjob.service.FileUploadService;
 import com.medexjob.service.NotificationService;
+import com.medexjob.service.ApplicationEligibilityService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -55,9 +56,10 @@ public class ApplicationController {
     private final ResumeRepository resumeRepository;
     private final CandidateProfileRepository candidateProfileRepository;
     private final FileUploadService fileUploadService;
+    private final ApplicationEligibilityService eligibilityService;
     private final Path uploadPath = Paths.get("uploads");
 
-    public ApplicationController(ApplicationRepository applicationRepository, JobRepository jobRepository, UserRepository userRepository, NotificationRepository notificationRepository, NotificationService notificationService, EmployerRepository employerRepository, ResumeRepository resumeRepository, CandidateProfileRepository candidateProfileRepository, FileUploadService fileUploadService) {
+    public ApplicationController(ApplicationRepository applicationRepository, JobRepository jobRepository, UserRepository userRepository, NotificationRepository notificationRepository, NotificationService notificationService, EmployerRepository employerRepository, ResumeRepository resumeRepository, CandidateProfileRepository candidateProfileRepository, FileUploadService fileUploadService, ApplicationEligibilityService eligibilityService) {
         this.applicationRepository = applicationRepository;
         this.jobRepository = jobRepository;
         this.userRepository = userRepository;
@@ -67,6 +69,7 @@ public class ApplicationController {
         this.resumeRepository = resumeRepository;
         this.candidateProfileRepository = candidateProfileRepository;
         this.fileUploadService = fileUploadService;
+        this.eligibilityService = eligibilityService;
         try {
             Files.createDirectories(uploadPath);
         } catch (IOException e) {
@@ -258,6 +261,17 @@ public class ApplicationController {
             @RequestParam(value = "search", required = false) String search,
             @RequestParam(value = "startDate", required = false) String startDate,
             @RequestParam(value = "endDate", required = false) String endDate,
+            @RequestParam(value = "qualification", required = false) String qualification,
+            @RequestParam(value = "speciality", required = false) String speciality,
+            @RequestParam(value = "minExp", required = false) Integer minExp,
+            @RequestParam(value = "maxExp", required = false) Integer maxExp,
+            @RequestParam(value = "hasRegistration", required = false) Boolean hasRegistration,
+            @RequestParam(value = "registrationCouncil", required = false) String registrationCouncil,
+            @RequestParam(value = "registrationState", required = false) String registrationState,
+            @RequestParam(value = "state", required = false) String state,
+            @RequestParam(value = "city", required = false) String city,
+            @RequestParam(value = "skills", required = false) String skills,
+            @RequestParam(value = "eligibleOnly", required = false) Boolean eligibleOnly,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "20") int size,
             @RequestParam(value = "sort", defaultValue = "appliedDate,desc") String sort
@@ -277,7 +291,6 @@ public class ApplicationController {
         if (currentUser != null && currentUser.getRole() == User.UserRole.CANDIDATE) {
             logger.info("🔍 Candidate requesting applications. Current user: {}, Requested candidateId: {}", 
                 currentUser.getId(), candidateId);
-            // If candidateId is provided, ensure it matches the current user's ID
             if (candidateId != null && !candidateId.equals(currentUser.getId())) {
                 logger.warn("🚫 Unauthorized access attempt: Candidate {} tried to access applications for {}", 
                     currentUser.getId(), candidateId);
@@ -286,13 +299,12 @@ public class ApplicationController {
                 error.put("status", "error");
                 return ResponseEntity.status(403).body(error);
             }
-            // If no candidateId provided, automatically use current user's ID
             if (candidateId == null && jobId == null) {
                 candidateId = currentUser.getId();
                 logger.info("✅ Auto-setting candidateId to current user: {}", candidateId);
             }
         }
-        
+
         // Parse date range if provided
         LocalDateTime startDateTime = null;
         LocalDateTime endDateTime = null;
@@ -306,7 +318,6 @@ public class ApplicationController {
         if (endDate != null && !endDate.isBlank()) {
             try {
                 endDateTime = LocalDateTime.parse(endDate);
-                // Set to end of day
                 if (endDateTime != null) {
                     endDateTime = endDateTime.plusHours(23).plusMinutes(59).plusSeconds(59);
                 }
@@ -317,62 +328,7 @@ public class ApplicationController {
 
         // Security validation: Employers can only see applications for their own jobs
         if (currentUser != null && currentUser.getRole() == User.UserRole.EMPLOYER) {
-            // If no jobId specified, fetch all applications for employer's jobs
-            if (jobId == null) {
-                // Get employer's user ID and fetch all their jobs' applications
-                Optional<Employer> employerOpt = employerRepository.findByUserId(currentUser.getId());
-                if (employerOpt.isPresent()) {
-                    Employer employer = employerOpt.get();
-                    // Fetch applications for all jobs owned by this employer
-                    List<Application> employerApplications = applicationRepository.findByEmployerUserIdWithDetails(currentUser.getId());
-                    
-                    // Create final copies for lambda
-                    final LocalDateTime finalStartDateTime = startDateTime;
-                    final LocalDateTime finalEndDateTime = endDateTime;
-                    
-                    // Apply filters
-                    List<Application> filtered = employerApplications.stream()
-                        .filter(app -> {
-                            if (status != null) {
-                                Application.ApplicationStatus appStatus = parseStatus(status);
-                                if (app.getStatus() != appStatus) return false;
-                            }
-                            if (finalStartDateTime != null && app.getAppliedDate().isBefore(finalStartDateTime)) return false;
-                            if (finalEndDateTime != null && app.getAppliedDate().isAfter(finalEndDateTime)) return false;
-                            if (search != null && !search.isBlank()) {
-                                String searchLower = search.toLowerCase();
-                                if (!app.getCandidateName().toLowerCase().contains(searchLower) &&
-                                    !app.getCandidateEmail().toLowerCase().contains(searchLower) &&
-                                    (app.getJob() == null || !app.getJob().getTitle().toLowerCase().contains(searchLower))) {
-                                    return false;
-                                }
-                            }
-                            return true;
-                        })
-                        .collect(Collectors.toList());
-                    
-                    // Manual pagination
-                    int totalElements = filtered.size();
-                    int start = page * size;
-                    int end = Math.min(start + size, totalElements);
-                    List<Application> paginatedList = start < totalElements ? filtered.subList(start, end) : new ArrayList<>();
-                    
-                    String[] sortParts = sort.split(",");
-                    Sort.Direction dir = (sortParts.length > 1 && sortParts[1].equalsIgnoreCase("asc")) ? Sort.Direction.ASC : Sort.Direction.DESC;
-                    Pageable pageable = PageRequest.of(page, size, Sort.by(dir, sortParts[0]));
-                    
-                    Page<Application> result = new org.springframework.data.domain.PageImpl<>(paginatedList, pageable, totalElements);
-                    
-                    Map<String, Object> body = new HashMap<>();
-                    body.put("content", result.getContent().stream().map(this::toResponse).collect(Collectors.toList()));
-                    body.put("page", result.getNumber());
-                    body.put("size", result.getSize());
-                    body.put("totalElements", result.getTotalElements());
-                    body.put("totalPages", result.getTotalPages());
-                    return ResponseEntity.ok(body);
-                }
-            } else {
-                // Verify that the employer owns this job
+            if (jobId != null) {
                 Optional<Job> jobOpt = jobRepository.findById(jobId);
                 if (jobOpt.isPresent()) {
                     Job job = jobOpt.get();
@@ -388,126 +344,350 @@ public class ApplicationController {
                     logger.info("✅ Employer {} authorized to view applications for job {}", currentUser.getId(), jobId);
                 }
             }
-        } else if (currentUser != null && currentUser.getRole() == User.UserRole.ADMIN) {
-            // Admins can view all applications, no restriction needed
-            logger.info("✅ Admin {} viewing applications", currentUser.getId());
         }
 
-        String[] sortParts = sort.split(",");
-        Sort.Direction dir = (sortParts.length > 1 && sortParts[1].equalsIgnoreCase("asc")) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(dir, sortParts[0]));
-
-        Page<Application> result;
-        List<Application> applicationsList = null;
+        List<Application> applicationsList;
+        Job targetJob = null;
+        ApplicationEligibilityService.JobCriteria targetJobCriteria = null;
 
         if (jobId != null) {
-            logger.info("🔍 Fetching applications for jobId: {}", jobId);
-            try {
-                if (status != null) {
-                    Application.ApplicationStatus appStatus = parseStatus(status);
-                    // Use eager loading query to avoid LazyInitializationException
-                    applicationsList = applicationRepository.findByJobIdAndStatusWithDetails(jobId, appStatus);
-                    logger.info("📋 Found {} applications for job {} with status {}", applicationsList.size(), jobId, status);
-                } else {
-                    // Use eager loading query to avoid LazyInitializationException
-                    applicationsList = applicationRepository.findByJobIdWithDetails(jobId);
-                    logger.info("📋 Found {} applications for job {}", applicationsList.size(), jobId);
-                }
-                
-                // Manual pagination for eager-loaded results
-                int totalElements = applicationsList.size();
-                int totalPages = (int) Math.ceil((double) totalElements / size);
-                int start = page * size;
-                int end = Math.min(start + size, totalElements);
-                List<Application> paginatedList = start < totalElements ? applicationsList.subList(start, end) : new ArrayList<>();
-                
-                // Create a Page-like structure
-                result = new org.springframework.data.domain.PageImpl<>(paginatedList, pageable, totalElements);
-            } catch (Exception e) {
-                logger.error("❌ Error fetching applications for job {}: {}", jobId, e.getMessage(), e);
-                // Fallback to regular query if eager loading fails
-                if (status != null) {
-                    Application.ApplicationStatus appStatus = parseStatus(status);
-                    result = applicationRepository.findByJobIdAndStatus(jobId, appStatus, pageable);
-                } else {
-                    result = applicationRepository.findByJobId(jobId, pageable);
-                }
+            Optional<Job> jOpt = jobRepository.findById(jobId);
+            if (jOpt.isPresent()) {
+                targetJob = jOpt.get();
+                targetJobCriteria = eligibilityService.extractJobCriteria(targetJob);
             }
-        } else if (candidateId != null) {
-            logger.info("🔍 Fetching applications for candidateId: {}", candidateId);
             if (status != null) {
                 Application.ApplicationStatus appStatus = parseStatus(status);
-                result = applicationRepository.findByCandidateIdAndStatus(candidateId, appStatus, pageable);
-                logger.info("📋 Found {} applications for candidate {} with status {}", 
-                    result.getTotalElements(), candidateId, status);
+                applicationsList = applicationRepository.findByJobIdAndStatusWithDetails(jobId, appStatus);
             } else {
-                result = applicationRepository.findByCandidateId(candidateId, pageable);
-                logger.info("📋 Found {} applications for candidate {}", 
-                    result.getTotalElements(), candidateId);
+                applicationsList = applicationRepository.findByJobIdWithDetails(jobId);
             }
-        } else if (status != null || startDateTime != null || endDateTime != null) {
-            // Apply filters with date range
-            Application.ApplicationStatus appStatus = status != null ? parseStatus(status) : null;
-            
-            if (startDateTime != null || endDateTime != null) {
-                LocalDateTime effectiveStartDateTime = startDateTime;
-                LocalDateTime effectiveEndDateTime = endDateTime;
-                if (effectiveStartDateTime == null) effectiveStartDateTime = LocalDateTime.of(2000, 1, 1, 0, 0);
-                if (effectiveEndDateTime == null) effectiveEndDateTime = LocalDateTime.now().plusYears(10);
-                
-                // Create final copies for lambda
-                final LocalDateTime finalStartDateTime = effectiveStartDateTime;
-                final LocalDateTime finalEndDateTime = effectiveEndDateTime;
-                
-                if (appStatus != null) {
-                    // Filter by both status and date range
-                    List<Application> allApps = applicationRepository.findByStatus(appStatus, PageRequest.of(0, 10000)).getContent();
-                    List<Application> filtered = allApps.stream()
-                        .filter(app -> !app.getAppliedDate().isBefore(finalStartDateTime) && !app.getAppliedDate().isAfter(finalEndDateTime))
-                        .collect(Collectors.toList());
-                    int totalElements = filtered.size();
-                    int start = page * size;
-                    int end = Math.min(start + size, totalElements);
-                    List<Application> paginatedList = start < totalElements ? filtered.subList(start, end) : new ArrayList<>();
-                    result = new org.springframework.data.domain.PageImpl<>(paginatedList, pageable, totalElements);
-                } else {
-                    result = applicationRepository.findByAppliedDateBetween(effectiveStartDateTime, effectiveEndDateTime, pageable);
-                }
+        } else if (currentUser != null && currentUser.getRole() == User.UserRole.EMPLOYER) {
+            applicationsList = applicationRepository.findByEmployerUserIdWithDetails(currentUser.getId());
+        } else if (candidateId != null) {
+            if (status != null) {
+                Application.ApplicationStatus appStatus = parseStatus(status);
+                applicationsList = applicationRepository.findByCandidateIdAndStatus(candidateId, appStatus, PageRequest.of(0, 1000)).getContent();
             } else {
-                result = applicationRepository.findByStatus(appStatus, pageable);
+                applicationsList = applicationRepository.findByCandidateId(candidateId, PageRequest.of(0, 1000)).getContent();
             }
-        } else if (search != null && !search.isBlank()) {
-            result = applicationRepository.searchApplications(search.trim(), pageable);
         } else {
-            result = applicationRepository.findAll(pageable);
+            // Admin viewing all applications
+            applicationsList = applicationRepository.findAll();
         }
-        
-        // Apply date range filter to final result if not already applied
-        if ((startDateTime != null || endDateTime != null) && (jobId != null || candidateId != null || search != null)) {
-            // Create final copies for lambda
-            final LocalDateTime finalStartDateTime = startDateTime;
-            final LocalDateTime finalEndDateTime = endDateTime;
-            
-            List<Application> filtered = result.getContent().stream()
+
+        // Batch load all candidate profiles for the applications to eliminate N+1 queries
+        Set<UUID> candidateIds = applicationsList.stream()
+                .map(Application::getCandidateId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<UUID, CandidateProfile> profilesMap = candidateIds.isEmpty() ? Collections.emptyMap() :
+                candidateProfileRepository.findByCandidateIdIn(candidateIds).stream()
+                        .filter(p -> p.getCandidate() != null && p.getCandidate().getId() != null)
+                        .collect(Collectors.toMap(p -> p.getCandidate().getId(), p -> p, (a, b) -> a));
+
+        // Cache job criteria per job ID
+        Map<UUID, ApplicationEligibilityService.JobCriteria> criteriaMapByJobId = new HashMap<>();
+        if (targetJob != null && targetJobCriteria != null) {
+            criteriaMapByJobId.put(targetJob.getId(), targetJobCriteria);
+        }
+
+        // Compute eligibility and summary counts for target job or overall
+        int totalBeforeFilter = applicationsList.size();
+        int totalEligibleCount = 0;
+        int countShortlisted = 0;
+        int countInterview = 0;
+        int countSelected = 0;
+        int countRejected = 0;
+
+        Map<UUID, ApplicationEligibilityService.CandidateEligibilityResult> eligibilityMap = new HashMap<>();
+        for (Application app : applicationsList) {
+            CandidateProfile cp = app.getCandidateId() != null ? profilesMap.get(app.getCandidateId()) : null;
+            Job appJob = app.getJob() != null ? app.getJob() : targetJob;
+            ApplicationEligibilityService.JobCriteria jc = null;
+            if (appJob != null) {
+                jc = criteriaMapByJobId.computeIfAbsent(appJob.getId(), id -> eligibilityService.extractJobCriteria(appJob));
+            }
+            ApplicationEligibilityService.CandidateEligibilityResult el = eligibilityService.evaluateEligibility(jc, cp, app);
+            eligibilityMap.put(app.getId(), el);
+
+            if (el.isEligible()) totalEligibleCount++;
+            if (app.getStatus() == Application.ApplicationStatus.SHORTLISTED) countShortlisted++;
+            else if (app.getStatus() == Application.ApplicationStatus.INTERVIEW) countInterview++;
+            else if (app.getStatus() == Application.ApplicationStatus.SELECTED) countSelected++;
+            else if (app.getStatus() == Application.ApplicationStatus.REJECTED) countRejected++;
+        }
+
+        final LocalDateTime finalStartDateTime = startDateTime;
+        final LocalDateTime finalEndDateTime = endDateTime;
+        final Application.ApplicationStatus filterAppStatus = status != null ? parseStatus(status) : null;
+
+        // Apply filters
+        List<Application> filtered = applicationsList.stream()
                 .filter(app -> {
-                    if (finalStartDateTime != null && app.getAppliedDate().isBefore(finalStartDateTime)) return false;
-                    if (finalEndDateTime != null && app.getAppliedDate().isAfter(finalEndDateTime)) return false;
+                    // 1. Status Filter
+                    if (filterAppStatus != null && app.getStatus() != filterAppStatus) {
+                        return false;
+                    }
+
+                    // 2. Date Range Filter
+                    if (finalStartDateTime != null && app.getAppliedDate().isBefore(finalStartDateTime)) {
+                        return false;
+                    }
+                    if (finalEndDateTime != null && app.getAppliedDate().isAfter(finalEndDateTime)) {
+                        return false;
+                    }
+
+                    CandidateProfile profile = app.getCandidateId() != null ? profilesMap.get(app.getCandidateId()) : null;
+                    ApplicationEligibilityService.CandidateEligibilityResult el = eligibilityMap.get(app.getId());
+
+                    // 3. Eligible Only Filter
+                    if (Boolean.TRUE.equals(eligibleOnly)) {
+                        if (el == null || !el.isEligible()) return false;
+                    }
+
+                    // 4. Qualification Filter
+                    if (qualification != null && !qualification.isBlank()) {
+                        String qFilter = qualification.trim().toLowerCase();
+                        String candQual = profile != null && profile.getQualification() != null ? profile.getQualification().toLowerCase() : "";
+                        if (!candQual.contains(qFilter)) return false;
+                    }
+
+                    // 5. Speciality Filter
+                    if (speciality != null && !speciality.isBlank()) {
+                        String sFilter = speciality.trim().toLowerCase();
+                        String candSpec = profile != null && profile.getSpeciality() != null ? profile.getSpeciality().toLowerCase() : "";
+                        String candSubSpec = profile != null && profile.getSubSpeciality() != null ? profile.getSubSpeciality().toLowerCase() : "";
+                        if (!candSpec.contains(sFilter) && !candSubSpec.contains(sFilter)) return false;
+                    }
+
+                    // 6. Minimum Experience Filter
+                    if (minExp != null) {
+                        Integer exp = profile != null ? profile.getYearsExperience() : null;
+                        if (exp == null || exp < minExp) return false;
+                    }
+
+                    // 7. Maximum Experience Filter
+                    if (maxExp != null) {
+                        Integer exp = profile != null ? profile.getYearsExperience() : null;
+                        if (exp == null || exp > maxExp) return false;
+                    }
+
+                    // 8. Medical Registration Filter
+                    if (Boolean.TRUE.equals(hasRegistration)) {
+                        String regNum = profile != null ? profile.getRegistrationNumber() : null;
+                        if (regNum == null || regNum.isBlank()) return false;
+                    }
+
+                    // 9. Registration Council Filter
+                    if (registrationCouncil != null && !registrationCouncil.isBlank()) {
+                        String rcFilter = registrationCouncil.trim().toLowerCase();
+                        String candCouncil = profile != null && profile.getRegistrationCouncil() != null ? profile.getRegistrationCouncil().toLowerCase() : "";
+                        if (!candCouncil.contains(rcFilter)) return false;
+                    }
+
+                    // 10. Registration State Filter
+                    if (registrationState != null && !registrationState.isBlank()) {
+                        String rsFilter = registrationState.trim().toLowerCase();
+                        String candRegState = profile != null && profile.getRegistrationState() != null ? profile.getRegistrationState().toLowerCase() : "";
+                        if (!candRegState.contains(rsFilter)) return false;
+                    }
+
+                    // 11. State / Location Filter
+                    if (state != null && !state.isBlank()) {
+                        String stFilter = state.trim().toLowerCase();
+                        String candState = profile != null && profile.getState() != null ? profile.getState().toLowerCase() : "";
+                        String candPref = profile != null && profile.getPreferredLocation() != null ? profile.getPreferredLocation().toLowerCase() : "";
+                        if (!candState.contains(stFilter) && !candPref.contains(stFilter)) return false;
+                    }
+
+                    // 12. City Filter
+                    if (city != null && !city.isBlank()) {
+                        String cityFilter = city.trim().toLowerCase();
+                        String candCity = profile != null && profile.getCurrentCity() != null ? profile.getCurrentCity().toLowerCase() : "";
+                        if (!candCity.contains(cityFilter)) return false;
+                    }
+
+                    // 13. Skills Filter
+                    if (skills != null && !skills.isBlank()) {
+                        String skillFilter = skills.trim().toLowerCase();
+                        String candSkills = profile != null && profile.getSkills() != null ? profile.getSkills().toLowerCase() : "";
+                        if (!candSkills.contains(skillFilter)) return false;
+                    }
+
+                    // 14. Keyword Search
+                    if (search != null && !search.isBlank()) {
+                        String kw = search.trim().toLowerCase();
+                        String name = app.getCandidateName() != null ? app.getCandidateName().toLowerCase() : "";
+                        String candEmail = app.getCandidateEmail() != null ? app.getCandidateEmail().toLowerCase() : "";
+                        String phone = app.getCandidatePhone() != null ? app.getCandidatePhone().toLowerCase() : "";
+                        String candCity = profile != null && profile.getCurrentCity() != null ? profile.getCurrentCity().toLowerCase() : "";
+                        String regNum = profile != null && profile.getRegistrationNumber() != null ? profile.getRegistrationNumber().toLowerCase() : "";
+                        String jTitle = app.getJob() != null && app.getJob().getTitle() != null ? app.getJob().getTitle().toLowerCase() : "";
+                        String org = app.getJob() != null && app.getJob().getEmployer() != null && app.getJob().getEmployer().getCompanyName() != null 
+                                ? app.getJob().getEmployer().getCompanyName().toLowerCase() : "";
+
+                        boolean matches = name.contains(kw) || candEmail.contains(kw) || phone.contains(kw) 
+                                || candCity.contains(kw) || regNum.contains(kw) || jTitle.contains(kw) || org.contains(kw);
+                        if (!matches) return false;
+                    }
+
                     return true;
                 })
                 .collect(Collectors.toList());
-            int totalElements = filtered.size();
-            int start = page * size;
-            int end = Math.min(start + size, totalElements);
-            List<Application> paginatedList = start < totalElements ? filtered.subList(start, end) : new ArrayList<>();
-            result = new org.springframework.data.domain.PageImpl<>(paginatedList, pageable, totalElements);
+
+        // Sorting
+        String[] sortParts = sort.split(",");
+        String sortField = sortParts[0];
+        boolean asc = sortParts.length > 1 && sortParts[1].equalsIgnoreCase("asc");
+
+        if ("eligibility".equalsIgnoreCase(sortField) || "score".equalsIgnoreCase(sortField)) {
+            filtered.sort((a, b) -> {
+                int scoreA = eligibilityMap.getOrDefault(a.getId(), new ApplicationEligibilityService.CandidateEligibilityResult()).getScore();
+                int scoreB = eligibilityMap.getOrDefault(b.getId(), new ApplicationEligibilityService.CandidateEligibilityResult()).getScore();
+                int cmp = Integer.compare(scoreB, scoreA);
+                if (cmp != 0) return asc ? -cmp : cmp;
+                return b.getAppliedDate().compareTo(a.getAppliedDate());
+            });
+        } else {
+            filtered.sort((a, b) -> {
+                if (a.getAppliedDate() == null && b.getAppliedDate() == null) return 0;
+                if (a.getAppliedDate() == null) return 1;
+                if (b.getAppliedDate() == null) return -1;
+                return asc ? a.getAppliedDate().compareTo(b.getAppliedDate()) : b.getAppliedDate().compareTo(a.getAppliedDate());
+            });
+        }
+
+        // Pagination
+        int totalElements = filtered.size();
+        int totalPages = (int) Math.ceil((double) totalElements / size);
+        int start = page * size;
+        int end = Math.min(start + size, totalElements);
+        List<Application> paginatedList = start < totalElements ? filtered.subList(start, end) : new ArrayList<>();
+
+        boolean isCandidateRequest = currentUser != null && currentUser.getRole() == User.UserRole.CANDIDATE;
+        final Job finalTargetJob = targetJob;
+        final ApplicationEligibilityService.JobCriteria finalTargetCriteria = targetJobCriteria;
+
+        List<Map<String, Object>> content = new ArrayList<>();
+        for (Application app : paginatedList) {
+            CandidateProfile cp = app.getCandidateId() != null ? profilesMap.get(app.getCandidateId()) : null;
+            Job appJob = app.getJob() != null ? app.getJob() : finalTargetJob;
+            ApplicationEligibilityService.JobCriteria jc = finalTargetCriteria;
+            if (jc == null && appJob != null) {
+                final Job jobForCriteria = appJob;
+                jc = criteriaMapByJobId.computeIfAbsent(appJob.getId(), id -> eligibilityService.extractJobCriteria(jobForCriteria));
+            }
+            content.add(toResponse(app, isCandidateRequest, cp, jc));
         }
 
         Map<String, Object> body = new HashMap<>();
-        body.put("content", result.getContent().stream().map(this::toResponse).collect(Collectors.toList()));
-        body.put("page", result.getNumber());
-        body.put("size", result.getSize());
-        body.put("totalElements", result.getTotalElements());
-        body.put("totalPages", result.getTotalPages());
+        body.put("content", content);
+        body.put("page", page);
+        body.put("size", size);
+        body.put("totalElements", totalElements);
+        body.put("totalPages", totalPages);
+
+        // Include eligibility summary in the response
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("totalApplications", totalBeforeFilter);
+        summary.put("eligibleCount", totalEligibleCount);
+        summary.put("shortlistedCount", countShortlisted);
+        summary.put("interviewCount", countInterview);
+        summary.put("selectedCount", countSelected);
+        summary.put("rejectedCount", countRejected);
+
+        if (targetJob != null && targetJobCriteria != null) {
+            Map<String, Object> criteriaInfo = new LinkedHashMap<>();
+            criteriaInfo.put("qualifications", targetJobCriteria.getRequiredQualifications());
+            criteriaInfo.put("rawQualification", targetJobCriteria.getRawQualification());
+            criteriaInfo.put("speciality", targetJobCriteria.getSpeciality());
+            criteriaInfo.put("minExperience", targetJobCriteria.getMinExperienceYears());
+            criteriaInfo.put("rawExperience", targetJobCriteria.getRawExperience());
+            criteriaInfo.put("location", targetJobCriteria.getLocation());
+            criteriaInfo.put("registrationRequired", targetJobCriteria.isRegistrationRequired());
+            summary.put("jobCriteria", criteriaInfo);
+        }
+        body.put("eligibilitySummary", summary);
+
+        return ResponseEntity.ok(body);
+    }
+
+    @GetMapping("/job/{jobId}/eligibility-summary")
+    @Transactional(readOnly = true)
+    public ResponseEntity<?> getJobEligibilitySummary(@PathVariable("jobId") UUID jobId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = null;
+        if (authentication != null && authentication.isAuthenticated()) {
+            currentUser = userRepository.findByEmail(authentication.getName()).orElse(null);
+        }
+
+        Optional<Job> jobOpt = jobRepository.findById(jobId);
+        if (jobOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        Job job = jobOpt.get();
+
+        if (currentUser != null && currentUser.getRole() == User.UserRole.EMPLOYER) {
+            Employer employer = job.getEmployer();
+            if (employer == null || employer.getUser() == null || !employer.getUser().getId().equals(currentUser.getId())) {
+                return ResponseEntity.status(403).body(Map.of("error", "You can only view applications for your own jobs"));
+            }
+        } else if (currentUser != null && currentUser.getRole() == User.UserRole.CANDIDATE) {
+            return ResponseEntity.status(403).body(Map.of("error", "Candidate cannot view job applicant summary"));
+        }
+
+        List<Application> apps = applicationRepository.findByJobIdWithDetails(jobId);
+        Set<UUID> candidateIds = apps.stream()
+                .map(Application::getCandidateId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<UUID, CandidateProfile> profilesMap = candidateIds.isEmpty() ? Collections.emptyMap() :
+                candidateProfileRepository.findByCandidateIdIn(candidateIds).stream()
+                        .filter(p -> p.getCandidate() != null && p.getCandidate().getId() != null)
+                        .collect(Collectors.toMap(p -> p.getCandidate().getId(), p -> p, (a, b) -> a));
+
+        ApplicationEligibilityService.JobCriteria criteria = eligibilityService.extractJobCriteria(job);
+
+        int eligibleCount = 0;
+        int shortlistedCount = 0;
+        int interviewCount = 0;
+        int selectedCount = 0;
+        int rejectedCount = 0;
+
+        for (Application app : apps) {
+            CandidateProfile profile = app.getCandidateId() != null ? profilesMap.get(app.getCandidateId()) : null;
+            ApplicationEligibilityService.CandidateEligibilityResult res = eligibilityService.evaluateEligibility(criteria, profile, app);
+            if (res.isEligible()) eligibleCount++;
+
+            if (app.getStatus() == Application.ApplicationStatus.SHORTLISTED) shortlistedCount++;
+            else if (app.getStatus() == Application.ApplicationStatus.INTERVIEW) interviewCount++;
+            else if (app.getStatus() == Application.ApplicationStatus.SELECTED) selectedCount++;
+            else if (app.getStatus() == Application.ApplicationStatus.REJECTED) rejectedCount++;
+        }
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("jobId", jobId.toString());
+        body.put("jobTitle", job.getTitle());
+        body.put("totalApplications", apps.size());
+        body.put("eligibleCount", eligibleCount);
+        body.put("shortlistedCount", shortlistedCount);
+        body.put("interviewCount", interviewCount);
+        body.put("selectedCount", selectedCount);
+        body.put("rejectedCount", rejectedCount);
+
+        Map<String, Object> criteriaMap = new LinkedHashMap<>();
+        criteriaMap.put("qualifications", criteria.getRequiredQualifications());
+        criteriaMap.put("rawQualification", criteria.getRawQualification());
+        criteriaMap.put("speciality", criteria.getSpeciality());
+        criteriaMap.put("minExperience", criteria.getMinExperienceYears());
+        criteriaMap.put("rawExperience", criteria.getRawExperience());
+        criteriaMap.put("location", criteria.getLocation());
+        criteriaMap.put("registrationRequired", criteria.isRegistrationRequired());
+        body.put("jobCriteria", criteriaMap);
+
         return ResponseEntity.ok(body);
     }
 
@@ -933,21 +1113,35 @@ public class ApplicationController {
         return Instant.parse(trimmed).atZone(ZoneId.systemDefault()).toLocalDateTime();
     }
 
-    private void attachCandidateProfile(Map<String, Object> response, UUID candidateId) {
-        if (candidateId == null) return;
+    private void attachCandidateProfile(Map<String, Object> response, CandidateProfile profile) {
+        if (profile == null) return;
         try {
-            Optional<CandidateProfile> profileOpt = candidateProfileRepository.findByCandidateId(candidateId);
-            if (profileOpt.isEmpty()) return;
-            CandidateProfile profile = profileOpt.get();
             response.put("candidateSpeciality", profile.getSpeciality());
             response.put("candidateSubSpeciality", profile.getSubSpeciality());
             response.put("candidateQualification", profile.getQualification());
             response.put("candidateYearsExperience", profile.getYearsExperience());
             response.put("candidateRegistrationCouncil", profile.getRegistrationCouncil());
             response.put("candidateRegistrationNumber", profile.getRegistrationNumber());
+            response.put("candidateRegistrationState", profile.getRegistrationState());
+            response.put("candidateRegistrationYear", profile.getRegistrationYear());
             response.put("candidateCity", profile.getCurrentCity());
             response.put("candidateState", profile.getState());
+            response.put("candidatePreferredLocation", profile.getPreferredLocation());
             response.put("candidateSummary", profile.getProfileSummary());
+            response.put("candidateSkills", profile.getSkills());
+            response.put("candidateCurrentOrganization", profile.getCurrentOrganization());
+            response.put("candidateMedicalCategory", profile.getMedicalCategory());
+            response.put("candidateProfilePhotoUrl", profile.getProfilePhotoUrl());
+        } catch (Exception e) {
+            logger.warn("Unable to attach candidate profile: {}", e.getMessage());
+        }
+    }
+
+    private void attachCandidateProfile(Map<String, Object> response, UUID candidateId) {
+        if (candidateId == null) return;
+        try {
+            Optional<CandidateProfile> profileOpt = candidateProfileRepository.findByCandidateId(candidateId);
+            profileOpt.ifPresent(profile -> attachCandidateProfile(response, profile));
         } catch (Exception e) {
             logger.warn("Unable to attach candidate profile for {}: {}", candidateId, e.getMessage());
         }
@@ -970,10 +1164,14 @@ public class ApplicationController {
     }
 
     private Map<String, Object> toResponse(Application app) {
-        return toResponse(app, false);
+        return toResponse(app, false, null, null);
     }
 
     private Map<String, Object> toResponse(Application app, boolean includePostedBy) {
+        return toResponse(app, includePostedBy, null, null);
+    }
+
+    private Map<String, Object> toResponse(Application app, boolean includePostedBy, CandidateProfile profile, ApplicationEligibilityService.JobCriteria jobCriteria) {
         Map<String, Object> m = new LinkedHashMap<>();
         try {
             m.put("id", app.getId().toString());
@@ -998,8 +1196,6 @@ public class ApplicationController {
                             if (employerUser != null) {
                                 postedBy.put("userId", employerUser.getId().toString());
                                 postedBy.put("name", employerUser.getName() != null ? employerUser.getName() : "N/A");
-                                // Only include email if it's safe (optional)
-                                // postedBy.put("email", employerUser.getEmail());
                                 postedBy.put("company", employer.getCompanyName() != null ? employer.getCompanyName() : "N/A");
                             } else {
                                 postedBy.put("userId", null);
@@ -1043,7 +1239,30 @@ public class ApplicationController {
             m.put("candidateName", app.getCandidateName() != null ? app.getCandidateName() : "N/A");
             m.put("candidateEmail", app.getCandidateEmail() != null ? app.getCandidateEmail() : "N/A");
             m.put("candidatePhone", app.getCandidatePhone() != null ? app.getCandidatePhone() : "N/A");
-            attachCandidateProfile(m, app.getCandidateId());
+            
+            CandidateProfile effectiveProfile = profile;
+            if (effectiveProfile == null && app.getCandidateId() != null) {
+                effectiveProfile = candidateProfileRepository.findByCandidateId(app.getCandidateId()).orElse(null);
+            }
+            attachCandidateProfile(m, effectiveProfile);
+
+            // Compute eligibility
+            ApplicationEligibilityService.JobCriteria effectiveCriteria = jobCriteria;
+            if (effectiveCriteria == null && job != null) {
+                effectiveCriteria = eligibilityService.extractJobCriteria(job);
+            }
+            if (effectiveCriteria != null) {
+                ApplicationEligibilityService.CandidateEligibilityResult el = eligibilityService.evaluateEligibility(effectiveCriteria, effectiveProfile, app);
+                m.put("isEligible", el.isEligible());
+                m.put("eligibilityScore", el.getScore());
+                m.put("matchingCriteria", el.getMatchingCriteria());
+                m.put("unmetCriteria", el.getUnmetCriteria());
+            } else {
+                m.put("isEligible", true);
+                m.put("eligibilityScore", 100);
+                m.put("matchingCriteria", Collections.emptyList());
+                m.put("unmetCriteria", Collections.emptyList());
+            }
             
             // Get resume URL - check both application resume and Resume entity
             String resumeUrl = app.getResumeUrl();

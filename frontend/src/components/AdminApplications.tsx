@@ -1,6 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock, CheckCircle, XCircle, Calendar, FileText, Eye, MessageSquare, Phone, Mail, MapPin, Search, Filter, Users, Briefcase, MoreVertical, Loader2, ArrowLeft, AlertCircle, Video, ExternalLink } from 'lucide-react';
+import { 
+  Clock, CheckCircle, XCircle, Calendar, FileText, Eye, MessageSquare, 
+  Phone, Mail, MapPin, Search, Filter, Users, Briefcase, MoreVertical, 
+  Loader2, ArrowLeft, AlertCircle, Video, ExternalLink, Check, Sparkles, 
+  ShieldCheck, GraduationCap, Stethoscope, SlidersHorizontal, RefreshCw, Award 
+} from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
@@ -14,9 +19,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from './ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from './ui/dropdown-menu';
 import { toast } from 'sonner';
-import { fetchApplications, updateApplicationStatus } from '../api/applications';
+import { fetchApplications, updateApplicationStatus, ApplicationResponse, JobEligibilitySummary } from '../api/applications';
 import { useAuth } from '../contexts/AuthContext';
-import { ApplicationResponse } from '../api/applications';
 import { fetchJobsByEmployer, fetchAdminJobs, fetchJobs } from '../api/jobs';
 import { fetchEmployer } from '../api/employers';
 import { openFileInViewer } from '../utils/fileUtils';
@@ -37,12 +41,20 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
   const [isInterviewDialogOpen, setIsInterviewDialogOpen] = useState(false);
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const [availableJobs, setAvailableJobs] = useState<{ id: string; title: string; organization?: string }[]>([]);
+  const [eligibilitySummary, setEligibilitySummary] = useState<JobEligibilitySummary | null>(null);
   const [filters, setFilters] = useState({
     status: 'all',
     search: '',
     jobId: 'all',
     minExp: 'all',
-    qualification: '',
+    qualification: 'all',
+    speciality: '',
+    registrationStatus: 'all', // 'all', 'registered', 'unregistered'
+    council: '',
+    state: '',
+    city: '',
+    eligibleOnly: false,
+    sortBy: 'eligibility', // 'eligibility' | 'appliedDate'
     startDate: '',
     endDate: ''
   });
@@ -99,63 +111,23 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
         jobId: (filters.jobId && filters.jobId !== "all") ? filters.jobId : undefined,
         startDate: filters.startDate || undefined,
         endDate: filters.endDate || undefined,
+        qualification: (filters.qualification && filters.qualification !== "all") ? filters.qualification : undefined,
+        speciality: filters.speciality || undefined,
+        minExp: (filters.minExp && filters.minExp !== "all") ? Number(filters.minExp) : undefined,
+        hasRegistration: filters.registrationStatus === 'registered' ? true : filters.registrationStatus === 'unregistered' ? false : undefined,
+        registrationCouncil: filters.council || undefined,
+        state: filters.state || undefined,
+        city: filters.city || undefined,
+        eligibleOnly: filters.eligibleOnly ? true : undefined,
         page: 0,
-        size: 50,
-        sort: 'appliedDate,desc'
+        size: 200,
+        sort: filters.sortBy === 'eligibility' ? 'eligibility,desc' : 'appliedDate,desc'
       };
 
-      // If user is employer, fetch only applications for their jobs
-      if ((userRole === 'employer' || user?.role === 'EMPLOYER') && user) {
-        try {
-          // Get employer data
-          const employerData = await fetchEmployer(user.id, token);
-          
-          // Get all jobs for this employer
-          const jobsResponse = await fetchJobsByEmployer(employerData.id, {
-            status: 'all',
-            page: 0,
-            size: 1000
-          });
-          const employerJobs = jobsResponse.content || [];
-          const jobIds = employerJobs.map((job: any) => job.id);
-
-          // Fetch applications for each job
-          const allApplications: ApplicationResponse[] = [];
-          for (const jobId of jobIds) {
-            try {
-              const appsResponse = await fetchApplications({
-                jobId,
-                ...params
-              }, token);
-              if (appsResponse && appsResponse.content && Array.isArray(appsResponse.content)) {
-                allApplications.push(...appsResponse.content);
-              }
-            } catch (err: any) {
-              // Handle 401 errors - authentication failed
-              if (err.message?.includes('401') || err.message?.includes('Unauthorized')) {
-                logout();
-                navigate('/login');
-                return;
-              }
-              console.error(`Failed to fetch applications for job ${jobId}:`, err);
-            }
-          }
-          setApplications(allApplications);
-        } catch (error: any) {
-          // Handle 401 errors - authentication failed
-          if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
-            logout();
-            navigate('/login');
-            return;
-          }
-          console.error('Failed to load employer applications:', error);
-          setApplications([]);
-        }
-      } else {
-        // Admin can see all applications
-        const response = await fetchApplications(params, token);
-        setApplications(response.content || []);
-      }
+      const response = await fetchApplications(params, token);
+      const apps = response.content || (Array.isArray(response) ? response : []);
+      setApplications(apps);
+      setEligibilitySummary(response.eligibilitySummary || null);
     } catch (error: any) {
       // Handle 401 errors - authentication failed
       if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
@@ -164,10 +136,18 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
         return;
       }
       console.error('Failed to load applications:', error);
+      toast.error('Failed to load applications', {
+        description: error.message || 'Please refresh the page.'
+      });
     } finally {
       setLoading(false);
     }
   };
+
+  const selectedJob = useMemo(() => {
+    if (!filters.jobId || filters.jobId === 'all') return null;
+    return availableJobs.find(j => j.id === filters.jobId) || null;
+  }, [availableJobs, filters.jobId]);
 
   const getStatusIcon = (status: string) => {
     const normalizedStatus = status === 'applied' ? 'pending' : status === 'selected' ? 'hired' : status;
@@ -306,50 +286,16 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
   const filteredApplications = useMemo(() => {
     return applications.filter(app => {
       // 1. Status Filter
-      const matchesStatus = !filters.status || filters.status === "all" || app.status === filters.status;
-      if (!matchesStatus) return false;
-
-      // 2. Specific Job Filter
-      if (filters.jobId && filters.jobId !== 'all') {
-        if (app.jobId !== filters.jobId) return false;
+      if (filters.status && filters.status !== "all" && app.status !== filters.status) {
+        return false;
       }
-
-      // 3. Experience Filter (> 2 years, etc.)
-      if (filters.minExp && filters.minExp !== 'all') {
-        const requiredExp = Number(filters.minExp);
-        const candExp = app.candidateYearsExperience ?? 0;
-        if (candExp < requiredExp) return false;
+      // 2. Instant Eligible Only Toggle check
+      if (filters.eligibleOnly && !app.isEligible) {
+        return false;
       }
-
-      // 4. Qualification / Speciality Filter
-      if (filters.qualification && filters.qualification.trim()) {
-        const term = filters.qualification.trim().toLowerCase();
-        const qual = (app.candidateQualification || '').toLowerCase();
-        const spec = (app.candidateSpeciality || '').toLowerCase();
-        if (!qual.includes(term) && !spec.includes(term)) return false;
-      }
-
-      // 5. Search Keyword
-      if (filters.search && filters.search.trim()) {
-        const term = filters.search.trim().toLowerCase();
-        const name = (app.candidateName || '').toLowerCase();
-        const email = (app.candidateEmail || '').toLowerCase();
-        const phone = (app.candidatePhone || '').toLowerCase();
-        const city = (app.candidateCity || '').toLowerCase();
-        const title = (app.jobTitle || '').toLowerCase();
-        const org = (app.jobOrganization || '').toLowerCase();
-        const matches = name.includes(term) ||
-          email.includes(term) ||
-          phone.includes(term) ||
-          city.includes(term) ||
-          title.includes(term) ||
-          org.includes(term);
-        if (!matches) return false;
-      }
-
       return true;
     });
-  }, [applications, filters]);
+  }, [applications, filters.status, filters.eligibleOnly]);
 
   // Don't render if not authenticated
   if (!isAuthenticated || !user || !token) {
@@ -466,27 +412,29 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
   // Filter Component (reusable for sidebar and drawer)
   const FilterPanel = ({ onClose }: { onClose?: () => void }) => (
     <div className="space-y-4">
+      {/* 1. Search Keyword */}
       <div>
-        <Label htmlFor="search" className="text-sm font-medium">Search</Label>
+        <Label htmlFor="search" className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Search Candidates</Label>
         <div className="relative mt-1.5">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input
             id="search"
-            placeholder="Candidate name, email, phone, city..."
+            placeholder="Name, email, phone, city, skills..."
             value={filters.search}
             onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-            className="pl-10 text-sm"
+            className="pl-9 text-xs sm:text-sm h-9"
           />
         </div>
       </div>
 
+      {/* 2. Target Job Selector */}
       <div>
-        <Label htmlFor="jobId" className="text-sm font-medium">Specific Posted Job</Label>
+        <Label htmlFor="jobId" className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Target Job Post</Label>
         <Select 
           value={filters.jobId} 
           onValueChange={(value) => setFilters(prev => ({ ...prev, jobId: value }))}
         >
-          <SelectTrigger className="mt-1.5 text-sm">
+          <SelectTrigger className="mt-1.5 text-xs sm:text-sm h-9">
             <SelectValue placeholder="All Posted Jobs" />
           </SelectTrigger>
           <SelectContent>
@@ -500,45 +448,159 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
         </Select>
       </div>
 
+      {/* 3. Quick 1-Click Toggle: 100% Eligible Only */}
+      <div className={`p-3 rounded-lg border transition-all ${
+        filters.eligibleOnly 
+          ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-700' 
+          : 'bg-gray-50/80 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700'
+      }`}>
+        <div className="flex items-center justify-between">
+          <div className="flex-1 pr-2">
+            <div className="text-xs font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+              100% Eligible Only
+            </div>
+            <p className="text-[11px] text-gray-600 dark:text-gray-300 mt-0.5 leading-snug">
+              Filter candidates meeting all qualifications &amp; experience
+            </p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant={filters.eligibleOnly ? "default" : "outline"}
+            onClick={() => setFilters(prev => ({ ...prev, eligibleOnly: !prev.eligibleOnly }))}
+            className={`h-7 px-2.5 text-xs font-bold flex-shrink-0 ${
+              filters.eligibleOnly 
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white' 
+                : 'border-emerald-400 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300'
+            }`}
+          >
+            {filters.eligibleOnly ? 'Active' : 'Filter'}
+          </Button>
+        </div>
+      </div>
+
+      {/* 4. Medical Qualification */}
       <div>
-        <Label htmlFor="minExp" className="text-sm font-medium">Candidate Experience</Label>
+        <Label htmlFor="qualification" className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Required Medical Degree</Label>
         <Select 
-          value={filters.minExp} 
-          onValueChange={(value) => setFilters(prev => ({ ...prev, minExp: value }))}
+          value={filters.qualification} 
+          onValueChange={(value) => setFilters(prev => ({ ...prev, qualification: value }))}
         >
-          <SelectTrigger className="mt-1.5 text-sm">
-            <SelectValue placeholder="Any Experience" />
+          <SelectTrigger className="mt-1.5 text-xs sm:text-sm h-9">
+            <SelectValue placeholder="All Qualifications" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Any Experience</SelectItem>
-            <SelectItem value="1">1+ Years Experience</SelectItem>
-            <SelectItem value="2">2+ Years Experience (Min 2 Yrs)</SelectItem>
-            <SelectItem value="3">3+ Years Experience</SelectItem>
-            <SelectItem value="5">5+ Years Experience</SelectItem>
-            <SelectItem value="8">8+ Years Experience</SelectItem>
-            <SelectItem value="10">10+ Years Experience</SelectItem>
+            <SelectItem value="all">All Qualifications</SelectItem>
+            <SelectItem value="MBBS">MBBS (Primary Medical)</SelectItem>
+            <SelectItem value="MD">MD (Doctor of Medicine)</SelectItem>
+            <SelectItem value="MS">MS (Master of Surgery)</SelectItem>
+            <SelectItem value="DNB">DNB (Diplomate of National Board)</SelectItem>
+            <SelectItem value="DM">DM / MCh (Super Speciality)</SelectItem>
+            <SelectItem value="BDS">BDS / MDS (Dental Surgery)</SelectItem>
+            <SelectItem value="BAMS">BAMS / BHMS (AYUSH)</SelectItem>
+            <SelectItem value="Nursing">Nursing (B.Sc / GNM)</SelectItem>
+            <SelectItem value="Allied">Allied Healthcare</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
+      {/* 5. Speciality */}
       <div>
-        <Label htmlFor="qualification" className="text-sm font-medium">Qualification / Speciality</Label>
+        <Label htmlFor="speciality" className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Medical Speciality</Label>
         <Input
-          id="qualification"
-          placeholder="e.g. MBBS, MD, MS, DNB, BDS..."
-          value={filters.qualification}
-          onChange={(e) => setFilters(prev => ({ ...prev, qualification: e.target.value }))}
-          className="mt-1.5 text-sm"
+          id="speciality"
+          placeholder="e.g. Cardiology, Paediatrics..."
+          value={filters.speciality}
+          onChange={(e) => setFilters(prev => ({ ...prev, speciality: e.target.value }))}
+          className="mt-1.5 text-xs sm:text-sm h-9"
         />
       </div>
 
+      {/* 6. Clinical Experience */}
       <div>
-        <Label htmlFor="status" className="text-sm font-medium">Status</Label>
+        <Label htmlFor="minExp" className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Clinical Experience</Label>
+        <Select 
+          value={filters.minExp} 
+          onValueChange={(value) => setFilters(prev => ({ ...prev, minExp: value }))}
+        >
+          <SelectTrigger className="mt-1.5 text-xs sm:text-sm h-9">
+            <SelectValue placeholder="Any Experience" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Any Experience</SelectItem>
+            <SelectItem value="1">1+ Years Clinical Experience</SelectItem>
+            <SelectItem value="2">2+ Years Clinical Experience</SelectItem>
+            <SelectItem value="3">3+ Years Clinical Experience</SelectItem>
+            <SelectItem value="5">5+ Years (Specialist / Senior)</SelectItem>
+            <SelectItem value="8">8+ Years Experience</SelectItem>
+            <SelectItem value="10">10+ Years (Consultant / HOD)</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* 7. State Medical Council Registration */}
+      <div>
+        <Label htmlFor="registrationStatus" className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">State Medical Registration</Label>
+        <Select 
+          value={filters.registrationStatus} 
+          onValueChange={(value) => setFilters(prev => ({ ...prev, registrationStatus: value }))}
+        >
+          <SelectTrigger className="mt-1.5 text-xs sm:text-sm h-9">
+            <SelectValue placeholder="All Candidates" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Candidates</SelectItem>
+            <SelectItem value="registered">Registered Only (Has Valid Reg No)</SelectItem>
+            <SelectItem value="unregistered">Unregistered / Reg Missing</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* 8. Registration Council */}
+      <div>
+        <Label htmlFor="council" className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Medical Council / State</Label>
+        <Input
+          id="council"
+          placeholder="e.g. Maharashtra Medical Council..."
+          value={filters.council}
+          onChange={(e) => setFilters(prev => ({ ...prev, council: e.target.value }))}
+          className="mt-1.5 text-xs sm:text-sm h-9"
+        />
+      </div>
+
+      {/* 9. Candidate State / City */}
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <Label htmlFor="state" className="text-[11px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">State</Label>
+          <Input
+            id="state"
+            placeholder="e.g. Maharashtra"
+            value={filters.state}
+            onChange={(e) => setFilters(prev => ({ ...prev, state: e.target.value }))}
+            className="mt-1 text-xs h-8"
+          />
+        </div>
+        <div>
+          <Label htmlFor="city" className="text-[11px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">City</Label>
+          <Input
+            id="city"
+            placeholder="e.g. Mumbai"
+            value={filters.city}
+            onChange={(e) => setFilters(prev => ({ ...prev, city: e.target.value }))}
+            className="mt-1 text-xs h-8"
+          />
+        </div>
+      </div>
+
+      {/* 10. Application Status */}
+      <div>
+        <Label htmlFor="status" className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Application Status</Label>
         <Select 
           value={filters.status} 
           onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
         >
-          <SelectTrigger className="mt-1.5 text-sm">
+          <SelectTrigger className="mt-1.5 text-xs sm:text-sm h-9">
             <SelectValue placeholder="All Statuses" />
           </SelectTrigger>
           <SelectContent>
@@ -546,51 +608,62 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
             <SelectItem value="pending">Pending</SelectItem>
             <SelectItem value="shortlisted">Shortlisted</SelectItem>
             <SelectItem value="interview">Interview</SelectItem>
-            <SelectItem value="hired">Hired</SelectItem>
+            <SelectItem value="hired">Hired / Selected</SelectItem>
             <SelectItem value="rejected">Rejected</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
+      {/* 11. Sort By */}
       <div>
-        <Label htmlFor="startDate" className="text-sm font-medium">Start Date</Label>
-        <Input
-          id="startDate"
-          type="date"
-          value={filters.startDate}
-          onChange={(e) => setFilters(prev => ({ ...prev, startDate: e.target.value ? new Date(e.target.value).toISOString() : '' }))}
-          className="mt-1.5 text-sm"
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="endDate" className="text-sm font-medium">End Date</Label>
-        <Input
-          id="endDate"
-          type="date"
-          value={filters.endDate}
-          onChange={(e) => setFilters(prev => ({ ...prev, endDate: e.target.value ? new Date(e.target.value).toISOString() : '' }))}
-          className="mt-1.5 text-sm"
-        />
+        <Label htmlFor="sortBy" className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Sort Order</Label>
+        <Select 
+          value={filters.sortBy} 
+          onValueChange={(value) => setFilters(prev => ({ ...prev, sortBy: value }))}
+        >
+          <SelectTrigger className="mt-1.5 text-xs sm:text-sm h-9">
+            <SelectValue placeholder="Sort Order" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="eligibility">🎯 Eligibility Match (Highest Score First)</SelectItem>
+            <SelectItem value="appliedDate">📅 Applied Date (Newest First)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="flex gap-2 pt-2">
         <Button
           variant="outline"
           onClick={() => {
-            setFilters({ status: 'all', search: '', jobId: 'all', minExp: 'all', qualification: '', startDate: '', endDate: '' });
+            setFilters({ 
+              status: 'all', 
+              search: '', 
+              jobId: 'all', 
+              minExp: 'all', 
+              qualification: 'all', 
+              speciality: '',
+              registrationStatus: 'all',
+              council: '',
+              state: '',
+              city: '',
+              eligibleOnly: false,
+              sortBy: 'eligibility',
+              startDate: '', 
+              endDate: '' 
+            });
             onClose?.();
           }}
-          className="flex-1 text-xs"
+          className="flex-1 text-xs h-9"
         >
-          Clear Filters
+          Clear All
         </Button>
         <Button
           variant="default"
           onClick={() => {
+            loadApplications();
             onClose?.();
           }}
-          className="flex-1 text-xs bg-teal-600 hover:bg-teal-700 text-white font-bold"
+          className="flex-1 text-xs h-9 bg-teal-600 hover:bg-teal-700 text-white font-bold"
         >
           Apply Filters
         </Button>
@@ -598,10 +671,19 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
     </div>
   );
 
-  const renderApplicationCard = (application: ApplicationResponse) => (
+  const renderApplicationCard = (application: ApplicationResponse) => {
+    const isEligible = application.isEligible ?? false;
+    const score = application.eligibilityScore ?? 0;
+    const borderClass = isEligible 
+      ? 'border-l-4 border-l-emerald-500 hover:border-l-emerald-600 shadow-emerald-500/5' 
+      : score >= 60 
+      ? 'border-l-4 border-l-amber-500 hover:border-l-amber-600 shadow-amber-500/5' 
+      : 'border-l-4 border-l-blue-500 dark:border-l-blue-600 hover:border-l-blue-600 dark:hover:border-l-blue-500';
+
+    return (
     <Card 
       key={application.id} 
-      className="group relative overflow-hidden bg-white dark:bg-gray-800 border-l-4 border-l-blue-500 dark:border-l-blue-600 hover:border-l-blue-600 dark:hover:border-l-blue-500 hover:shadow-lg transition-all duration-200 ease-out hover:-translate-y-0.5 flex flex-col medex-applicant-card h-full"
+      className={`group relative overflow-hidden bg-white dark:bg-gray-800 ${borderClass} hover:shadow-lg transition-all duration-200 ease-out hover:-translate-y-0.5 flex flex-col medex-applicant-card h-full`}
       style={{
         borderRadius: 'clamp(0.5rem, 0.8vw, 0.75rem)',
         boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
@@ -625,14 +707,20 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
             <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
               <div className="relative flex-shrink-0">
                 <div 
-                  className="bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 rounded-full flex items-center justify-center shadow-sm group-hover:shadow transition-shadow"
+                  className={`rounded-full flex items-center justify-center shadow-sm group-hover:shadow transition-shadow ${
+                    isEligible
+                      ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white'
+                      : score >= 60
+                      ? 'bg-gradient-to-br from-amber-500 to-yellow-600 text-white'
+                      : 'bg-gradient-to-br from-blue-500 to-blue-600 text-white'
+                  }`}
                   style={{
                     width: 'clamp(2.5rem, 4vw, 3.5rem)',
                     height: 'clamp(2.5rem, 4vw, 3.5rem)'
                   }}
                 >
                   <span 
-                    className="text-white font-semibold"
+                    className="font-semibold text-white"
                     style={{ fontSize: 'clamp(1rem, 1.5vw, 1.5rem)' }}
                   >
                     {application.candidateName?.charAt(0)?.toUpperCase() || 'A'}
@@ -641,7 +729,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               </div>
               <div className="flex-1 min-w-0">
                 <h2 
-                  className="font-bold text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
+                  className="font-bold text-gray-900 dark:text-gray-100 truncate group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors"
                   style={{ fontSize: 'clamp(0.9375rem, 1.3vw, 1.125rem)' }}
                 >
                   {application.candidateName || 'Unknown Candidate'}
@@ -658,7 +746,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                 </p>
                 {(application.candidateQualification || application.candidateSpeciality) && (
                   <p 
-                    className="text-xs font-semibold text-teal-600 dark:text-teal-400 truncate mt-0.5"
+                    className="text-xs font-semibold text-teal-700 dark:text-teal-300 truncate mt-0.5"
                     style={{ fontSize: 'clamp(0.72rem, 0.95vw, 0.82rem)' }}
                   >
                     {[application.candidateQualification, application.candidateSpeciality].filter(Boolean).join(' • ')}
@@ -666,16 +754,37 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                 )}
               </div>
             </div>
-            <Badge 
-              className={`${getStatusColor(application.status)} flex-shrink-0 shadow-xs inline-flex`}
-              style={{
-                padding: 'clamp(0.25rem, 0.5vw, 0.375rem) clamp(0.5rem, 0.8vw, 0.75rem)',
-                fontSize: 'clamp(0.6875rem, 0.9vw, 0.8125rem)'
-              }}
-              variant="outline"
-            >
-              {getStatusLabel(application.status)}
-            </Badge>
+
+            {/* Badges Container: Eligibility + Status */}
+            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1.5 flex-shrink-0">
+              {score > 0 && (
+                isEligible ? (
+                  <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-700 font-bold inline-flex items-center gap-1 shadow-2xs text-[11px] py-0.5">
+                    <CheckCircle className="w-3 h-3 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                    100% Eligible
+                  </Badge>
+                ) : score >= 60 ? (
+                  <Badge className="bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700 font-bold inline-flex items-center gap-1 text-[11px] py-0.5">
+                    <Sparkles className="w-3 h-3 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                    {score}% Match
+                  </Badge>
+                ) : (
+                  <Badge className="bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-400 font-medium inline-flex items-center gap-1 text-[11px] py-0.5">
+                    {score}% Match
+                  </Badge>
+                )
+              )}
+              <Badge 
+                className={`${getStatusColor(application.status)} flex-shrink-0 shadow-xs inline-flex`}
+                style={{
+                  padding: 'clamp(0.25rem, 0.5vw, 0.375rem) clamp(0.5rem, 0.8vw, 0.75rem)',
+                  fontSize: 'clamp(0.6875rem, 0.9vw, 0.8125rem)'
+                }}
+                variant="outline"
+              >
+                {getStatusLabel(application.status)}
+              </Badge>
+            </div>
           </div>
 
           <h3 
@@ -684,6 +793,37 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
           >
             {application.jobTitle}
           </h3>
+
+          {/* Criteria Assessment Breakdown Tags */}
+          {((application.matchingCriteria && application.matchingCriteria.length > 0) || (application.unmetCriteria && application.unmetCriteria.length > 0)) && (
+            <div className="mb-3 p-2 rounded-lg bg-slate-50/90 dark:bg-gray-800/80 border border-slate-200/80 dark:border-gray-700/80 space-y-1.5">
+              <div className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center justify-between">
+                <span className="flex items-center gap-1">
+                  <SlidersHorizontal className="w-3 h-3 text-teal-600" />
+                  Criteria Assessment
+                </span>
+                {score > 0 && (
+                  <span className={isEligible ? "text-emerald-700 dark:text-emerald-400 font-extrabold" : "text-amber-700 dark:text-amber-400 font-bold"}>
+                    {score}/100 Score
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1">
+                {application.matchingCriteria?.map((item, idx) => (
+                  <span key={`m-${idx}`} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                    <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                    {item}
+                  </span>
+                ))}
+                {application.unmetCriteria?.map((item, idx) => (
+                  <span key={`u-${idx}`} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-rose-50 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                    <XCircle className="w-3 h-3 text-rose-500 flex-shrink-0" />
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Meta Info Grid */}
           <div 
@@ -733,6 +873,37 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                 {application.candidateYearsExperience != null
                   ? `${application.candidateYearsExperience >= 2 ? '🎯 ' : ''}${application.candidateYearsExperience} yr${application.candidateYearsExperience === 1 ? '' : 's'} exp`
                   : 'Exp not specified'}
+              </span>
+            </div>
+
+            {/* Medical Registration Info */}
+            <div className="flex items-center gap-2 min-w-0">
+              <div 
+                className="flex-shrink-0 rounded-md bg-gray-100 dark:bg-gray-700/50 flex items-center justify-center"
+                style={{
+                  width: 'clamp(1.75rem, 2.5vw, 2rem)',
+                  height: 'clamp(1.75rem, 2.5vw, 2rem)'
+                }}
+              >
+                <ShieldCheck 
+                  className={application.candidateRegistrationNumber ? "text-emerald-600 dark:text-emerald-400" : "text-amber-500"} 
+                  style={{ width: 'clamp(0.875rem, 1.2vw, 1rem)', height: 'clamp(0.875rem, 1.2vw, 1rem)' }}
+                />
+              </div>
+              <span 
+                className="truncate text-gray-700 dark:text-gray-300"
+                style={{ fontSize: 'clamp(0.75rem, 1vw, 0.875rem)' }}
+              >
+                {application.candidateRegistrationNumber ? (
+                  <span className="font-semibold text-emerald-700 dark:text-emerald-300">
+                    Reg: {application.candidateRegistrationNumber}
+                    {application.candidateRegistrationCouncil ? ` (${application.candidateRegistrationCouncil})` : ''}
+                  </span>
+                ) : (
+                  <span className="text-amber-600 dark:text-amber-400 font-medium">
+                    Reg: Not provided
+                  </span>
+                )}
               </span>
             </div>
 
@@ -986,7 +1157,8 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
         </div>
       </div>
     </Card>
-  );
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -1063,6 +1235,108 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
 
           {/* Main Content */}
           <main className="flex-1 min-w-0">
+            {/* Job Eligibility & Recruitment Overview Banner */}
+            {(selectedJob || eligibilitySummary) && (
+              <Card className="mb-4 sm:mb-6 p-4 sm:p-5 border-l-4 border-l-teal-600 bg-gradient-to-r from-teal-50/80 via-emerald-50/40 to-white dark:from-teal-950/40 dark:via-emerald-950/20 dark:to-gray-800 shadow-xs rounded-xl">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-teal-800 dark:text-teal-300 bg-teal-100 dark:bg-teal-900/60 px-2 py-0.5 rounded">
+                        {selectedJob ? 'Target Job Eligibility Criteria' : 'Applications Overview'}
+                      </span>
+                      {selectedJob?.organization && (
+                        <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                          {selectedJob.organization}
+                        </span>
+                      )}
+                    </div>
+                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate">
+                      {selectedJob?.title || eligibilitySummary?.jobTitle || 'All Candidates Across Jobs'}
+                    </h2>
+
+                    {/* Criteria Chips */}
+                    <div className="flex items-center gap-1.5 flex-wrap mt-2">
+                      {eligibilitySummary?.jobCriteria?.qualifications && eligibilitySummary.jobCriteria.qualifications.length > 0 && (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                          <GraduationCap className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+                          Req: {eligibilitySummary.jobCriteria.qualifications.join(' / ')}
+                        </span>
+                      )}
+                      {eligibilitySummary?.jobCriteria?.speciality && (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-md bg-purple-50 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
+                          <Stethoscope className="w-3.5 h-3.5 text-purple-600 flex-shrink-0" />
+                          {eligibilitySummary.jobCriteria.speciality}
+                        </span>
+                      )}
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                        <Clock className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+                        Min Exp: {eligibilitySummary?.jobCriteria?.minExperience ? `${eligibilitySummary.jobCriteria.minExperience}+ Years` : 'Fresher / Any'}
+                      </span>
+                      {eligibilitySummary?.jobCriteria?.registrationRequired && (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                          State Reg Required
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Recruitment Metric Counters & 1-Click Toggle */}
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0">
+                    <div className="bg-white/90 dark:bg-gray-800/90 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-center min-w-[70px]">
+                      <div className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Total Apps</div>
+                      <div className="text-base font-bold text-gray-800 dark:text-gray-200">
+                        {eligibilitySummary?.totalApplications ?? applications.length}
+                      </div>
+                    </div>
+
+                    <div className={`px-3 py-1.5 rounded-lg border text-center min-w-[90px] transition-all ${
+                      filters.eligibleOnly 
+                        ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm' 
+                        : 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
+                    }`}>
+                      <div className={`text-[11px] font-bold ${filters.eligibleOnly ? 'text-emerald-100' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                        🎯 Eligible
+                      </div>
+                      <div className="text-base font-extrabold">
+                        {eligibilitySummary?.eligibleCount ?? applications.filter(a => a.isEligible).length}
+                      </div>
+                    </div>
+
+                    <div className="bg-white/90 dark:bg-gray-800/90 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-center min-w-[70px]">
+                      <div className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Shortlisted</div>
+                      <div className="text-base font-bold text-blue-600 dark:text-blue-400">
+                        {eligibilitySummary?.shortlistedCount ?? applications.filter(a => a.status === 'shortlisted').length}
+                      </div>
+                    </div>
+
+                    <Button
+                      size="sm"
+                      variant={filters.eligibleOnly ? "default" : "outline"}
+                      onClick={() => setFilters(prev => ({ ...prev, eligibleOnly: !prev.eligibleOnly }))}
+                      className={`h-9 px-3 text-xs sm:text-sm font-bold shadow-xs transition-all ${
+                        filters.eligibleOnly 
+                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-transparent' 
+                          : 'border-emerald-600 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
+                      }`}
+                    >
+                      {filters.eligibleOnly ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 mr-1.5" />
+                          Eligible Only Active
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
+                          Show Eligible ({eligibilitySummary?.eligibleCount ?? applications.filter(a => a.isEligible).length})
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            )}
+
             <Tabs defaultValue="all" className="w-full">
               <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <TabsList className="inline-flex h-9 sm:h-10 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800 p-1 text-gray-500 dark:text-gray-400">
@@ -1240,6 +1514,107 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
+                {/* Clinical Eligibility Assessment Card */}
+                <div className={`p-4 rounded-xl border ${
+                  selectedApplication.isEligible 
+                    ? 'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800' 
+                    : (selectedApplication.eligibilityScore ?? 0) >= 60 
+                    ? 'bg-amber-50/80 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800' 
+                    : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700'
+                }`}>
+                  <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                    <h3 className="font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 text-sm sm:text-base">
+                      <Award className={`w-5 h-5 ${selectedApplication.isEligible ? 'text-emerald-600' : 'text-amber-600'}`} />
+                      Eligibility &amp; Clinical Match Assessment
+                    </h3>
+                    {selectedApplication.isEligible ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-600 text-white shadow-xs">
+                        <Check className="w-3.5 h-3.5" /> 100% Eligible Candidate
+                      </span>
+                    ) : (selectedApplication.eligibilityScore ?? 0) > 0 ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-600 text-white shadow-xs">
+                        <AlertCircle className="w-3.5 h-3.5" /> {selectedApplication.eligibilityScore}% Match
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                        General Application
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Medical Attributes Breakdown Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs sm:text-sm">
+                    <div className="bg-white/90 dark:bg-gray-800/90 p-2.5 rounded-lg border border-gray-200/80 dark:border-gray-700">
+                      <div className="font-semibold text-gray-500 dark:text-gray-400 text-xs">Medical Qualification</div>
+                      <div className="font-bold text-gray-900 dark:text-gray-100 mt-0.5">
+                        {selectedApplication.candidateQualification || 'Not Specified'}
+                      </div>
+                    </div>
+
+                    <div className="bg-white/90 dark:bg-gray-800/90 p-2.5 rounded-lg border border-gray-200/80 dark:border-gray-700">
+                      <div className="font-semibold text-gray-500 dark:text-gray-400 text-xs">Clinical Experience</div>
+                      <div className="font-bold text-gray-900 dark:text-gray-100 mt-0.5">
+                        {selectedApplication.candidateYearsExperience != null ? `${selectedApplication.candidateYearsExperience} Years` : 'Not Specified'}
+                      </div>
+                    </div>
+
+                    <div className="bg-white/90 dark:bg-gray-800/90 p-2.5 rounded-lg border border-gray-200/80 dark:border-gray-700">
+                      <div className="font-semibold text-gray-500 dark:text-gray-400 text-xs">Registration Number</div>
+                      <div className="font-bold mt-0.5">
+                        {selectedApplication.candidateRegistrationNumber ? (
+                          <span className="text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
+                            <ShieldCheck className="w-4 h-4 text-emerald-600 inline" />
+                            {selectedApplication.candidateRegistrationNumber}
+                          </span>
+                        ) : (
+                          <span className="text-amber-600">No Registration Provided</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="bg-white/90 dark:bg-gray-800/90 p-2.5 rounded-lg border border-gray-200/80 dark:border-gray-700">
+                      <div className="font-semibold text-gray-500 dark:text-gray-400 text-xs">Registration Council</div>
+                      <div className="font-bold text-gray-900 dark:text-gray-100 mt-0.5">
+                        {selectedApplication.candidateRegistrationCouncil || 'Not Specified'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Met vs Missing Criteria Tags */}
+                  {((selectedApplication.matchingCriteria && selectedApplication.matchingCriteria.length > 0) || (selectedApplication.unmetCriteria && selectedApplication.unmetCriteria.length > 0)) && (
+                    <div className="mt-3 pt-3 border-t border-gray-200/60 dark:border-gray-700/60 space-y-2">
+                      {selectedApplication.matchingCriteria && selectedApplication.matchingCriteria.length > 0 && (
+                        <div>
+                          <div className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider mb-1">
+                            Met Criteria:
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {selectedApplication.matchingCriteria.map((c, i) => (
+                              <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300">
+                                <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" /> {c}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {selectedApplication.unmetCriteria && selectedApplication.unmetCriteria.length > 0 && (
+                        <div>
+                          <div className="text-[11px] font-bold text-rose-800 dark:text-rose-300 uppercase tracking-wider mb-1">
+                            Review Required / Unmet:
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {selectedApplication.unmetCriteria.map((c, i) => (
+                              <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300">
+                                <XCircle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" /> {c}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {/* Candidate Information */}
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
                   <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2 text-sm sm:text-base">

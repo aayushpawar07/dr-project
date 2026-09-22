@@ -75,6 +75,7 @@
 .medex-applicant-identity {
   min-width: 0 !important;
   padding: 0 !important;
+  overflow: hidden !important;
 }
 
 .medex-applicant-name,
@@ -91,6 +92,9 @@
   letter-spacing: -0.02em !important;
   line-height: 1.25 !important;
   text-transform: capitalize !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 .medex-applicant-role {
@@ -99,6 +103,9 @@
   font-size: 0.84rem !important;
   font-weight: 600 !important;
   line-height: 1.35 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 .medex-applicant-status {

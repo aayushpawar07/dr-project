@@ -124,13 +124,12 @@ function enhanceCard(card: HTMLElement) {
       ? Array.from(avatarWrapper.querySelectorAll<HTMLElement>("div")).find(
           (element) =>
             element.classList.contains("rounded-full") &&
-            element.classList.contains("items-center") &&
-            cleanText(element.textContent).length === 1,
+            element.classList.contains("items-center"),
         )
       : null;
     avatar?.classList.add("medex-applicant-avatar");
 
-    if (avatarWrapper) {
+    if (avatarWrapper && avatar) {
       Array.from(avatarWrapper.children).forEach((child) => {
         if (child !== avatar) (child as HTMLElement).classList.add("medex-applicant-avatar-badge");
       });

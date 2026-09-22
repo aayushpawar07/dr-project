@@ -683,7 +683,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
     return (
     <Card 
       key={application.id} 
-      className={`group relative overflow-hidden bg-white dark:bg-gray-800 ${borderClass} hover:shadow-lg transition-all duration-200 ease-out hover:-translate-y-0.5 flex flex-col medex-applicant-card h-full`}
+      className="group relative overflow-hidden bg-white dark:bg-gray-800 border-l-4 border-l-blue-500 dark:border-l-blue-600 hover:border-l-blue-600 dark:hover:border-l-blue-500 hover:shadow-lg transition-all duration-200 ease-out hover:-translate-y-0.5 flex flex-col medex-applicant-card h-full"
       style={{
         borderRadius: 'clamp(0.5rem, 0.8vw, 0.75rem)',
         boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
@@ -707,20 +707,14 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
             <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
               <div className="relative flex-shrink-0">
                 <div 
-                  className={`rounded-full flex items-center justify-center shadow-sm group-hover:shadow transition-shadow ${
-                    isEligible
-                      ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white'
-                      : score >= 60
-                      ? 'bg-gradient-to-br from-amber-500 to-yellow-600 text-white'
-                      : 'bg-gradient-to-br from-blue-500 to-blue-600 text-white'
-                  }`}
+                  className="bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 rounded-full flex items-center justify-center shadow-sm group-hover:shadow transition-shadow"
                   style={{
                     width: 'clamp(2.5rem, 4vw, 3.5rem)',
                     height: 'clamp(2.5rem, 4vw, 3.5rem)'
                   }}
                 >
                   <span 
-                    className="font-semibold text-white"
+                    className="text-white font-semibold"
                     style={{ fontSize: 'clamp(1rem, 1.5vw, 1.5rem)' }}
                   >
                     {application.candidateName?.charAt(0)?.toUpperCase() || 'A'}
@@ -729,7 +723,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               </div>
               <div className="flex-1 min-w-0">
                 <h2 
-                  className="font-bold text-gray-900 dark:text-gray-100 truncate group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors"
+                  className="font-bold text-gray-900 dark:text-gray-100 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
                   style={{ fontSize: 'clamp(0.9375rem, 1.3vw, 1.125rem)' }}
                 >
                   {application.candidateName || 'Unknown Candidate'}
@@ -746,7 +740,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                 </p>
                 {(application.candidateQualification || application.candidateSpeciality) && (
                   <p 
-                    className="text-xs font-semibold text-teal-700 dark:text-teal-300 truncate mt-0.5"
+                    className="text-xs font-semibold text-teal-600 dark:text-teal-400 truncate mt-0.5"
                     style={{ fontSize: 'clamp(0.72rem, 0.95vw, 0.82rem)' }}
                   >
                     {[application.candidateQualification, application.candidateSpeciality].filter(Boolean).join(' • ')}
@@ -754,11 +748,34 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                 )}
               </div>
             </div>
+            <Badge 
+              className={`${getStatusColor(application.status)} flex-shrink-0 shadow-xs inline-flex`}
+              style={{
+                padding: 'clamp(0.25rem, 0.5vw, 0.375rem) clamp(0.5rem, 0.8vw, 0.75rem)',
+                fontSize: 'clamp(0.6875rem, 0.9vw, 0.8125rem)'
+              }}
+              variant="outline"
+            >
+              {getStatusLabel(application.status)}
+            </Badge>
+          </div>
 
-            {/* Badges Container: Eligibility + Status */}
-            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1.5 flex-shrink-0">
-              {score > 0 && (
-                isEligible ? (
+          <h3 
+            className="font-semibold text-gray-900 dark:text-gray-100 mb-2 md:mb-3 line-clamp-2 leading-snug"
+            style={{ fontSize: 'clamp(0.8125rem, 1.1vw, 0.9375rem)' }}
+          >
+            {application.jobTitle}
+          </h3>
+
+          {/* Eligibility Score & Criteria Assessment */}
+          {score > 0 && (
+            <div className="mb-3 p-2 rounded-lg bg-slate-50/90 dark:bg-gray-800/80 border border-slate-200/80 dark:border-gray-700/80">
+              <div className="flex items-center justify-between gap-1 mb-1.5">
+                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-teal-600 flex-shrink-0" />
+                  Eligibility Match:
+                </span>
+                {isEligible ? (
                   <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-700 font-bold inline-flex items-center gap-1 shadow-2xs text-[11px] py-0.5">
                     <CheckCircle className="w-3 h-3 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                     100% Eligible
@@ -772,56 +789,26 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                   <Badge className="bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-400 font-medium inline-flex items-center gap-1 text-[11px] py-0.5">
                     {score}% Match
                   </Badge>
-                )
-              )}
-              <Badge 
-                className={`${getStatusColor(application.status)} flex-shrink-0 shadow-xs inline-flex`}
-                style={{
-                  padding: 'clamp(0.25rem, 0.5vw, 0.375rem) clamp(0.5rem, 0.8vw, 0.75rem)',
-                  fontSize: 'clamp(0.6875rem, 0.9vw, 0.8125rem)'
-                }}
-                variant="outline"
-              >
-                {getStatusLabel(application.status)}
-              </Badge>
-            </div>
-          </div>
-
-          <h3 
-            className="font-semibold text-gray-900 dark:text-gray-100 mb-2 md:mb-3 line-clamp-2 leading-snug"
-            style={{ fontSize: 'clamp(0.8125rem, 1.1vw, 0.9375rem)' }}
-          >
-            {application.jobTitle}
-          </h3>
-
-          {/* Criteria Assessment Breakdown Tags */}
-          {((application.matchingCriteria && application.matchingCriteria.length > 0) || (application.unmetCriteria && application.unmetCriteria.length > 0)) && (
-            <div className="mb-3 p-2 rounded-lg bg-slate-50/90 dark:bg-gray-800/80 border border-slate-200/80 dark:border-gray-700/80 space-y-1.5">
-              <div className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center justify-between">
-                <span className="flex items-center gap-1">
-                  <SlidersHorizontal className="w-3 h-3 text-teal-600" />
-                  Criteria Assessment
-                </span>
-                {score > 0 && (
-                  <span className={isEligible ? "text-emerald-700 dark:text-emerald-400 font-extrabold" : "text-amber-700 dark:text-amber-400 font-bold"}>
-                    {score}/100 Score
-                  </span>
                 )}
               </div>
-              <div className="flex flex-wrap gap-1">
-                {application.matchingCriteria?.map((item, idx) => (
-                  <span key={`m-${idx}`} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                    <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-                    {item}
-                  </span>
-                ))}
-                {application.unmetCriteria?.map((item, idx) => (
-                  <span key={`u-${idx}`} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold bg-rose-50 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-                    <XCircle className="w-3 h-3 text-rose-500 flex-shrink-0" />
-                    {item}
-                  </span>
-                ))}
-              </div>
+
+              {/* Compact Met & Unmet Criteria Badges */}
+              {((application.matchingCriteria && application.matchingCriteria.length > 0) || (application.unmetCriteria && application.unmetCriteria.length > 0)) && (
+                <div className="flex flex-wrap gap-1 pt-1.5 border-t border-slate-200/70 dark:border-gray-700/70">
+                  {application.matchingCriteria?.map((item, idx) => (
+                    <span key={`m-${idx}`} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                      <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                      {item}
+                    </span>
+                  ))}
+                  {application.unmetCriteria?.map((item, idx) => (
+                    <span key={`u-${idx}`} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium bg-rose-50 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                      <XCircle className="w-3 h-3 text-rose-500 flex-shrink-0" />
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -1162,7 +1149,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
+      <div className="container mx-auto 2xl:max-w-[1600px] xl:max-w-[1400px] px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
         {/* Header - Responsive */}
         <div className="mb-4 sm:mb-5">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
@@ -1224,7 +1211,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
         {/* Main Content Area - Responsive Grid Layout */}
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 items-start">
           {/* Desktop Sidebar Filters */}
-          <aside className="hidden lg:block lg:w-64 xl:w-80 flex-shrink-0">
+          <aside className="hidden lg:block lg:w-64 xl:w-72 flex-shrink-0">
             <div className="sticky top-4">
               <Card className="p-4">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Filters</h3>

@@ -43,6 +43,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [isInterviewDialogOpen, setIsInterviewDialogOpen] = useState(false);
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [expandedEligibility, setExpandedEligibility] = useState<Record<string, boolean>>({});
   const [availableJobs, setAvailableJobs] = useState<{ id: string; title: string; organization?: string }[]>([]);
   const [eligibilitySummary, setEligibilitySummary] = useState<JobEligibilitySummary | null>(null);
@@ -1129,7 +1130,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
   };
 
   return (
-    <div className="admin-applications-page min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className={`admin-applications-page view-${viewMode} min-h-screen bg-gray-50 dark:bg-gray-900`}>
       <div className="admin-applications-page__container container mx-auto 2xl:max-w-[1600px] xl:max-w-[1400px] px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
         {/* Header - Responsive */}
         <div className="admin-applications-page__header mb-4 sm:mb-5">
@@ -1143,7 +1144,12 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
             </div>
             <div className="admin-applications-page__global-search">
               <Search className="w-4 h-4" />
-              <input aria-label="Search candidates, job posts, skills, email" placeholder="Search candidates, job posts, skills, email..." />
+              <input
+                aria-label="Search candidates, job posts, skills, email"
+                placeholder="Search candidates, job posts, skills, email..."
+                value={filters.search}
+                onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+              />
             </div>
             <div className="admin-applications-page__account">
               <button type="button" className="admin-applications-page__notification" aria-label="Notifications">
@@ -1357,9 +1363,34 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                   </TabsTrigger>
                 </TabsList>
                 <div className="admin-applications-page__view-tools hidden sm:flex">
-                  <Button variant="outline" size="sm"><ArrowUpDown className="w-3.5 h-3.5 mr-1.5" /> Sort: Eligibility Match <ChevronDown className="w-3.5 h-3.5 ml-1" /></Button>
-                  <Button variant="default" size="icon" aria-label="Grid view"><Grid2X2 className="w-4 h-4" /></Button>
-                  <Button variant="outline" size="icon" aria-label="List view"><List className="w-4 h-4" /></Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setFilters(prev => ({
+                      ...prev,
+                      sortBy: prev.sortBy === 'eligibility' ? 'appliedDate' : 'eligibility'
+                    }))}
+                  >
+                    <ArrowUpDown className="w-3.5 h-3.5 mr-1.5" />
+                    Sort: {filters.sortBy === 'eligibility' ? 'Eligibility Match' : 'Applied Date'}
+                    <ChevronDown className="w-3.5 h-3.5 ml-1" />
+                  </Button>
+                  <Button
+                    variant={viewMode === 'grid' ? 'default' : 'outline'}
+                    size="icon"
+                    aria-label="Grid view"
+                    onClick={() => setViewMode('grid')}
+                  >
+                    <Grid2X2 className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant={viewMode === 'list' ? 'default' : 'outline'}
+                    size="icon"
+                    aria-label="List view"
+                    onClick={() => setViewMode('list')}
+                  >
+                    <List className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
 

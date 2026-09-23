@@ -1,0 +1,218 @@
+/* Premium directory presentation for the admin healthcare directory. */
+.admin-users-page {
+  --directory-ink: #102a43;
+  --directory-blue: #0878e8;
+  --directory-blue-dark: #0755a6;
+  --directory-line: #d9e8f5;
+  background:
+    radial-gradient(circle at 92% 0%, rgba(12, 142, 255, 0.09), transparent 28rem),
+    linear-gradient(180deg, #f5faff 0%, #eef5fb 48%, #f8fbfe 100%);
+  color: var(--directory-ink);
+}
+
+.admin-users-page__container {
+  max-width: 1480px !important;
+}
+
+.admin-users-page__header {
+  padding: 1.15rem 1.3rem 1.1rem;
+  border: 1px solid rgba(191, 216, 237, 0.9);
+  border-radius: 1.25rem;
+  background: linear-gradient(120deg, #ffffff 0%, #f5fbff 68%, #e9f5ff 100%);
+  box-shadow: 0 12px 32px rgba(25, 89, 137, 0.08);
+}
+
+.admin-users-page__header h1 {
+  color: #102a43;
+  letter-spacing: -0.035em;
+}
+
+.admin-users-page__header h1 > div {
+  background: linear-gradient(145deg, #167be8, #0753a0) !important;
+  border-radius: 0.9rem;
+  box-shadow: 0 9px 18px rgba(8, 120, 232, 0.24);
+}
+
+.admin-users-page__header button {
+  color: #1769aa;
+}
+
+.admin-users-page__header-actions > button {
+  border-color: #b9d7ef;
+  background: rgba(255, 255, 255, 0.84);
+}
+
+.admin-users-page__header-actions > button:last-child {
+  background: linear-gradient(135deg, #0c82ed, #0755a6) !important;
+  border: 0;
+  box-shadow: 0 7px 16px rgba(7, 85, 166, 0.2);
+}
+
+.admin-users-page__stats-grid > div {
+  min-height: 128px;
+  border-radius: 1.15rem !important;
+  border-width: 1px !important;
+  box-shadow: 0 8px 20px rgba(25, 89, 137, 0.08) !important;
+}
+
+.admin-users-page__stats-grid > div:hover {
+  box-shadow: 0 14px 28px rgba(25, 89, 137, 0.14) !important;
+}
+
+.admin-users-page__stats-grid > div > div:first-child > span {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+}
+
+.admin-users-page__stats-grid > div > div:first-child > div {
+  width: 2.7rem;
+  height: 2.7rem;
+  border-radius: 0.85rem;
+}
+
+.admin-users-page__toolbar {
+  border-color: #cfe2f2;
+  box-shadow: 0 10px 24px rgba(25, 89, 137, 0.07);
+}
+
+.admin-users-page__toolbar input,
+.admin-users-page__toolbar select {
+  border-color: #c9ddec;
+  background: #f8fcff;
+}
+
+.admin-users-page__toolbar input:focus,
+.admin-users-page__toolbar select:focus {
+  border-color: #1381e9;
+  box-shadow: 0 0 0 3px rgba(19, 129, 233, 0.13);
+}
+
+.admin-users-page__toolbar .border-t {
+  border-color: #e1edf7;
+}
+
+.admin-users-page__directory {
+  border-color: #cfe2f2 !important;
+  box-shadow: 0 12px 28px rgba(25, 89, 137, 0.09) !important;
+}
+
+.admin-users-page__directory > div:first-child {
+  background: linear-gradient(90deg, #f7fbff, #ffffff) !important;
+  border-bottom-color: #dceaf5 !important;
+}
+
+.admin-users-page__table thead tr {
+  background: linear-gradient(90deg, #0d4f85, #0878e8) !important;
+  color: #ffffff !important;
+}
+
+.admin-users-page__table thead th {
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+}
+
+.admin-users-page__table tbody tr {
+  border-left: 3px solid transparent;
+}
+
+.admin-users-page__table tbody tr:hover {
+  border-left-color: #1591ed;
+  background: #eef8ff !important;
+}
+
+.admin-users-page__table tbody td {
+  border-bottom: 1px solid #edf3f8;
+}
+
+.admin-users-page__table tbody td:first-child {
+  padding-left: 1rem;
+}
+
+.admin-users-page__mobile-list {
+  background: linear-gradient(180deg, #f1f8fe, #f8fbfe) !important;
+}
+
+.admin-users-page__mobile-list > div {
+  border-color: #cfe2f2 !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 7px 18px rgba(25, 89, 137, 0.08) !important;
+}
+
+.admin-users-page__mobile-list > div:active {
+  transform: scale(0.995);
+}
+
+@media (max-width: 767px) {
+  .admin-users-page {
+    padding-top: 0.75rem !important;
+    padding-bottom: 1.25rem !important;
+  }
+
+  .admin-users-page__header {
+    padding: 1rem;
+    border-radius: 1rem;
+  }
+
+  .admin-users-page__header h1 {
+    font-size: 1.35rem;
+    line-height: 1.2;
+  }
+
+  .admin-users-page__header h1 > div {
+    width: 2.65rem;
+    height: 2.65rem;
+  }
+
+  .admin-users-page__header-actions {
+    width: 100%;
+  }
+
+  .admin-users-page__header-actions > button {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .admin-users-page__stats-grid {
+    gap: 0.65rem !important;
+  }
+
+  .admin-users-page__stats-grid > div {
+    min-height: 108px;
+    padding: 0.85rem !important;
+  }
+
+  .admin-users-page__stats-grid > div > div:first-child > div {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .admin-users-page__stats-grid > div > div:first-child > div svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .admin-users-page__toolbar {
+    padding: 0.85rem !important;
+    border-radius: 1rem;
+  }
+
+  .admin-users-page__directory {
+    border-radius: 1rem !important;
+  }
+
+  .admin-users-page__directory > div:first-child {
+    padding: 0.9rem !important;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1100px) {
+  .admin-users-page__container {
+    max-width: none !important;
+  }
+
+  .admin-users-page__table {
+    min-width: 1040px !important;
+  }
+}

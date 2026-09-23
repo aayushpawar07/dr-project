@@ -64,6 +64,7 @@ import {
 } from '../api/adminUsers';
 import { toast } from 'sonner';
 import '../styles/candidate-profile-modal.css';
+import '../styles/admin-users-premium.css';
 
 interface AdminUsersPageProps {
   onNavigate: (page: string) => void;
@@ -636,11 +637,11 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 py-6 sm:py-8 px-3 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto space-y-5 sm:space-y-6">
+    <div className={`admin-users-page admin-users-page--${activeTab} min-h-screen py-6 sm:py-8 px-3 sm:px-6 lg:px-8`}>
+      <div className="admin-users-page__container max-w-7xl mx-auto space-y-5 sm:space-y-6">
 
         {/* Top Breadcrumb & Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="admin-users-page__header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <button
               onClick={() => onNavigate('dashboard/admin')}
@@ -674,7 +675,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+          <div className="admin-users-page__header-actions flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
             {activeTab === 'employer' && (
               <Button
                 variant="outline"
@@ -731,7 +732,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
         {/* Stat Cards Ribbon (Responsive: 2 columns on mobile, 4 columns on desktop) */}
         {activeTab === 'employer' ? (
           /* Healthcare Employers & Hospitals Stats (Reference Image 2) */
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="admin-users-page__stats-grid grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {/* Card 1: Total Hospitals */}
             <div
               onClick={() => { setEmployerCategory('all'); setCurrentPage(1); }}
@@ -954,7 +955,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
         )}
 
         {/* Search & Filter Toolbar Container (Matching Reference Image 1 & 2) */}
-        <div className="p-4 sm:p-5 bg-white border border-slate-200 shadow-xs rounded-2xl space-y-3.5">
+        <div className="admin-users-page__toolbar p-4 sm:p-5 bg-white border border-slate-200 shadow-xs rounded-2xl space-y-3.5">
           {/* Top Filter Inputs Row */}
           <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
             {/* Search Input with Clear Button */}
@@ -1209,7 +1210,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
         {/* Directory Listing Container */}
         {activeTab !== 'admin' ? (
-          <Card className="border border-slate-200/90 shadow-xs rounded-2xl overflow-hidden bg-white">
+          <Card className="admin-users-page__directory border border-slate-200/90 shadow-xs rounded-2xl overflow-hidden bg-white">
             {/* Table Header Description Bar */}
             <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white">
               <div>
@@ -1277,8 +1278,8 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
               <div>
                 {/* 1. DESKTOP & TABLET / IPAD VIEW (hidden on mobile, visible md and up) */}
                 {/* min-w-[980px] ensures iPad portrait or landscape NEVER squashes cells into 1-2 vertical characters! */}
-                <div className="hidden md:block overflow-x-auto w-full">
-                  <table className="w-full text-left border-collapse min-w-[980px]">
+                <div className="admin-users-page__table-wrap hidden md:block overflow-x-auto w-full">
+                  <table className="admin-users-page__table w-full text-left border-collapse min-w-[980px]">
                     <thead>
                       <tr
                         className="border-b border-slate-200 text-[11px] uppercase tracking-wider font-extrabold whitespace-nowrap"
@@ -1551,7 +1552,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                 </div>
 
                 {/* 2. MOBILE CARD VIEW (Reference Image 1: visible on mobile < md, hidden on md and up) */}
-                <div className="block md:hidden p-3 space-y-3 bg-slate-50/50">
+                <div className="admin-users-page__mobile-list block md:hidden p-3 space-y-3 bg-slate-50/50">
                   {paginatedDirectory.map((userItem) => {
                     const roleLower = String(userItem.role || '').toLowerCase();
                     const isCandidate = roleLower === 'candidate';

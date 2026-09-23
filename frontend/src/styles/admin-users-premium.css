@@ -91,6 +91,46 @@
   border-color: #e1edf7;
 }
 
+.admin-category-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid transparent;
+}
+
+.admin-category-pill--all {
+  border-color: #b9d8f5;
+}
+
+.admin-category-pill--hospital {
+  background: #eef5ff !important;
+  color: #2456a6 !important;
+  border-color: #c7daf8;
+}
+
+.admin-category-pill--college {
+  background: #f3efff !important;
+  color: #6d3cc5 !important;
+  border-color: #ded1ff;
+}
+
+.admin-category-pill--institute {
+  background: #ecfbf8 !important;
+  color: #0e8377 !important;
+  border-color: #bcebe2;
+}
+
+.admin-category-pill--other {
+  background: #fff6e8 !important;
+  color: #a65d09 !important;
+  border-color: #f7d59f;
+}
+
+.admin-category-pill:hover {
+  filter: brightness(0.97);
+  transform: translateY(-1px);
+}
+
 .admin-users-page__directory {
   border-color: #cfe2f2 !important;
   box-shadow: 0 12px 28px rgba(25, 89, 137, 0.09) !important;
@@ -124,10 +164,40 @@
 
 .admin-users-page__table tbody td {
   border-bottom: 1px solid #edf3f8;
+  vertical-align: middle;
 }
 
 .admin-users-page__table tbody td:first-child {
   padding-left: 1rem;
+}
+
+.admin-users-page__table tbody td:nth-child(2) {
+  min-width: 260px;
+}
+
+.admin-users-page__table tbody td:nth-child(3) {
+  min-width: 210px;
+}
+
+.admin-users-page__table tbody td:nth-child(4) {
+  min-width: 235px;
+}
+
+.admin-users-page__table tbody td:nth-child(5) {
+  min-width: 165px;
+}
+
+.admin-users-page__table tbody td:nth-child(6) {
+  min-width: 190px;
+}
+
+.admin-users-page__table td > div {
+  max-width: 100%;
+}
+
+.admin-users-page__table td .truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .admin-users-page__mobile-list {
@@ -142,6 +212,20 @@
 
 .admin-users-page__mobile-list > div:active {
   transform: scale(0.995);
+}
+
+.admin-users-page__mobile-list h3,
+.admin-users-page__mobile-list p,
+.admin-users-page__mobile-list span {
+  overflow-wrap: anywhere;
+}
+
+.admin-users-page__mobile-list .flex-wrap {
+  row-gap: 0.45rem;
+}
+
+.admin-users-page__mobile-list button {
+  min-height: 2.25rem;
 }
 
 @media (max-width: 767px) {
@@ -198,6 +282,13 @@
     border-radius: 1rem;
   }
 
+  .admin-users-page__toolbar .flex.items-center.gap-1\.5,
+  .admin-users-page__toolbar .flex.items-center.gap-2 {
+    max-width: 100%;
+    padding-bottom: 0.2rem;
+    scrollbar-width: thin;
+  }
+
   .admin-users-page__directory {
     border-radius: 1rem !important;
   }
@@ -213,6 +304,6 @@
   }
 
   .admin-users-page__table {
-    min-width: 1040px !important;
+    min-width: 1230px !important;
   }
 }

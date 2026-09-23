@@ -1059,62 +1059,62 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                 <button
                   type="button"
                   onClick={() => { setEmployerCategory('all'); setCurrentPage(1); }}
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
+                  className="admin-category-pill admin-category-pill--all px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
                   style={{
                     backgroundColor: employerCategory === 'all' ? '#2563eb' : '#f1f5f9',
                     color: employerCategory === 'all' ? '#ffffff' : '#475569',
                     boxShadow: employerCategory === 'all' ? '0 2px 6px rgba(37, 99, 235, 0.25)' : 'none',
                   }}
                 >
-                  All ({employerCount})
+                  <Building2 className="w-3.5 h-3.5" /> All ({employerCount})
                 </button>
                 <button
                   type="button"
                   onClick={() => { setEmployerCategory('hospital'); setCurrentPage(1); }}
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
+                  className="admin-category-pill admin-category-pill--hospital px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
                   style={{
                     backgroundColor: employerCategory === 'hospital' ? '#2563eb' : '#f1f5f9',
                     color: employerCategory === 'hospital' ? '#ffffff' : '#475569',
                     boxShadow: employerCategory === 'hospital' ? '0 2px 6px rgba(37, 99, 235, 0.25)' : 'none',
                   }}
                 >
-                  Hospitals ({hospitalCount})
+                  <Building2 className="w-3.5 h-3.5" /> Hospitals ({hospitalCount})
                 </button>
                 <button
                   type="button"
                   onClick={() => { setEmployerCategory('college'); setCurrentPage(1); }}
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
+                  className="admin-category-pill admin-category-pill--college px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
                   style={{
                     backgroundColor: employerCategory === 'college' ? '#2563eb' : '#f1f5f9',
                     color: employerCategory === 'college' ? '#ffffff' : '#475569',
                     boxShadow: employerCategory === 'college' ? '0 2px 6px rgba(37, 99, 235, 0.25)' : 'none',
                   }}
                 >
-                  Medical Colleges ({collegeCount})
+                  <GraduationCap className="w-3.5 h-3.5" /> Medical Colleges ({collegeCount})
                 </button>
                 <button
                   type="button"
                   onClick={() => { setEmployerCategory('institute'); setCurrentPage(1); }}
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
+                  className="admin-category-pill admin-category-pill--institute px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
                   style={{
                     backgroundColor: employerCategory === 'institute' ? '#2563eb' : '#f1f5f9',
                     color: employerCategory === 'institute' ? '#ffffff' : '#475569',
                     boxShadow: employerCategory === 'institute' ? '0 2px 6px rgba(37, 99, 235, 0.25)' : 'none',
                   }}
                 >
-                  Research Institutes ({instituteCount})
+                  <Award className="w-3.5 h-3.5" /> Research Institutes ({instituteCount})
                 </button>
                 <button
                   type="button"
                   onClick={() => { setEmployerCategory('other'); setCurrentPage(1); }}
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
+                  className="admin-category-pill admin-category-pill--other px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
                   style={{
                     backgroundColor: employerCategory === 'other' ? '#2563eb' : '#f1f5f9',
                     color: employerCategory === 'other' ? '#ffffff' : '#475569',
                     boxShadow: employerCategory === 'other' ? '0 2px 6px rgba(37, 99, 235, 0.25)' : 'none',
                   }}
                 >
-                  Others ({otherCount})
+                  <Layers className="w-3.5 h-3.5" /> Others ({otherCount})
                 </button>
               </div>
             ) : (

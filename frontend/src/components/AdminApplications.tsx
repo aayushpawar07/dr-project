@@ -25,6 +25,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { fetchJobsByEmployer, fetchAdminJobs, fetchJobs } from '../api/jobs';
 import { fetchEmployer } from '../api/employers';
 import { openFileInViewer } from '../utils/fileUtils';
+import "../styles/admin-applications-premium.css";
 
 interface AdminApplicationsProps {
   onNavigate: (page: string) => void;
@@ -1103,10 +1104,10 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="container mx-auto 2xl:max-w-[1600px] xl:max-w-[1400px] px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
+    <div className="admin-applications-page min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="admin-applications-page__container container mx-auto 2xl:max-w-[1600px] xl:max-w-[1400px] px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
         {/* Header - Responsive */}
-        <div className="mb-4 sm:mb-5">
+        <div className="admin-applications-page__header mb-4 sm:mb-5">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 mb-2">
@@ -1119,7 +1120,8 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                   <ArrowLeft className="w-5 h-5" />
                 </Button>
                 <div className="flex-1 min-w-0">
-                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-1.5 sm:mb-2">
+                  <h1 className="flex items-center gap-2.5 text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-1.5 sm:mb-2">
+                    <span className="admin-applications-page__title-icon"><Briefcase className="w-5 h-5 sm:w-6 sm:h-6" /></span>
                     Application Management
                   </h1>
                   <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
@@ -1164,21 +1166,21 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
         </div>
 
         {/* Main Content Area - Responsive Grid Layout */}
-        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 items-start">
+        <div className="admin-applications-page__layout flex flex-col lg:flex-row gap-4 lg:gap-6 items-start">
           {/* Desktop Sidebar Filters */}
-          <aside className="hidden lg:block lg:w-64 xl:w-72 flex-shrink-0">
+          <aside className="admin-applications-page__sidebar hidden lg:block lg:w-64 xl:w-72 flex-shrink-0">
             <div className="sticky top-4">
-              <Card className="p-4">
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">Filters</h3>
+              <Card className="admin-applications-page__filter-card p-4">
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4"><SlidersHorizontal className="w-4 h-4 text-blue-600" /> Filters</h3>
                 <FilterPanel />
               </Card>
             </div>
           </aside>
 
           {/* Main Content */}
-          <main className="flex-1 min-w-0">
+          <main className="admin-applications-page__main flex-1 min-w-0">
             {/* Job Eligibility & Recruitment Overview Banner */}
-            <div className="mb-4 bg-white dark:bg-gray-800 border border-slate-200/90 dark:border-gray-700 rounded-2xl p-4 sm:p-5 shadow-xs">
+            <div className="admin-applications-page__overview mb-4 bg-white dark:bg-gray-800 border border-slate-200/90 dark:border-gray-700 rounded-2xl p-4 sm:p-5 shadow-xs">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800 mb-1.5">
@@ -1259,7 +1261,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               </div>
             </div>
 
-            <Tabs defaultValue="all" className="w-full">
+            <Tabs defaultValue="all" className="admin-applications-page__tabs w-full">
               <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <TabsList className="inline-flex h-9 sm:h-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-gray-800 p-1 text-slate-600 dark:text-gray-400 border border-slate-200 dark:border-gray-700">
                   <TabsTrigger 

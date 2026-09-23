@@ -1,0 +1,212 @@
+.admin-applications-page {
+  --apps-ink: #102a43;
+  --apps-blue: #0878e8;
+  --apps-navy: #0c3b66;
+  --apps-line: #d7e7f4;
+  background:
+    radial-gradient(circle at 88% 0%, rgba(24, 140, 235, 0.1), transparent 28rem),
+    linear-gradient(180deg, #f5faff 0%, #eef6fc 55%, #f8fbfe 100%) !important;
+  color: var(--apps-ink);
+}
+
+.admin-applications-page__container {
+  max-width: 1560px !important;
+}
+
+.admin-applications-page__header {
+  padding: 1rem 1.25rem;
+  border: 1px solid rgba(193, 218, 238, 0.9);
+  border-radius: 1.25rem;
+  background: linear-gradient(120deg, #ffffff, #f4faff 72%, #e6f4ff);
+  box-shadow: 0 10px 28px rgba(27, 91, 138, 0.08);
+}
+
+.admin-applications-page__header h1 {
+  color: #102a43 !important;
+  letter-spacing: -0.035em;
+}
+
+.admin-applications-page__title-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.65rem;
+  height: 2.65rem;
+  flex: 0 0 auto;
+  border-radius: 0.85rem;
+  color: #ffffff;
+  background: linear-gradient(145deg, #167be8, #0753a0);
+  box-shadow: 0 8px 18px rgba(8, 120, 232, 0.25);
+}
+
+.admin-applications-page__header button {
+  border-color: #b9d7ef;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.admin-applications-page__filter-card {
+  border: 1px solid var(--apps-line) !important;
+  border-radius: 1rem !important;
+  background: linear-gradient(180deg, #ffffff, #f7fbff) !important;
+  box-shadow: 0 10px 24px rgba(27, 91, 138, 0.08) !important;
+}
+
+.admin-applications-page__filter-card h3 {
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e1edf7;
+  color: var(--apps-navy) !important;
+}
+
+.admin-applications-page__filter-card input,
+.admin-applications-page__filter-card select,
+.admin-applications-page__filter-card button[data-state] {
+  border-color: #c9ddec !important;
+  background: #f8fcff !important;
+  border-radius: 0.7rem !important;
+}
+
+.admin-applications-page__filter-card input:focus,
+.admin-applications-page__filter-card select:focus {
+  border-color: var(--apps-blue) !important;
+  box-shadow: 0 0 0 3px rgba(8, 120, 232, 0.12);
+}
+
+.admin-applications-page__overview {
+  border-color: var(--apps-line) !important;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(13, 148, 136, 0.08), transparent 18rem),
+    linear-gradient(110deg, #ffffff, #f5fbff) !important;
+  box-shadow: 0 12px 28px rgba(27, 91, 138, 0.09) !important;
+}
+
+.admin-applications-page__overview h2 {
+  color: #102a43 !important;
+  overflow-wrap: anywhere;
+}
+
+.admin-applications-page__overview > div > div:last-child > div {
+  border-color: #cfe2f2 !important;
+  box-shadow: 0 5px 14px rgba(27, 91, 138, 0.06);
+}
+
+.admin-applications-page__overview > div > div:last-child > div:nth-child(1) {
+  background: #eef6ff !important;
+}
+
+.admin-applications-page__overview > div > div:last-child > div:nth-child(2) {
+  background: #ecfbf7 !important;
+}
+
+.admin-applications-page__overview > div > div:last-child > div:nth-child(3) {
+  background: #f5efff !important;
+}
+
+.admin-applications-page__overview > div > div:last-child button {
+  border-color: #70b5f4 !important;
+  color: #0755a6 !important;
+  background: #f2f9ff !important;
+}
+
+.admin-applications-page__overview > div > div:last-child button:hover,
+.admin-applications-page__overview > div > div:last-child button.bg-blue-600 {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #0c82ed, #0755a6) !important;
+}
+
+.admin-applications-page__tabs [role="tablist"] {
+  border: 1px solid #cfe2f2;
+  background: #eaf4fb !important;
+  box-shadow: 0 5px 12px rgba(27, 91, 138, 0.05);
+}
+
+.admin-applications-page__tabs [role="tab"] {
+  min-height: 2.25rem;
+  color: #42647d !important;
+}
+
+.admin-applications-page__tabs [role="tab"][data-state="active"] {
+  background: #ffffff !important;
+  color: #0755a6 !important;
+  box-shadow: 0 4px 10px rgba(27, 91, 138, 0.12) !important;
+}
+
+.admin-applications-page .medex-applicant-grid {
+  align-items: stretch !important;
+}
+
+.admin-applications-page .medex-applicant-card {
+  min-width: 0 !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 8px 20px rgba(27, 91, 138, 0.08) !important;
+}
+
+.admin-applications-page .medex-applicant-card:hover {
+  box-shadow: 0 15px 30px rgba(27, 91, 138, 0.15) !important;
+}
+
+.admin-applications-page .medex-applicant-card-content {
+  min-width: 0 !important;
+}
+
+.admin-applications-page .medex-applicant-card-content * {
+  max-width: 100%;
+}
+
+.admin-applications-page .medex-applicant-meta-row,
+.admin-applications-page .medex-applicant-notes-copy {
+  overflow-wrap: anywhere;
+}
+
+.admin-applications-page .medex-applicant-footer {
+  gap: 0.5rem !important;
+}
+
+@media (max-width: 1023px) {
+  .admin-applications-page__header {
+    padding: 0.9rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .admin-applications-page {
+    padding-bottom: 1rem;
+  }
+
+  .admin-applications-page__header {
+    border-radius: 1rem;
+  }
+
+  .admin-applications-page__title-icon {
+    width: 2.35rem;
+    height: 2.35rem;
+  }
+
+  .admin-applications-page__overview {
+    padding: 0.9rem !important;
+    border-radius: 1rem !important;
+  }
+
+  .admin-applications-page__overview > div > div:last-child {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .admin-applications-page__overview > div > div:last-child button {
+    grid-column: 1 / -1;
+  }
+
+  .admin-applications-page .medex-applicant-grid {
+    gap: 0.85rem !important;
+  }
+
+  .admin-applications-page .medex-applicant-card {
+    border-radius: 0.9rem !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-applications-page * {
+    transition: none !important;
+  }
+}

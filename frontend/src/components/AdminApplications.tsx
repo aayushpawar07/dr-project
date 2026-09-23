@@ -41,6 +41,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [isInterviewDialogOpen, setIsInterviewDialogOpen] = useState(false);
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
+  const [expandedEligibility, setExpandedEligibility] = useState<Record<string, boolean>>({});
   const [availableJobs, setAvailableJobs] = useState<{ id: string; title: string; organization?: string }[]>([]);
   const [eligibilitySummary, setEligibilitySummary] = useState<JobEligibilitySummary | null>(null);
   const [filters, setFilters] = useState({
@@ -682,81 +683,50 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
     </div>
   );
 
+  const toggleEligibility = (appId: string) => {
+    setExpandedEligibility(prev => ({ ...prev, [appId]: !prev[appId] }));
+  };
+
   const renderApplicationCard = (application: ApplicationResponse) => {
     const isEligible = application.isEligible ?? false;
     const score = application.eligibilityScore ?? 0;
     
-    // Determine card theme & colors matching the mockup
-    // Card 1: 100% Eligible -> Emerald
-    // Card 2: Hired -> Sky blue
-    // Card 3: Interview -> Purple
-    // Card 4: Pending -> Amber
-    let borderThemeClass = 'card-border-purple border-[#d8b4fe]';
-    let avatarBgColor = '#2563eb';
-    let progressColorClass = 'bg-blue-600';
-    let stageTextColorClass = 'text-blue-600 dark:text-blue-400';
-    
-    // Left pill
-    let leftPillBg = 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/50 dark:text-purple-300 dark:border-purple-800';
-    let leftPillIcon = <User className="w-3.5 h-3.5" />;
-    let leftPillLabel = 'Interview';
-
-    // Right pill
-    let rightPillBg = 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/60 dark:text-purple-300 dark:border-purple-700';
-    let rightPillLabel = getStatusLabel(application.status);
+    // Status color mapping using Clean Professional Blue + Neutral Theme
+    // Primary: #2563EB | Success: #16A34A | Warning: #D97706 | Danger: #DC2626
+    let statusBadgeBg = 'bg-[#EFF6FF] text-[#2563EB] border-[#BFDBFE]';
+    let statusIcon = <User className="w-3 h-3 text-[#2563EB]" />;
+    let progressColorClass = 'bg-[#2563EB]';
+    let avatarBg = 'bg-[#EFF6FF] text-[#2563EB] border-[#BFDBFE]';
 
     if (application.status === 'hired') {
-      borderThemeClass = 'card-border-sky border-[#7dd3fc]';
-      avatarBgColor = '#2563eb';
-      progressColorClass = 'bg-emerald-500';
-      stageTextColorClass = 'text-emerald-600 dark:text-emerald-400';
-      leftPillBg = 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/50 dark:text-sky-300 dark:border-sky-800';
-      leftPillIcon = <Briefcase className="w-3.5 h-3.5" />;
-      leftPillLabel = 'Hired';
-      rightPillBg = 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/60 dark:text-emerald-300 dark:border-emerald-700';
-      rightPillLabel = 'Hired';
+      statusBadgeBg = 'bg-[#F0FDF4] text-[#16A34A] border-[#BBF7D0]';
+      statusIcon = <Briefcase className="w-3 h-3 text-[#16A34A]" />;
+      progressColorClass = 'bg-[#16A34A]';
+      avatarBg = 'bg-[#F0FDF4] text-[#16A34A] border-[#BBF7D0]';
     } else if (isEligible || score === 100) {
-      borderThemeClass = 'card-border-emerald border-[#86efac]';
-      avatarBgColor = '#059669';
-      progressColorClass = application.status === 'interview' ? 'bg-blue-600' : 'bg-emerald-500';
-      stageTextColorClass = application.status === 'interview' ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400';
-      leftPillBg = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800';
-      leftPillIcon = <User className="w-3.5 h-3.5" />;
-      leftPillLabel = getStatusLabel(application.status);
-      rightPillBg = application.status === 'interview' 
-        ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/60 dark:text-purple-300 dark:border-purple-700' 
-        : 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/60 dark:text-emerald-300 dark:border-emerald-700';
-      rightPillLabel = getStatusLabel(application.status);
+      statusBadgeBg = application.status === 'interview' 
+        ? 'bg-[#EFF6FF] text-[#2563EB] border-[#BFDBFE]' 
+        : 'bg-[#F0FDF4] text-[#16A34A] border-[#BBF7D0]';
+      statusIcon = application.status === 'interview' 
+        ? <User className="w-3 h-3 text-[#2563EB]" /> 
+        : <Check className="w-3 h-3 text-[#16A34A]" />;
+      progressColorClass = application.status === 'interview' ? 'bg-[#2563EB]' : 'bg-[#16A34A]';
+      avatarBg = 'bg-[#F0FDF4] text-[#16A34A] border-[#BBF7D0]';
     } else if (application.status === 'interview') {
-      borderThemeClass = 'card-border-purple border-[#d8b4fe]';
-      avatarBgColor = '#2563eb';
-      progressColorClass = 'bg-blue-600';
-      stageTextColorClass = 'text-blue-600 dark:text-blue-400';
-      leftPillBg = 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/50 dark:text-purple-300 dark:border-purple-800';
-      leftPillIcon = <User className="w-3.5 h-3.5" />;
-      leftPillLabel = 'Interview';
-      rightPillBg = 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/60 dark:text-purple-300 dark:border-purple-700';
-      rightPillLabel = 'Interview';
+      statusBadgeBg = 'bg-[#EFF6FF] text-[#2563EB] border-[#BFDBFE]';
+      statusIcon = <User className="w-3 h-3 text-[#2563EB]" />;
+      progressColorClass = 'bg-[#2563EB]';
+      avatarBg = 'bg-[#EFF6FF] text-[#2563EB] border-[#BFDBFE]';
     } else if (application.status === 'pending' || (score >= 40 && score < 100)) {
-      borderThemeClass = 'card-border-amber border-[#fde68a]';
-      avatarBgColor = '#d97706';
-      progressColorClass = 'bg-amber-500';
-      stageTextColorClass = 'text-amber-600 dark:text-amber-400';
-      leftPillBg = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800';
-      leftPillIcon = <Clock className="w-3.5 h-3.5" />;
-      leftPillLabel = 'Pending';
-      rightPillBg = 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/60 dark:text-amber-300 dark:border-amber-700';
-      rightPillLabel = 'Pending';
+      statusBadgeBg = 'bg-[#FFFBEB] text-[#D97706] border-[#FDE68A]';
+      statusIcon = <Clock className="w-3 h-3 text-[#D97706]" />;
+      progressColorClass = 'bg-[#D97706]';
+      avatarBg = 'bg-[#FFFBEB] text-[#D97706] border-[#FDE68A]';
     } else if (application.status === 'rejected') {
-      borderThemeClass = 'card-border-rose border-[#fecdd3]';
-      avatarBgColor = '#e11d48';
-      progressColorClass = 'bg-rose-500';
-      stageTextColorClass = 'text-rose-600 dark:text-rose-400';
-      leftPillBg = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800';
-      leftPillIcon = <XCircle className="w-3.5 h-3.5" />;
-      leftPillLabel = 'Rejected';
-      rightPillBg = 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/60 dark:text-rose-300 dark:border-rose-700';
-      rightPillLabel = 'Rejected';
+      statusBadgeBg = 'bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]';
+      statusIcon = <XCircle className="w-3 h-3 text-[#DC2626]" />;
+      progressColorClass = 'bg-[#DC2626]';
+      avatarBg = 'bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]';
     }
 
     // Eligibility Match tier & list
@@ -801,157 +771,199 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
     const isMediumTier = !isHighTier && (score >= 40 || application.status === 'pending');
     const tierLabel = isHighTier ? 'High' : isMediumTier ? 'Medium' : 'Low';
 
+    const isExpanded = !!expandedEligibility[application.id];
+    const maxInitialCriteria = 4;
+    const visibleCriteria = isExpanded ? criteriaItems : criteriaItems.slice(0, maxInitialCriteria);
+    const hasMoreCriteria = criteriaItems.length > maxInitialCriteria;
+
     return (
       <div 
         key={application.id} 
         data-medex-applicant-enhanced="v2"
-        className={`group relative bg-white dark:bg-gray-800 rounded-2xl border-[1.5px] ${borderThemeClass} hover:shadow-lg transition-all duration-200 flex flex-col medex-applicant-card h-full p-3 sm:p-3.5`}
+        className="group relative bg-white dark:bg-gray-800 rounded-xl border border-[#E2E8F0] dark:border-gray-700/80 hover:border-[#CBD5E1] dark:hover:border-gray-600 shadow-2xs hover:shadow-md transition-all duration-200 flex flex-col medex-applicant-card h-full p-3 sm:p-3.5 text-[#1E293B] dark:text-slate-100"
       >
-        {/* Top Header Row: Left Status Pill + Right Status Badge */}
+        {/* Top Header Row: Status Badge on left + Applied Date or Match Score on right */}
         <div className="flex items-center justify-between gap-1.5 mb-2">
-          <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${leftPillBg}`}>
-            {leftPillIcon}
-            <span>{leftPillLabel}</span>
+          <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${statusBadgeBg}`}>
+            {statusIcon}
+            <span>{getStatusLabel(application.status)}</span>
           </div>
-          <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${rightPillBg}`}>
-            <span>{rightPillLabel}</span>
-          </div>
+          {isHighTier ? (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#16A34A] bg-[#F0FDF4] border border-[#BBF7D0] px-2 py-0.5 rounded-full">
+              ★ {isEligible || score === 100 ? '100% Eligible' : `${score}% Match`}
+            </span>
+          ) : (
+            <span className="text-[11px] text-[#64748B] dark:text-slate-400 font-medium">
+              {formatDate(application.appliedDate)}
+            </span>
+          )}
         </div>
 
-        {/* Profile Row: Avatar, Candidate Name, Email, Gender */}
-        <div className="flex items-center gap-2.5 mb-2">
+        {/* Profile Row: Avatar, Candidate Name, Email, Gender/Exp */}
+        <div className="flex items-center gap-2 mb-2">
           <div className="medex-applicant-avatar-wrapper flex-shrink-0">
             <div 
-              className="medex-applicant-avatar rounded-full flex items-center justify-center text-white font-bold text-base shadow-xs"
-              style={{ backgroundColor: avatarBgColor, width: '40px', height: '40px', minWidth: '40px', minHeight: '40px' }}
+              className={`medex-applicant-avatar rounded-full flex items-center justify-center font-bold text-xs border ${avatarBg}`}
+              style={{ width: '36px', height: '36px', minWidth: '36px', minHeight: '36px' }}
             >
               {application.candidateName?.charAt(0)?.toUpperCase() || 'A'}
             </div>
           </div>
           <div className="min-w-0 flex-1 overflow-hidden">
             <h3 
-              className="font-bold text-slate-900 dark:text-slate-100 text-[14px] truncate leading-tight"
+              className="font-bold text-[#1E293B] dark:text-slate-100 text-[13.5px] truncate leading-tight"
               title={application.candidateName || 'Unknown Candidate'}
             >
               {application.candidateName || 'Unknown Candidate'}
             </h3>
             <p 
-              className="text-xs text-slate-500 dark:text-slate-400 truncate flex items-center gap-1 mt-0.5"
+              className="text-[11px] text-[#64748B] dark:text-slate-400 truncate flex items-center gap-1 mt-0.5"
               title={application.candidateEmail}
             >
-              <Mail className="w-3 h-3 text-slate-400 flex-shrink-0" />
+              <Mail className="w-3 h-3 text-[#64748B] flex-shrink-0" />
               <span className="truncate">{application.candidateEmail}</span>
             </p>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1.5 mt-0.5">
+            <p className="text-[11px] text-[#64748B] dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
               <span>♂ {application.candidateGender || 'M'}</span>
-              {application.candidateYearsExperience != null && (
-                <>
-                  <span>•</span>
-                  <span>{application.candidateYearsExperience} Yrs Exp</span>
-                </>
-              )}
+              <span>•</span>
+              <span>{application.candidateYearsExperience != null ? `${application.candidateYearsExperience} Yrs Exp` : 'Fresher'}</span>
             </p>
           </div>
         </div>
 
-        {/* Degree & Speciality + Applied Job Title Strip */}
-        <div className="space-y-1 mb-2">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-slate-100 truncate" title={[application.candidateQualification, application.candidateSpeciality].filter(Boolean).join(' - ')}>
-            <GraduationCap className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+        {/* Qualification & Applied Job Strip - Clean text, no nested card border */}
+        <div className="space-y-0.5 mb-2">
+          <div 
+            className="flex items-center gap-1.5 text-xs font-semibold text-[#1E293B] dark:text-slate-200 truncate" 
+            title={[application.candidateQualification, application.candidateSpeciality].filter(Boolean).join(' - ') || 'Medical Practitioner'}
+          >
+            <GraduationCap className="w-3.5 h-3.5 text-[#2563EB] flex-shrink-0" />
             <span className="truncate">
               {[application.candidateQualification, application.candidateSpeciality].filter(Boolean).join(' - ') || 'Medical Practitioner'}
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-blue-700 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-950/40 rounded-lg px-2.5 py-1 border border-blue-100/80 dark:border-blue-900/60 truncate" title={application.jobTitle}>
-            <Briefcase className="w-3 h-3 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+          <div 
+            className="flex items-center gap-1.5 text-[11px] font-medium text-[#2563EB] dark:text-blue-400 truncate" 
+            title={application.jobTitle}
+          >
+            <Briefcase className="w-3 h-3 text-[#2563EB] flex-shrink-0" />
             <span className="truncate">{application.jobTitle}</span>
           </div>
         </div>
 
-        {/* Compact Eligibility Match Box */}
-        <div className={`p-2 rounded-xl border text-xs mb-2 ${
+        {/* Compact Eligibility Match Box - Light background, subtle border, tight 2-column layout */}
+        <div className={`p-2 rounded-lg mb-2 text-xs transition-all ${
           isHighTier 
-            ? 'bg-emerald-50/35 dark:bg-emerald-950/20 border-emerald-200/70 dark:border-emerald-800/40' 
+            ? 'bg-[#F0FDF4]/70 dark:bg-emerald-950/20' 
             : isMediumTier
-            ? 'bg-amber-50/35 dark:bg-amber-950/20 border-amber-200/70 dark:border-amber-800/40'
-            : 'bg-rose-50/35 dark:bg-rose-950/20 border-rose-200/70 dark:border-rose-800/40'
+            ? 'bg-[#FFFBEB]/70 dark:bg-amber-950/20'
+            : 'bg-[#FEF2F2]/70 dark:bg-rose-950/20'
         }`}>
-          <div className="flex items-center justify-between gap-1 mb-1.5">
-            <span className="text-[11px] font-bold flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+          <div className="flex items-center justify-between gap-1 mb-1">
+            <span className="text-[11px] font-bold flex items-center gap-1 text-[#1E293B] dark:text-slate-200">
               <Star className={`w-3 h-3 fill-current ${
-                isHighTier ? 'text-emerald-600' : isMediumTier ? 'text-amber-500' : 'text-rose-500'
+                isHighTier ? 'text-[#16A34A]' : isMediumTier ? 'text-[#D97706]' : 'text-[#DC2626]'
               }`} />
               Eligibility Match
             </span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+            <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold border ${
               isHighTier 
-                ? 'bg-emerald-100/90 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300' 
+                ? 'bg-[#F0FDF4] text-[#16A34A] border-[#BBF7D0]' 
                 : isMediumTier
-                ? 'bg-amber-100/90 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'
-                : 'bg-rose-100/90 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300'
+                ? 'bg-[#FFFBEB] text-[#D97706] border-[#FDE68A]'
+                : 'bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]'
             }`}>
               {tierLabel}
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[11px]">
-            {criteriaItems.map((item, idx) => {
-              const isOddLast = idx === criteriaItems.length - 1 && criteriaItems.length % 2 !== 0;
-              return (
-                <div 
-                  key={idx} 
-                  className={`flex items-center gap-1 min-w-0 ${isOddLast ? 'col-span-2' : ''}`}
-                  title={item.text}
-                >
-                  <Check className={`w-3 h-3 flex-shrink-0 ${item.met ? 'text-emerald-600' : 'text-amber-600'}`} />
-                  <span className="text-slate-700 dark:text-slate-300 text-[11px] truncate font-medium">
-                    {item.text}
-                  </span>
-                </div>
-              );
-            })}
+          <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px]">
+            {visibleCriteria.map((item, idx) => (
+              <div 
+                key={idx} 
+                className="flex items-center gap-1 min-w-0"
+                title={item.text}
+              >
+                <Check className={`w-3 h-3 flex-shrink-0 ${item.met ? 'text-[#16A34A]' : 'text-[#D97706]'}`} />
+                <span className="text-[#1E293B] dark:text-slate-300 text-[11px] truncate font-normal">
+                  {item.text}
+                </span>
+              </div>
+            ))}
           </div>
+
+          {hasMoreCriteria && (
+            <div className="mt-1 pt-1 border-t border-[#E2E8F0]/70 dark:border-gray-700/60 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleEligibility(application.id);
+                }}
+                className="text-[10px] font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline transition-colors cursor-pointer"
+              >
+                {isExpanded ? 'Show less' : `+${criteriaItems.length - maxInitialCriteria} more details`}
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedApplication(application);
+                  setIsViewDialogOpen(true);
+                }}
+                className="text-[10px] font-medium text-[#64748B] hover:text-[#1E293B] hover:underline transition-colors cursor-pointer"
+              >
+                View full
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Hospital & Metadata Sub-Card */}
-        <div className="bg-white dark:bg-gray-800/90 border border-slate-200/90 dark:border-gray-700/80 rounded-xl p-2 mb-2 shadow-2xs">
-          <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
+        {/* Company, Location, Registration, Applied Date - Subtle divider, NO enclosed border */}
+        <div className="pt-1.5 border-t border-[#E2E8F0] dark:border-gray-700/70 mb-2 space-y-1 text-[11px]">
+          <div className="grid grid-cols-2 gap-x-2">
             {/* Hospital */}
-            <div className="flex items-center gap-1 min-w-0" title={application.jobOrganization}>
-              <Building2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-              <span className="font-semibold text-slate-800 dark:text-slate-200 truncate text-[11px]">
+            <div className="flex items-center gap-1 min-w-0" title={application.jobOrganization || 'Organization'}>
+              <Building2 className="w-3 h-3 text-[#64748B] flex-shrink-0" />
+              <span className="font-medium text-[#1E293B] dark:text-slate-200 truncate">
                 {application.jobOrganization || 'Organization'}
               </span>
             </div>
             {/* Location */}
-            <div className="flex items-center gap-1 min-w-0" title={[application.candidateCity, application.candidateState].filter(Boolean).join(', ')}>
-              <MapPin className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-              <span className="text-slate-600 dark:text-slate-400 truncate text-[11px]">
+            <div className="flex items-center gap-1 min-w-0" title={[application.candidateCity, application.candidateState].filter(Boolean).join(', ') || 'Not specified'}>
+              <MapPin className="w-3 h-3 text-[#64748B] flex-shrink-0" />
+              <span className="text-[#64748B] dark:text-slate-400 truncate">
                 {[application.candidateCity, application.candidateState].filter(Boolean).join(', ') || 'Not specified'}
               </span>
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-x-2">
             {/* Reg */}
             <div className="flex items-center gap-1 min-w-0" title={application.candidateRegistrationNumber ? `Reg: ${application.candidateRegistrationNumber}` : ''}>
-              <ShieldCheck className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-              <span className="text-slate-700 dark:text-slate-300 font-medium truncate text-[11px]">
+              <ShieldCheck className="w-3 h-3 text-[#64748B] flex-shrink-0" />
+              <span className="text-[#64748B] dark:text-slate-400 truncate">
                 {application.candidateRegistrationNumber ? `Reg: ${application.candidateRegistrationNumber}` : (application.candidateYearsExperience ? `${application.candidateYearsExperience} Yrs Exp` : 'Reg: Pending')}
               </span>
             </div>
             {/* Applied Date */}
             <div className="flex items-center gap-1 min-w-0" title={formatDate(application.appliedDate)}>
-              <Calendar className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-              <span className="text-slate-600 dark:text-slate-400 font-medium truncate text-[11px]">
+              <Calendar className="w-3 h-3 text-[#64748B] flex-shrink-0" />
+              <span className="text-[#64748B] dark:text-slate-400 truncate">
                 {formatDate(application.appliedDate)}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Scheduled Interview Banner if any */}
+        {/* Scheduled Interview Banner - Compact single-line strip */}
         {application.interviewDate && (
-          <div className="flex items-center gap-1.5 px-2 py-1 mb-2 bg-purple-50/80 dark:bg-purple-950/40 rounded-lg border border-purple-100 dark:border-purple-800/60 text-[11px] font-medium text-purple-900 dark:text-purple-200 truncate">
-            <Clock className="w-3 h-3 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+          <div 
+            className="flex items-center gap-1 px-2 py-0.5 mb-1.5 bg-[#EFF6FF] text-[#2563EB] dark:bg-blue-950/40 dark:text-blue-300 rounded text-[11px] font-medium truncate"
+            title={`Interview: ${formatDateTime(application.interviewDate)}`}
+          >
+            <Clock className="w-3 h-3 text-[#2563EB] flex-shrink-0" />
             <span className="truncate">
               Interview: {formatDateTime(application.interviewDate)}
             </span>
@@ -960,22 +972,22 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
 
         {/* Notes if any */}
         {application.notes && (
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 mb-2 truncate" title={application.notes}>
-            <span className="font-semibold text-slate-700 dark:text-slate-300">Notes:</span> {application.notes}
+          <div className="text-[11px] text-[#64748B] dark:text-slate-400 mb-1.5 truncate" title={application.notes}>
+            <span className="font-semibold text-[#1E293B] dark:text-slate-300">Notes:</span> {application.notes}
           </div>
         )}
 
         {/* Stage & Progress Bar */}
-        <div className="mb-2.5">
-          <div className="flex items-center justify-between text-xs mb-1 font-medium">
-            <span className={`text-[11px] font-semibold ${stageTextColorClass}`}>
-              Stage: {getStatusLabel(application.status)}
+        <div className="mb-2">
+          <div className="flex items-center justify-between text-[11px] mb-1">
+            <span className="font-medium text-[#64748B] dark:text-slate-400">
+              Stage: <span className="font-semibold text-[#1E293B] dark:text-slate-200">{getStatusLabel(application.status)}</span>
             </span>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
+            <span className="font-semibold text-[#64748B] dark:text-slate-400">
               {getStatusProgress(application.status)}%
             </span>
           </div>
-          <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+          <div className="w-full bg-[#F1F5F9] dark:bg-slate-700 rounded-full h-1 overflow-hidden">
             <div 
               className={`h-full rounded-full transition-all duration-300 ${progressColorClass}`} 
               style={{ width: `${getStatusProgress(application.status)}%` }} 
@@ -983,9 +995,9 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
           </div>
         </div>
 
-        {/* Action Buttons (2x2 Grid) */}
+        {/* Action Buttons (2x2 Grid, Bottom-Anchored) */}
         <div 
-          className="medex-applicant-footer grid grid-cols-2 gap-1.5 mt-auto pt-2 border-t border-slate-100 dark:border-gray-700/60"
+          className="medex-applicant-footer grid grid-cols-2 gap-1.5 mt-auto pt-2 border-t border-[#E2E8F0] dark:border-gray-700/60"
           data-slot="applicant-footer"
         >
           {/* 1. View */}
@@ -996,10 +1008,10 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               setSelectedApplication(application);
               setIsViewDialogOpen(true);
             }}
-            className="medex-app-btn medex-app-btn-view w-full h-8 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 rounded-lg shadow-2xs"
+            className="medex-app-btn medex-app-btn-view w-full h-8 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 bg-white hover:bg-[#F8FAFC] text-[#1E293B] border border-[#E2E8F0] rounded-lg shadow-2xs"
             title="View Details"
           >
-            <Eye className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-slate-600" />
+            <Eye className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-[#64748B]" />
             <span className="truncate">View</span>
           </Button>
 
@@ -1011,10 +1023,10 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               setSelectedApplication(application);
               setIsStatusDialogOpen(true);
             }}
-            className="medex-app-btn medex-app-btn-status w-full h-8 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 rounded-lg shadow-2xs"
+            className="medex-app-btn medex-app-btn-status w-full h-8 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 bg-white hover:bg-[#F8FAFC] text-[#1E293B] border border-[#E2E8F0] rounded-lg shadow-2xs"
             title="Update Status"
           >
-            <CheckCircle className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-slate-600" />
+            <CheckCircle className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-[#64748B]" />
             <span className="truncate">Update Status</span>
           </Button>
 
@@ -1028,8 +1040,8 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
             }}
             className={`medex-app-btn medex-app-btn-interview w-full h-8 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 rounded-lg shadow-2xs text-white ${
               application.interviewDate && !application.interviewLink
-                ? 'medex-btn-amber bg-[#f59e0b] hover:bg-[#d97706] border-transparent'
-                : 'medex-btn-purple bg-[#7c3aed] hover:bg-[#6d28d9] border-transparent'
+                ? 'medex-btn-amber bg-[#D97706] hover:bg-[#B45309] border-transparent'
+                : 'medex-btn-primary bg-[#2563EB] hover:bg-[#1D4ED8] border-transparent'
             }`}
             title={
               application.interviewDate
@@ -1044,7 +1056,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               </>
             ) : (
               <>
-                <Calendar className="w-3.5 h-3.5 mr-1.5 flex-shrink-0" />
+                <Calendar className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
                 <span className="truncate">Interview</span>
               </>
             )}
@@ -1056,7 +1068,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               variant="default" 
               size="sm"
               onClick={() => openFileInViewer(application.resumeUrl!)}
-              className="medex-app-btn medex-app-btn-resume w-full h-8 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 bg-[#059669] hover:bg-[#047857] text-white border-transparent rounded-lg shadow-2xs"
+              className="medex-app-btn medex-app-btn-resume w-full h-8 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 bg-[#16A34A] hover:bg-[#15803D] text-white border-transparent rounded-lg shadow-2xs"
               title="View Resume"
             >
               <FileText className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
@@ -1064,10 +1076,10 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
             </Button>
           ) : (
             <div 
-              className="medex-app-btn medex-app-no-resume w-full h-8 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 bg-[#fffbeb] hover:bg-[#fef3c7] text-[#d97706] border border-[#fde68a] rounded-lg cursor-default shadow-2xs"
+              className="medex-app-btn medex-app-no-resume w-full h-8 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 bg-[#FFFBEB] hover:bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A] rounded-lg cursor-default shadow-2xs"
               title="No resume uploaded"
             >
-              <AlertCircle className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-amber-500" />
+              <AlertCircle className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-[#D97706]" />
               <span className="truncate">No Resume</span>
             </div>
           )}

@@ -804,10 +804,11 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
     return (
       <div 
         key={application.id} 
-        className={`group relative overflow-hidden bg-white dark:bg-gray-800 rounded-2xl border ${borderThemeClass} hover:shadow-lg transition-all duration-200 flex flex-col medex-applicant-card h-full p-3.5`}
+        data-medex-applicant-enhanced="v2"
+        className={`group relative bg-white dark:bg-gray-800 rounded-2xl border-[1.5px] ${borderThemeClass} hover:shadow-lg transition-all duration-200 flex flex-col medex-applicant-card h-full p-3 sm:p-3.5`}
       >
         {/* Top Header Row: Left Status Pill + Right Status Badge */}
-        <div className="flex items-center justify-between gap-2 mb-2.5">
+        <div className="flex items-center justify-between gap-1.5 mb-2">
           <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${leftPillBg}`}>
             {leftPillIcon}
             <span>{leftPillLabel}</span>
@@ -822,14 +823,14 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
           <div className="medex-applicant-avatar-wrapper flex-shrink-0">
             <div 
               className="medex-applicant-avatar rounded-full flex items-center justify-center text-white font-bold text-base shadow-xs"
-              style={{ backgroundColor: avatarBgColor, width: '42px', height: '42px', minWidth: '42px', minHeight: '42px' }}
+              style={{ backgroundColor: avatarBgColor, width: '40px', height: '40px', minWidth: '40px', minHeight: '40px' }}
             >
               {application.candidateName?.charAt(0)?.toUpperCase() || 'A'}
             </div>
           </div>
           <div className="min-w-0 flex-1 overflow-hidden">
             <h3 
-              className="font-bold text-slate-900 dark:text-slate-100 text-[15px] truncate leading-tight"
+              className="font-bold text-slate-900 dark:text-slate-100 text-[14px] truncate leading-tight"
               title={application.candidateName || 'Unknown Candidate'}
             >
               {application.candidateName || 'Unknown Candidate'}
@@ -841,43 +842,49 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               <Mail className="w-3 h-3 text-slate-400 flex-shrink-0" />
               <span className="truncate">{application.candidateEmail}</span>
             </p>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1 mt-0.5">
-              <span>♂</span>
-              <span>{application.candidateGender || 'M'}</span>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1.5 mt-0.5">
+              <span>♂ {application.candidateGender || 'M'}</span>
+              {application.candidateYearsExperience != null && (
+                <>
+                  <span>•</span>
+                  <span>{application.candidateYearsExperience} Yrs Exp</span>
+                </>
+              )}
             </p>
           </div>
         </div>
 
-        {/* Degree & Speciality Row */}
-        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-slate-100 mb-2 truncate">
-          <GraduationCap className="w-4 h-4 text-blue-600 flex-shrink-0" />
-          <span className="truncate">
-            {[application.candidateQualification, application.candidateSpeciality].filter(Boolean).join(' - ') || 'Medical Practitioner'}
-          </span>
+        {/* Degree & Speciality + Applied Job Title Strip */}
+        <div className="space-y-1 mb-2">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-slate-100 truncate" title={[application.candidateQualification, application.candidateSpeciality].filter(Boolean).join(' - ')}>
+            <GraduationCap className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+            <span className="truncate">
+              {[application.candidateQualification, application.candidateSpeciality].filter(Boolean).join(' - ') || 'Medical Practitioner'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-blue-700 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-950/40 rounded-lg px-2.5 py-1 border border-blue-100/80 dark:border-blue-900/60 truncate" title={application.jobTitle}>
+            <Briefcase className="w-3 h-3 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+            <span className="truncate">{application.jobTitle}</span>
+          </div>
         </div>
 
-        {/* Applied Job Title Strip */}
-        <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-950/40 rounded-lg px-2.5 py-1.5 mb-2.5 border border-blue-100/80 dark:border-blue-900/60 truncate">
-          <Briefcase className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-          <span className="truncate" title={application.jobTitle}>{application.jobTitle}</span>
-        </div>
-
-        {/* Eligibility Match Box */}
-        <div className={`p-2.5 rounded-xl border text-xs mb-2.5 ${
+        {/* Compact Eligibility Match Box */}
+        <div className={`p-2 rounded-xl border text-xs mb-2 ${
           isHighTier 
-            ? 'bg-emerald-50/30 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-800/40' 
+            ? 'bg-emerald-50/35 dark:bg-emerald-950/20 border-emerald-200/70 dark:border-emerald-800/40' 
             : isMediumTier
-            ? 'bg-amber-50/30 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/40'
-            : 'bg-rose-50/30 dark:bg-rose-950/20 border-rose-200/60 dark:border-rose-800/40'
+            ? 'bg-amber-50/35 dark:bg-amber-950/20 border-amber-200/70 dark:border-amber-800/40'
+            : 'bg-rose-50/35 dark:bg-rose-950/20 border-rose-200/70 dark:border-rose-800/40'
         }`}>
-          <div className="flex items-center justify-between gap-1 mb-2">
-            <span className="text-xs font-bold flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
-              <Star className={`w-3.5 h-3.5 fill-current ${
+          <div className="flex items-center justify-between gap-1 mb-1.5">
+            <span className="text-[11px] font-bold flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+              <Star className={`w-3 h-3 fill-current ${
                 isHighTier ? 'text-emerald-600' : isMediumTier ? 'text-amber-500' : 'text-rose-500'
               }`} />
               Eligibility Match
             </span>
-            <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
               isHighTier 
                 ? 'bg-emerald-100/90 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300' 
                 : isMediumTier
@@ -888,44 +895,51 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
             </span>
           </div>
 
-          <div className="space-y-1 text-xs">
-            {criteriaItems.map((item, idx) => (
-              <div key={idx} className="flex items-start gap-1.5 leading-snug">
-                <Check className={`w-3.5 h-3.5 mt-0.5 flex-shrink-0 ${item.met ? 'text-emerald-600' : 'text-amber-600'}`} />
-                <span className="text-slate-700 dark:text-slate-300 text-xs truncate" title={item.text}>
-                  {item.text}
-                </span>
-              </div>
-            ))}
+          <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[11px]">
+            {criteriaItems.map((item, idx) => {
+              const isOddLast = idx === criteriaItems.length - 1 && criteriaItems.length % 2 !== 0;
+              return (
+                <div 
+                  key={idx} 
+                  className={`flex items-center gap-1 min-w-0 ${isOddLast ? 'col-span-2' : ''}`}
+                  title={item.text}
+                >
+                  <Check className={`w-3 h-3 flex-shrink-0 ${item.met ? 'text-emerald-600' : 'text-amber-600'}`} />
+                  <span className="text-slate-700 dark:text-slate-300 text-[11px] truncate font-medium">
+                    {item.text}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
         {/* Hospital & Metadata Sub-Card */}
-        <div className="bg-white dark:bg-gray-800/90 border border-slate-200/90 dark:border-gray-700/80 rounded-xl p-2.5 mb-2.5 shadow-2xs">
-          <div className="grid grid-cols-2 gap-2 text-xs">
+        <div className="bg-white dark:bg-gray-800/90 border border-slate-200/90 dark:border-gray-700/80 rounded-xl p-2 mb-2 shadow-2xs">
+          <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
             {/* Hospital */}
-            <div className="flex items-start gap-1.5 min-w-0" title={application.jobOrganization}>
-              <Building2 className="w-3.5 h-3.5 text-slate-500 mt-0.5 flex-shrink-0" />
-              <span className="font-semibold text-slate-800 dark:text-slate-200 line-clamp-2 leading-tight">
+            <div className="flex items-center gap-1 min-w-0" title={application.jobOrganization}>
+              <Building2 className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+              <span className="font-semibold text-slate-800 dark:text-slate-200 truncate text-[11px]">
                 {application.jobOrganization || 'Organization'}
               </span>
             </div>
             {/* Location */}
-            <div className="flex items-start gap-1.5 min-w-0" title={[application.candidateCity, application.candidateState].filter(Boolean).join(', ')}>
-              <MapPin className="w-3.5 h-3.5 text-slate-500 mt-0.5 flex-shrink-0" />
-              <span className="text-slate-600 dark:text-slate-400 truncate leading-tight">
+            <div className="flex items-center gap-1 min-w-0" title={[application.candidateCity, application.candidateState].filter(Boolean).join(', ')}>
+              <MapPin className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+              <span className="text-slate-600 dark:text-slate-400 truncate text-[11px]">
                 {[application.candidateCity, application.candidateState].filter(Boolean).join(', ') || 'Not specified'}
               </span>
             </div>
             {/* Reg */}
-            <div className="flex items-center gap-1.5 min-w-0" title={application.candidateRegistrationNumber ? `Reg: ${application.candidateRegistrationNumber}` : ''}>
+            <div className="flex items-center gap-1 min-w-0" title={application.candidateRegistrationNumber ? `Reg: ${application.candidateRegistrationNumber}` : ''}>
               <ShieldCheck className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
               <span className="text-slate-700 dark:text-slate-300 font-medium truncate text-[11px]">
                 {application.candidateRegistrationNumber ? `Reg: ${application.candidateRegistrationNumber}` : (application.candidateYearsExperience ? `${application.candidateYearsExperience} Yrs Exp` : 'Reg: Pending')}
               </span>
             </div>
             {/* Applied Date */}
-            <div className="flex items-center gap-1.5 min-w-0" title={formatDate(application.appliedDate)}>
+            <div className="flex items-center gap-1 min-w-0" title={formatDate(application.appliedDate)}>
               <Calendar className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
               <span className="text-slate-600 dark:text-slate-400 font-medium truncate text-[11px]">
                 {formatDate(application.appliedDate)}
@@ -936,8 +950,8 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
 
         {/* Scheduled Interview Banner if any */}
         {application.interviewDate && (
-          <div className="flex items-center gap-1.5 p-2 mb-2 bg-purple-50/80 dark:bg-purple-950/40 rounded-lg border border-purple-100 dark:border-purple-800/60 text-xs font-medium text-purple-900 dark:text-purple-200">
-            <Clock className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+          <div className="flex items-center gap-1.5 px-2 py-1 mb-2 bg-purple-50/80 dark:bg-purple-950/40 rounded-lg border border-purple-100 dark:border-purple-800/60 text-[11px] font-medium text-purple-900 dark:text-purple-200 truncate">
+            <Clock className="w-3 h-3 text-purple-600 dark:text-purple-400 flex-shrink-0" />
             <span className="truncate">
               Interview: {formatDateTime(application.interviewDate)}
             </span>
@@ -952,12 +966,12 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
         )}
 
         {/* Stage & Progress Bar */}
-        <div className="mb-3">
+        <div className="mb-2.5">
           <div className="flex items-center justify-between text-xs mb-1 font-medium">
-            <span className={`text-xs font-semibold ${stageTextColorClass}`}>
+            <span className={`text-[11px] font-semibold ${stageTextColorClass}`}>
               Stage: {getStatusLabel(application.status)}
             </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
               {getStatusProgress(application.status)}%
             </span>
           </div>
@@ -971,7 +985,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
 
         {/* Action Buttons (2x2 Grid) */}
         <div 
-          className="medex-applicant-footer grid grid-cols-2 gap-2 mt-auto"
+          className="medex-applicant-footer grid grid-cols-2 gap-1.5 mt-auto pt-2 border-t border-slate-100 dark:border-gray-700/60"
           data-slot="applicant-footer"
         >
           {/* 1. View */}
@@ -982,10 +996,10 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               setSelectedApplication(application);
               setIsViewDialogOpen(true);
             }}
-            className="medex-app-btn medex-app-btn-view w-full h-9 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 rounded-lg shadow-2xs"
+            className="medex-app-btn medex-app-btn-view w-full h-8 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 rounded-lg shadow-2xs"
             title="View Details"
           >
-            <Eye className="w-3.5 h-3.5 mr-1.5 flex-shrink-0 text-slate-600" />
+            <Eye className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-slate-600" />
             <span className="truncate">View</span>
           </Button>
 
@@ -997,10 +1011,10 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               setSelectedApplication(application);
               setIsStatusDialogOpen(true);
             }}
-            className="medex-app-btn medex-app-btn-status w-full h-9 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 rounded-lg shadow-2xs"
+            className="medex-app-btn medex-app-btn-status w-full h-8 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 rounded-lg shadow-2xs"
             title="Update Status"
           >
-            <CheckCircle className="w-3.5 h-3.5 mr-1.5 flex-shrink-0 text-slate-600" />
+            <CheckCircle className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-slate-600" />
             <span className="truncate">Update Status</span>
           </Button>
 
@@ -1012,7 +1026,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               setSelectedApplication(application);
               setIsInterviewDialogOpen(true);
             }}
-            className={`medex-app-btn medex-app-btn-interview w-full h-9 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 rounded-lg shadow-2xs text-white ${
+            className={`medex-app-btn medex-app-btn-interview w-full h-8 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 rounded-lg shadow-2xs text-white ${
               application.interviewDate && !application.interviewLink
                 ? 'medex-btn-amber bg-[#f59e0b] hover:bg-[#d97706] border-transparent'
                 : 'medex-btn-purple bg-[#7c3aed] hover:bg-[#6d28d9] border-transparent'
@@ -1042,18 +1056,18 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               variant="default" 
               size="sm"
               onClick={() => openFileInViewer(application.resumeUrl!)}
-              className="medex-app-btn medex-app-btn-resume w-full h-9 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 bg-[#059669] hover:bg-[#047857] text-white border-transparent rounded-lg shadow-2xs"
+              className="medex-app-btn medex-app-btn-resume w-full h-8 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 bg-[#059669] hover:bg-[#047857] text-white border-transparent rounded-lg shadow-2xs"
               title="View Resume"
             >
-              <FileText className="w-3.5 h-3.5 mr-1.5 flex-shrink-0" />
-              <span className="truncate">View Resume</span>
+              <FileText className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
+              <span className="truncate">Resume</span>
             </Button>
           ) : (
             <div 
-              className="medex-app-btn medex-app-no-resume w-full h-9 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 bg-[#fffbeb] hover:bg-[#fef3c7] text-[#d97706] border border-[#fde68a] rounded-lg cursor-default shadow-2xs"
+              className="medex-app-btn medex-app-no-resume w-full h-8 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 bg-[#fffbeb] hover:bg-[#fef3c7] text-[#d97706] border border-[#fde68a] rounded-lg cursor-default shadow-2xs"
               title="No resume uploaded"
             >
-              <AlertCircle className="w-3.5 h-3.5 mr-1.5 flex-shrink-0 text-amber-500" />
+              <AlertCircle className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-amber-500" />
               <span className="truncate">No Resume</span>
             </div>
           )}
@@ -1246,12 +1260,12 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               <TabsContent value="all" className="mt-4 sm:mt-6">
                 {loading ? (
                   <div 
-                    className="grid gap-4 md:gap-5 lg:gap-6"
+                    className="grid gap-3 sm:gap-3.5"
                     style={{
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))'
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 225px), 1fr))'
                     }}
                   >
-                    {[...Array(3)].map((_, i) => (
+                    {[...Array(4)].map((_, i) => (
                       <ApplicationSkeleton key={i} />
                     ))}
                   </div>
@@ -1266,9 +1280,9 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                   </Card>
                 ) : (
                   <div 
-                    className="grid gap-4 md:gap-5 lg:gap-6 medex-applicant-grid"
+                    className="grid gap-3 sm:gap-3.5 medex-applicant-grid"
                     style={{
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))'
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 225px), 1fr))'
                     }}
                   >
                     {filteredApplications.map(renderApplicationCard)}
@@ -1279,12 +1293,12 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               <TabsContent value="active" className="mt-4 sm:mt-6">
                 {loading ? (
                   <div 
-                    className="grid gap-4 md:gap-5 lg:gap-6"
+                    className="grid gap-3 sm:gap-3.5"
                     style={{
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))'
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 225px), 1fr))'
                     }}
                   >
-                    {[...Array(3)].map((_, i) => (
+                    {[...Array(4)].map((_, i) => (
                       <ApplicationSkeleton key={i} />
                     ))}
                   </div>
@@ -1295,9 +1309,9 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                   </Card>
                 ) : (
                   <div 
-                    className="grid gap-4 md:gap-5 lg:gap-6 medex-applicant-grid"
+                    className="grid gap-3 sm:gap-3.5 medex-applicant-grid"
                     style={{
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))'
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 225px), 1fr))'
                     }}
                   >
                     {filteredApplications
@@ -1310,12 +1324,12 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               <TabsContent value="interview" className="mt-4 sm:mt-6">
                 {loading ? (
                   <div 
-                    className="grid gap-4 md:gap-5 lg:gap-6"
+                    className="grid gap-3 sm:gap-3.5"
                     style={{
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))'
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 225px), 1fr))'
                     }}
                   >
-                    {[...Array(3)].map((_, i) => (
+                    {[...Array(4)].map((_, i) => (
                       <ApplicationSkeleton key={i} />
                     ))}
                   </div>
@@ -1326,9 +1340,9 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                   </Card>
                 ) : (
                   <div 
-                    className="grid gap-4 md:gap-5 lg:gap-6 medex-applicant-grid"
+                    className="grid gap-3 sm:gap-3.5 medex-applicant-grid"
                     style={{
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))'
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 225px), 1fr))'
                     }}
                   >
                     {filteredApplications
@@ -1341,12 +1355,12 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               <TabsContent value="completed" className="mt-4 sm:mt-6">
                 {loading ? (
                   <div 
-                    className="grid gap-4 md:gap-5 lg:gap-6"
+                    className="grid gap-3 sm:gap-3.5"
                     style={{
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))'
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 225px), 1fr))'
                     }}
                   >
-                    {[...Array(3)].map((_, i) => (
+                    {[...Array(4)].map((_, i) => (
                       <ApplicationSkeleton key={i} />
                     ))}
                   </div>
@@ -1357,9 +1371,9 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                   </Card>
                 ) : (
                   <div 
-                    className="grid gap-4 md:gap-5 lg:gap-6 medex-applicant-grid"
+                    className="grid gap-3 sm:gap-3.5 medex-applicant-grid"
                     style={{
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))'
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 225px), 1fr))'
                     }}
                   >
                     {filteredApplications

@@ -2,9 +2,23 @@
 
 .medex-applicant-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 225px), 1fr)) !important;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)) !important;
   align-items: stretch !important;
-  gap: 0.875rem !important;
+  gap: 1.25rem !important;
+}
+
+@media (min-width: 1024px) {
+  .medex-applicant-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)) !important;
+    gap: 1.25rem !important;
+  }
+}
+
+@media (min-width: 1200px) {
+  .medex-applicant-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 1.25rem !important;
+  }
 }
 
 .medex-applicant-card {
@@ -13,10 +27,12 @@
   height: 100% !important;
   min-height: 100% !important;
   align-self: stretch !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 12px !important;
+  border-width: 1.5px !important;
+  border-style: solid !important;
+  border-color: #e2e8f0 !important;
+  border-radius: 14px !important;
   background: #ffffff !important;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05) !important;
   font-family: "DM Sans", "Segoe UI", Arial, sans-serif !important;
   overflow: hidden !important;
   transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease !important;
@@ -24,8 +40,61 @@
 
 .medex-applicant-card:hover {
   transform: translateY(-2px) !important;
-  border-color: #cbd5e1 !important;
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.09) !important;
+}
+
+.medex-applicant-card.card-border-emerald {
+  border-color: #10b981 !important;
+  background: linear-gradient(180deg, rgba(236, 253, 245, 0.5) 0%, #ffffff 120px) !important;
+}
+.medex-applicant-card.card-border-emerald:hover {
+  border-color: #059669 !important;
+  box-shadow: 0 10px 24px rgba(16, 185, 129, 0.16) !important;
+}
+
+.medex-applicant-card.card-border-sky {
+  border-color: #38bdf8 !important;
+  background: linear-gradient(180deg, rgba(240, 249, 255, 0.5) 0%, #ffffff 120px) !important;
+}
+.medex-applicant-card.card-border-sky:hover {
+  border-color: #0284c7 !important;
+  box-shadow: 0 10px 24px rgba(14, 165, 233, 0.16) !important;
+}
+
+.medex-applicant-card.card-border-purple {
+  border-color: #c084fc !important;
+  background: linear-gradient(180deg, rgba(250, 245, 255, 0.5) 0%, #ffffff 120px) !important;
+}
+.medex-applicant-card.card-border-purple:hover {
+  border-color: #9333ea !important;
+  box-shadow: 0 10px 24px rgba(147, 51, 234, 0.16) !important;
+}
+
+.medex-applicant-card.card-border-amber {
+  border-color: #f59e0b !important;
+  background: linear-gradient(180deg, rgba(254, 243, 199, 0.5) 0%, #ffffff 120px) !important;
+}
+.medex-applicant-card.card-border-amber:hover {
+  border-color: #d97706 !important;
+  box-shadow: 0 10px 24px rgba(245, 158, 11, 0.16) !important;
+}
+
+.medex-applicant-card.card-border-rose {
+  border-color: #f43f5e !important;
+  background: linear-gradient(180deg, rgba(255, 241, 242, 0.5) 0%, #ffffff 120px) !important;
+}
+.medex-applicant-card.card-border-rose:hover {
+  border-color: #e11d48 !important;
+  box-shadow: 0 10px 24px rgba(244, 63, 94, 0.16) !important;
+}
+
+.medex-applicant-card.card-border-blue {
+  border-color: #60a5fa !important;
+  background: linear-gradient(180deg, rgba(239, 246, 255, 0.5) 0%, #ffffff 120px) !important;
+}
+.medex-applicant-card.card-border-blue:hover {
+  border-color: #2563eb !important;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.16) !important;
 }
 
 .medex-applicant-card-content {
@@ -73,22 +142,37 @@
 
 .medex-applicant-avatar.avatar-emerald {
   background: linear-gradient(145deg, #059669 0%, #10b981 100%) !important;
-  box-shadow: 0 3px 8px rgba(16, 185, 129, 0.25) !important;
+  box-shadow: 0 3px 8px rgba(16, 185, 129, 0.3) !important;
+  color: #ffffff !important;
+  border: none !important;
 }
 
 .medex-applicant-avatar.avatar-amber {
   background: linear-gradient(145deg, #d97706 0%, #f59e0b 100%) !important;
-  box-shadow: 0 3px 8px rgba(245, 158, 11, 0.25) !important;
+  box-shadow: 0 3px 8px rgba(245, 158, 11, 0.3) !important;
+  color: #ffffff !important;
+  border: none !important;
 }
 
 .medex-applicant-avatar.avatar-rose {
   background: linear-gradient(145deg, #e11d48 0%, #f43f5e 100%) !important;
-  box-shadow: 0 3px 8px rgba(244, 63, 94, 0.25) !important;
+  box-shadow: 0 3px 8px rgba(244, 63, 94, 0.3) !important;
+  color: #ffffff !important;
+  border: none !important;
 }
 
 .medex-applicant-avatar.avatar-blue {
   background: linear-gradient(145deg, #2563eb 0%, #3b82f6 100%) !important;
-  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.25) !important;
+  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.3) !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.medex-applicant-avatar.avatar-purple {
+  background: linear-gradient(145deg, #7c3aed 0%, #8b5cf6 100%) !important;
+  box-shadow: 0 3px 8px rgba(124, 58, 237, 0.3) !important;
+  color: #ffffff !important;
+  border: none !important;
 }
 
 .medex-applicant-avatar-badge {
@@ -339,17 +423,28 @@
 }
 
 .medex-applicant-footer button.medex-app-btn-interview,
-.medex-applicant-footer button.medex-btn-primary,
 .medex-applicant-footer button.medex-btn-purple {
+  border: 1px solid transparent !important;
+  background: #7c3aed !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(124, 58, 237, 0.25) !important;
+}
+
+.medex-applicant-footer button.medex-app-btn-interview:hover,
+.medex-applicant-footer button.medex-btn-purple:hover {
+  border-color: transparent !important;
+  background: #6d28d9 !important;
+  color: #ffffff !important;
+}
+
+.medex-applicant-footer button.medex-btn-primary {
   border: 1px solid transparent !important;
   background: #2563eb !important;
   color: #ffffff !important;
   box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2) !important;
 }
 
-.medex-applicant-footer button.medex-app-btn-interview:hover,
-.medex-applicant-footer button.medex-btn-primary:hover,
-.medex-applicant-footer button.medex-btn-purple:hover {
+.medex-applicant-footer button.medex-btn-primary:hover {
   border-color: transparent !important;
   background: #1d4ed8 !important;
   color: #ffffff !important;
@@ -357,14 +452,14 @@
 
 .medex-applicant-footer button.medex-btn-amber {
   border: 1px solid transparent !important;
-  background: #d97706 !important;
+  background: #f59e0b !important;
   color: #ffffff !important;
-  box-shadow: 0 1px 2px rgba(217, 119, 6, 0.2) !important;
+  box-shadow: 0 1px 3px rgba(245, 158, 11, 0.25) !important;
 }
 
 .medex-applicant-footer button.medex-btn-amber:hover {
   border-color: transparent !important;
-  background: #b45309 !important;
+  background: #d97706 !important;
   color: #ffffff !important;
 }
 

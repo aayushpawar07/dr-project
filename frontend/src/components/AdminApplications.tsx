@@ -691,42 +691,48 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
     const isEligible = application.isEligible ?? false;
     const score = application.eligibilityScore ?? 0;
     
-    // Status color mapping using Clean Professional Blue + Neutral Theme
-    // Primary: #2563EB | Success: #16A34A | Warning: #D97706 | Danger: #DC2626
-    let statusBadgeBg = 'bg-[#EFF6FF] text-[#2563EB] border-[#BFDBFE]';
-    let statusIcon = <User className="w-3 h-3 text-[#2563EB]" />;
-    let progressColorClass = 'bg-[#2563EB]';
-    let avatarBg = 'bg-[#EFF6FF] text-[#2563EB] border-[#BFDBFE]';
+    // Status color mapping matching MedExJob vibrant palette & mockup (media_1790125402255.png)
+    // 100% Eligible: Emerald | Hired: Sky Blue | Interview: Royal Purple | Pending: Warm Amber | Rejected: Rose
+    let cardThemeBorderClass = 'card-border-blue border-blue-200 hover:border-blue-400 bg-gradient-to-b from-blue-50/30 via-white to-white';
+    let statusBadgeBg = 'bg-blue-50 text-blue-700 border-blue-200';
+    let statusIcon = <User className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />;
+    let progressColorClass = 'bg-blue-600';
+    let avatarClass = 'avatar-blue';
 
-    if (application.status === 'hired') {
-      statusBadgeBg = 'bg-[#F0FDF4] text-[#16A34A] border-[#BBF7D0]';
-      statusIcon = <Briefcase className="w-3 h-3 text-[#16A34A]" />;
-      progressColorClass = 'bg-[#16A34A]';
-      avatarBg = 'bg-[#F0FDF4] text-[#16A34A] border-[#BBF7D0]';
-    } else if (isEligible || score === 100) {
+    if (isEligible || score === 100) {
+      cardThemeBorderClass = 'card-border-emerald border-emerald-300 hover:border-emerald-500 bg-gradient-to-b from-emerald-50/40 via-white to-white';
       statusBadgeBg = application.status === 'interview' 
-        ? 'bg-[#EFF6FF] text-[#2563EB] border-[#BFDBFE]' 
-        : 'bg-[#F0FDF4] text-[#16A34A] border-[#BBF7D0]';
+        ? 'bg-purple-50 text-purple-700 border-purple-200' 
+        : 'bg-emerald-50 text-emerald-700 border-emerald-200';
       statusIcon = application.status === 'interview' 
-        ? <User className="w-3 h-3 text-[#2563EB]" /> 
-        : <Check className="w-3 h-3 text-[#16A34A]" />;
-      progressColorClass = application.status === 'interview' ? 'bg-[#2563EB]' : 'bg-[#16A34A]';
-      avatarBg = 'bg-[#F0FDF4] text-[#16A34A] border-[#BBF7D0]';
+        ? <Clock className="w-3.5 h-3.5 text-purple-600 flex-shrink-0" /> 
+        : <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />;
+      progressColorClass = application.status === 'interview' ? 'bg-[#7c3aed]' : 'bg-[#10b981]';
+      avatarClass = 'avatar-emerald';
+    } else if (application.status === 'hired') {
+      cardThemeBorderClass = 'card-border-sky border-sky-300 hover:border-sky-500 bg-gradient-to-b from-sky-50/40 via-white to-white';
+      statusBadgeBg = 'bg-sky-50 text-sky-700 border-sky-200';
+      statusIcon = <Briefcase className="w-3.5 h-3.5 text-sky-600 flex-shrink-0" />;
+      progressColorClass = 'bg-[#10b981]';
+      avatarClass = 'avatar-blue';
     } else if (application.status === 'interview') {
-      statusBadgeBg = 'bg-[#EFF6FF] text-[#2563EB] border-[#BFDBFE]';
-      statusIcon = <User className="w-3 h-3 text-[#2563EB]" />;
-      progressColorClass = 'bg-[#2563EB]';
-      avatarBg = 'bg-[#EFF6FF] text-[#2563EB] border-[#BFDBFE]';
+      cardThemeBorderClass = 'card-border-purple border-purple-300 hover:border-purple-500 bg-gradient-to-b from-purple-50/40 via-white to-white';
+      statusBadgeBg = 'bg-purple-50 text-purple-700 border-purple-200';
+      statusIcon = <Clock className="w-3.5 h-3.5 text-purple-600 flex-shrink-0" />;
+      progressColorClass = 'bg-[#7c3aed]';
+      avatarClass = 'avatar-purple';
     } else if (application.status === 'pending' || (score >= 40 && score < 100)) {
-      statusBadgeBg = 'bg-[#FFFBEB] text-[#D97706] border-[#FDE68A]';
-      statusIcon = <Clock className="w-3 h-3 text-[#D97706]" />;
-      progressColorClass = 'bg-[#D97706]';
-      avatarBg = 'bg-[#FFFBEB] text-[#D97706] border-[#FDE68A]';
+      cardThemeBorderClass = 'card-border-amber border-amber-300 hover:border-amber-500 bg-gradient-to-b from-amber-50/40 via-white to-white';
+      statusBadgeBg = 'bg-amber-50 text-amber-800 border-amber-200';
+      statusIcon = <Clock className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />;
+      progressColorClass = 'bg-[#f59e0b]';
+      avatarClass = 'avatar-amber';
     } else if (application.status === 'rejected') {
-      statusBadgeBg = 'bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]';
-      statusIcon = <XCircle className="w-3 h-3 text-[#DC2626]" />;
-      progressColorClass = 'bg-[#DC2626]';
-      avatarBg = 'bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]';
+      cardThemeBorderClass = 'card-border-rose border-rose-300 hover:border-rose-500 bg-gradient-to-b from-rose-50/40 via-white to-white';
+      statusBadgeBg = 'bg-rose-50 text-rose-700 border-rose-200';
+      statusIcon = <XCircle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />;
+      progressColorClass = 'bg-[#e11d48]';
+      avatarClass = 'avatar-rose';
     }
 
     // Eligibility Match tier & list
@@ -780,50 +786,58 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
       <div 
         key={application.id} 
         data-medex-applicant-enhanced="v2"
-        className="group relative bg-white dark:bg-gray-800 rounded-xl border border-[#E2E8F0] dark:border-gray-700/80 hover:border-[#CBD5E1] dark:hover:border-gray-600 shadow-2xs hover:shadow-md transition-all duration-200 flex flex-col medex-applicant-card h-full p-3 sm:p-3.5 text-[#1E293B] dark:text-slate-100"
+        className={`group relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xs hover:shadow-lg transition-all duration-200 flex flex-col medex-applicant-card h-full p-3.5 sm:p-4 text-slate-800 dark:text-slate-100 ${cardThemeBorderClass}`}
       >
-        {/* Top Header Row: Status Badge on left + Applied Date or Match Score on right */}
-        <div className="flex items-center justify-between gap-1.5 mb-2">
-          <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${statusBadgeBg}`}>
+        {/* Top Header Row: Status Badge on left + 100% Eligible or Status / Date on right */}
+        <div className="flex items-center justify-between gap-1.5 mb-2.5">
+          <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border whitespace-nowrap flex-shrink-0 shadow-2xs ${statusBadgeBg}`}>
             {statusIcon}
-            <span>{getStatusLabel(application.status)}</span>
+            <span className="whitespace-nowrap">{getStatusLabel(application.status)}</span>
           </div>
           {isHighTier ? (
-            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-[#16A34A] bg-[#F0FDF4] border border-[#BBF7D0] px-2 py-0.5 rounded-full">
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0 shadow-2xs">
               ★ {isEligible || score === 100 ? '100% Eligible' : `${score}% Match`}
             </span>
+          ) : application.status === 'interview' ? (
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-purple-700 bg-purple-100/90 border border-purple-200 px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0 shadow-2xs">
+              Interview
+            </span>
+          ) : application.status === 'hired' ? (
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0 shadow-2xs">
+              Hired
+            </span>
           ) : (
-            <span className="text-[11px] text-[#64748B] dark:text-slate-400 font-medium">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap flex-shrink-0">
               {formatDate(application.appliedDate)}
             </span>
           )}
         </div>
 
         {/* Profile Row: Avatar, Candidate Name, Email, Gender/Exp */}
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2.5 mb-2.5">
           <div className="medex-applicant-avatar-wrapper flex-shrink-0">
             <div 
-              className={`medex-applicant-avatar rounded-full flex items-center justify-center font-bold text-xs border ${avatarBg}`}
-              style={{ width: '36px', height: '36px', minWidth: '36px', minHeight: '36px' }}
+              className={`medex-applicant-avatar ${avatarClass} rounded-full flex items-center justify-center font-bold text-sm shadow-sm`}
+              style={{ width: '40px', height: '40px', minWidth: '40px', minHeight: '40px' }}
             >
               {application.candidateName?.charAt(0)?.toUpperCase() || 'A'}
             </div>
           </div>
           <div className="min-w-0 flex-1 overflow-hidden">
             <h3 
-              className="font-bold text-[#1E293B] dark:text-slate-100 text-[13.5px] truncate leading-tight"
+              className="font-bold text-slate-900 dark:text-slate-100 text-[14px] truncate leading-tight"
               title={application.candidateName || 'Unknown Candidate'}
             >
               {application.candidateName || 'Unknown Candidate'}
             </h3>
             <p 
-              className="text-[11px] text-[#64748B] dark:text-slate-400 truncate flex items-center gap-1 mt-0.5"
+              className="text-[11px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1 mt-0.5 min-w-0"
               title={application.candidateEmail}
             >
-              <Mail className="w-3 h-3 text-[#64748B] flex-shrink-0" />
+              <Mail className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
               <span className="truncate">{application.candidateEmail}</span>
             </p>
-            <p className="text-[11px] text-[#64748B] dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5 whitespace-nowrap">
               <span>♂ {application.candidateGender || 'M'}</span>
               <span>•</span>
               <span>{application.candidateYearsExperience != null ? `${application.candidateYearsExperience} Yrs Exp` : 'Fresher'}</span>
@@ -831,62 +845,62 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
           </div>
         </div>
 
-        {/* Qualification & Applied Job Strip - Clean text, no nested card border */}
-        <div className="space-y-0.5 mb-2">
+        {/* Qualification & Applied Job Strip */}
+        <div className="space-y-0.5 mb-2.5">
           <div 
-            className="flex items-center gap-1.5 text-xs font-semibold text-[#1E293B] dark:text-slate-200 truncate" 
+            className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 truncate" 
             title={[application.candidateQualification, application.candidateSpeciality].filter(Boolean).join(' - ') || 'Medical Practitioner'}
           >
-            <GraduationCap className="w-3.5 h-3.5 text-[#2563EB] flex-shrink-0" />
+            <GraduationCap className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
             <span className="truncate">
               {[application.candidateQualification, application.candidateSpeciality].filter(Boolean).join(' - ') || 'Medical Practitioner'}
             </span>
           </div>
 
           <div 
-            className="flex items-center gap-1.5 text-[11px] font-medium text-[#2563EB] dark:text-blue-400 truncate" 
+            className="flex items-center gap-1.5 text-[11.5px] font-semibold text-blue-600 dark:text-blue-400 truncate" 
             title={application.jobTitle}
           >
-            <Briefcase className="w-3 h-3 text-[#2563EB] flex-shrink-0" />
+            <Briefcase className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
             <span className="truncate">{application.jobTitle}</span>
           </div>
         </div>
 
-        {/* Compact Eligibility Match Box - Light background, subtle border, tight 2-column layout */}
-        <div className={`p-2 rounded-lg mb-2 text-xs transition-all ${
+        {/* Compact Eligibility Match Box */}
+        <div className={`p-2.5 rounded-xl mb-2.5 text-xs transition-all border ${
           isHighTier 
-            ? 'bg-[#F0FDF4]/70 dark:bg-emerald-950/20' 
+            ? 'bg-emerald-50/70 border-emerald-200/90 dark:bg-emerald-950/20 dark:border-emerald-800/50' 
             : isMediumTier
-            ? 'bg-[#FFFBEB]/70 dark:bg-amber-950/20'
-            : 'bg-[#FEF2F2]/70 dark:bg-rose-950/20'
+            ? 'bg-amber-50/70 border-amber-200/90 dark:bg-amber-950/20 dark:border-amber-800/50'
+            : 'bg-rose-50/70 border-rose-200/90 dark:bg-rose-950/20 dark:border-rose-800/50'
         }`}>
-          <div className="flex items-center justify-between gap-1 mb-1">
-            <span className="text-[11px] font-bold flex items-center gap-1 text-[#1E293B] dark:text-slate-200">
-              <Star className={`w-3 h-3 fill-current ${
-                isHighTier ? 'text-[#16A34A]' : isMediumTier ? 'text-[#D97706]' : 'text-[#DC2626]'
+          <div className="flex items-center justify-between gap-1 mb-1.5">
+            <span className="text-[11.5px] font-bold flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+              <Star className={`w-3.5 h-3.5 fill-current ${
+                isHighTier ? 'text-emerald-600' : isMediumTier ? 'text-amber-500' : 'text-rose-500'
               }`} />
               Eligibility Match
             </span>
-            <span className={`px-1.5 py-0.2 rounded text-[10px] font-bold border ${
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border shadow-2xs ${
               isHighTier 
-                ? 'bg-[#F0FDF4] text-[#16A34A] border-[#BBF7D0]' 
+                ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
                 : isMediumTier
-                ? 'bg-[#FFFBEB] text-[#D97706] border-[#FDE68A]'
-                : 'bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]'
+                ? 'bg-amber-100 text-amber-800 border-amber-300'
+                : 'bg-rose-100 text-rose-800 border-rose-300'
             }`}>
               {tierLabel}
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px]">
+          <div className="grid grid-cols-2 gap-x-2.5 gap-y-1 text-[11px]">
             {visibleCriteria.map((item, idx) => (
               <div 
                 key={idx} 
                 className="flex items-center gap-1 min-w-0"
                 title={item.text}
               >
-                <Check className={`w-3 h-3 flex-shrink-0 ${item.met ? 'text-[#16A34A]' : 'text-[#D97706]'}`} />
-                <span className="text-[#1E293B] dark:text-slate-300 text-[11px] truncate font-normal">
+                <Check className={`w-3.5 h-3.5 flex-shrink-0 ${item.met ? 'text-emerald-600' : 'text-amber-500'}`} />
+                <span className="text-slate-700 dark:text-slate-300 text-[11px] truncate font-medium">
                   {item.text}
                 </span>
               </div>
@@ -894,14 +908,14 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
           </div>
 
           {hasMoreCriteria && (
-            <div className="mt-1 pt-1 border-t border-[#E2E8F0]/70 dark:border-gray-700/60 flex items-center justify-between">
+            <div className="mt-1.5 pt-1.5 border-t border-slate-200/70 dark:border-gray-700/60 flex items-center justify-between">
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleEligibility(application.id);
                 }}
-                className="text-[10px] font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline transition-colors cursor-pointer"
+                className="text-[10.5px] font-bold text-blue-600 hover:text-blue-800 hover:underline transition-colors cursor-pointer"
               >
                 {isExpanded ? 'Show less' : `+${criteriaItems.length - maxInitialCriteria} more details`}
               </button>
@@ -912,7 +926,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                   setSelectedApplication(application);
                   setIsViewDialogOpen(true);
                 }}
-                className="text-[10px] font-medium text-[#64748B] hover:text-[#1E293B] hover:underline transition-colors cursor-pointer"
+                className="text-[10.5px] font-medium text-slate-500 hover:text-slate-800 hover:underline transition-colors cursor-pointer"
               >
                 View full
               </button>
@@ -920,20 +934,20 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
           )}
         </div>
 
-        {/* Company, Location, Registration, Applied Date - Subtle divider, NO enclosed border */}
-        <div className="pt-1.5 border-t border-[#E2E8F0] dark:border-gray-700/70 mb-2 space-y-1 text-[11px]">
+        {/* Company, Location, Registration, Applied Date */}
+        <div className="pt-2 border-t border-slate-200/80 dark:border-gray-700/70 mb-2.5 space-y-1.5 text-[11.5px]">
           <div className="grid grid-cols-2 gap-x-2">
             {/* Hospital */}
-            <div className="flex items-center gap-1 min-w-0" title={application.jobOrganization || 'Organization'}>
-              <Building2 className="w-3 h-3 text-[#64748B] flex-shrink-0" />
-              <span className="font-medium text-[#1E293B] dark:text-slate-200 truncate">
+            <div className="flex items-center gap-1.5 min-w-0" title={application.jobOrganization || 'Organization'}>
+              <Building2 className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+              <span className="font-semibold text-slate-800 dark:text-slate-200 truncate">
                 {application.jobOrganization || 'Organization'}
               </span>
             </div>
             {/* Location */}
-            <div className="flex items-center gap-1 min-w-0" title={[application.candidateCity, application.candidateState].filter(Boolean).join(', ') || 'Not specified'}>
-              <MapPin className="w-3 h-3 text-[#64748B] flex-shrink-0" />
-              <span className="text-[#64748B] dark:text-slate-400 truncate">
+            <div className="flex items-center gap-1.5 min-w-0" title={[application.candidateCity, application.candidateState].filter(Boolean).join(', ') || 'Not specified'}>
+              <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+              <span className="text-slate-600 dark:text-slate-400 truncate">
                 {[application.candidateCity, application.candidateState].filter(Boolean).join(', ') || 'Not specified'}
               </span>
             </div>
@@ -941,29 +955,29 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
 
           <div className="grid grid-cols-2 gap-x-2">
             {/* Reg */}
-            <div className="flex items-center gap-1 min-w-0" title={application.candidateRegistrationNumber ? `Reg: ${application.candidateRegistrationNumber}` : ''}>
-              <ShieldCheck className="w-3 h-3 text-[#64748B] flex-shrink-0" />
-              <span className="text-[#64748B] dark:text-slate-400 truncate">
+            <div className="flex items-center gap-1.5 min-w-0" title={application.candidateRegistrationNumber ? `Reg: ${application.candidateRegistrationNumber}` : ''}>
+              <ShieldCheck className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+              <span className="text-slate-600 dark:text-slate-400 truncate">
                 {application.candidateRegistrationNumber ? `Reg: ${application.candidateRegistrationNumber}` : (application.candidateYearsExperience ? `${application.candidateYearsExperience} Yrs Exp` : 'Reg: Pending')}
               </span>
             </div>
             {/* Applied Date */}
-            <div className="flex items-center gap-1 min-w-0" title={formatDate(application.appliedDate)}>
-              <Calendar className="w-3 h-3 text-[#64748B] flex-shrink-0" />
-              <span className="text-[#64748B] dark:text-slate-400 truncate">
+            <div className="flex items-center gap-1.5 min-w-0" title={formatDate(application.appliedDate)}>
+              <Calendar className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+              <span className="text-slate-600 dark:text-slate-400 truncate">
                 {formatDate(application.appliedDate)}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Scheduled Interview Banner - Compact single-line strip */}
+        {/* Scheduled Interview Banner */}
         {application.interviewDate && (
           <div 
-            className="flex items-center gap-1 px-2 py-0.5 mb-1.5 bg-[#EFF6FF] text-[#2563EB] dark:bg-blue-950/40 dark:text-blue-300 rounded text-[11px] font-medium truncate"
+            className="flex items-center gap-1.5 px-2.5 py-1 mb-2 bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/60 rounded-lg text-[11px] font-medium truncate"
             title={`Interview: ${formatDateTime(application.interviewDate)}`}
           >
-            <Clock className="w-3 h-3 text-[#2563EB] flex-shrink-0" />
+            <Clock className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
             <span className="truncate">
               Interview: {formatDateTime(application.interviewDate)}
             </span>
@@ -972,22 +986,22 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
 
         {/* Notes if any */}
         {application.notes && (
-          <div className="text-[11px] text-[#64748B] dark:text-slate-400 mb-1.5 truncate" title={application.notes}>
-            <span className="font-semibold text-[#1E293B] dark:text-slate-300">Notes:</span> {application.notes}
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 mb-1.5 truncate" title={application.notes}>
+            <span className="font-semibold text-slate-700 dark:text-slate-300">Notes:</span> {application.notes}
           </div>
         )}
 
         {/* Stage & Progress Bar */}
-        <div className="mb-2">
-          <div className="flex items-center justify-between text-[11px] mb-1">
-            <span className="font-medium text-[#64748B] dark:text-slate-400">
-              Stage: <span className="font-semibold text-[#1E293B] dark:text-slate-200">{getStatusLabel(application.status)}</span>
+        <div className="mb-2.5">
+          <div className="flex items-center justify-between text-[11.5px] mb-1">
+            <span className="font-semibold text-slate-600 dark:text-slate-400">
+              Stage: <span className="font-bold text-slate-900 dark:text-slate-100">{getStatusLabel(application.status)}</span>
             </span>
-            <span className="font-semibold text-[#64748B] dark:text-slate-400">
+            <span className="font-bold text-slate-600 dark:text-slate-400 text-[11px]">
               {getStatusProgress(application.status)}%
             </span>
           </div>
-          <div className="w-full bg-[#F1F5F9] dark:bg-slate-700 rounded-full h-1 overflow-hidden">
+          <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
             <div 
               className={`h-full rounded-full transition-all duration-300 ${progressColorClass}`} 
               style={{ width: `${getStatusProgress(application.status)}%` }} 
@@ -997,7 +1011,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
 
         {/* Action Buttons (2x2 Grid, Bottom-Anchored) */}
         <div 
-          className="medex-applicant-footer grid grid-cols-2 gap-1.5 mt-auto pt-2 border-t border-[#E2E8F0] dark:border-gray-700/60"
+          className="medex-applicant-footer grid grid-cols-2 gap-1.5 mt-auto pt-2.5 border-t border-slate-200 dark:border-gray-700/60"
           data-slot="applicant-footer"
         >
           {/* 1. View */}
@@ -1008,11 +1022,11 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               setSelectedApplication(application);
               setIsViewDialogOpen(true);
             }}
-            className="medex-app-btn medex-app-btn-view w-full h-8 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 bg-white hover:bg-[#F8FAFC] text-[#1E293B] border border-[#E2E8F0] rounded-lg shadow-2xs"
+            className="medex-app-btn medex-app-btn-view w-full h-8 px-2 text-xs font-bold inline-flex items-center justify-center min-w-0 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg shadow-2xs"
             title="View Details"
           >
-            <Eye className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-[#64748B]" />
-            <span className="truncate">View</span>
+            <Eye className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-slate-600" />
+            <span className="truncate whitespace-nowrap">View</span>
           </Button>
 
           {/* 2. Update Status */}
@@ -1023,11 +1037,11 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               setSelectedApplication(application);
               setIsStatusDialogOpen(true);
             }}
-            className="medex-app-btn medex-app-btn-status w-full h-8 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 bg-white hover:bg-[#F8FAFC] text-[#1E293B] border border-[#E2E8F0] rounded-lg shadow-2xs"
+            className="medex-app-btn medex-app-btn-status w-full h-8 px-2 text-xs font-bold inline-flex items-center justify-center min-w-0 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg shadow-2xs"
             title="Update Status"
           >
-            <CheckCircle className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-[#64748B]" />
-            <span className="truncate">Update Status</span>
+            <CheckCircle className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-slate-600" />
+            <span className="truncate whitespace-nowrap">Update Status</span>
           </Button>
 
           {/* 3. Interview / + Meet Link */}
@@ -1038,10 +1052,10 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               setSelectedApplication(application);
               setIsInterviewDialogOpen(true);
             }}
-            className={`medex-app-btn medex-app-btn-interview w-full h-8 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 rounded-lg shadow-2xs text-white ${
+            className={`medex-app-btn medex-app-btn-interview w-full h-8 px-2 text-xs font-bold inline-flex items-center justify-center min-w-0 rounded-lg shadow-2xs text-white ${
               application.interviewDate && !application.interviewLink
-                ? 'medex-btn-amber bg-[#D97706] hover:bg-[#B45309] border-transparent'
-                : 'medex-btn-primary bg-[#2563EB] hover:bg-[#1D4ED8] border-transparent'
+                ? 'medex-btn-amber bg-[#f59e0b] hover:bg-[#d97706] border-transparent'
+                : 'medex-btn-purple bg-[#7c3aed] hover:bg-[#6d28d9] border-transparent'
             }`}
             title={
               application.interviewDate
@@ -1052,35 +1066,35 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
             {application.interviewDate && !application.interviewLink ? (
               <>
                 <Plus className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
-                <span className="truncate">+ Meet Link</span>
+                <span className="truncate whitespace-nowrap">+ Meet Link</span>
               </>
             ) : (
               <>
                 <Calendar className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
-                <span className="truncate">Interview</span>
+                <span className="truncate whitespace-nowrap">Interview</span>
               </>
             )}
           </Button>
 
-          {/* 4. View Resume / No Resume */}
+          {/* 4. Resume */}
           {application.resumeUrl ? (
             <Button 
               variant="default" 
               size="sm"
               onClick={() => openFileInViewer(application.resumeUrl!)}
-              className="medex-app-btn medex-app-btn-resume w-full h-8 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 bg-[#16A34A] hover:bg-[#15803D] text-white border-transparent rounded-lg shadow-2xs"
+              className="medex-app-btn medex-app-btn-resume w-full h-8 px-2 text-xs font-bold inline-flex items-center justify-center min-w-0 bg-[#10b981] hover:bg-[#059669] text-white border-transparent rounded-lg shadow-2xs"
               title="View Resume"
             >
               <FileText className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
-              <span className="truncate">Resume</span>
+              <span className="truncate whitespace-nowrap">Resume</span>
             </Button>
           ) : (
             <div 
-              className="medex-app-btn medex-app-no-resume w-full h-8 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 bg-[#FFFBEB] hover:bg-[#FEF3C7] text-[#D97706] border border-[#FDE68A] rounded-lg cursor-default shadow-2xs"
+              className="medex-app-btn medex-app-no-resume w-full h-8 px-2 text-xs font-bold inline-flex items-center justify-center min-w-0 bg-[#fffbeb] hover:bg-[#fef3c7] text-[#d97706] border border-[#fde68a] rounded-lg cursor-default shadow-2xs"
               title="No resume uploaded"
             >
-              <AlertCircle className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-[#D97706]" />
-              <span className="truncate">No Resume</span>
+              <AlertCircle className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-[#d97706]" />
+              <span className="truncate whitespace-nowrap">No Resume</span>
             </div>
           )}
         </div>
@@ -1271,13 +1285,8 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
 
               <TabsContent value="all" className="mt-4 sm:mt-6">
                 {loading ? (
-                  <div 
-                    className="grid gap-3 sm:gap-3.5"
-                    style={{
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 225px), 1fr))'
-                    }}
-                  >
-                    {[...Array(4)].map((_, i) => (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5 sm:gap-5">
+                    {[...Array(6)].map((_, i) => (
                       <ApplicationSkeleton key={i} />
                     ))}
                   </div>
@@ -1291,12 +1300,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                     </p>
                   </Card>
                 ) : (
-                  <div 
-                    className="grid gap-3 sm:gap-3.5 medex-applicant-grid"
-                    style={{
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 225px), 1fr))'
-                    }}
-                  >
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5 sm:gap-5 medex-applicant-grid">
                     {filteredApplications.map(renderApplicationCard)}
                   </div>
                 )}
@@ -1304,13 +1308,8 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
 
               <TabsContent value="active" className="mt-4 sm:mt-6">
                 {loading ? (
-                  <div 
-                    className="grid gap-3 sm:gap-3.5"
-                    style={{
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 225px), 1fr))'
-                    }}
-                  >
-                    {[...Array(4)].map((_, i) => (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5 sm:gap-5">
+                    {[...Array(6)].map((_, i) => (
                       <ApplicationSkeleton key={i} />
                     ))}
                   </div>
@@ -1320,12 +1319,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                     <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">No active applications found.</p>
                   </Card>
                 ) : (
-                  <div 
-                    className="grid gap-3 sm:gap-3.5 medex-applicant-grid"
-                    style={{
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 225px), 1fr))'
-                    }}
-                  >
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5 sm:gap-5 medex-applicant-grid">
                     {filteredApplications
                       .filter(app => ['pending', 'applied', 'shortlisted'].includes(app.status))
                       .map(renderApplicationCard)}
@@ -1335,13 +1329,8 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
 
               <TabsContent value="interview" className="mt-4 sm:mt-6">
                 {loading ? (
-                  <div 
-                    className="grid gap-3 sm:gap-3.5"
-                    style={{
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 225px), 1fr))'
-                    }}
-                  >
-                    {[...Array(4)].map((_, i) => (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5 sm:gap-5">
+                    {[...Array(6)].map((_, i) => (
                       <ApplicationSkeleton key={i} />
                     ))}
                   </div>
@@ -1351,12 +1340,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                     <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">No interview scheduled applications found.</p>
                   </Card>
                 ) : (
-                  <div 
-                    className="grid gap-3 sm:gap-3.5 medex-applicant-grid"
-                    style={{
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 225px), 1fr))'
-                    }}
-                  >
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5 sm:gap-5 medex-applicant-grid">
                     {filteredApplications
                       .filter(app => app.status === 'interview')
                       .map(renderApplicationCard)}
@@ -1366,13 +1350,8 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
 
               <TabsContent value="completed" className="mt-4 sm:mt-6">
                 {loading ? (
-                  <div 
-                    className="grid gap-3 sm:gap-3.5"
-                    style={{
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 225px), 1fr))'
-                    }}
-                  >
-                    {[...Array(4)].map((_, i) => (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5 sm:gap-5">
+                    {[...Array(6)].map((_, i) => (
                       <ApplicationSkeleton key={i} />
                     ))}
                   </div>
@@ -1382,12 +1361,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                     <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">No completed applications found.</p>
                   </Card>
                 ) : (
-                  <div 
-                    className="grid gap-3 sm:gap-3.5 medex-applicant-grid"
-                    style={{
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 225px), 1fr))'
-                    }}
-                  >
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5 sm:gap-5 medex-applicant-grid">
                     {filteredApplications
                       .filter(app => ['hired', 'selected', 'rejected'].includes(app.status))
                       .map(renderApplicationCard)}

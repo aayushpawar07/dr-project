@@ -817,7 +817,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
         </div>
 
         {/* Profile Row: Avatar, Candidate Name, Email, Gender/Exp */}
-        <div className="flex items-center gap-2.5 mb-2.5">
+        <div className="flex items-center gap-2.5 mb-2.5 min-w-0 overflow-hidden">
           <div className="medex-applicant-avatar-wrapper flex-shrink-0">
             <div 
               className={`medex-applicant-avatar ${avatarClass} rounded-full flex items-center justify-center font-bold text-sm shadow-sm`}
@@ -828,22 +828,22 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
           </div>
           <div className="min-w-0 flex-1 overflow-hidden">
             <h3 
-              className="font-bold text-slate-900 dark:text-slate-100 text-[14px] truncate leading-tight"
+              className="medex-applicant-name font-bold text-slate-900 dark:text-slate-100 text-[14px] leading-tight"
               title={application.candidateName || 'Unknown Candidate'}
             >
               {application.candidateName || 'Unknown Candidate'}
             </h3>
             <p 
-              className="text-[11px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1 mt-0.5 min-w-0"
+              className="text-[11px] text-slate-500 dark:text-slate-400 truncate flex items-center gap-1 mt-0.5 min-w-0 overflow-hidden"
               title={application.candidateEmail}
             >
               <Mail className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
               <span className="truncate">{application.candidateEmail}</span>
             </p>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5 whitespace-nowrap">
-              <span>♂ {application.candidateGender || 'M'}</span>
-              <span>•</span>
-              <span>{application.candidateYearsExperience != null ? `${application.candidateYearsExperience} Yrs Exp` : 'Fresher'}</span>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5 whitespace-nowrap overflow-hidden">
+              <span className="flex-shrink-0">♂ {application.candidateGender || 'M'}</span>
+              <span className="flex-shrink-0">•</span>
+              <span className="flex-shrink-0">{application.candidateYearsExperience != null ? `${application.candidateYearsExperience} Yrs Exp` : 'Fresher'}</span>
             </p>
           </div>
         </div>

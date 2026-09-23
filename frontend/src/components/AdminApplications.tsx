@@ -692,7 +692,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
     // Card 3: Interview -> Purple
     // Card 4: Pending -> Amber
     let borderThemeClass = 'card-border-purple border-[#d8b4fe]';
-    let avatarBgClass = 'bg-[#2563eb]';
+    let avatarBgColor = '#2563eb';
     let progressColorClass = 'bg-blue-600';
     let stageTextColorClass = 'text-blue-600 dark:text-blue-400';
     
@@ -707,7 +707,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
 
     if (application.status === 'hired') {
       borderThemeClass = 'card-border-sky border-[#7dd3fc]';
-      avatarBgClass = 'bg-[#2563eb]';
+      avatarBgColor = '#2563eb';
       progressColorClass = 'bg-emerald-500';
       stageTextColorClass = 'text-emerald-600 dark:text-emerald-400';
       leftPillBg = 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/50 dark:text-sky-300 dark:border-sky-800';
@@ -717,7 +717,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
       rightPillLabel = 'Hired';
     } else if (isEligible || score === 100) {
       borderThemeClass = 'card-border-emerald border-[#86efac]';
-      avatarBgClass = 'bg-[#059669]';
+      avatarBgColor = '#059669';
       progressColorClass = application.status === 'interview' ? 'bg-blue-600' : 'bg-emerald-500';
       stageTextColorClass = application.status === 'interview' ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400';
       leftPillBg = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800';
@@ -729,7 +729,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
       rightPillLabel = getStatusLabel(application.status);
     } else if (application.status === 'interview') {
       borderThemeClass = 'card-border-purple border-[#d8b4fe]';
-      avatarBgClass = 'bg-[#2563eb]';
+      avatarBgColor = '#2563eb';
       progressColorClass = 'bg-blue-600';
       stageTextColorClass = 'text-blue-600 dark:text-blue-400';
       leftPillBg = 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/50 dark:text-purple-300 dark:border-purple-800';
@@ -739,7 +739,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
       rightPillLabel = 'Interview';
     } else if (application.status === 'pending' || (score >= 40 && score < 100)) {
       borderThemeClass = 'card-border-amber border-[#fde68a]';
-      avatarBgClass = 'bg-[#d97706]';
+      avatarBgColor = '#d97706';
       progressColorClass = 'bg-amber-500';
       stageTextColorClass = 'text-amber-600 dark:text-amber-400';
       leftPillBg = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800';
@@ -749,7 +749,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
       rightPillLabel = 'Pending';
     } else if (application.status === 'rejected') {
       borderThemeClass = 'card-border-rose border-[#fecdd3]';
-      avatarBgClass = 'bg-[#e11d48]';
+      avatarBgColor = '#e11d48';
       progressColorClass = 'bg-rose-500';
       stageTextColorClass = 'text-rose-600 dark:text-rose-400';
       leftPillBg = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800';
@@ -819,10 +819,13 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
 
         {/* Profile Row: Avatar, Candidate Name, Email, Gender */}
         <div className="flex items-center gap-2.5 mb-2">
-          <div 
-            className={`w-[42px] h-[42px] rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0 shadow-xs ${avatarBgClass}`}
-          >
-            {application.candidateName?.charAt(0)?.toUpperCase() || 'A'}
+          <div className="medex-applicant-avatar-wrapper flex-shrink-0">
+            <div 
+              className="medex-applicant-avatar rounded-full flex items-center justify-center text-white font-bold text-base shadow-xs"
+              style={{ backgroundColor: avatarBgColor, width: '42px', height: '42px', minWidth: '42px', minHeight: '42px' }}
+            >
+              {application.candidateName?.charAt(0)?.toUpperCase() || 'A'}
+            </div>
           </div>
           <div className="min-w-0 flex-1 overflow-hidden">
             <h3 

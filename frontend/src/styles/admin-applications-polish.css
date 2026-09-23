@@ -86,18 +86,24 @@
 
 .medex-applicant-avatar-wrapper {
   position: relative !important;
-  width: 38px !important;
-  height: 38px !important;
-  min-width: 38px !important;
-  flex: 0 0 38px !important;
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  flex: 0 0 42px !important;
 }
 
 .medex-applicant-avatar {
-  width: 38px !important;
-  height: 38px !important;
-  min-width: 38px !important;
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
   border: 0 !important;
   border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 1rem !important;
 }
 
 .medex-applicant-avatar.avatar-emerald {

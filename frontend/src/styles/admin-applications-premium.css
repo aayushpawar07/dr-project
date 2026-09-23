@@ -756,3 +756,99 @@
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Final density and overflow safeguards for the three-column desktop view. */
+.admin-applications-page__tabs-toolbar {
+  min-width: 0;
+}
+
+.admin-applications-page__tabs-toolbar [role="tablist"] {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  min-width: 0;
+  overflow-x: auto !important;
+}
+
+.admin-applications-page__tabs-toolbar [role="tab"] {
+  flex: 0 0 auto !important;
+}
+
+.admin-applications-page .medex-applicant-card {
+  overflow: hidden !important;
+}
+
+.admin-applications-page .medex-applicant-card-content {
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.admin-applications-page .medex-applicant-card-content > .flex.items-center.justify-between.gap-1\.5 {
+  flex-wrap: nowrap !important;
+  min-height: 1.45rem;
+}
+
+.admin-applications-page .medex-applicant-card-content > .flex.items-center.gap-2\.5 {
+  min-height: 2.25rem;
+}
+
+.admin-applications-page .medex-applicant-card-content > .space-y-0\.5 {
+  min-height: 2.2rem;
+  margin-bottom: 0.45rem !important;
+}
+
+.admin-applications-page .medex-applicant-card-content > .p-2\.5.rounded-xl {
+  margin-bottom: 0.45rem !important;
+  padding: 0.5rem !important;
+}
+
+.admin-applications-page .medex-applicant-card-content > .p-2\.5.rounded-xl .grid {
+  row-gap: 0.2rem !important;
+}
+
+.admin-applications-page .medex-applicant-card-content > .pt-2.border-t {
+  margin-bottom: 0.45rem !important;
+  padding-top: 0.45rem !important;
+  row-gap: 0.2rem !important;
+}
+
+.admin-applications-page .medex-applicant-card-content > .pt-2.border-t > div {
+  line-height: 1.15 !important;
+}
+
+.admin-applications-page .medex-applicant-card-content > .flex.items-center.gap-1\.5.px-2\.5.py-1 {
+  margin-bottom: 0.45rem !important;
+  min-height: 1.8rem;
+}
+
+.admin-applications-page .medex-applicant-card-content > .mb-2\.5:not(.medex-applicant-progress) {
+  margin-bottom: 0.45rem !important;
+}
+
+.admin-applications-page .medex-applicant-footer {
+  margin-top: 0.25rem !important;
+}
+
+@media (min-width: 1280px) {
+  .admin-applications-page .medex-applicant-card-content {
+    padding: 0.7rem !important;
+  }
+
+  .admin-applications-page .medex-applicant-card-content > .p-2\.5.rounded-xl .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .admin-applications-page__tabs-toolbar {
+    display: block !important;
+  }
+
+  .admin-applications-page__tabs-toolbar [role="tablist"] {
+    width: 100%;
+    margin-bottom: 0.55rem;
+  }
+
+  .admin-applications-page__view-tools {
+    justify-content: flex-end;
+  }
+}

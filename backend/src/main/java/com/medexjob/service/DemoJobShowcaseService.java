@@ -29,6 +29,8 @@ public class DemoJobShowcaseService {
     public static final String SINGLE_GOVT_SLUG = "medical-officer-emergency-medicine-aiims-2026";
     public static final String SINGLE_PRIVATE_SLUG = "consultant-cardiologist-apollo-chennai-2026";
     public static final String MULTI_SLUG = "esic-faridabad-senior-resident-2026-showcase";
+    public static final String FACULTY_MULTI_FINGERPRINT = "demo-showcase-aiims-faculty-2026";
+    public static final String FACULTY_MULTI_SLUG = "aiims-delhi-faculty-2026-showcase";
 
     private static final Logger logger = LoggerFactory.getLogger(DemoJobShowcaseService.class);
     private static final String NOTIFICATION_PDF = "https://dopt.gov.in/sites/default/files/FAQ_on_Reservation.pdf";
@@ -59,6 +61,7 @@ public class DemoJobShowcaseService {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("singleJobs", singles);
         result.put("multiJob", publishMultiJobRecruitment());
+        result.put("facultyMultiJob", publishFacultyMultiJobRecruitment());
         return result;
     }
 
@@ -192,6 +195,102 @@ public class DemoJobShowcaseService {
         approveAndPublish(saved.getId());
         Recruitment published = recruitmentManagementService.get(saved.getId());
         logger.info("Seeded multi-job recruitment {} with {} vacancies", published.getId(), published.getVacancies().size());
+        return recruitmentSummary(published, "created");
+    }
+
+    private Map<String, Object> publishFacultyMultiJobRecruitment() {
+        var existing = recruitmentRepository.findFirstByPdfFingerprintOrderByCreatedAtDesc(FACULTY_MULTI_FINGERPRINT);
+        if (existing.isPresent()) {
+            Recruitment current = recruitmentManagementService.get(existing.get().getId());
+            current.setJobDescription(aiimsFacultyStructuredDescription());
+            recruitmentRepository.save(current);
+            if (current.getStatus() != Recruitment.RecruitmentStatus.PUBLISHED) {
+                approveAndPublish(current.getId());
+                current = recruitmentManagementService.get(current.getId());
+            }
+            return recruitmentSummary(current, "updated");
+        }
+
+        Recruitment recruitment = new Recruitment();
+        recruitment.setOrganisationName("All India Institute of Medical Sciences (AIIMS), New Delhi");
+        recruitment.setTitle("Professor, Associate Professor, Assistant Professor Recruitment 2026 - Multiple Departments");
+        recruitment.setAdvertisementNumber("AIIMS/ND/FAC/09/2026");
+        recruitment.setRecruitmentYear(2026);
+        recruitment.setSector(Job.JobSector.GOVERNMENT);
+        recruitment.setLocation("New Delhi (Ansari Nagar), Delhi");
+        recruitment.setApplicationStartDate(LocalDate.of(2026, 9, 1));
+        recruitment.setApplicationLastDate(LocalDate.of(2026, 10, 31));
+        recruitment.setApplicationFee("UR/OBC: Rs 1500. SC/ST/EWS: Rs 1200. PwBD: Nil.");
+        recruitment.setSelectionProcess("Screening of applications followed by interview by the Standing Selection Committee of AIIMS New Delhi.");
+        recruitment.setOfficialNotificationUrl(NOTIFICATION_PDF);
+        recruitment.setOfficialApplicationUrl("https://aiims.edu/apply");
+        recruitment.setOfficialWebsite("https://aiims.edu");
+        recruitment.setImportantInstructions(
+                "Candidates must possess recognized PG qualification (MD/MS/DNB/M.Ch/DM) with required teaching/clinical experience as per NMC/AIIMS norms. Age relaxation as per Govt of India rules."
+        );
+        recruitment.setJobDescription(aiimsFacultyStructuredDescription());
+        recruitment.setSourcePdfName("aiims-delhi-faculty-2026-showcase.pdf");
+        recruitment.setPdfFingerprint(FACULTY_MULTI_FINGERPRINT);
+        recruitment.setSlug(FACULTY_MULTI_SLUG);
+        recruitment.setExtractionMethod("manual-showcase");
+        recruitment.setStatus(Recruitment.RecruitmentStatus.REVIEW);
+        recruitment.setRevisionNumber(1);
+        recruitment.setTotalVacancies(38);
+
+        Recruitment saved = recruitmentRepository.save(recruitment);
+
+        addVacancy(saved.getId(), "Professor, Associate Professor, Assistant Professor", "Cardiology", "Cardiology", 7,
+                "DM or DNB in Cardiology with valid NMC/State Council registration",
+                "1-14 years teaching/research experience depending on cadre",
+                "50 years for Professor, 45 years for Associate/Assistant as on last date",
+                "Rs 1,01,500 - 2,20,400/month + NPA",
+                "Level 12 to 14A",
+                "PB-4 with AGP Rs 8,000 to 10,500",
+                "Active publications in indexed journals as per NMC norms.");
+        addVacancy(saved.getId(), "Professor, Associate Professor, Assistant Professor", "Neurology", "Neurology", 6,
+                "DM or DNB in Neurology with valid NMC/State Council registration",
+                "1-14 years teaching/research experience depending on cadre",
+                "50 years for Professor, 45 years for Associate/Assistant as on last date",
+                "Rs 1,01,500 - 2,20,400/month + NPA",
+                "Level 12 to 14A",
+                "PB-4 with AGP Rs 8,000 to 10,500",
+                "Specialization in stroke or electrophysiology preferred.");
+        addVacancy(saved.getId(), "Professor, Associate Professor, Assistant Professor", "Anaesthesiology", "Anaesthesiology", 9,
+                "MD or DNB in Anaesthesiology with valid NMC/State Council registration",
+                "1-14 years teaching/research experience depending on cadre",
+                "50 years for Professor, 45 years for Associate/Assistant as on last date",
+                "Rs 1,01,500 - 2,20,400/month + NPA",
+                "Level 12 to 14A",
+                "PB-4 with AGP Rs 8,000 to 10,500",
+                "Experience in cardiac, neuro, or transplant anaesthesia preferred.");
+        addVacancy(saved.getId(), "Professor, Associate Professor, Assistant Professor", "Paediatrics", "Paediatrics", 5,
+                "MD or DNB in Paediatrics with valid NMC/State Council registration",
+                "1-14 years teaching/research experience depending on cadre",
+                "50 years for Professor, 45 years for Associate/Assistant as on last date",
+                "Rs 1,01,500 - 2,20,400/month + NPA",
+                "Level 12 to 14A",
+                "PB-4 with AGP Rs 8,000 to 10,500",
+                "Neonatology or paediatric critical care exposure preferred.");
+        addVacancy(saved.getId(), "Professor, Associate Professor, Assistant Professor", "Radiodiagnosis", "Radiodiagnosis", 6,
+                "MD or DNB in Radiodiagnosis with valid NMC/State Council registration",
+                "1-14 years teaching/research experience depending on cadre",
+                "50 years for Professor, 45 years for Associate/Assistant as on last date",
+                "Rs 1,01,500 - 2,20,400/month + NPA",
+                "Level 12 to 14A",
+                "PB-4 with AGP Rs 8,000 to 10,500",
+                "Competence in MRI/CT reporting and interventional radiology.");
+        addVacancy(saved.getId(), "Professor, Associate Professor, Assistant Professor", "Orthopaedics", "Orthopaedics", 5,
+                "MS or DNB in Orthopaedics with valid NMC/State Council registration",
+                "1-14 years teaching/research experience depending on cadre",
+                "50 years for Professor, 45 years for Associate/Assistant as on last date",
+                "Rs 1,01,500 - 2,20,400/month + NPA",
+                "Level 12 to 14A",
+                "PB-4 with AGP Rs 8,000 to 10,500",
+                "Experience in arthroplasty, spine, or pediatric orthopaedics.");
+
+        approveAndPublish(saved.getId());
+        Recruitment published = recruitmentManagementService.get(saved.getId());
+        logger.info("Seeded faculty multi-job recruitment {} with {} vacancies", published.getId(), published.getVacancies().size());
         return recruitmentSummary(published, "created");
     }
 
@@ -465,6 +564,46 @@ public class DemoJobShowcaseService {
                 CONTACT INFORMATION
 
                 Email: Not specified in this listing""";
+    }
+
+    private String aiimsFacultyStructuredDescription() {
+        return """
+                POST DETAILS
+
+                Post: Professor, Associate Professor, Assistant Professor
+                Organisation: All India Institute of Medical Sciences (AIIMS), New Delhi
+                Total Vacancies: 38
+                Sector: Government
+                Application Last Date: 31 Oct 2026
+
+                ### Department-wise Vacancy Breakdown
+
+                | Department | Professor | Associate Professor | Assistant Professor | Total |
+                | --- | --- | --- | --- | --- |
+                | Cardiology | 2 | 2 | 3 | 7 |
+                | Neurology | 1 | 2 | 3 | 6 |
+                | Anaesthesiology | 2 | 3 | 4 | 9 |
+                | Paediatrics | 1 | 2 | 2 | 5 |
+                | Radiodiagnosis | 1 | 2 | 3 | 6 |
+                | Orthopaedics | 1 | 1 | 3 | 5 |
+
+                ELIGIBILITY CRITERIA
+
+                - Medical qualification recognized by NMC
+                - Relevant postgraduate qualification (MD/MS/DNB/DM/M.Ch) in specialty
+                - Required teaching/research experience as per AIIMS faculty norms
+
+                SELECTION PROCESS
+
+                - Screening of online applications
+                - Personal interview before the Standing Selection Committee
+
+                PAY AND SALARY
+
+                - Professor: Level 14A (Rs 1,68,900 - 2,20,400) + NPA
+                - Associate Professor: Level 13A2 (Rs 1,48,200 - 2,11,400) + NPA
+                - Assistant Professor: Level 12 (Rs 1,01,500 - 1,67,400) + NPA
+                """;
     }
 
     private Map<String, Object> jobSummary(Job job, String status) {

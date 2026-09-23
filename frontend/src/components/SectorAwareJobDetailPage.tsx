@@ -43,6 +43,37 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
   const [loading, setLoading] = useState(true);
   const [recruitment, setRecruitment] = useState<Recruitment | null>(null);
   const [viewMode, setViewMode] = useState<'explorer' | 'standard'>('explorer');
+  const [selectedPosition, setSelectedPosition] = useState<string>('All Positions');
+
+  const { breakdownMap, availablePositions } = useMemo(() => {
+    const desc = recruitment?.jobDescription || job?.description || '';
+    return parseRecruitmentBreakdown(desc, recruitment?.vacancies, recruitment?.title || job?.title);
+  }, [recruitment, job]);
+
+  const { filteredTotalVacancies, filteredSpecialtiesCount } = useMemo(() => {
+    if (!recruitment?.vacancies) return { filteredTotalVacancies: 0, filteredSpecialtiesCount: 0 };
+    if (!selectedPosition || selectedPosition === 'All Positions') {
+      return {
+        filteredTotalVacancies:
+          recruitment.totalVacancies ||
+          recruitment.vacancies.reduce((sum, v) => sum + Number(v.numberOfVacancies || 0), 0),
+        filteredSpecialtiesCount: recruitment.vacancies.length,
+      };
+    }
+    let total = 0;
+    let specCount = 0;
+    for (const v of recruitment.vacancies) {
+      const match = getVacancyPositionMatch(v, selectedPosition, breakdownMap);
+      if (match.matches && match.count > 0) {
+        total += match.count;
+        specCount += 1;
+      }
+    }
+    return {
+      filteredTotalVacancies: total,
+      filteredSpecialtiesCount: specCount,
+    };
+  }, [recruitment, selectedPosition, breakdownMap]);
 
   useEffect(() => {
     let active = true;
@@ -160,38 +191,6 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
       </div>
     );
   }
-
-  const [selectedPosition, setSelectedPosition] = useState<string>('All Positions');
-
-  const { breakdownMap, availablePositions } = useMemo(() => {
-    const desc = recruitment?.jobDescription || job?.description || '';
-    return parseRecruitmentBreakdown(desc, recruitment?.vacancies);
-  }, [recruitment, job]);
-
-  const { filteredTotalVacancies, filteredSpecialtiesCount } = useMemo(() => {
-    if (!recruitment?.vacancies) return { filteredTotalVacancies: 0, filteredSpecialtiesCount: 0 };
-    if (!selectedPosition || selectedPosition === 'All Positions') {
-      return {
-        filteredTotalVacancies:
-          recruitment.totalVacancies ||
-          recruitment.vacancies.reduce((sum, v) => sum + Number(v.numberOfVacancies || 0), 0),
-        filteredSpecialtiesCount: recruitment.vacancies.length,
-      };
-    }
-    let total = 0;
-    let specCount = 0;
-    for (const v of recruitment.vacancies) {
-      const match = getVacancyPositionMatch(v, selectedPosition, breakdownMap);
-      if (match.matches && match.count > 0) {
-        total += match.count;
-        specCount += 1;
-      }
-    }
-    return {
-      filteredTotalVacancies: total,
-      filteredSpecialtiesCount: specCount,
-    };
-  }, [recruitment, selectedPosition, breakdownMap]);
 
   // If multi-department recruitment is detected (either synthesized or linked)
   if (recruitment && recruitment.vacancies && recruitment.vacancies.length >= 2) {

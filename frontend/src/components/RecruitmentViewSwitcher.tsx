@@ -23,6 +23,10 @@ export function RecruitmentViewSwitcher({
   const displayTotal = totalVacancies ?? 0;
   const displaySpecialties = specialtiesCount ?? 0;
 
+  const positions = availablePositions && availablePositions.length > 0
+    ? availablePositions
+    : ['Professor', 'Associate Professor', 'Assistant Professor'];
+
   return (
     <div className="w-full bg-white border-b border-slate-200 px-3 sm:px-4 py-1.5 sm:py-2 shadow-xs">
       <div className="container mx-auto flex flex-wrap items-center justify-between gap-2">
@@ -57,7 +61,7 @@ export function RecruitmentViewSwitcher({
             </div>
           </div>
 
-          {onPositionChange && availablePositions.length > 0 && (
+          {onPositionChange && (
             <div className="flex items-center gap-1.5">
               <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Position:</span>
               <select
@@ -67,7 +71,7 @@ export function RecruitmentViewSwitcher({
                 aria-label="Filter by position or designation"
               >
                 <option value="All Positions">All Positions</option>
-                {availablePositions.map((pos) => (
+                {positions.map((pos) => (
                   <option key={pos} value={pos}>
                     {pos}
                   </option>

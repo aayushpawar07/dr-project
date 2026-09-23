@@ -79,8 +79,37 @@ function isReservedColumn(header: string): boolean {
   return RESERVED_COLUMN_PATTERNS.some((pattern) => pattern.test(clean));
 }
 
+export const KNOWN_DESIGNATIONS: Array<{ regex: RegExp; name: string }> = [
+  { regex: /(?<!assistant\s+|asst\.?\s*|associate\s+|assoc\.?\s*|additional\s+|addl\.?\s*)\bprof(essor)?\b/i, name: 'Professor' },
+  { regex: /\b(associate|assoc\.?)\s*prof(essor)?\b/i, name: 'Associate Professor' },
+  { regex: /\b(assistant|asst\.?)\s*prof(essor)?\b/i, name: 'Assistant Professor' },
+  { regex: /\b(additional|addl\.?)\s*prof(essor)?\b/i, name: 'Additional Professor' },
+  { regex: /\b(senior|sr\.?)\s*resident\b/i, name: 'Senior Resident' },
+  { regex: /\b(junior|jr\.?)\s*resident\b/i, name: 'Junior Resident' },
+  { regex: /\btutor\b/i, name: 'Tutor' },
+  { regex: /\bdemonstrator\b/i, name: 'Demonstrator' },
+  { regex: /\bspecialist\b/i, name: 'Specialist' },
+  { regex: /\bmedical\s*officer\b/i, name: 'Medical Officer' },
+  { regex: /\bconsultant\b/i, name: 'Consultant' },
+];
+
+export function extractPositionsFromText(text?: string): string[] {
+  if (!text) return [];
+  const found = new Set<string>();
+  for (const item of KNOWN_DESIGNATIONS) {
+    if (item.regex.test(text)) {
+      found.add(item.name);
+    }
+  }
+  return Array.from(found);
+}
+
 function standardizePositionName(raw: string): string {
   const clean = raw.trim();
+  const matched = extractPositionsFromText(clean);
+  if (matched.length === 1) {
+    return matched[0];
+  }
   if (/^assistant\s*prof(essor)?\.?$/i.test(clean) || /^asst\.?\s*prof(essor)?\.?$/i.test(clean)) {
     return 'Assistant Professor';
   }
@@ -130,6 +159,10 @@ function extractPositionsFromVacancies(vacancies?: VacancyRecord[]): string[] {
     const pName = (v.postName || '').trim();
     if (!pName) continue;
 
+    // Scan known designations first
+    const fromKnown = extractPositionsFromText(pName);
+    fromKnown.forEach((p) => found.add(p));
+
     // Check if composite (e.g. comma, slash, semicolon, or "&" separated)
     const parts = pName.split(/[,;/]|\band\b|&/i).map((s) => s.trim()).filter(Boolean);
     if (parts.length > 1) {
@@ -138,12 +171,42 @@ function extractPositionsFromVacancies(vacancies?: VacancyRecord[]): string[] {
           found.add(standardizePositionName(part));
         }
       }
-    } else if (pName.length >= 3 && !isReservedColumn(pName)) {
+    } else if (pName.length >= 3 && !isReservedColumn(pName) && fromKnown.length === 0) {
       found.add(standardizePositionName(pName));
     }
   }
 
   return Array.from(found);
+}
+
+export function matchesPositionName(targetText: string, selectedPosition: string): boolean {
+  if (!targetText || !selectedPosition) return false;
+  const normText = targetText.toLowerCase();
+  const normSel = selectedPosition.toLowerCase().trim();
+
+  if (normText === normSel) return true;
+
+  // Specific handling to prevent "Professor" from erroneously matching "Assistant Professor" or "Associate Professor"
+  if (normSel === 'professor') {
+    const profRegex = /(?<!assistant\s+|asst\.?\s*|associate\s+|assoc\.?\s*|additional\s+|addl\.?\s*)\bprof(essor)?\b/i;
+    return profRegex.test(normText);
+  }
+
+  if (normSel === 'associate professor') {
+    return /\b(associate|assoc\.?)\s*prof(essor)?\b/i.test(normText);
+  }
+
+  if (normSel === 'assistant professor') {
+    return /\b(assistant|asst\.?)\s*prof(essor)?\b/i.test(normText);
+  }
+
+  if (normSel === 'additional professor') {
+    return /\b(additional|addl\.?)\s*prof(essor)?\b/i.test(normText);
+  }
+
+  // Word boundary regex for other positions
+  const escaped = normSel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`\\b${escaped}\\b`, 'i').test(normText);
 }
 
 /**
@@ -153,7 +216,8 @@ function extractPositionsFromVacancies(vacancies?: VacancyRecord[]): string[] {
  */
 export function parseRecruitmentBreakdown(
   descriptionText?: string,
-  vacancies?: VacancyRecord[]
+  vacancies?: VacancyRecord[],
+  titleText?: string
 ): ParsedBreakdownResult {
   const breakdownMap = new Map<string, DepartmentBreakdown>();
   const positionsFromTable = new Set<string>();
@@ -249,14 +313,22 @@ export function parseRecruitmentBreakdown(
     }
   }
 
-  // Combine positions from table and from vacancy post names
+  // Combine positions from table, vacancy post names, title, and description
   const positionsFromVacancies = extractPositionsFromVacancies(vacancies);
+  const positionsFromTitle = extractPositionsFromText(titleText);
+  const positionsFromDesc = extractPositionsFromText(rawText?.slice(0, 2000));
   const combined = new Set<string>();
 
   positionsFromTable.forEach((p) => combined.add(p));
   positionsFromVacancies.forEach((p) => combined.add(p));
+  positionsFromTitle.forEach((p) => combined.add(p));
+  positionsFromDesc.forEach((p) => combined.add(p));
 
-  const sortedPositions = sortPositions(Array.from(combined));
+  let sortedPositions = sortPositions(Array.from(combined));
+
+  if (sortedPositions.length === 0 && (vacancies?.length || 0) >= 2) {
+    sortedPositions = ['Professor', 'Associate Professor', 'Assistant Professor'];
+  }
 
   return {
     breakdownMap,
@@ -323,7 +395,6 @@ export function getVacancyPositionMatch(
     const deptName = cleanExtractedName(vacancy.department || vacancy.speciality || vacancy.postName);
     const item = findDepartmentBreakdown(breakdownMap, deptName);
     if (item) {
-      // Find count for selectedPosition in item.positions (case-insensitive)
       let count = 0;
       let posFound = false;
       const selNorm = selectedPosition.trim().toLowerCase();
@@ -339,22 +410,13 @@ export function getVacancyPositionMatch(
       if (posFound) {
         return { matches: count > 0, count };
       }
-      // If position was in table columns for other departments but this department had none:
       return { matches: false, count: 0 };
     }
   }
 
-  // 2. Direct match on vacancy.postName
-  const pName = (vacancy.postName || '').trim().toLowerCase();
-  const selNorm = selectedPosition.trim().toLowerCase();
-
-  if (pName === selNorm) {
-    const c = Number(vacancy.numberOfVacancies || 0);
-    return { matches: c > 0, count: c };
-  }
-
-  // 3. Check if postName contains the position
-  if (pName.includes(selNorm)) {
+  // 2. Direct or designation match on vacancy.postName
+  const pName = (vacancy.postName || '').trim();
+  if (matchesPositionName(pName, selectedPosition)) {
     const c = Number(vacancy.numberOfVacancies || 0);
     return { matches: c > 0, count: c };
   }

@@ -802,35 +802,15 @@ export function RecruitmentPage() {
     };
   }, [job, recruitment]);
 
-  if (loading) {
-    return (
-      <div className="recruit-page" style={{ display: 'grid', placeItems: 'center', minHeight: '70vh' }}>
-        <div style={{ textAlign: 'center', color: '#64748b' }}>
-          <Stethoscope size={34} color="#1463ff" />
-          <div style={{ marginTop: 10, fontWeight: 800 }}>Loading recruitment...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!recruitment) {
-    return (
-      <div className="recruit-page" style={{ display: 'grid', placeItems: 'center', minHeight: '70vh' }}>
-        <div style={{ textAlign: 'center' }}>
-          <h2>Recruitment not found</h2>
-          <button className="action-btn primary" onClick={() => navigate('/jobs')}>Browse Jobs</button>
-        </div>
-      </div>
-    );
-  }
-
-  const hasMultipleDepartments = (recruitment.vacancies?.length || 0) >= 2;
-
   const [selectedPosition, setSelectedPosition] = useState<string>('All Positions');
 
   const { breakdownMap, availablePositions } = useMemo(() => {
     const desc = recruitment?.jobDescription || (effectiveJob && effectiveJob.description) || '';
-    return parseRecruitmentBreakdown(desc, recruitment?.vacancies);
+    return parseRecruitmentBreakdown(
+      desc,
+      recruitment?.vacancies,
+      recruitment?.title || (effectiveJob && effectiveJob.title)
+    );
   }, [recruitment, effectiveJob]);
 
   const { filteredTotalVacancies, filteredSpecialtiesCount } = useMemo(() => {
@@ -857,6 +837,30 @@ export function RecruitmentPage() {
       filteredSpecialtiesCount: specCount,
     };
   }, [recruitment, selectedPosition, breakdownMap]);
+
+  if (loading) {
+    return (
+      <div className="recruit-page" style={{ display: 'grid', placeItems: 'center', minHeight: '70vh' }}>
+        <div style={{ textAlign: 'center', color: '#64748b' }}>
+          <Stethoscope size={34} color="#1463ff" />
+          <div style={{ marginTop: 10, fontWeight: 800 }}>Loading recruitment...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!recruitment) {
+    return (
+      <div className="recruit-page" style={{ display: 'grid', placeItems: 'center', minHeight: '70vh' }}>
+        <div style={{ textAlign: 'center' }}>
+          <h2>Recruitment not found</h2>
+          <button className="action-btn primary" onClick={() => navigate('/jobs')}>Browse Jobs</button>
+        </div>
+      </div>
+    );
+  }
+
+  const hasMultipleDepartments = (recruitment.vacancies?.length || 0) >= 2;
 
   return (
     <div className="min-h-screen bg-[#f7f9fc]">
@@ -942,12 +946,23 @@ export function RecruitmentExplorerView({
   const [selectedVacancyId, setSelectedVacancyId] = useState('');
   const [applyByDate, setApplyByDate] = useState(applyByDateOverride || '');
 
-  const { breakdownMap } = useMemo(() => {
-    if (externalBreakdownMap) {
-      return { breakdownMap: externalBreakdownMap };
+  const { breakdownMap, availablePositions: parsedPositions } = useMemo(() => {
+    if (externalBreakdownMap && externalAvailablePositions) {
+      return { breakdownMap: externalBreakdownMap, availablePositions: externalAvailablePositions };
     }
-    return parseRecruitmentBreakdown(recruitment?.jobDescription, recruitment?.vacancies);
-  }, [externalBreakdownMap, recruitment]);
+    return parseRecruitmentBreakdown(
+      recruitment?.jobDescription,
+      recruitment?.vacancies,
+      recruitment?.title
+    );
+  }, [externalBreakdownMap, externalAvailablePositions, recruitment]);
+
+  const availablePositions =
+    externalAvailablePositions && externalAvailablePositions.length > 0
+      ? externalAvailablePositions
+      : parsedPositions && parsedPositions.length > 0
+      ? parsedPositions
+      : ['Professor', 'Associate Professor', 'Assistant Professor'];
 
   useEffect(() => {
     if (recruitment?.vacancies?.length) {
@@ -1119,7 +1134,24 @@ export function RecruitmentExplorerView({
                 <Search size={16} />
                 <input className="department-search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search department or specialty..." />
               </div>
-              {postGroups.length > 1 ? (
+              {availablePositions && availablePositions.length > 0 ? (
+                <select
+                  className="post-select"
+                  value={selectedPosition}
+                  onChange={(e) => {
+                    onPositionChange(e.target.value);
+                    setQuery('');
+                  }}
+                  aria-label="Filter by position"
+                >
+                  <option value="All Positions">All ({departmentCount})</option>
+                  {availablePositions.map((pos) => (
+                    <option key={pos} value={pos}>
+                      {pos}
+                    </option>
+                  ))}
+                </select>
+              ) : postGroups.length > 1 ? (
                 <select className="post-select" value={activePost} onChange={(e) => { setActivePost(e.target.value); setQuery(''); }}>
                   {postGroups.map((group) => <option key={group.name} value={group.name}>{group.name}</option>)}
                 </select>

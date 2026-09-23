@@ -5,7 +5,8 @@ import {
   Phone, Mail, MapPin, Search, Filter, Users, Briefcase, MoreVertical, 
   Loader2, ArrowLeft, AlertCircle, Video, ExternalLink, Check, Sparkles, 
   ShieldCheck, GraduationCap, Stethoscope, SlidersHorizontal, RefreshCw, Award,
-  Building2, Plus, Star, Target, Rocket, Package, User
+  Building2, Plus, Star, Target, Rocket, Package, User, Bell, ChevronDown,
+  ArrowUpDown, Grid2X2, List
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
@@ -1103,12 +1104,63 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
     );
   };
 
+  const renderStatusGrid = (statuses: string[], emptyLabel: string, EmptyIcon: typeof Briefcase = Briefcase) => {
+    const matchingApplications = filteredApplications.filter(application => statuses.includes(application.status));
+    if (loading) {
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4.5 sm:gap-5 medex-applicant-grid">
+          {[...Array(6)].map((_, i) => <ApplicationSkeleton key={i} />)}
+        </div>
+      );
+    }
+    if (matchingApplications.length === 0) {
+      return (
+        <Card className="admin-applications-empty p-8 sm:p-12 text-center">
+          <EmptyIcon className="w-12 h-12 sm:w-16 sm:h-16 text-blue-200 mx-auto mb-4" />
+          <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base">{emptyLabel}</p>
+        </Card>
+      );
+    }
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4.5 sm:gap-5 medex-applicant-grid">
+        {matchingApplications.map(renderApplicationCard)}
+      </div>
+    );
+  };
+
   return (
     <div className="admin-applications-page min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="admin-applications-page__container container mx-auto 2xl:max-w-[1600px] xl:max-w-[1400px] px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
         {/* Header - Responsive */}
         <div className="admin-applications-page__header mb-4 sm:mb-5">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+          <div className="admin-applications-page__topbar">
+            <div className="admin-applications-page__brand">
+              <span className="admin-applications-page__brand-icon"><Briefcase className="w-5 h-5" /></span>
+              <div>
+                <strong>Application Management</strong>
+                <span>Review and manage all job applications across the platform</span>
+              </div>
+            </div>
+            <div className="admin-applications-page__global-search">
+              <Search className="w-4 h-4" />
+              <input aria-label="Search candidates, job posts, skills, email" placeholder="Search candidates, job posts, skills, email..." />
+            </div>
+            <div className="admin-applications-page__account">
+              <button type="button" className="admin-applications-page__notification" aria-label="Notifications">
+                <Bell className="w-5 h-5" />
+                <span>3</span>
+              </button>
+              <span className="admin-applications-page__account-avatar">
+                {(user?.name || 'A').charAt(0).toUpperCase()}
+              </span>
+              <div className="admin-applications-page__account-copy">
+                <strong>{user?.name || 'Admin'}</strong>
+                <span>Admin</span>
+              </div>
+              <ChevronDown className="w-4 h-4 text-slate-400" />
+            </div>
+          </div>
+          <div className="admin-applications-page__intro flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 mb-2">
                 <Button
@@ -1244,6 +1296,18 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                     </div>
                   </div>
 
+                  <div className="bg-white dark:bg-gray-800/90 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-gray-700 text-left min-w-[85px] shadow-2xs flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-4 h-4 text-amber-600" />
+                    </div>
+                    <div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Pending Review</div>
+                      <div className="text-lg font-bold text-amber-600 dark:text-amber-400 leading-tight">
+                        {applications.filter(a => ['pending', 'applied'].includes(a.status)).length}
+                      </div>
+                    </div>
+                  </div>
+
                   <Button
                     size="sm"
                     variant={filters.eligibleOnly ? "default" : "outline"}
@@ -1262,27 +1326,41 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
             </div>
 
             <Tabs defaultValue="all" className="admin-applications-page__tabs w-full">
-              <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <div className="admin-applications-page__tabs-toolbar flex items-center justify-between mb-4 sm:mb-6">
                 <TabsList className="inline-flex h-9 sm:h-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-gray-800 p-1 text-slate-600 dark:text-gray-400 border border-slate-200 dark:border-gray-700">
                   <TabsTrigger 
                     value="all" 
                     className="text-xs sm:text-sm px-3 sm:px-4 rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white font-semibold transition-all"
                   >
-                    All ({filteredApplications.length})
+                    <Users className="w-3.5 h-3.5 mr-1.5" /> All ({filteredApplications.length})
                   </TabsTrigger>
                   <TabsTrigger 
                     value="active" 
                     className="text-xs sm:text-sm px-3 sm:px-4 rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white font-semibold transition-all"
                   >
-                    Active
+                    <Rocket className="w-3.5 h-3.5 mr-1.5" /> Active
                   </TabsTrigger>
                   <TabsTrigger 
                     value="interview" 
                     className="text-xs sm:text-sm px-3 sm:px-4 rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white font-semibold transition-all"
                   >
-                    Interviews Completed
+                    <Calendar className="w-3.5 h-3.5 mr-1.5" /> Interviews Completed
+                  </TabsTrigger>
+                  <TabsTrigger value="shortlisted" className="text-xs sm:text-sm px-3 sm:px-4 rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white font-semibold transition-all">
+                    <Star className="w-3.5 h-3.5 mr-1.5" /> Shortlisted
+                  </TabsTrigger>
+                  <TabsTrigger value="hired" className="text-xs sm:text-sm px-3 sm:px-4 rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white font-semibold transition-all">
+                    <CheckCircle className="w-3.5 h-3.5 mr-1.5" /> Hired
+                  </TabsTrigger>
+                  <TabsTrigger value="rejected" className="text-xs sm:text-sm px-3 sm:px-4 rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white font-semibold transition-all">
+                    <XCircle className="w-3.5 h-3.5 mr-1.5" /> Rejected
                   </TabsTrigger>
                 </TabsList>
+                <div className="admin-applications-page__view-tools hidden sm:flex">
+                  <Button variant="outline" size="sm"><ArrowUpDown className="w-3.5 h-3.5 mr-1.5" /> Sort: Eligibility Match <ChevronDown className="w-3.5 h-3.5 ml-1" /></Button>
+                  <Button variant="default" size="icon" aria-label="Grid view"><Grid2X2 className="w-4 h-4" /></Button>
+                  <Button variant="outline" size="icon" aria-label="List view"><List className="w-4 h-4" /></Button>
+                </div>
               </div>
 
               <TabsContent value="all" className="mt-4 sm:mt-6">
@@ -1369,6 +1447,18 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                       .map(renderApplicationCard)}
                   </div>
                 )}
+              </TabsContent>
+
+              <TabsContent value="shortlisted" className="mt-4 sm:mt-6">
+                {renderStatusGrid(['shortlisted'], 'No shortlisted applications found.', Star)}
+              </TabsContent>
+
+              <TabsContent value="hired" className="mt-4 sm:mt-6">
+                {renderStatusGrid(['hired', 'selected'], 'No hired applications found.', CheckCircle)}
+              </TabsContent>
+
+              <TabsContent value="rejected" className="mt-4 sm:mt-6">
+                {renderStatusGrid(['rejected'], 'No rejected applications found.', XCircle)}
               </TabsContent>
             </Tabs>
           </main>

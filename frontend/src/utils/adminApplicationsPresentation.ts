@@ -98,7 +98,7 @@ function enhanceCard(card: HTMLElement) {
   card.classList.add("medex-applicant-card");
   card.parentElement?.classList.add("medex-applicant-grid");
 
-  const candidateName = Array.from(card.querySelectorAll<HTMLHeadingElement>("h2")).find(
+  const candidateName = Array.from(card.querySelectorAll<HTMLHeadingElement>("h2, h3")).find(
     (heading) => !cleanText(heading.textContent).toLowerCase().startsWith("application details"),
   );
 
@@ -146,9 +146,9 @@ function enhanceCard(card: HTMLElement) {
       statusSpans[1]?.classList.add("medex-applicant-status-short");
     }
 
-    const jobHeading = Array.from(card.querySelectorAll<HTMLHeadingElement>("h3")).find((heading) => {
+    const jobHeading = Array.from(card.querySelectorAll<HTMLHeadingElement>("h2, h3")).find((heading) => {
       const text = cleanText(heading.textContent);
-      return text && !text.toLowerCase().includes("candidate information");
+      return heading !== candidateName && text && !text.toLowerCase().includes("candidate information");
     });
 
     if (jobHeading) {

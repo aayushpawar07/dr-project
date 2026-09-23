@@ -37,7 +37,17 @@ import {
   Award,
   BookOpen,
   Copy,
+  MoreVertical,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Input } from './ui/input';
@@ -82,7 +92,14 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
   const [loadingDirectory, setLoadingDirectory] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [submittedSearch, setSubmittedSearch] = useState('');
+  const [roleFilterDropdown, setRoleFilterDropdown] = useState<'all' | 'employer' | 'candidate' | 'admin'>('all');
+  const [statusFilterDropdown, setStatusFilterDropdown] = useState<'all' | 'active' | 'inactive'>('all');
+  const [verificationFilterDropdown, setVerificationFilterDropdown] = useState<'all' | 'verified' | 'pending'>('all');
+  const [employerCategory, setEmployerCategory] = useState<'all' | 'hospital' | 'college' | 'institute' | 'other'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'verified' | 'hasResume' | 'active'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const pageSize = 10;
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -479,10 +496,27 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
   );
 
   const filteredDirectory = directoryUsers.filter(user => {
-    // Role filter
     const roleLower = String(user.role || '').toLowerCase();
+
+    // Active tab filter
     if (activeTab === 'employer' && roleLower !== 'employer') return false;
     if (activeTab === 'candidate' && roleLower !== 'candidate') return false;
+
+    // Dropdown filters
+    if (roleFilterDropdown !== 'all' && roleLower !== roleFilterDropdown) return false;
+    if (statusFilterDropdown === 'active' && user.isActive === false) return false;
+    if (statusFilterDropdown === 'inactive' && user.isActive !== false) return false;
+    if (verificationFilterDropdown === 'verified' && !user.isVerified) return false;
+    if (verificationFilterDropdown === 'pending' && user.isVerified) return false;
+
+    // Employer sub-category pill
+    if (activeTab === 'employer' && employerCategory !== 'all') {
+      const org = (user.companyName || user.currentOrganization || '').toLowerCase();
+      if (employerCategory === 'hospital' && !org.includes('hospital')) return false;
+      if (employerCategory === 'college' && !org.includes('college')) return false;
+      if (employerCategory === 'institute' && !org.includes('institute') && !org.includes('research')) return false;
+      if (employerCategory === 'other' && (org.includes('hospital') || org.includes('college') || org.includes('institute') || org.includes('research'))) return false;
+    }
 
     // Quick status filters
     if (statusFilter === 'verified' && !user.isVerified) return false;
@@ -510,34 +544,149 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
   const adminCount = admins.length;
   const totalCount = directoryUsers.length;
 
-  return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+  // Counts specific to Healthcare Employers view
+  const employersList = directoryUsers.filter(u => String(u.role || '').toLowerCase() === 'employer');
+  const verifiedEmployerCount = employersList.filter(u => u.isVerified).length;
+  const pendingEmployerCount = employersList.filter(u => !u.isVerified).length;
+  const inactiveEmployerCount = employersList.filter(u => u.isActive === false).length;
 
-        {/* Top Breadcrumb & Actions */}
+  // Subcategory counts for employers
+  const hospitalCount = employersList.filter(u => (u.companyName || u.currentOrganization || '').toLowerCase().includes('hospital')).length;
+  const collegeCount = employersList.filter(u => (u.companyName || u.currentOrganization || '').toLowerCase().includes('college')).length;
+  const instituteCount = employersList.filter(u => {
+    const o = (u.companyName || u.currentOrganization || '').toLowerCase();
+    return o.includes('institute') || o.includes('research');
+  }).length;
+  const otherCount = Math.max(0, employersList.length - (hospitalCount + collegeCount + instituteCount));
+
+  // Quick filter counts
+  const withCvCount = directoryUsers.filter(u => !!u.resumeUrl).length;
+  const verifiedCount = directoryUsers.filter(u => u.isVerified).length;
+
+  // Pagination calculations
+  const currentItemsCount = activeTab === 'admin' ? filteredAdmins.length : filteredDirectory.length;
+  const totalPages = Math.max(1, Math.ceil(currentItemsCount / pageSize));
+  const validCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (validCurrentPage - 1) * pageSize;
+  const paginatedDirectory = filteredDirectory.slice(startIndex, startIndex + pageSize);
+  const paginatedAdmins = filteredAdmins.slice(startIndex, startIndex + pageSize);
+
+  // Selection handlers
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      const pageIds = paginatedDirectory.map(u => u.id);
+      setSelectedUserIds(Array.from(new Set([...selectedUserIds, ...pageIds])));
+    } else {
+      const pageIds = new Set(paginatedDirectory.map(u => u.id));
+      setSelectedUserIds(selectedUserIds.filter(id => !pageIds.has(id)));
+    }
+  };
+
+  const handleSelectUser = (id: string) => {
+    setSelectedUserIds(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
+  };
+
+  const isAllCurrentPageSelected = paginatedDirectory.length > 0 && paginatedDirectory.every(u => selectedUserIds.includes(u.id));
+
+  // CSV Export handler
+  const handleExportCSV = () => {
+    const dataToExport = filteredDirectory.map(u => ({
+      'Name': u.name || '',
+      'Email': u.email || '',
+      'Phone': u.phone || '',
+      'Role': u.role || '',
+      'Organization / Hospital': u.companyName || u.currentOrganization || '',
+      'Specialty': u.speciality || '',
+      'Qualification': u.qualification || '',
+      'City': u.currentCity || '',
+      'State': u.state || '',
+      'Status': u.isActive !== false ? 'Active' : 'Inactive',
+      'Verified': u.isVerified ? 'Verified' : 'Pending',
+    }));
+
+    if (dataToExport.length === 0) {
+      toast.error('No users to export in current view');
+      return;
+    }
+
+    const headers = Object.keys(dataToExport[0]).join(',');
+    const rows = dataToExport.map(row =>
+      Object.values(row)
+        .map(v => `"${String(v).replace(/"/g, '""')}"`)
+        .join(',')
+    );
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers, ...rows].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `medexjob_directory_${activeTab}_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success(`Exported ${dataToExport.length} records to CSV`);
+  };
+
+  const handleCopyEmail = (email?: string) => {
+    if (!email) {
+      toast.error('No email address available');
+      return;
+    }
+    navigator.clipboard.writeText(email);
+    toast.success(`Copied "${email}" to clipboard`);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 py-6 sm:py-8 px-3 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto space-y-5 sm:space-y-6">
+
+        {/* Top Breadcrumb & Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <button
               onClick={() => onNavigate('dashboard/admin')}
-              className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-sky-700 hover:text-sky-900 transition-colors mb-2.5 cursor-pointer"
+              className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-sky-700 hover:text-sky-900 transition-colors mb-2 cursor-pointer"
             >
               <ArrowLeft className="w-4 h-4" /> Back to Admin Dashboard
             </button>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 flex items-center gap-3">
               <div
-                className="w-11 h-11 rounded-2xl flex items-center justify-center text-white shadow-md shrink-0"
-                style={{ backgroundColor: '#0f2942' }}
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center text-white shadow-md shrink-0"
+                style={{ backgroundColor: activeTab === 'employer' ? '#6366f1' : '#0f2942' }}
               >
-                <Users className="w-6 h-6" />
+                {activeTab === 'employer' ? <Building2 className="w-5 h-5 sm:w-6 sm:h-6" /> : <Users className="w-5 h-5 sm:w-6 sm:h-6" />}
               </div>
-              User Directory &amp; Role Impersonator
+              <span>
+                {activeTab === 'employer'
+                  ? 'Healthcare Employers & Hospitals'
+                  : activeTab === 'candidate'
+                  ? 'Clinical Doctors & Candidates'
+                  : activeTab === 'admin'
+                  ? 'Platform Administrators'
+                  : 'User Directory & Role Impersonator'}
+              </span>
             </h1>
-            <p className="text-sm text-slate-600 mt-1.5 max-w-3xl">
-              Explore candidate profiles, hospital HR accounts, and switch to view the platform as any user with 1-click passwordless access.
+            <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-3xl leading-relaxed">
+              {activeTab === 'employer'
+                ? 'Manage registered healthcare institutions, hospital administrators, HR coordinators, and clinical staffing accounts.'
+                : activeTab === 'candidate'
+                ? 'Explore verified doctors, surgeons, specialists, and applicants with full credential review.'
+                : 'Explore candidate profiles, hospital HR accounts, and switch to view the platform as any user with 1-click passwordless access.'}
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+            {activeTab === 'employer' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportCSV}
+                className="h-9.5 text-slate-700 hover:bg-slate-100 border-slate-300 font-semibold rounded-xl text-xs"
+              >
+                <Download className="w-4 h-4 mr-1.5 text-slate-500" />
+                Export List
+              </Button>
+            )}
+
             <Button
               variant="outline"
               size="sm"
@@ -546,19 +695,19 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                 void loadDirectory(activeTab);
               }}
               disabled={loading || loadingDirectory}
-              className="h-10 text-slate-700 hover:bg-slate-100 border-slate-300 font-semibold rounded-xl"
+              className="h-9.5 text-slate-700 hover:bg-slate-100 border-slate-300 font-semibold rounded-xl text-xs"
             >
-              <RefreshCw className={`w-4 h-4 mr-2 ${loading || loadingDirectory ? 'animate-spin' : ''}`} />
-              Refresh Directory
+              <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${loading || loadingDirectory ? 'animate-spin' : ''}`} />
+              Refresh
             </Button>
 
             <Button
               size="sm"
               onClick={() => setIsAddDialogOpen(true)}
-              className="h-10 text-white shadow-md font-bold px-4 rounded-xl cursor-pointer hover:opacity-95 transition-opacity"
+              className="h-9.5 text-white shadow-md font-bold px-3.5 rounded-xl cursor-pointer hover:opacity-95 transition-opacity text-xs"
               style={{ backgroundColor: '#0f2942' }}
             >
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus className="w-4 h-4 mr-1.5" />
               Add Admin
             </Button>
           </div>
@@ -566,367 +715,505 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
 
         {/* Notifications / Alerts */}
         {successMessage && (
-          <div className="p-4 bg-emerald-50 border border-emerald-300 rounded-2xl text-emerald-900 flex items-center gap-3 shadow-xs">
+          <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-2xl text-emerald-900 flex items-center gap-3 shadow-xs">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-            <span className="text-sm font-semibold">{successMessage}</span>
+            <span className="text-xs sm:text-sm font-semibold">{successMessage}</span>
           </div>
         )}
 
         {error && (
-          <div className="p-4 bg-rose-50 border border-rose-300 rounded-2xl text-rose-900 flex items-center gap-3 shadow-xs">
+          <div className="p-3.5 bg-rose-50 border border-rose-300 rounded-2xl text-rose-900 flex items-center gap-3 shadow-xs">
             <AlertCircle className="w-5 h-5 text-rose-600 flex-shrink-0" />
-            <span className="text-sm font-semibold">{error}</span>
+            <span className="text-xs sm:text-sm font-semibold">{error}</span>
           </div>
         )}
 
-        {/* Metric Summary Ribbon with Role Accent Colors & Vibrant Ambient Gradients */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {/* Card 1: All Accounts (Blue Theme) */}
-          <div
-            onClick={() => setActiveTab('all')}
-            className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 hover:-translate-y-0.5 ${
-              activeTab === 'all'
-                ? 'ring-2 ring-blue-500 shadow-md'
-                : 'hover:border-blue-400 shadow-xs'
-            }`}
-            style={{
-              borderLeft: '5px solid #2563eb',
-              background: activeTab === 'all'
-                ? 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)'
-                : 'linear-gradient(135deg, #ffffff 60%, #eff6ff 100%)',
-              borderColor: activeTab === 'all' ? '#3b82f6' : '#cbd5e1',
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-800">All Accounts</span>
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-                style={{ background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#ffffff' }}
-              >
-                <Users className="w-5 h-5 text-white" />
-              </div>
-            </div>
-            <div className="text-3xl font-black mt-2 text-slate-900">{totalCount}</div>
-            <div className="text-xs font-bold text-blue-600 mt-0.5">Total registered accounts</div>
-          </div>
-
-          {/* Card 2: Employers / HR (Purple Theme) */}
-          <div
-            onClick={() => setActiveTab('employer')}
-            className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 hover:-translate-y-0.5 ${
-              activeTab === 'employer'
-                ? 'ring-2 ring-purple-500 shadow-md'
-                : 'hover:border-purple-400 shadow-xs'
-            }`}
-            style={{
-              borderLeft: '5px solid #7c3aed',
-              background: activeTab === 'employer'
-                ? 'linear-gradient(135deg, #f3e8ff 0%, #ede9fe 100%)'
-                : 'linear-gradient(135deg, #ffffff 60%, #faf5ff 100%)',
-              borderColor: activeTab === 'employer' ? '#8b5cf6' : '#cbd5e1',
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-purple-900">
-                Employers / HR
-              </span>
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-                style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: '#ffffff' }}
-              >
-                <Building2 className="w-5 h-5 text-white" />
-              </div>
-            </div>
-            <div className="text-3xl font-black mt-2 text-slate-900">{employerCount}</div>
-            <div className="text-xs font-bold text-purple-700 mt-0.5">Hospitals &amp; clinics</div>
-          </div>
-
-          {/* Card 3: Candidates / Doctors (Teal Theme) */}
-          <div
-            onClick={() => setActiveTab('candidate')}
-            className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 hover:-translate-y-0.5 ${
-              activeTab === 'candidate'
-                ? 'ring-2 ring-teal-500 shadow-md'
-                : 'hover:border-teal-400 shadow-xs'
-            }`}
-            style={{
-              borderLeft: '5px solid #0d9488',
-              background: activeTab === 'candidate'
-                ? 'linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%)'
-                : 'linear-gradient(135deg, #ffffff 60%, #f0fdfa 100%)',
-              borderColor: activeTab === 'candidate' ? '#14b8a6' : '#cbd5e1',
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-teal-900">
-                Candidates / Doctors
-              </span>
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-                style={{ background: 'linear-gradient(135deg, #0d9488, #0f766e)', color: '#ffffff' }}
-              >
-                <Stethoscope className="w-5 h-5 text-white" />
-              </div>
-            </div>
-            <div className="text-3xl font-black mt-2 text-slate-900">{candidateCount}</div>
-            <div className="text-xs font-bold text-teal-700 mt-0.5">Verified clinical pool</div>
-          </div>
-
-          {/* Card 4: Administrators (Rose Theme) */}
-          <div
-            onClick={() => setActiveTab('admin')}
-            className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 hover:-translate-y-0.5 ${
-              activeTab === 'admin'
-                ? 'ring-2 ring-rose-500 shadow-md'
-                : 'hover:border-rose-400 shadow-xs'
-            }`}
-            style={{
-              borderLeft: '5px solid #e11d48',
-              background: activeTab === 'admin'
-                ? 'linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%)'
-                : 'linear-gradient(135deg, #ffffff 60%, #fff1f2 100%)',
-              borderColor: activeTab === 'admin' ? '#f43f5e' : '#cbd5e1',
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-rose-900">
-                Administrators
-              </span>
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-                style={{ background: 'linear-gradient(135deg, #f43f5e, #be123c)', color: '#ffffff' }}
-              >
-                <ShieldCheck className="w-5 h-5 text-white" />
-              </div>
-            </div>
-            <div className="text-3xl font-black mt-2 text-slate-900">{adminCount}</div>
-            <div className="text-xs font-bold text-rose-700 mt-0.5">Platform admin access</div>
-          </div>
-        </div>
-
-        {/* Search & Tabs Toolbar Container */}
-        <div className="p-5 bg-white border border-slate-200 shadow-xs rounded-2xl space-y-4">
-          {/* Top Row: Responsive Role Tabs with High-Contrast Active States */}
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
-            <div className="flex items-center gap-2 p-1 bg-slate-100/90 rounded-2xl border border-slate-200 overflow-x-auto max-w-full">
-              {/* Tab 1: All Accounts */}
-              <button
-                type="button"
-                onClick={() => setActiveTab('all')}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
-                style={{
-                  backgroundColor: activeTab === 'all' ? '#0f2942' : 'transparent',
-                  color: activeTab === 'all' ? '#ffffff' : '#475569',
-                  boxShadow: activeTab === 'all' ? '0 2px 6px rgba(15, 41, 66, 0.25)' : 'none',
-                }}
-              >
-                <Users className="w-3.5 h-3.5" />
-                All Accounts
-                <span
-                  className="px-2 py-0.5 rounded-full text-[10px] font-black"
-                  style={{
-                    backgroundColor: activeTab === 'all' ? 'rgba(255, 255, 255, 0.25)' : '#e2e8f0',
-                    color: activeTab === 'all' ? '#ffffff' : '#334155',
-                  }}
-                >
-                  {totalCount}
-                </span>
-              </button>
-
-              {/* Tab 2: Employers / HR */}
-              <button
-                type="button"
-                onClick={() => setActiveTab('employer')}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
-                style={{
-                  backgroundColor: activeTab === 'employer' ? '#6366f1' : 'transparent',
-                  color: activeTab === 'employer' ? '#ffffff' : '#475569',
-                  boxShadow: activeTab === 'employer' ? '0 2px 6px rgba(99, 102, 241, 0.25)' : 'none',
-                }}
-              >
-                <Building2 className="w-3.5 h-3.5" />
-                Employers / HR
-                <span
-                  className="px-2 py-0.5 rounded-full text-[10px] font-black"
-                  style={{
-                    backgroundColor: activeTab === 'employer' ? 'rgba(255, 255, 255, 0.25)' : '#ede9fe',
-                    color: activeTab === 'employer' ? '#ffffff' : '#4338ca',
-                  }}
-                >
-                  {employerCount}
-                </span>
-              </button>
-
-              {/* Tab 3: Candidates / Doctors */}
-              <button
-                type="button"
-                onClick={() => setActiveTab('candidate')}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
-                style={{
-                  backgroundColor: activeTab === 'candidate' ? '#0d9488' : 'transparent',
-                  color: activeTab === 'candidate' ? '#ffffff' : '#475569',
-                  boxShadow: activeTab === 'candidate' ? '0 2px 6px rgba(13, 148, 136, 0.25)' : 'none',
-                }}
-              >
-                <Stethoscope className="w-3.5 h-3.5" />
-                Candidates / Doctors
-                <span
-                  className="px-2 py-0.5 rounded-full text-[10px] font-black"
-                  style={{
-                    backgroundColor: activeTab === 'candidate' ? 'rgba(255, 255, 255, 0.25)' : '#ccfbf1',
-                    color: activeTab === 'candidate' ? '#ffffff' : '#0f766e',
-                  }}
-                >
-                  {candidateCount}
-                </span>
-              </button>
-
-              {/* Tab 4: Administrators */}
-              <button
-                type="button"
-                onClick={() => setActiveTab('admin')}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
-                style={{
-                  backgroundColor: activeTab === 'admin' ? '#e11d48' : 'transparent',
-                  color: activeTab === 'admin' ? '#ffffff' : '#475569',
-                  boxShadow: activeTab === 'admin' ? '0 2px 6px rgba(225, 29, 72, 0.25)' : 'none',
-                }}
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                Administrators
-                <span
-                  className="px-2 py-0.5 rounded-full text-[10px] font-black"
-                  style={{
-                    backgroundColor: activeTab === 'admin' ? 'rgba(255, 255, 255, 0.25)' : '#ffe4e6',
-                    color: activeTab === 'admin' ? '#ffffff' : '#be123c',
-                  }}
-                >
-                  {adminCount}
-                </span>
-              </button>
-            </div>
-
-            {/* Impersonation tip */}
+        {/* Stat Cards Ribbon (Responsive: 2 columns on mobile, 4 columns on desktop) */}
+        {activeTab === 'employer' ? (
+          /* Healthcare Employers & Hospitals Stats (Reference Image 2) */
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {/* Card 1: Total Hospitals */}
             <div
-              className="text-xs font-medium hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border"
-              style={{ backgroundColor: '#fffbeb', borderColor: '#fde68a', color: '#92400e' }}
+              onClick={() => { setEmployerCategory('all'); setCurrentPage(1); }}
+              className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 hover:-translate-y-0.5 ${
+                employerCategory === 'all' ? 'ring-2 ring-blue-500 shadow-md' : 'hover:border-blue-400 shadow-xs'
+              }`}
+              style={{
+                borderLeft: '5px solid #2563eb',
+                background: employerCategory === 'all'
+                  ? 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)'
+                  : 'linear-gradient(135deg, #ffffff 60%, #eff6ff 100%)',
+                borderColor: employerCategory === 'all' ? '#3b82f6' : '#cbd5e1',
+              }}
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-              <span>Passwordless 1-click role view with instant return to admin</span>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-800">Total Hospitals</span>
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs"
+                  style={{ background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#ffffff' }}
+                >
+                  <Building2 className="w-4.5 h-4.5 text-white" />
+                </div>
+              </div>
+              <div className="text-2xl sm:text-3xl font-black mt-2 text-slate-900">{employerCount}</div>
+              <div className="text-[11px] font-bold text-blue-600 mt-0.5">All registered institutions</div>
+            </div>
+
+            {/* Card 2: Verified */}
+            <div
+              onClick={() => { setVerificationFilterDropdown('verified'); setCurrentPage(1); }}
+              className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 hover:-translate-y-0.5 ${
+                verificationFilterDropdown === 'verified' ? 'ring-2 ring-emerald-500 shadow-md' : 'hover:border-emerald-400 shadow-xs'
+              }`}
+              style={{
+                borderLeft: '5px solid #16a34a',
+                background: verificationFilterDropdown === 'verified'
+                  ? 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)'
+                  : 'linear-gradient(135deg, #ffffff 60%, #f0fdf4 100%)',
+                borderColor: verificationFilterDropdown === 'verified' ? '#22c55e' : '#cbd5e1',
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-800">Verified</span>
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs"
+                  style={{ background: 'linear-gradient(135deg, #22c55e, #15803d)', color: '#ffffff' }}
+                >
+                  <ShieldCheck className="w-4.5 h-4.5 text-white" />
+                </div>
+              </div>
+              <div className="text-2xl sm:text-3xl font-black mt-2 text-slate-900">{verifiedEmployerCount}</div>
+              <div className="text-[11px] font-bold text-emerald-600 mt-0.5">Verified institutions</div>
+            </div>
+
+            {/* Card 3: Pending Verification */}
+            <div
+              onClick={() => { setVerificationFilterDropdown('pending'); setCurrentPage(1); }}
+              className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 hover:-translate-y-0.5 ${
+                verificationFilterDropdown === 'pending' ? 'ring-2 ring-amber-500 shadow-md' : 'hover:border-amber-400 shadow-xs'
+              }`}
+              style={{
+                borderLeft: '5px solid #d97706',
+                background: verificationFilterDropdown === 'pending'
+                  ? 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)'
+                  : 'linear-gradient(135deg, #ffffff 60%, #fffbeb 100%)',
+                borderColor: verificationFilterDropdown === 'pending' ? '#f59e0b' : '#cbd5e1',
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-800">Pending</span>
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs"
+                  style={{ background: 'linear-gradient(135deg, #f59e0b, #b45309)', color: '#ffffff' }}
+                >
+                  <Clock className="w-4.5 h-4.5 text-white" />
+                </div>
+              </div>
+              <div className="text-2xl sm:text-3xl font-black mt-2 text-slate-900">{pendingEmployerCount}</div>
+              <div className="text-[11px] font-bold text-amber-600 mt-0.5">Requires admin review</div>
+            </div>
+
+            {/* Card 4: Inactive */}
+            <div
+              onClick={() => { setStatusFilterDropdown('inactive'); setCurrentPage(1); }}
+              className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 hover:-translate-y-0.5 ${
+                statusFilterDropdown === 'inactive' ? 'ring-2 ring-rose-500 shadow-md' : 'hover:border-rose-400 shadow-xs'
+              }`}
+              style={{
+                borderLeft: '5px solid #e11d48',
+                background: statusFilterDropdown === 'inactive'
+                  ? 'linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%)'
+                  : 'linear-gradient(135deg, #ffffff 60%, #fff1f2 100%)',
+                borderColor: statusFilterDropdown === 'inactive' ? '#f43f5e' : '#cbd5e1',
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-rose-800">Inactive</span>
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs"
+                  style={{ background: 'linear-gradient(135deg, #f43f5e, #be123c)', color: '#ffffff' }}
+                >
+                  <Power className="w-4.5 h-4.5 text-white" />
+                </div>
+              </div>
+              <div className="text-2xl sm:text-3xl font-black mt-2 text-slate-900">{inactiveEmployerCount}</div>
+              <div className="text-[11px] font-bold text-rose-600 mt-0.5">Suspended accounts</div>
             </div>
           </div>
-
-          {/* Bottom Row: Search Box & Quick Status Filter Pills */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-            {/* Search Box with Search button */}
-            <div className="flex items-center gap-2 flex-1 max-w-xl">
-              <div className="relative flex-1">
-                <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
-                <Input
-                  placeholder="Search by name, email, hospital, qualification, city..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      setSubmittedSearch(searchTerm);
-                      void loadDirectory(activeTab, searchTerm);
-                    }
-                  }}
-                  className="pl-10 pr-9 h-10 text-xs rounded-xl border-slate-300 focus-visible:ring-sky-500 bg-slate-50/50"
-                />
-                {searchTerm && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearchTerm('');
-                      setSubmittedSearch('');
-                      void loadDirectory(activeTab, '');
-                    }}
-                    className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 cursor-pointer"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
+        ) : (
+          /* General User Directory Stats (Reference Image 1) */
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {/* Card 1: All Accounts */}
+            <div
+              onClick={() => { setActiveTab('all'); setRoleFilterDropdown('all'); setCurrentPage(1); }}
+              className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 hover:-translate-y-0.5 ${
+                activeTab === 'all' ? 'ring-2 ring-blue-500 shadow-md' : 'hover:border-blue-400 shadow-xs'
+              }`}
+              style={{
+                borderLeft: '5px solid #2563eb',
+                background: activeTab === 'all'
+                  ? 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)'
+                  : 'linear-gradient(135deg, #ffffff 60%, #eff6ff 100%)',
+                borderColor: activeTab === 'all' ? '#3b82f6' : '#cbd5e1',
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-800">All Accounts</span>
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs"
+                  style={{ background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)', color: '#ffffff' }}
+                >
+                  <Users className="w-4.5 h-4.5 text-white" />
+                </div>
               </div>
+              <div className="text-2xl sm:text-3xl font-black mt-2 text-slate-900">{totalCount}</div>
+              <div className="text-[11px] font-bold text-blue-600 mt-0.5">Total registered accounts</div>
+            </div>
 
+            {/* Card 2: Employers / HR */}
+            <div
+              onClick={() => { setActiveTab('employer'); setCurrentPage(1); }}
+              className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 hover:-translate-y-0.5 ${
+                activeTab === 'employer' ? 'ring-2 ring-purple-500 shadow-md' : 'hover:border-purple-400 shadow-xs'
+              }`}
+              style={{
+                borderLeft: '5px solid #7c3aed',
+                background: activeTab === 'employer'
+                  ? 'linear-gradient(135deg, #f3e8ff 0%, #ede9fe 100%)'
+                  : 'linear-gradient(135deg, #ffffff 60%, #faf5ff 100%)',
+                borderColor: activeTab === 'employer' ? '#8b5cf6' : '#cbd5e1',
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-purple-900">Employers / HR</span>
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs"
+                  style={{ background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)', color: '#ffffff' }}
+                >
+                  <Building2 className="w-4.5 h-4.5 text-white" />
+                </div>
+              </div>
+              <div className="text-2xl sm:text-3xl font-black mt-2 text-slate-900">{employerCount}</div>
+              <div className="text-[11px] font-bold text-purple-700 mt-0.5">Hospitals &amp; clinics</div>
+            </div>
+
+            {/* Card 3: Candidates / Doctors */}
+            <div
+              onClick={() => { setActiveTab('candidate'); setCurrentPage(1); }}
+              className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 hover:-translate-y-0.5 ${
+                activeTab === 'candidate' ? 'ring-2 ring-teal-500 shadow-md' : 'hover:border-teal-400 shadow-xs'
+              }`}
+              style={{
+                borderLeft: '5px solid #0d9488',
+                background: activeTab === 'candidate'
+                  ? 'linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%)'
+                  : 'linear-gradient(135deg, #ffffff 60%, #f0fdfa 100%)',
+                borderColor: activeTab === 'candidate' ? '#14b8a6' : '#cbd5e1',
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-teal-900">Candidates / Doctors</span>
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs"
+                  style={{ background: 'linear-gradient(135deg, #0d9488, #0f766e)', color: '#ffffff' }}
+                >
+                  <Stethoscope className="w-4.5 h-4.5 text-white" />
+                </div>
+              </div>
+              <div className="text-2xl sm:text-3xl font-black mt-2 text-slate-900">{candidateCount}</div>
+              <div className="text-[11px] font-bold text-teal-700 mt-0.5">Verified clinical pool</div>
+            </div>
+
+            {/* Card 4: Administrators */}
+            <div
+              onClick={() => { setActiveTab('admin'); setCurrentPage(1); }}
+              className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 hover:-translate-y-0.5 ${
+                activeTab === 'admin' ? 'ring-2 ring-rose-500 shadow-md' : 'hover:border-rose-400 shadow-xs'
+              }`}
+              style={{
+                borderLeft: '5px solid #e11d48',
+                background: activeTab === 'admin'
+                  ? 'linear-gradient(135deg, #ffe4e6 0%, #fecdd3 100%)'
+                  : 'linear-gradient(135deg, #ffffff 60%, #fff1f2 100%)',
+                borderColor: activeTab === 'admin' ? '#f43f5e' : '#cbd5e1',
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-rose-900">Administrators</span>
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-xs"
+                  style={{ background: 'linear-gradient(135deg, #f43f5e, #be123c)', color: '#ffffff' }}
+                >
+                  <ShieldCheck className="w-4.5 h-4.5 text-white" />
+                </div>
+              </div>
+              <div className="text-2xl sm:text-3xl font-black mt-2 text-slate-900">{adminCount}</div>
+              <div className="text-[11px] font-bold text-rose-700 mt-0.5">Platform admin access</div>
+            </div>
+          </div>
+        )}
+
+        {/* Search & Filter Toolbar Container (Matching Reference Image 1 & 2) */}
+        <div className="p-4 sm:p-5 bg-white border border-slate-200 shadow-xs rounded-2xl space-y-3.5">
+          {/* Top Filter Inputs Row */}
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
+            {/* Search Input with Clear Button */}
+            <div className="relative flex-1 min-w-[220px]">
+              <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search by name, email, hospital, specialty..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    setSubmittedSearch(searchTerm);
+                    void loadDirectory(activeTab, searchTerm);
+                    setCurrentPage(1);
+                  }
+                }}
+                className="pl-9.5 pr-8 h-10 text-xs rounded-xl border-slate-300 focus-visible:ring-blue-500 bg-slate-50/60"
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSubmittedSearch('');
+                    void loadDirectory(activeTab, '');
+                    setCurrentPage(1);
+                  }}
+                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Dropdown Filters Group */}
+            <div className="grid grid-cols-3 sm:flex sm:items-center gap-2">
+              {/* Role Dropdown */}
+              <select
+                value={roleFilterDropdown}
+                onChange={(e) => {
+                  setRoleFilterDropdown(e.target.value as any);
+                  setCurrentPage(1);
+                }}
+                className="h-10 px-2.5 sm:px-3 text-xs font-semibold rounded-xl border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+                <option value="all">Role: All</option>
+                <option value="employer">Employers / HR</option>
+                <option value="candidate">Candidates / Doctors</option>
+                <option value="admin">Administrators</option>
+              </select>
+
+              {/* Status Dropdown */}
+              <select
+                value={statusFilterDropdown}
+                onChange={(e) => {
+                  setStatusFilterDropdown(e.target.value as any);
+                  setCurrentPage(1);
+                }}
+                className="h-10 px-2.5 sm:px-3 text-xs font-semibold rounded-xl border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+                <option value="all">Status: All</option>
+                <option value="active">Active Only</option>
+                <option value="inactive">Inactive Only</option>
+              </select>
+
+              {/* Verification Dropdown */}
+              <select
+                value={verificationFilterDropdown}
+                onChange={(e) => {
+                  setVerificationFilterDropdown(e.target.value as any);
+                  setCurrentPage(1);
+                }}
+                className="h-10 px-2.5 sm:px-3 text-xs font-semibold rounded-xl border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+                <option value="all">Verification: All</option>
+                <option value="verified">Verified Only</option>
+                <option value="pending">Pending</option>
+              </select>
+
+              {/* Blue Search Button */}
               <Button
                 size="sm"
                 onClick={() => {
                   setSubmittedSearch(searchTerm);
                   void loadDirectory(activeTab, searchTerm);
+                  setCurrentPage(1);
                 }}
-                className="text-white text-xs font-bold h-10 px-4 rounded-xl shadow-xs cursor-pointer hover:opacity-90"
-                style={{ backgroundColor: '#0f2942' }}
+                className="col-span-3 sm:col-auto h-10 px-4 text-xs font-bold text-white rounded-xl shadow-xs cursor-pointer hover:opacity-95 transition-opacity"
+                style={{ backgroundColor: '#2563eb' }}
               >
                 Search
               </Button>
             </div>
+          </div>
 
-            {/* Quick Status Filter Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1 hidden sm:inline">Filter:</span>
+          {/* Subcategory Pills Row (Matching Reference Image 1 & 2) */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100">
+            {activeTab === 'employer' ? (
+              /* Employer Subcategory Pills (Reference Image 2) */
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 max-w-full">
+                <button
+                  type="button"
+                  onClick={() => { setEmployerCategory('all'); setCurrentPage(1); }}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
+                  style={{
+                    backgroundColor: employerCategory === 'all' ? '#2563eb' : '#f1f5f9',
+                    color: employerCategory === 'all' ? '#ffffff' : '#475569',
+                    boxShadow: employerCategory === 'all' ? '0 2px 6px rgba(37, 99, 235, 0.25)' : 'none',
+                  }}
+                >
+                  All ({employerCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setEmployerCategory('hospital'); setCurrentPage(1); }}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
+                  style={{
+                    backgroundColor: employerCategory === 'hospital' ? '#2563eb' : '#f1f5f9',
+                    color: employerCategory === 'hospital' ? '#ffffff' : '#475569',
+                    boxShadow: employerCategory === 'hospital' ? '0 2px 6px rgba(37, 99, 235, 0.25)' : 'none',
+                  }}
+                >
+                  Hospitals ({hospitalCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setEmployerCategory('college'); setCurrentPage(1); }}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
+                  style={{
+                    backgroundColor: employerCategory === 'college' ? '#2563eb' : '#f1f5f9',
+                    color: employerCategory === 'college' ? '#ffffff' : '#475569',
+                    boxShadow: employerCategory === 'college' ? '0 2px 6px rgba(37, 99, 235, 0.25)' : 'none',
+                  }}
+                >
+                  Medical Colleges ({collegeCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setEmployerCategory('institute'); setCurrentPage(1); }}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
+                  style={{
+                    backgroundColor: employerCategory === 'institute' ? '#2563eb' : '#f1f5f9',
+                    color: employerCategory === 'institute' ? '#ffffff' : '#475569',
+                    boxShadow: employerCategory === 'institute' ? '0 2px 6px rgba(37, 99, 235, 0.25)' : 'none',
+                  }}
+                >
+                  Research Institutes ({instituteCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setEmployerCategory('other'); setCurrentPage(1); }}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
+                  style={{
+                    backgroundColor: employerCategory === 'other' ? '#2563eb' : '#f1f5f9',
+                    color: employerCategory === 'other' ? '#ffffff' : '#475569',
+                    boxShadow: employerCategory === 'other' ? '0 2px 6px rgba(37, 99, 235, 0.25)' : 'none',
+                  }}
+                >
+                  Others ({otherCount})
+                </button>
+              </div>
+            ) : (
+              /* General Role Category Pills (Reference Image 1) */
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 max-w-full">
+                <button
+                  type="button"
+                  onClick={() => { setActiveTab('all'); setRoleFilterDropdown('all'); setCurrentPage(1); }}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
+                  style={{
+                    backgroundColor: activeTab === 'all' ? '#0f2942' : '#f1f5f9',
+                    color: activeTab === 'all' ? '#ffffff' : '#475569',
+                    boxShadow: activeTab === 'all' ? '0 2px 6px rgba(15, 41, 66, 0.25)' : 'none',
+                  }}
+                >
+                  All Accounts ({totalCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setActiveTab('employer'); setCurrentPage(1); }}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
+                  style={{
+                    backgroundColor: activeTab === 'employer' ? '#6366f1' : '#f1f5f9',
+                    color: activeTab === 'employer' ? '#ffffff' : '#475569',
+                    boxShadow: activeTab === 'employer' ? '0 2px 6px rgba(99, 102, 241, 0.25)' : 'none',
+                  }}
+                >
+                  Employers / HR ({employerCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setActiveTab('candidate'); setCurrentPage(1); }}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
+                  style={{
+                    backgroundColor: activeTab === 'candidate' ? '#0d9488' : '#f1f5f9',
+                    color: activeTab === 'candidate' ? '#ffffff' : '#475569',
+                    boxShadow: activeTab === 'candidate' ? '0 2px 6px rgba(13, 148, 136, 0.25)' : 'none',
+                  }}
+                >
+                  Candidates / Doctors ({candidateCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setActiveTab('admin'); setCurrentPage(1); }}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
+                  style={{
+                    backgroundColor: activeTab === 'admin' ? '#e11d48' : '#f1f5f9',
+                    color: activeTab === 'admin' ? '#ffffff' : '#475569',
+                    boxShadow: activeTab === 'admin' ? '0 2px 6px rgba(225, 29, 72, 0.25)' : 'none',
+                  }}
+                >
+                  Administrators ({adminCount})
+                </button>
+              </div>
+            )}
+
+            {/* Quick Filter Badges */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
               <button
                 type="button"
-                onClick={() => setStatusFilter('all')}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer"
-                style={{
-                  backgroundColor: statusFilter === 'all' ? '#0f2942' : '#f1f5f9',
-                  color: statusFilter === 'all' ? '#ffffff' : '#475569',
-                  border: statusFilter === 'all' ? '1px solid #0f2942' : '1px solid #e2e8f0',
+                onClick={() => {
+                  setStatusFilter(statusFilter === 'hasResume' ? 'all' : 'hasResume');
+                  setCurrentPage(1);
                 }}
+                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap border ${
+                  statusFilter === 'hasResume'
+                    ? 'bg-emerald-600 text-white border-emerald-600'
+                    : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+                }`}
               >
-                All
+                <FileText className="w-3.5 h-3.5" />
+                With CV ({withCvCount})
               </button>
+
               <button
                 type="button"
-                onClick={() => setStatusFilter('hasResume')}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer"
-                style={{
-                  backgroundColor: statusFilter === 'hasResume' ? '#16a34a' : '#f0fdf4',
-                  color: statusFilter === 'hasResume' ? '#ffffff' : '#166534',
-                  border: statusFilter === 'hasResume' ? '1px solid #16a34a' : '1px solid #bbf7d0',
+                onClick={() => {
+                  setStatusFilter(statusFilter === 'verified' ? 'all' : 'verified');
+                  setCurrentPage(1);
                 }}
+                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap border ${
+                  statusFilter === 'verified'
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100'
+                }`}
               >
-                <FileText className="w-3 h-3" /> With CV
-              </button>
-              <button
-                type="button"
-                onClick={() => setStatusFilter('verified')}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 cursor-pointer"
-                style={{
-                  backgroundColor: statusFilter === 'verified' ? '#0284c7' : '#f0f9ff',
-                  color: statusFilter === 'verified' ? '#ffffff' : '#0369a1',
-                  border: statusFilter === 'verified' ? '1px solid #0284c7' : '1px solid #bae6fd',
-                }}
-              >
-                <ShieldCheck className="w-3 h-3" /> Verified
-              </button>
-              <button
-                type="button"
-                onClick={() => setStatusFilter('active')}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer"
-                style={{
-                  backgroundColor: statusFilter === 'active' ? '#334155' : '#f8fafc',
-                  color: statusFilter === 'active' ? '#ffffff' : '#475569',
-                  border: statusFilter === 'active' ? '1px solid #334155' : '1px solid #e2e8f0',
-                }}
-              >
-                Active Only
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Verified ({verifiedCount})
               </button>
             </div>
-
           </div>
         </div>
 
-        {/* Directory Listing Table */}
+        {/* Directory Listing Container */}
         {activeTab !== 'admin' ? (
-          <Card className="border border-slate-200 shadow-xs rounded-2xl overflow-hidden bg-white">
-            <div
-              className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
-              style={{ backgroundColor: '#ffffff' }}
-            >
+          <Card className="border border-slate-200/90 shadow-xs rounded-2xl overflow-hidden bg-white">
+            {/* Table Header Description Bar */}
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white">
               <div>
-                <h2 className="text-base font-extrabold text-slate-900">
+                <h2 className="text-sm sm:text-base font-extrabold text-slate-900">
                   {activeTab === 'all'
                     ? `Registered Users Directory (${filteredDirectory.length})`
                     : activeTab === 'employer'
@@ -934,318 +1221,576 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                     : `Clinical Doctors & Candidates (${filteredDirectory.length})`}
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Click <strong style={{ color: '#6366f1' }}>"View as HR"</strong> or <strong style={{ color: '#0d9488' }}>"View as Doctor"</strong> to enter their portal with continuous admin session preservation.
+                  Click <strong style={{ color: '#2563eb' }}>"View as HR"</strong> or <strong style={{ color: '#0d9488' }}>"View as Doctor"</strong> to enter their portal with continuous admin session preservation.
                 </p>
               </div>
+
+              {selectedUserIds.length > 0 && (
+                <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-xl text-xs font-bold text-blue-700">
+                  <span>{selectedUserIds.length} users selected</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedUserIds([])}
+                    className="text-blue-500 hover:text-blue-800 ml-1 cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
             </div>
 
             {loadingDirectory ? (
               <div className="text-center py-16">
                 <div
                   className="inline-block animate-spin rounded-full h-9 w-9 border-3 border-t-transparent"
-                  style={{ borderColor: '#0d9488', borderTopColor: 'transparent' }}
+                  style={{ borderColor: '#2563eb', borderTopColor: 'transparent' }}
                 ></div>
-                <p className="mt-3 text-sm font-medium text-slate-600">Loading platform user directory...</p>
+                <p className="mt-3 text-xs sm:text-sm font-semibold text-slate-500">Loading directory accounts...</p>
               </div>
             ) : filteredDirectory.length === 0 ? (
-              <div className="text-center py-16 text-slate-500">
-                <Users className="w-12 h-12 mx-auto text-slate-300 mb-2" />
-                <p className="font-bold text-base text-slate-700">No accounts match your criteria</p>
-                <p className="text-xs text-slate-400 mt-1">Try clearing the search box or switching tabs above.</p>
+              <div className="text-center py-16 px-4">
+                <Users className="w-12 h-12 mx-auto text-slate-300 mb-3" />
+                <h3 className="text-sm sm:text-base font-extrabold text-slate-700">No matching accounts found</h3>
+                <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                  Try adjusting your search criteria, role tabs, or filter pills to find what you are looking for.
+                </p>
                 <Button
-                  variant="outline"
                   size="sm"
+                  variant="outline"
                   onClick={() => {
                     setSearchTerm('');
                     setSubmittedSearch('');
+                    setRoleFilterDropdown('all');
+                    setStatusFilterDropdown('all');
+                    setVerificationFilterDropdown('all');
+                    setEmployerCategory('all');
+                    setStatusFilter('all');
                     void loadDirectory(activeTab, '');
+                    setCurrentPage(1);
                   }}
-                  className="mt-3 text-xs rounded-xl"
+                  className="mt-4 text-xs font-bold rounded-xl border-slate-300"
                 >
-                  Clear Filters
+                  Reset All Filters
                 </Button>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr
-                      className="border-b border-slate-700 text-[11.5px] uppercase tracking-wider font-extrabold shadow-xs"
-                      style={{ backgroundColor: '#0f2942', color: '#ffffff' }}
-                    >
-                      <th className="py-4 px-4 font-black">User / Contact</th>
-                      <th className="py-4 px-4 font-black">Role &amp; Organization</th>
-                      <th className="py-4 px-4 font-black">Clinical Background / City</th>
-                      <th className="py-4 px-4 font-black">Status</th>
-                      <th className="py-4 px-4 text-right font-black">Actions &amp; Impersonation</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-sm">
-                    {filteredDirectory.map((userItem, idx) => {
-                      const roleLower = String(userItem.role || '').toLowerCase();
-                      const isCandidate = roleLower === 'candidate';
-                      const isEmployer = roleLower === 'employer';
-                      const isCurrentlyImpersonating = impersonatingId === userItem.id;
-                      const isSpecialVIP = userItem.email === 'cricketloverayush9999@gmail.com';
-                      const isEven = idx % 2 === 1;
+              <div>
+                {/* 1. DESKTOP & TABLET / IPAD VIEW (hidden on mobile, visible md and up) */}
+                {/* min-w-[980px] ensures iPad portrait or landscape NEVER squashes cells into 1-2 vertical characters! */}
+                <div className="hidden md:block overflow-x-auto w-full">
+                  <table className="w-full text-left border-collapse min-w-[980px]">
+                    <thead>
+                      <tr
+                        className="border-b border-slate-200 text-[11px] uppercase tracking-wider font-extrabold whitespace-nowrap"
+                        style={{ backgroundColor: '#f8fafc', color: '#475569' }}
+                      >
+                        <th className="py-3.5 px-4 w-10 text-center">
+                          <input
+                            type="checkbox"
+                            checked={isAllCurrentPageSelected}
+                            onChange={handleSelectAll}
+                            className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer"
+                          />
+                        </th>
+                        <th className="py-3.5 px-4">{activeTab === 'employer' ? 'HOSPITAL / INSTITUTION' : 'USER / CANDIDATE'}</th>
+                        <th className="py-3.5 px-4">{activeTab === 'employer' ? 'TYPE & CITY' : 'ROLE & ORGANIZATION'}</th>
+                        <th className="py-3.5 px-4">{activeTab === 'employer' ? 'HR COORDINATOR' : 'SPECIALTY & QUALIFICATIONS'}</th>
+                        <th className="py-3.5 px-4">STATUS &amp; VERIFIED</th>
+                        <th className="py-3.5 px-4 text-right">ACTIONS</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-sm">
+                      {paginatedDirectory.map((userItem, idx) => {
+                        const roleLower = String(userItem.role || '').toLowerCase();
+                        const isCandidate = roleLower === 'candidate';
+                        const isEmployer = roleLower === 'employer';
+                        const isCurrentlyImpersonating = impersonatingId === userItem.id;
+                        const isEven = idx % 2 === 1;
 
-                      return (
-                        <tr
-                          key={userItem.id}
-                          className="transition-colors hover:bg-sky-50/50"
-                          style={{
-                            backgroundColor: isSpecialVIP ? '#fefce8' : isEven ? '#fbfcfe' : '#ffffff',
-                            borderLeft: isSpecialVIP ? '4px solid #f59e0b' : 'none',
-                          }}
-                        >
-                          {/* 1. User / Contact: Compact Profile Block */}
-                          <td className="py-3.5 px-4 align-middle">
-                            <div className="flex items-center gap-3">
-                              {userItem.profilePhotoUrl ? (
-                                <img
-                                  src={userItem.profilePhotoUrl}
-                                  alt={userItem.name || 'User'}
-                                  className="w-10 h-10 rounded-xl object-cover border border-slate-200 shrink-0 shadow-xs"
-                                />
-                              ) : (
+                        const nameInitials = (userItem.name || userItem.email || 'U')
+                          .split(' ')
+                          .map((n: string) => n[0])
+                          .slice(0, 2)
+                          .join('')
+                          .toUpperCase();
+
+                        return (
+                          <tr
+                            key={userItem.id}
+                            className="hover:bg-blue-50/40 transition-colors"
+                            style={{ backgroundColor: isEven ? '#fbfcfe' : '#ffffff' }}
+                          >
+                            {/* Checkbox */}
+                            <td className="py-3.5 px-4 text-center align-middle whitespace-nowrap">
+                              <input
+                                type="checkbox"
+                                checked={selectedUserIds.includes(userItem.id)}
+                                onChange={() => handleSelectUser(userItem.id)}
+                                className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500 cursor-pointer"
+                              />
+                            </td>
+
+                            {/* User / Candidate / Hospital Name */}
+                            <td className="py-3.5 px-4 align-middle whitespace-nowrap">
+                              <div className="flex items-center gap-3">
                                 <div
-                                  className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs uppercase shrink-0 shadow-2xs"
+                                  className="w-10 h-10 rounded-full flex items-center justify-center font-black text-xs text-white shrink-0 shadow-xs"
                                   style={{
-                                    backgroundColor: isEmployer ? '#f3e8ff' : isCandidate ? '#e6fffa' : '#f1f5f9',
-                                    color: isEmployer ? '#6b21a8' : isCandidate ? '#0f766e' : '#475569',
-                                    border: isEmployer ? '1px solid #d8b4fe' : isCandidate ? '1px solid #99f6e4' : '1px solid #cbd5e1',
+                                    background: isCandidate
+                                      ? 'linear-gradient(135deg, #10b981 0%, #047857 100%)'
+                                      : isEmployer
+                                      ? 'linear-gradient(135deg, #6366f1 0%, #4338ca 100%)'
+                                      : 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
                                   }}
                                 >
-                                  {userItem.name
-                                    ? userItem.name.split(' ').slice(0, 2).map((n) => n[0]).join('')
-                                    : 'U'}
+                                  {nameInitials}
+                                </div>
+                                <div className="min-w-0">
+                                  <div
+                                    onClick={() => handleViewFullProfile(userItem)}
+                                    className="font-bold text-slate-900 text-sm hover:text-blue-600 transition-colors cursor-pointer truncate max-w-[220px]"
+                                    title={userItem.name || userItem.email}
+                                  >
+                                    {userItem.name || 'Unnamed User'}
+                                  </div>
+                                  <div className="text-xs text-slate-500 font-mono flex items-center gap-1 mt-0.5 truncate max-w-[220px]">
+                                    <Mail className="w-3 h-3 text-slate-400 shrink-0" />
+                                    <span>{userItem.email || 'N/A'}</span>
+                                  </div>
+                                  {userItem.phone && (
+                                    <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                                      <Phone className="w-3 h-3 text-slate-400 shrink-0" />
+                                      <span>{userItem.phone}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Role & Organization / Type & City */}
+                            <td className="py-3.5 px-4 align-middle whitespace-nowrap">
+                              {activeTab === 'employer' ? (
+                                <div>
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                                    <Building2 className="w-3 h-3" />
+                                    {userItem.companyName || userItem.currentOrganization || 'Healthcare Facility'}
+                                  </span>
+                                  <div className="text-xs text-slate-500 flex items-center gap-1 mt-1 font-medium">
+                                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                    <span>{[userItem.currentCity, userItem.state].filter(Boolean).join(', ') || 'Pan-India'}</span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div>
+                                  {isCandidate ? (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                      Candidate / Doctor
+                                    </span>
+                                  ) : isEmployer ? (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                                      Employer / HR
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                                      {userItem.role || 'User'}
+                                    </span>
+                                  )}
+
+                                  {(userItem.companyName || userItem.currentOrganization) && (
+                                    <div className="text-xs text-slate-600 font-medium mt-1 flex items-center gap-1.5 max-w-[200px] truncate">
+                                      <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                      <span className="truncate">{userItem.companyName || userItem.currentOrganization}</span>
+                                    </div>
+                                  )}
                                 </div>
                               )}
-                              <div className="min-w-0 max-w-[210px]">
-                                <div className="font-extrabold text-slate-900 text-sm leading-tight flex items-center gap-1.5">
-                                  <span className="truncate" title={userItem.name || 'Unnamed Account'}>{userItem.name || 'Unnamed Account'}</span>
-                                  {isSpecialVIP && (
-                                    <span
-                                      className="text-[10px] font-black px-1.5 py-0.2 rounded shrink-0"
-                                      style={{ backgroundColor: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' }}
-                                    >
-                                      VIP
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="text-xs text-slate-600 font-mono mt-0.5 flex items-center gap-1 truncate" title={userItem.email}>
-                                  <Mail size={11} className="text-slate-400 shrink-0" />
-                                  <span className="truncate">{userItem.email}</span>
-                                </div>
-                                {userItem.phone && (
-                                  <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                                    <Phone size={10} className="text-slate-400 shrink-0" />
-                                    <span>{userItem.phone}</span>
+                            </td>
+
+                            {/* Specialty & Qualifications / HR Coordinator */}
+                            <td className="py-3.5 px-4 align-middle whitespace-nowrap">
+                              {activeTab === 'employer' ? (
+                                <div>
+                                  <div className="font-semibold text-slate-800 text-xs flex items-center gap-1">
+                                    <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                    <span>{userItem.name || 'HR Administrator'}</span>
                                   </div>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-
-                          {/* 2. Role & Organization: Clear Spacing & Hierarchy */}
-                          <td className="py-3.5 px-4 align-middle">
-                            {isEmployer && (
-                              <div className="space-y-1.5">
-                                <span
-                                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-bold"
-                                  style={{ backgroundColor: '#faf5ff', color: '#6b21a8', border: '1px solid #e9d5ff' }}
-                                >
-                                  <Building2 className="w-3.5 h-3.5 text-purple-600" /> Healthcare HR
-                                </span>
-                                {userItem.companyName ? (
-                                  <div className="text-xs font-semibold text-slate-800 flex items-center gap-1.5 max-w-[220px]" title={userItem.companyName}>
-                                    <Building2 size={12} className="text-slate-400 shrink-0" />
-                                    <span className="truncate">{userItem.companyName}</span>
+                                  <div className="text-[11px] text-slate-500 font-mono mt-0.5">
+                                    {userItem.email || 'hr@hospital.org'}
                                   </div>
-                                ) : (
-                                  <div className="text-[11px] text-slate-400 italic">Hospital name not set</div>
-                                )}
-                              </div>
-                            )}
-
-                            {isCandidate && (
-                              <div className="space-y-1.5">
-                                <span
-                                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-bold"
-                                  style={{ backgroundColor: '#f0fdfa', color: '#0f766e', border: '1px solid #99f6e4' }}
-                                >
-                                  <Stethoscope className="w-3.5 h-3.5 text-teal-600" /> Candidate / Doctor
-                                </span>
-                                {userItem.currentOrganization ? (
-                                  <div className="text-xs font-semibold text-slate-700 flex items-center gap-1.5 max-w-[220px]" title={userItem.currentOrganization}>
-                                    <Building2 size={12} className="text-slate-400 shrink-0" />
-                                    <span className="truncate">{userItem.currentOrganization}</span>
+                                </div>
+                              ) : (
+                                <div>
+                                  <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                    {isCandidate ? <Stethoscope className="w-3.5 h-3.5 text-teal-600 shrink-0" /> : <GraduationCap className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
+                                    <span className="truncate max-w-[220px]">
+                                      {userItem.speciality || userItem.qualification || (isEmployer ? 'Healthcare Org' : 'General Practice')}
+                                    </span>
                                   </div>
-                                ) : (
-                                  <div className="text-[11px] text-slate-400 italic">No hospital listed</div>
-                                )}
-                              </div>
-                            )}
 
-                            {!isEmployer && !isCandidate && (
-                              <span
-                                className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-bold"
-                                style={{ backgroundColor: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3' }}
-                              >
-                                <ShieldCheck className="w-3.5 h-3.5 text-rose-600" /> System Admin
-                              </span>
-                            )}
-                          </td>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    {(userItem.currentCity || userItem.state) && (
+                                      <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                                        <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
+                                        <span>{[userItem.currentCity, userItem.state].filter(Boolean).join(', ')}</span>
+                                      </span>
+                                    )}
 
-                          {/* 3. Clinical Background: Prominent Qualifications & Location */}
-                          <td className="py-3.5 px-4 align-middle">
-                            {isCandidate && (
-                              <div className="space-y-1">
-                                <div className="text-xs font-extrabold text-slate-900 flex items-center gap-1.5" title={[userItem.qualification, userItem.speciality].filter(Boolean).join(' • ')}>
-                                  <GraduationCap size={13} className="text-blue-600 shrink-0" />
-                                  <span className="truncate max-w-[210px]">
-                                    {[userItem.qualification, userItem.speciality].filter(Boolean).join(' • ') || 'Qualifications not added'}
-                                  </span>
+                                    {userItem.resumeUrl && (
+                                      <a
+                                        href={userItem.resumeUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                                      >
+                                        <FileText className="w-3 h-3" /> CV
+                                      </a>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="text-[11px] text-slate-500 flex items-center gap-2 flex-wrap mt-0.5">
-                                  {userItem.yearsExperience != null && (
-                                    <span
-                                      className="font-bold px-2 py-0.5 rounded text-[10px] inline-flex items-center gap-1"
-                                      style={{ backgroundColor: '#ccfbf1', color: '#0f766e', border: '1px solid #99f6e4' }}
-                                    >
-                                      <Briefcase size={10} />
-                                      {userItem.yearsExperience} yrs exp
-                                    </span>
-                                  )}
-                                  {[userItem.currentCity, userItem.state].filter(Boolean).join(', ') && (
-                                    <span className="flex items-center gap-1 text-slate-500 font-medium">
-                                      <MapPin size={11} className="text-purple-500 shrink-0" />
-                                      <span>{[userItem.currentCity, userItem.state].filter(Boolean).join(', ')}</span>
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            )}
+                              )}
+                            </td>
 
-                            {isEmployer && (
-                              <div className="space-y-1 text-xs text-slate-600">
-                                <div className="flex items-center gap-1.5 text-slate-700 font-semibold">
-                                  <MapPin size={12} className="text-purple-500 shrink-0" />
-                                  <span>{[userItem.city, userItem.state].filter(Boolean).join(', ') || 'Location not set'}</span>
-                                </div>
-                                {userItem.verificationStatus && userItem.verificationStatus !== 'approved' && (
-                                  <span
-                                    className="inline-block text-[10px] uppercase font-bold px-2 py-0.5 rounded mt-1"
-                                    style={{ backgroundColor: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}
-                                  >
-                                    {userItem.verificationStatus}
-                                  </span>
-                                )}
-                              </div>
-                            )}
-
-                            {!isCandidate && !isEmployer && (
-                              <span className="text-xs text-slate-400 italic">System Administrator</span>
-                            )}
-                          </td>
-
-                          {/* 4. Status: Clear Colored Badges */}
-                          <td className="py-3.5 px-4 align-middle">
-                            <div className="flex flex-col gap-1.5 items-start">
-                              <div className="flex items-center gap-1.5 flex-wrap">
+                            {/* Status & Verified */}
+                            <td className="py-3.5 px-4 align-middle whitespace-nowrap">
+                              <div className="flex items-center gap-2">
                                 {userItem.isActive !== false ? (
-                                  <span
-                                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold"
-                                    style={{ backgroundColor: '#dcfce7', color: '#15803d', border: '1px solid #86efac' }}
-                                  >
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                     Active
                                   </span>
                                 ) : (
-                                  <span
-                                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold"
-                                    style={{ backgroundColor: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5' }}
-                                  >
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                                     Inactive
                                   </span>
                                 )}
-                                {userItem.isVerified && (
-                                  <span
-                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-bold"
-                                    style={{ backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}
-                                    title="Account Verified"
-                                  >
-                                    <CheckCircle2 size={10} /> Verified
+
+                                {userItem.isVerified ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                    <ShieldCheck className="w-3 h-3" /> Verified
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                    <Clock className="w-3 h-3" /> Pending
                                   </span>
                                 )}
                               </div>
-                              {userItem.resumeUrl && (
-                                <a
-                                  href={userItem.resumeUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-bold transition-colors"
-                                  style={{ backgroundColor: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}
-                                  title="Download candidate CV"
+                            </td>
+
+                            {/* Actions */}
+                            <td className="py-3.5 px-4 text-right align-middle whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleImpersonate(userItem)}
+                                  disabled={isCurrentlyImpersonating}
+                                  className="h-8.5 px-3 text-xs font-bold text-white shadow-xs rounded-xl hover:opacity-95 transition-all cursor-pointer whitespace-nowrap"
+                                  style={{ backgroundColor: '#2563eb' }}
+                                  title={`Switch view to ${userItem.name || userItem.email}`}
                                 >
-                                  <FileText size={10} /> CV Available
-                                </a>
+                                  {isCurrentlyImpersonating ? (
+                                    <div className="animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full mr-1.5" />
+                                  ) : (
+                                    <Eye className="w-3.5 h-3.5 mr-1.5" />
+                                  )}
+                                  <span>{isEmployer ? 'View as HR' : isCandidate ? 'View as Doctor' : 'View Portal'}</span>
+                                </Button>
+
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleViewFullProfile(userItem)}
+                                  className="h-8.5 px-3 text-xs font-bold border-slate-300 text-slate-700 hover:bg-slate-100 hover:text-slate-900 rounded-xl cursor-pointer whitespace-nowrap"
+                                  title="View clinical qualifications & credentials"
+                                >
+                                  <FileText className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
+                                  Details
+                                </Button>
+
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-8.5 w-8.5 p-0 rounded-xl cursor-pointer text-slate-500 hover:text-slate-900 hover:bg-slate-100 shrink-0"
+                                    >
+                                      <MoreVertical className="w-4 h-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end" className="w-48 bg-white border border-slate-200 shadow-lg rounded-xl p-1 z-50">
+                                    <DropdownMenuItem
+                                      onClick={() => handleToggleStatus(userItem)}
+                                      className="text-xs font-semibold flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer hover:bg-slate-100"
+                                    >
+                                      <Power className="w-3.5 h-3.5 text-slate-500" />
+                                      <span>{userItem.isActive !== false ? 'Deactivate Account' : 'Activate Account'}</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => handleCopyEmail(userItem.email)}
+                                      className="text-xs font-semibold flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer hover:bg-slate-100"
+                                    >
+                                      <Copy className="w-3.5 h-3.5 text-slate-500" />
+                                      <span>Copy Email Address</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => handleViewFullProfile(userItem)}
+                                      className="text-xs font-semibold flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer hover:bg-slate-100"
+                                    >
+                                      <User className="w-3.5 h-3.5 text-slate-500" />
+                                      <span>View Full Profile</span>
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* 2. MOBILE CARD VIEW (Reference Image 1: visible on mobile < md, hidden on md and up) */}
+                <div className="block md:hidden p-3 space-y-3 bg-slate-50/50">
+                  {paginatedDirectory.map((userItem) => {
+                    const roleLower = String(userItem.role || '').toLowerCase();
+                    const isCandidate = roleLower === 'candidate';
+                    const isEmployer = roleLower === 'employer';
+                    const isCurrentlyImpersonating = impersonatingId === userItem.id;
+
+                    const nameInitials = (userItem.name || userItem.email || 'U')
+                      .split(' ')
+                      .map((n: string) => n[0])
+                      .slice(0, 2)
+                      .join('')
+                      .toUpperCase();
+
+                    return (
+                      <div
+                        key={userItem.id}
+                        className="bg-white rounded-xl border border-slate-200 shadow-xs p-3.5 space-y-3 transition-shadow hover:shadow-md"
+                      >
+                        {/* Top Row: User Avatar + Name + Contact on left, Status Badge on right */}
+                        <div className="flex items-start justify-between gap-2.5">
+                          <div className="flex items-start gap-3 min-w-0">
+                            <div
+                              className="w-10 h-10 rounded-full flex items-center justify-center font-black text-xs text-white shrink-0 shadow-xs"
+                              style={{
+                                background: isCandidate
+                                  ? 'linear-gradient(135deg, #10b981 0%, #047857 100%)'
+                                  : isEmployer
+                                  ? 'linear-gradient(135deg, #6366f1 0%, #4338ca 100%)'
+                                  : 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                              }}
+                            >
+                              {nameInitials}
+                            </div>
+                            <div className="min-w-0">
+                              <h3
+                                onClick={() => handleViewFullProfile(userItem)}
+                                className="font-bold text-slate-900 text-sm hover:text-blue-600 transition-colors cursor-pointer truncate"
+                              >
+                                {userItem.name || 'Unnamed User'}
+                              </h3>
+                              <p className="text-xs text-slate-500 font-mono truncate mt-0.5">{userItem.email || 'No email'}</p>
+                              {userItem.phone && (
+                                <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                                  <Phone className="w-3 h-3 text-slate-400 shrink-0" />
+                                  <span>{userItem.phone}</span>
+                                </p>
                               )}
                             </div>
-                          </td>
+                          </div>
 
-                          {/* 5. Actions: Primary Button, Secondary Details, Power Icon */}
-                          <td className="py-3.5 px-4 text-right align-middle">
-                            <div className="flex items-center justify-end gap-2">
-                              {/* Primary: View as Doctor / View as HR */}
-                              <Button
-                                size="sm"
-                                onClick={() => handleImpersonate(userItem)}
-                                disabled={isCurrentlyImpersonating}
-                                className="h-8.5 px-3.5 text-xs font-bold gap-1.5 shadow-xs rounded-xl transition-all cursor-pointer text-white hover:opacity-95"
-                                style={{
-                                  backgroundColor: isEmployer ? '#6366f1' : isCandidate ? '#0d9488' : '#0f2942',
-                                }}
-                                title={`Switch view to ${userItem.name || userItem.email}`}
-                              >
-                                {isCurrentlyImpersonating ? (
-                                  <div className="animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full" />
-                                ) : (
-                                  <Eye className="w-3.5 h-3.5" />
-                                )}
-                                <span>
-                                  {isEmployer ? 'View as HR' : isCandidate ? 'View as Doctor' : 'View Portal'}
-                                </span>
-                              </Button>
+                          {/* Right Status Badge */}
+                          <div className="shrink-0 flex flex-col items-end gap-1">
+                            {userItem.isActive !== false ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                Active
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                Inactive
+                              </span>
+                            )}
+                            {userItem.isVerified && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                <ShieldCheck className="w-2.5 h-2.5" /> Verified
+                              </span>
+                            )}
+                          </div>
+                        </div>
 
-                              {/* Secondary: Details */}
+                        {/* Middle Row: Role pill + Organization */}
+                        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100 text-xs">
+                          {isCandidate ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              Candidate / Doctor
+                            </span>
+                          ) : isEmployer ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                              Employer / HR
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                              {userItem.role || 'User'}
+                            </span>
+                          )}
+
+                          {(userItem.companyName || userItem.currentOrganization) && (
+                            <div className="flex items-center gap-1 text-slate-600 truncate max-w-[200px]">
+                              <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                              <span className="truncate">{userItem.companyName || userItem.currentOrganization}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Qualifications & Location */}
+                        {(userItem.qualification || userItem.speciality || userItem.currentCity || userItem.state) && (
+                          <div className="flex flex-wrap items-center gap-2.5 text-xs text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                            {(userItem.qualification || userItem.speciality) && (
+                              <div className="flex items-center gap-1 truncate">
+                                <GraduationCap className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <span className="truncate font-medium">{userItem.qualification || userItem.speciality}</span>
+                              </div>
+                            )}
+                            {(userItem.currentCity || userItem.state) && (
+                              <div className="flex items-center gap-1 text-slate-500">
+                                <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <span>{[userItem.currentCity, userItem.state].filter(Boolean).join(', ')}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Bottom Action Buttons */}
+                        <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                          <Button
+                            size="sm"
+                            onClick={() => handleImpersonate(userItem)}
+                            disabled={isCurrentlyImpersonating}
+                            className="flex-1 h-9 text-xs font-bold text-white shadow-xs rounded-xl hover:opacity-95 transition-all cursor-pointer"
+                            style={{ backgroundColor: '#2563eb' }}
+                          >
+                            {isCurrentlyImpersonating ? (
+                              <div className="animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full mr-1.5" />
+                            ) : (
+                              <Eye className="w-3.5 h-3.5 mr-1.5" />
+                            )}
+                            <span>{isEmployer ? 'View as HR' : isCandidate ? 'View as Doctor' : 'View Portal'}</span>
+                          </Button>
+
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleViewFullProfile(userItem)}
+                            className="flex-1 h-9 text-xs font-bold border-slate-300 text-slate-700 hover:bg-slate-100 rounded-xl cursor-pointer"
+                          >
+                            <FileText className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
+                            Details
+                          </Button>
+
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => handleViewFullProfile(userItem)}
-                                className="h-8.5 px-3 text-xs font-bold gap-1.5 border-slate-300 text-slate-700 hover:bg-slate-100 hover:text-slate-900 rounded-xl cursor-pointer"
-                                title="View clinical qualifications & credentials"
+                                className="h-9 w-9 p-0 rounded-xl border-slate-300 text-slate-600 hover:bg-slate-100 cursor-pointer shrink-0"
                               >
-                                <FileText className="w-3.5 h-3.5 text-slate-500" />
-                                Details
+                                <MoreVertical className="w-4 h-4" />
                               </Button>
-
-                              {/* Tertiary: Power toggle */}
-                              <Button
-                                size="sm"
-                                variant="ghost"
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48 bg-white border border-slate-200 shadow-lg rounded-xl p-1 z-50">
+                              <DropdownMenuItem
                                 onClick={() => handleToggleStatus(userItem)}
-                                className="h-8.5 w-8.5 p-0 rounded-xl cursor-pointer text-slate-400 hover:text-rose-600 hover:bg-rose-50"
-                                title={userItem.isActive !== false ? 'Deactivate account' : 'Activate account'}
+                                className="text-xs font-semibold flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer hover:bg-slate-100"
                               >
-                                <Power className="w-3.5 h-3.5" />
+                                <Power className="w-3.5 h-3.5 text-slate-500" />
+                                <span>{userItem.isActive !== false ? 'Deactivate Account' : 'Activate Account'}</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleCopyEmail(userItem.email)}
+                                className="text-xs font-semibold flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer hover:bg-slate-100"
+                              >
+                                <Copy className="w-3.5 h-3.5 text-slate-500" />
+                                <span>Copy Email Address</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleViewFullProfile(userItem)}
+                                className="text-xs font-semibold flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer hover:bg-slate-100"
+                              >
+                                <User className="w-3.5 h-3.5 text-slate-500" />
+                                <span>View Full Profile</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Pagination Footer */}
+                {totalPages > 1 && (
+                  <div className="p-3.5 sm:p-4 border-t border-slate-100 bg-white flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
+                    <div className="font-medium text-slate-500 text-center sm:text-left">
+                      Showing <span className="font-bold text-slate-900">{startIndex + 1}</span> to{' '}
+                      <span className="font-bold text-slate-900">{Math.min(startIndex + pageSize, currentItemsCount)}</span> of{' '}
+                      <span className="font-bold text-slate-900">{currentItemsCount}</span> {activeTab === 'employer' ? 'institutions' : activeTab === 'candidate' ? 'candidates' : 'users'}
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={validCurrentPage <= 1}
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        className="h-8 px-2.5 text-xs font-semibold rounded-lg border-slate-200 text-slate-700 disabled:opacity-40 cursor-pointer"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5 mr-1" />
+                        Previous
+                      </Button>
+
+                      {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter(page => page === 1 || page === totalPages || Math.abs(page - validCurrentPage) <= 1)
+                        .map((page, index, array) => {
+                          const prevPage = array[index - 1];
+                          const hasGap = prevPage && page - prevPage > 1;
+
+                          return (
+                            <React.Fragment key={page}>
+                              {hasGap && <span className="px-1 text-slate-400">...</span>}
+                              <Button
+                                variant={validCurrentPage === page ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setCurrentPage(page)}
+                                className={`h-8 w-8 p-0 text-xs font-bold rounded-lg cursor-pointer ${
+                                  validCurrentPage === page
+                                    ? 'bg-[#2563eb] text-white hover:bg-blue-700 shadow-xs'
+                                    : 'border-slate-200 text-slate-700 hover:bg-slate-100'
+                                }`}
+                              >
+                                {page}
                               </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                            </React.Fragment>
+                          );
+                        })}
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={validCurrentPage >= totalPages}
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        className="h-8 px-2.5 text-xs font-semibold rounded-lg border-slate-200 text-slate-700 disabled:opacity-40 cursor-pointer"
+                      >
+                        Next
+                        <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </Card>
@@ -1254,7 +1799,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
           <Card className="border border-slate-200 shadow-xs rounded-2xl overflow-hidden bg-white">
             <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
               <div>
-                <h2 className="text-base font-extrabold text-slate-900">Administrator Accounts ({filteredAdmins.length})</h2>
+                <h2 className="text-sm sm:text-base font-extrabold text-slate-900">Administrator Accounts ({filteredAdmins.length})</h2>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Accounts with privileged administrative and moderation access.
                 </p>
@@ -1275,7 +1820,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                   className="inline-block animate-spin rounded-full h-8 w-8 border-3 border-t-transparent"
                   style={{ borderColor: '#e11d48', borderTopColor: 'transparent' }}
                 ></div>
-                <p className="mt-3 text-sm text-slate-500">Loading administrators...</p>
+                <p className="mt-3 text-xs sm:text-sm text-slate-500">Loading administrators...</p>
               </div>
             ) : filteredAdmins.length === 0 ? (
               <div className="text-center py-16 text-slate-500">
@@ -1283,93 +1828,211 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                 <p className="font-bold text-sm">No administrators found</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr
-                      className="border-b border-slate-200 text-[11px] uppercase tracking-wider font-extrabold"
-                      style={{ backgroundColor: '#f8fafc', color: '#475569' }}
-                    >
-                      <th className="py-3 px-4">Name</th>
-                      <th className="py-3 px-4">Email</th>
-                      <th className="py-3 px-4">Phone</th>
-                      <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-sm">
-                    {filteredAdmins.map((admin, idx) => {
-                      const isEven = idx % 2 === 1;
-                      return (
-                        <tr
-                          key={admin.id}
-                          className="hover:bg-sky-50/40 transition-colors"
-                          style={{ backgroundColor: isEven ? '#fbfcfe' : '#ffffff' }}
-                        >
-                          <td className="py-3 px-4 font-bold text-slate-900">
-                            <div className="flex items-center gap-2">
-                              <span>{admin.name || 'N/A'}</span>
-                              {isCurrentUser(admin) && (
-                                <span
-                                  className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                                  style={{ backgroundColor: '#ffe4e6', color: '#9f1239', border: '1px solid #fecdd3' }}
-                                >
-                                  You
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-slate-600 font-mono text-xs">{admin.email || 'N/A'}</td>
-                          <td className="py-3 px-4 text-slate-600 text-xs">{admin.phone || 'N/A'}</td>
-                          <td className="py-3 px-4">
-                            <span
-                              className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold"
-                              style={{ backgroundColor: '#dcfce7', color: '#15803d', border: '1px solid #86efac' }}
-                            >
-                              Active
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openEditDialog(admin)}
-                                title="Edit Admin"
-                                className="h-8 w-8 p-0 rounded-xl"
+              <div>
+                {/* Desktop & iPad Table */}
+                <div className="hidden md:block overflow-x-auto w-full">
+                  <table className="w-full text-left border-collapse min-w-[720px]">
+                    <thead>
+                      <tr
+                        className="border-b border-slate-200 text-[11px] uppercase tracking-wider font-extrabold whitespace-nowrap"
+                        style={{ backgroundColor: '#f8fafc', color: '#475569' }}
+                      >
+                        <th className="py-3 px-4">Name</th>
+                        <th className="py-3 px-4">Email</th>
+                        <th className="py-3 px-4">Phone</th>
+                        <th className="py-3 px-4">Status</th>
+                        <th className="py-3 px-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-sm">
+                      {paginatedAdmins.map((admin, idx) => {
+                        const isEven = idx % 2 === 1;
+                        return (
+                          <tr
+                            key={admin.id}
+                            className="hover:bg-sky-50/40 transition-colors whitespace-nowrap"
+                            style={{ backgroundColor: isEven ? '#fbfcfe' : '#ffffff' }}
+                          >
+                            <td className="py-3 px-4 font-bold text-slate-900 align-middle">
+                              <div className="flex items-center gap-2">
+                                <span>{admin.name || 'N/A'}</span>
+                                {isCurrentUser(admin) && (
+                                  <span
+                                    className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                                    style={{ backgroundColor: '#ffe4e6', color: '#9f1239', border: '1px solid #fecdd3' }}
+                                  >
+                                    You
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-slate-600 font-mono text-xs align-middle">{admin.email || 'N/A'}</td>
+                            <td className="py-3 px-4 text-slate-600 text-xs align-middle">{admin.phone || 'N/A'}</td>
+                            <td className="py-3 px-4 align-middle">
+                              <span
+                                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold"
+                                style={{ backgroundColor: '#dcfce7', color: '#15803d', border: '1px solid #86efac' }}
                               >
-                                <Edit className="w-3.5 h-3.5 text-slate-600" />
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openPasswordDialog(admin)}
-                                title="Reset Password"
-                                className="h-8 w-8 p-0 rounded-xl"
-                              >
-                                <Key className="w-3.5 h-3.5 text-slate-600" />
-                              </Button>
-                              {!isCurrentUser(admin) && (
+                                Active
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-right align-middle">
+                              <div className="flex items-center justify-end gap-1.5">
                                 <Button
                                   type="button"
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => openDeleteDialog(admin)}
-                                  className="h-8 w-8 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-slate-200 rounded-xl"
-                                  title="Delete Admin"
+                                  onClick={() => openEditDialog(admin)}
+                                  title="Edit Admin"
+                                  className="h-8 w-8 p-0 rounded-xl"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <Edit className="w-3.5 h-3.5 text-slate-600" />
                                 </Button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openPasswordDialog(admin)}
+                                  title="Reset Password"
+                                  className="h-8 w-8 p-0 rounded-xl"
+                                >
+                                  <Key className="w-3.5 h-3.5 text-slate-600" />
+                                </Button>
+                                {!isCurrentUser(admin) && (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openDeleteDialog(admin)}
+                                    className="h-8 w-8 p-0 text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-slate-200 rounded-xl"
+                                    title="Delete Admin"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile Admin Cards */}
+                <div className="block md:hidden p-3 space-y-3 bg-slate-50/50">
+                  {paginatedAdmins.map((admin) => (
+                    <div key={admin.id} className="bg-white rounded-xl border border-slate-200 p-3.5 space-y-2.5 shadow-xs">
+                      <div className="flex items-center justify-between">
+                        <div className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                          <span>{admin.name || 'N/A'}</span>
+                          {isCurrentUser(admin) && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200">
+                              You
+                            </span>
+                          )}
+                        </div>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          Active
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-500 font-mono">{admin.email || 'N/A'}</div>
+                      {admin.phone && <div className="text-xs text-slate-500">{admin.phone}</div>}
+
+                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditDialog(admin)}
+                          className="h-8 px-2.5 text-xs font-semibold rounded-lg"
+                        >
+                          <Edit className="w-3.5 h-3.5 mr-1" /> Edit
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openPasswordDialog(admin)}
+                          className="h-8 px-2.5 text-xs font-semibold rounded-lg"
+                        >
+                          <Key className="w-3.5 h-3.5 mr-1" /> Password
+                        </Button>
+                        {!isCurrentUser(admin) && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openDeleteDialog(admin)}
+                            className="h-8 px-2.5 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 border-slate-200 rounded-lg"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Admin Pagination */}
+                {totalPages > 1 && (
+                  <div className="p-3.5 sm:p-4 border-t border-slate-100 bg-white flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
+                    <div className="font-medium text-slate-500 text-center sm:text-left">
+                      Showing <span className="font-bold text-slate-900">{startIndex + 1}</span> to{' '}
+                      <span className="font-bold text-slate-900">{Math.min(startIndex + pageSize, currentItemsCount)}</span> of{' '}
+                      <span className="font-bold text-slate-900">{currentItemsCount}</span> administrators
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={validCurrentPage <= 1}
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        className="h-8 px-2.5 text-xs font-semibold rounded-lg border-slate-200 text-slate-700 disabled:opacity-40 cursor-pointer"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5 mr-1" />
+                        Previous
+                      </Button>
+
+                      {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter(page => page === 1 || page === totalPages || Math.abs(page - validCurrentPage) <= 1)
+                        .map((page, index, array) => {
+                          const prevPage = array[index - 1];
+                          const hasGap = prevPage && page - prevPage > 1;
+
+                          return (
+                            <React.Fragment key={page}>
+                              {hasGap && <span className="px-1 text-slate-400">...</span>}
+                              <Button
+                                variant={validCurrentPage === page ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setCurrentPage(page)}
+                                className={`h-8 w-8 p-0 text-xs font-bold rounded-lg cursor-pointer ${
+                                  validCurrentPage === page
+                                    ? 'bg-[#2563eb] text-white hover:bg-blue-700 shadow-xs'
+                                    : 'border-slate-200 text-slate-700 hover:bg-slate-100'
+                                }`}
+                              >
+                                {page}
+                              </Button>
+                            </React.Fragment>
+                          );
+                        })}
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={validCurrentPage >= totalPages}
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        className="h-8 px-2.5 text-xs font-semibold rounded-lg border-slate-200 text-slate-700 disabled:opacity-40 cursor-pointer"
+                      >
+                        Next
+                        <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </Card>

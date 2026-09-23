@@ -4,7 +4,8 @@ import {
   Clock, CheckCircle, XCircle, Calendar, FileText, Eye, MessageSquare, 
   Phone, Mail, MapPin, Search, Filter, Users, Briefcase, MoreVertical, 
   Loader2, ArrowLeft, AlertCircle, Video, ExternalLink, Check, Sparkles, 
-  ShieldCheck, GraduationCap, Stethoscope, SlidersHorizontal, RefreshCw, Award 
+  ShieldCheck, GraduationCap, Stethoscope, SlidersHorizontal, RefreshCw, Award,
+  Building2, Plus, Star, Target, Rocket, Package, User
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
@@ -461,36 +462,30 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
         }}
         className={`p-2.5 rounded-xl border transition-all cursor-pointer select-none ${
           filters.eligibleOnly 
-            ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-600 shadow-sm shadow-emerald-500/25 ring-2 ring-emerald-500/20' 
-            : 'bg-emerald-50/50 hover:bg-emerald-50 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/60 hover:border-emerald-300'
+            ? 'bg-blue-50/60 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 shadow-2xs' 
+            : 'bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700 hover:border-slate-300'
         }`}
       >
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-              filters.eligibleOnly ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300'
-            }`}>
-              <Sparkles className="w-4 h-4" />
+            <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
+              <Target className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="min-w-0">
-              <div className={`text-xs font-bold leading-tight ${
-                filters.eligibleOnly ? 'text-white' : 'text-emerald-950 dark:text-emerald-200'
-              }`}>
+              <div className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-tight">
                 100% Eligible Only
               </div>
-              <p className={`text-[10px] mt-0.5 truncate leading-tight ${
-                filters.eligibleOnly ? 'text-emerald-100' : 'text-emerald-700/80 dark:text-emerald-400'
-              }`}>
-                {filters.eligibleOnly ? 'Filtering active candidates' : 'Tap to show fully qualified'}
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate leading-tight">
+                Tap to show fully qualified
               </p>
             </div>
           </div>
           {/* Sleek Toggle switch indicator */}
           <div className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors duration-200 ease-in-out ${
-            filters.eligibleOnly ? 'bg-white/90' : 'bg-slate-300 dark:bg-slate-600'
+            filters.eligibleOnly ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'
           }`}>
-            <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full shadow ring-0 transition duration-200 ease-in-out my-auto mx-0.5 ${
-              filters.eligibleOnly ? 'translate-x-4 bg-emerald-600' : 'translate-x-0 bg-white'
+            <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out my-auto mx-0.5 ${
+              filters.eligibleOnly ? 'translate-x-4' : 'translate-x-0'
             }`} />
           </div>
         </div>
@@ -690,340 +685,377 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
   const renderApplicationCard = (application: ApplicationResponse) => {
     const isEligible = application.isEligible ?? false;
     const score = application.eligibilityScore ?? 0;
-    const hasEvaluation = application.eligibilityScore != null || 
-      (application.matchingCriteria && application.matchingCriteria.length > 0) || 
-      (application.unmetCriteria && application.unmetCriteria.length > 0);
+    
+    // Determine card theme & colors matching the mockup
+    // Card 1: 100% Eligible -> Emerald
+    // Card 2: Hired -> Sky blue
+    // Card 3: Interview -> Purple
+    // Card 4: Pending -> Amber
+    let borderThemeClass = 'card-border-purple border-[#d8b4fe]';
+    let avatarBgClass = 'bg-[#2563eb]';
+    let progressColorClass = 'bg-blue-600';
+    let stageTextColorClass = 'text-blue-600 dark:text-blue-400';
+    
+    // Left pill
+    let leftPillBg = 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/50 dark:text-purple-300 dark:border-purple-800';
+    let leftPillIcon = <User className="w-3.5 h-3.5" />;
+    let leftPillLabel = 'Interview';
 
-    // Color-coded eligibility variant
-    let eligibilityVariant: 'eligible' | 'partial' | 'not-eligible' | 'default' = 'default';
-    if (hasEvaluation) {
-      if (isEligible || score === 100) {
-        eligibilityVariant = 'eligible';
-      } else if (score >= 50) {
-        eligibilityVariant = 'partial';
-      } else {
-        eligibilityVariant = 'not-eligible';
+    // Right pill
+    let rightPillBg = 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/60 dark:text-purple-300 dark:border-purple-700';
+    let rightPillLabel = getStatusLabel(application.status);
+
+    if (application.status === 'hired') {
+      borderThemeClass = 'card-border-sky border-[#7dd3fc]';
+      avatarBgClass = 'bg-[#2563eb]';
+      progressColorClass = 'bg-emerald-500';
+      stageTextColorClass = 'text-emerald-600 dark:text-emerald-400';
+      leftPillBg = 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/50 dark:text-sky-300 dark:border-sky-800';
+      leftPillIcon = <Briefcase className="w-3.5 h-3.5" />;
+      leftPillLabel = 'Hired';
+      rightPillBg = 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/60 dark:text-emerald-300 dark:border-emerald-700';
+      rightPillLabel = 'Hired';
+    } else if (isEligible || score === 100) {
+      borderThemeClass = 'card-border-emerald border-[#86efac]';
+      avatarBgClass = 'bg-[#059669]';
+      progressColorClass = application.status === 'interview' ? 'bg-blue-600' : 'bg-emerald-500';
+      stageTextColorClass = application.status === 'interview' ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-600 dark:text-emerald-400';
+      leftPillBg = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800';
+      leftPillIcon = <User className="w-3.5 h-3.5" />;
+      leftPillLabel = getStatusLabel(application.status);
+      rightPillBg = application.status === 'interview' 
+        ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/60 dark:text-purple-300 dark:border-purple-700' 
+        : 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/60 dark:text-emerald-300 dark:border-emerald-700';
+      rightPillLabel = getStatusLabel(application.status);
+    } else if (application.status === 'interview') {
+      borderThemeClass = 'card-border-purple border-[#d8b4fe]';
+      avatarBgClass = 'bg-[#2563eb]';
+      progressColorClass = 'bg-blue-600';
+      stageTextColorClass = 'text-blue-600 dark:text-blue-400';
+      leftPillBg = 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/50 dark:text-purple-300 dark:border-purple-800';
+      leftPillIcon = <User className="w-3.5 h-3.5" />;
+      leftPillLabel = 'Interview';
+      rightPillBg = 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/60 dark:text-purple-300 dark:border-purple-700';
+      rightPillLabel = 'Interview';
+    } else if (application.status === 'pending' || (score >= 40 && score < 100)) {
+      borderThemeClass = 'card-border-amber border-[#fde68a]';
+      avatarBgClass = 'bg-[#d97706]';
+      progressColorClass = 'bg-amber-500';
+      stageTextColorClass = 'text-amber-600 dark:text-amber-400';
+      leftPillBg = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800';
+      leftPillIcon = <Clock className="w-3.5 h-3.5" />;
+      leftPillLabel = 'Pending';
+      rightPillBg = 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/60 dark:text-amber-300 dark:border-amber-700';
+      rightPillLabel = 'Pending';
+    } else if (application.status === 'rejected') {
+      borderThemeClass = 'card-border-rose border-[#fecdd3]';
+      avatarBgClass = 'bg-[#e11d48]';
+      progressColorClass = 'bg-rose-500';
+      stageTextColorClass = 'text-rose-600 dark:text-rose-400';
+      leftPillBg = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-800';
+      leftPillIcon = <XCircle className="w-3.5 h-3.5" />;
+      leftPillLabel = 'Rejected';
+      rightPillBg = 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/60 dark:text-rose-300 dark:border-rose-700';
+      rightPillLabel = 'Rejected';
+    }
+
+    // Eligibility Match tier & list
+    const criteriaItems: Array<{ text: string; met: boolean }> = [];
+    if (application.matchingCriteria && application.matchingCriteria.length > 0) {
+      application.matchingCriteria.forEach(item => {
+        criteriaItems.push({ text: item, met: true });
+      });
+    }
+    if (application.unmetCriteria && application.unmetCriteria.length > 0) {
+      application.unmetCriteria.forEach(item => {
+        criteriaItems.push({ text: item, met: false });
+      });
+    }
+
+    // Fallback if empty
+    if (criteriaItems.length === 0) {
+      if (application.candidateQualification) {
+        criteriaItems.push({ text: `Degree: ${application.candidateQualification} (Eligible)`, met: true });
+      }
+      if (application.candidateSpeciality) {
+        criteriaItems.push({ text: `Speciality: ${application.candidateSpeciality}`, met: true });
+      }
+      if (application.candidateYearsExperience != null) {
+        criteriaItems.push({ text: `Experience: ${application.candidateYearsExperience} Yrs`, met: true });
+      }
+      if (application.candidateRegistrationNumber) {
+        criteriaItems.push({ 
+          text: `Reg: ${application.candidateRegistrationNumber}${application.candidateRegistrationCouncil ? ` (${application.candidateRegistrationCouncil})` : ''} (Valid)`, 
+          met: true 
+        });
+      }
+      if (application.candidateState || application.candidateCity) {
+        criteriaItems.push({ 
+          text: `Location: ${[application.candidateCity, application.candidateState].filter(Boolean).join(', ')} (Matched)`, 
+          met: true 
+        });
       }
     }
 
-    const borderClass = eligibilityVariant === 'eligible'
-      ? 'medex-eligible border-l-4 border-l-emerald-500 hover:border-l-emerald-600 shadow-emerald-500/10'
-      : eligibilityVariant === 'partial'
-      ? 'medex-partial border-l-4 border-l-amber-500 hover:border-l-amber-600 shadow-amber-500/10'
-      : eligibilityVariant === 'not-eligible'
-      ? 'medex-not-eligible border-l-4 border-l-rose-500 hover:border-l-rose-600 shadow-rose-500/10'
-      : 'medex-default border-l-4 border-l-blue-500 dark:border-l-blue-600 hover:border-l-blue-600 dark:hover:border-l-blue-500';
-
-    const avatarVariantClass = eligibilityVariant === 'eligible'
-      ? 'avatar-emerald'
-      : eligibilityVariant === 'partial'
-      ? 'avatar-amber'
-      : eligibilityVariant === 'not-eligible'
-      ? 'avatar-rose'
-      : 'avatar-blue';
+    const isHighTier = isEligible || score >= 80;
+    const isMediumTier = !isHighTier && (score >= 40 || application.status === 'pending');
+    const tierLabel = isHighTier ? 'High' : isMediumTier ? 'Medium' : 'Low';
 
     return (
-      <Card 
+      <div 
         key={application.id} 
-        className={`group relative overflow-hidden bg-white dark:bg-gray-800 ${borderClass} hover:shadow-lg transition-all duration-200 ease-out hover:-translate-y-0.5 flex flex-col medex-applicant-card h-full`}
-        style={{
-          borderRadius: '0.875rem'
-        }}
+        className={`group relative overflow-hidden bg-white dark:bg-gray-800 rounded-2xl border ${borderThemeClass} hover:shadow-lg transition-all duration-200 flex flex-col medex-applicant-card h-full p-3.5`}
       >
-        <div className="flex flex-col flex-1 medex-applicant-card-content h-full p-3 sm:p-3.5">
-          {/* Top Row: Candidate Avatar, Name, Email, Status */}
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              <div 
-                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm medex-applicant-avatar ${avatarVariantClass}`}
-              >
-                {application.candidateName?.charAt(0)?.toUpperCase() || 'A'}
-              </div>
-              <div className="min-w-0 flex-1 overflow-hidden">
-                <h3 
-                  className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-[15px] truncate leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
-                  title={application.candidateName || 'Unknown Candidate'}
-                >
-                  {application.candidateName || 'Unknown Candidate'}
-                </h3>
-                <p 
-                  className="text-xs text-slate-500 dark:text-slate-400 truncate flex items-center gap-1 mt-0.5"
-                  title={application.candidateEmail}
-                >
-                  <Mail className="w-3 h-3 text-slate-400 flex-shrink-0" />
-                  <span className="truncate">{application.candidateEmail}</span>
-                </p>
-                {(application.candidateQualification || application.candidateSpeciality) && (
-                  <div className="mt-1">
-                    <span 
-                      className="inline-block text-[11px] font-semibold text-teal-800 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-2 py-0.5 rounded border border-teal-200/80 dark:border-teal-800/80 truncate max-w-full"
-                      title={[application.candidateQualification, application.candidateSpeciality].filter(Boolean).join(' • ')}
-                    >
-                      🎓 {[application.candidateQualification, application.candidateSpeciality].filter(Boolean).join(' • ')}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            {/* Status Badge */}
-            <Badge 
-              className={`${getStatusColor(application.status)} flex-shrink-0 text-[11px] font-bold px-2.5 py-0.5 leading-tight shadow-2xs rounded-full`}
-              variant="outline"
+        {/* Top Header Row: Left Status Pill + Right Status Badge */}
+        <div className="flex items-center justify-between gap-2 mb-2.5">
+          <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${leftPillBg}`}>
+            {leftPillIcon}
+            <span>{leftPillLabel}</span>
+          </div>
+          <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${rightPillBg}`}>
+            <span>{rightPillLabel}</span>
+          </div>
+        </div>
+
+        {/* Profile Row: Avatar, Candidate Name, Email, Gender */}
+        <div className="flex items-center gap-2.5 mb-2">
+          <div 
+            className={`w-[42px] h-[42px] rounded-full flex items-center justify-center text-white font-bold text-base flex-shrink-0 shadow-xs ${avatarBgClass}`}
+          >
+            {application.candidateName?.charAt(0)?.toUpperCase() || 'A'}
+          </div>
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <h3 
+              className="font-bold text-slate-900 dark:text-slate-100 text-[15px] truncate leading-tight"
+              title={application.candidateName || 'Unknown Candidate'}
             >
-              {getStatusLabel(application.status)}
-            </Badge>
+              {application.candidateName || 'Unknown Candidate'}
+            </h3>
+            <p 
+              className="text-xs text-slate-500 dark:text-slate-400 truncate flex items-center gap-1 mt-0.5"
+              title={application.candidateEmail}
+            >
+              <Mail className="w-3 h-3 text-slate-400 flex-shrink-0" />
+              <span className="truncate">{application.candidateEmail}</span>
+            </p>
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1 mt-0.5">
+              <span>♂</span>
+              <span>{application.candidateGender || 'M'}</span>
+            </p>
           </div>
+        </div>
 
-          {/* Job Title Applied For */}
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 py-1 px-2.5 bg-blue-50/70 dark:bg-blue-950/30 rounded-md border border-blue-200/70 dark:border-blue-900/50 mb-2 truncate">
-            <Briefcase className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-            <span className="truncate" title={application.jobTitle}>{application.jobTitle}</span>
-          </div>
+        {/* Degree & Speciality Row */}
+        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-900 dark:text-slate-100 mb-2 truncate">
+          <GraduationCap className="w-4 h-4 text-blue-600 flex-shrink-0" />
+          <span className="truncate">
+            {[application.candidateQualification, application.candidateSpeciality].filter(Boolean).join(' - ') || 'Medical Practitioner'}
+          </span>
+        </div>
 
-          {/* Compact Eligibility Match & Breakdown */}
-          {hasEvaluation && (
-            <div className={`mb-2 p-2 rounded-lg border text-xs ${
-              eligibilityVariant === 'eligible'
-                ? 'bg-emerald-50/80 dark:bg-emerald-950/30 border-emerald-300/80 dark:border-emerald-800/60'
-                : eligibilityVariant === 'partial'
-                ? 'bg-amber-50/80 dark:bg-amber-950/30 border-amber-300/80 dark:border-amber-800/60'
-                : 'bg-rose-50/80 dark:bg-rose-950/30 border-rose-300/80 dark:border-rose-800/60'
+        {/* Applied Job Title Strip */}
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-950/40 rounded-lg px-2.5 py-1.5 mb-2.5 border border-blue-100/80 dark:border-blue-900/60 truncate">
+          <Briefcase className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+          <span className="truncate" title={application.jobTitle}>{application.jobTitle}</span>
+        </div>
+
+        {/* Eligibility Match Box */}
+        <div className={`p-2.5 rounded-xl border text-xs mb-2.5 ${
+          isHighTier 
+            ? 'bg-emerald-50/30 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-800/40' 
+            : isMediumTier
+            ? 'bg-amber-50/30 dark:bg-amber-950/20 border-amber-200/60 dark:border-amber-800/40'
+            : 'bg-rose-50/30 dark:bg-rose-950/20 border-rose-200/60 dark:border-rose-800/40'
+        }`}>
+          <div className="flex items-center justify-between gap-1 mb-2">
+            <span className="text-xs font-bold flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+              <Star className={`w-3.5 h-3.5 fill-current ${
+                isHighTier ? 'text-emerald-600' : isMediumTier ? 'text-amber-500' : 'text-rose-500'
+              }`} />
+              Eligibility Match
+            </span>
+            <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${
+              isHighTier 
+                ? 'bg-emerald-100/90 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300' 
+                : isMediumTier
+                ? 'bg-amber-100/90 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'
+                : 'bg-rose-100/90 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300'
             }`}>
-              <div className="flex items-center justify-between gap-1 mb-1.5 pb-1 border-b border-black/5 dark:border-white/5">
-                <span className="text-[11px] font-bold flex items-center gap-1 text-slate-800 dark:text-slate-200">
-                  <Sparkles className={`w-3.5 h-3.5 flex-shrink-0 ${
-                    eligibilityVariant === 'eligible' ? 'text-emerald-600' : eligibilityVariant === 'partial' ? 'text-amber-600' : 'text-rose-500'
-                  }`} />
-                  Eligibility Match:
-                </span>
-                {eligibilityVariant === 'eligible' ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-600 text-white shadow-2xs">
-                    <CheckCircle className="w-3 h-3 flex-shrink-0" />
-                    100% Eligible
-                  </span>
-                ) : eligibilityVariant === 'partial' ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-amber-500 text-white shadow-2xs">
-                    <Sparkles className="w-3 h-3 flex-shrink-0" />
-                    {score}% Match
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-rose-600 text-white shadow-2xs">
-                    <XCircle className="w-3 h-3 flex-shrink-0" />
-                    {score > 0 ? `${score}% Match` : 'Not Eligible'}
-                  </span>
-                )}
-              </div>
+              {tierLabel}
+            </span>
+          </div>
 
-              {/* Compact Met & Unmet Criteria Badges */}
-              {((application.matchingCriteria && application.matchingCriteria.length > 0) || (application.unmetCriteria && application.unmetCriteria.length > 0)) && (
-                <div className="flex flex-wrap gap-1">
-                  {application.matchingCriteria?.map((item, idx) => (
-                    <span key={`m-${idx}`} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] sm:text-[11px] font-semibold bg-emerald-100 text-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 shadow-2xs" title={item}>
-                      <Check className="w-3 h-3 text-emerald-700 dark:text-emerald-400 flex-shrink-0" />
-                      <span className="truncate max-w-[200px]">{item}</span>
-                    </span>
-                  ))}
-                  {application.unmetCriteria?.map((item, idx) => (
-                    <span key={`u-${idx}`} className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] sm:text-[11px] font-semibold bg-rose-100 text-rose-900 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 dark:border-rose-700 shadow-2xs" title={item}>
-                      <XCircle className="w-3 h-3 text-rose-600 dark:text-rose-400 flex-shrink-0" />
-                      <span className="truncate max-w-[200px]">{item}</span>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Key Metadata Rows */}
-          <div className="space-y-1 text-xs text-slate-600 dark:text-slate-400 mb-2 bg-slate-50/70 dark:bg-gray-800/50 p-2 rounded-lg border border-slate-200/70 dark:border-gray-700/70">
-            {/* Line 1: Organization & Location */}
-            <div className="flex items-center justify-between gap-2 min-w-0">
-              <div className="flex items-center gap-1.5 min-w-0 flex-1" title={application.jobOrganization}>
-                <Briefcase className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />
-                <span className="truncate font-semibold text-slate-800 dark:text-slate-200">
-                  {application.jobOrganization || 'Organization'}
+          <div className="space-y-1 text-xs">
+            {criteriaItems.map((item, idx) => (
+              <div key={idx} className="flex items-start gap-1.5 leading-snug">
+                <Check className={`w-3.5 h-3.5 mt-0.5 flex-shrink-0 ${item.met ? 'text-emerald-600' : 'text-amber-600'}`} />
+                <span className="text-slate-700 dark:text-slate-300 text-xs truncate" title={item.text}>
+                  {item.text}
                 </span>
               </div>
-              {(application.candidateCity || application.candidateState) && (
-                <div className="flex items-center gap-1 flex-shrink-0 text-slate-500 dark:text-slate-400" title={[application.candidateCity, application.candidateState].filter(Boolean).join(', ')}>
-                  <MapPin className="w-3 h-3 text-rose-500 flex-shrink-0" />
-                  <span className="truncate max-w-[120px]">
-                    {[application.candidateCity, application.candidateState].filter(Boolean).join(', ')}
-                  </span>
-                </div>
-              )}
+            ))}
+          </div>
+        </div>
+
+        {/* Hospital & Metadata Sub-Card */}
+        <div className="bg-white dark:bg-gray-800/90 border border-slate-200/90 dark:border-gray-700/80 rounded-xl p-2.5 mb-2.5 shadow-2xs">
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            {/* Hospital */}
+            <div className="flex items-start gap-1.5 min-w-0" title={application.jobOrganization}>
+              <Building2 className="w-3.5 h-3.5 text-slate-500 mt-0.5 flex-shrink-0" />
+              <span className="font-semibold text-slate-800 dark:text-slate-200 line-clamp-2 leading-tight">
+                {application.jobOrganization || 'Organization'}
+              </span>
             </div>
-
-            {/* Line 2: Registration / Exp + Applied Date */}
-            <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-200/50 dark:border-gray-700/50 min-w-0">
-              {application.candidateRegistrationNumber ? (
-                <span 
-                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-800 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/50 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800 truncate max-w-[160px]"
-                  title={`Reg: ${application.candidateRegistrationNumber}${application.candidateRegistrationCouncil ? ` (${application.candidateRegistrationCouncil})` : ''}`}
-                >
-                  <ShieldCheck className="w-3 h-3 text-emerald-600 flex-shrink-0" />
-                  Reg: {application.candidateRegistrationNumber}
-                </span>
-              ) : application.candidateYearsExperience != null ? (
-                <span 
-                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800 truncate"
-                  title={`${application.candidateYearsExperience} Years Experience`}
-                >
-                  <Clock className="w-3 h-3 text-amber-600 flex-shrink-0" />
-                  {application.candidateYearsExperience} yr{application.candidateYearsExperience === 1 ? '' : 's'} exp
-                </span>
-              ) : (
-                <span />
-              )}
-
-              <span 
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400 flex-shrink-0"
-                title={`Applied on ${formatDate(application.appliedDate)}`}
-              >
-                <Calendar className="w-3 h-3 text-purple-500 flex-shrink-0" />
+            {/* Location */}
+            <div className="flex items-start gap-1.5 min-w-0" title={[application.candidateCity, application.candidateState].filter(Boolean).join(', ')}>
+              <MapPin className="w-3.5 h-3.5 text-slate-500 mt-0.5 flex-shrink-0" />
+              <span className="text-slate-600 dark:text-slate-400 truncate leading-tight">
+                {[application.candidateCity, application.candidateState].filter(Boolean).join(', ') || 'Not specified'}
+              </span>
+            </div>
+            {/* Reg */}
+            <div className="flex items-center gap-1.5 min-w-0" title={application.candidateRegistrationNumber ? `Reg: ${application.candidateRegistrationNumber}` : ''}>
+              <ShieldCheck className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+              <span className="text-slate-700 dark:text-slate-300 font-medium truncate text-[11px]">
+                {application.candidateRegistrationNumber ? `Reg: ${application.candidateRegistrationNumber}` : (application.candidateYearsExperience ? `${application.candidateYearsExperience} Yrs Exp` : 'Reg: Pending')}
+              </span>
+            </div>
+            {/* Applied Date */}
+            <div className="flex items-center gap-1.5 min-w-0" title={formatDate(application.appliedDate)}>
+              <Calendar className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+              <span className="text-slate-600 dark:text-slate-400 font-medium truncate text-[11px]">
                 {formatDate(application.appliedDate)}
               </span>
             </div>
           </div>
+        </div>
 
-          {/* Scheduled Interview Banner if any */}
-          {application.interviewDate && (
-            <div className="flex items-center gap-1.5 p-1.5 mb-2 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/40 dark:to-indigo-950/40 rounded-lg border border-purple-300 dark:border-purple-800 text-xs font-semibold text-purple-900 dark:text-purple-200 shadow-2xs">
-              <Calendar className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
-              <span className="truncate" title={formatDateTime(application.interviewDate)}>
-                Interview: {formatDateTime(application.interviewDate)}
-              </span>
-            </div>
-          )}
-
-          {/* Notes if any */}
-          {application.notes && (
-            <div className="p-1.5 mb-2 bg-amber-50 dark:bg-amber-900/20 rounded-md border border-amber-200 dark:border-amber-800/50 text-xs text-slate-700 dark:text-slate-300 line-clamp-1" title={application.notes}>
-              <span className="font-bold text-amber-800 dark:text-amber-300">Notes:</span> {application.notes}
-            </div>
-          )}
-
-          {/* Sleek Ultra-Compact Stage & Progress Bar */}
-          <div className="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-slate-100/90 dark:bg-gray-800/90 border border-slate-200 dark:border-gray-700 mb-2 shadow-2xs">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                application.status === 'hired' ? 'bg-emerald-500' :
-                application.status === 'interview' ? 'bg-purple-500' :
-                application.status === 'shortlisted' ? 'bg-blue-500' :
-                application.status === 'rejected' ? 'bg-rose-500' : 'bg-amber-500'
-              } animate-pulse`} />
-              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Stage:</span>
-              <span className="text-[11px] font-bold text-slate-900 dark:text-slate-100 truncate">
-                {getStatusLabel(application.status)}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <div className="w-16 sm:w-20 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                <div 
-                  className={`h-full rounded-full transition-all duration-300 ${
-                    application.status === 'hired' ? 'bg-gradient-to-r from-emerald-500 to-teal-600' :
-                    application.status === 'interview' ? 'bg-gradient-to-r from-purple-500 to-indigo-600' :
-                    application.status === 'shortlisted' ? 'bg-gradient-to-r from-blue-500 to-cyan-600' :
-                    application.status === 'rejected' ? 'bg-rose-500' : 'bg-gradient-to-r from-amber-500 to-orange-500'
-                  }`} 
-                  style={{ width: `${getStatusProgress(application.status)}%` }} 
-                />
-              </div>
-              <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
-                {getStatusProgress(application.status)}%
-              </span>
-            </div>
+        {/* Scheduled Interview Banner if any */}
+        {application.interviewDate && (
+          <div className="flex items-center gap-1.5 p-2 mb-2 bg-purple-50/80 dark:bg-purple-950/40 rounded-lg border border-purple-100 dark:border-purple-800/60 text-xs font-medium text-purple-900 dark:text-purple-200">
+            <Clock className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+            <span className="truncate">
+              Interview: {formatDateTime(application.interviewDate)}
+            </span>
           </div>
+        )}
 
-          {/* Action Buttons - Clean 2x2 Grid (All Viewports) */}
-          <div 
-            className="medex-applicant-footer grid grid-cols-2 gap-1.5 mt-auto pt-2 border-t border-slate-200 dark:border-gray-700"
-            data-slot="applicant-footer"
-          >
-            {/* 1. View Details */}
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                setSelectedApplication(application);
-                setIsViewDialogOpen(true);
-              }}
-              className="medex-app-btn medex-app-btn-view w-full h-8 px-2 py-1 text-xs font-bold inline-flex items-center justify-center min-w-0"
-              title="View Details"
-            >
-              <Eye className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
-              <span className="truncate">View</span>
-            </Button>
+        {/* Notes if any */}
+        {application.notes && (
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 mb-2 truncate" title={application.notes}>
+            <span className="font-semibold text-slate-700 dark:text-slate-300">Notes:</span> {application.notes}
+          </div>
+        )}
 
-            {/* 2. Update Status */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setSelectedApplication(application);
-                setIsStatusDialogOpen(true);
-              }}
-              className="medex-app-btn medex-app-btn-status w-full h-8 px-2 py-1 text-xs font-bold inline-flex items-center justify-center min-w-0"
-              title="Update Status"
-            >
-              <CheckCircle className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
-              <span className="truncate">Update Status</span>
-            </Button>
-
-            {/* 3. View Interview / Interview */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setSelectedApplication(application);
-                setIsInterviewDialogOpen(true);
-              }}
-              className={`medex-app-btn medex-app-btn-interview w-full h-8 px-2 py-1 text-xs font-bold inline-flex items-center justify-center min-w-0 ${
-                application.interviewDate && !application.interviewLink
-                  ? 'medex-btn-amber'
-                  : application.interviewDate
-                  ? 'medex-btn-purple'
-                  : ''
-              }`}
-              title={
-                application.interviewDate
-                  ? (application.interviewLink ? 'Interview Details / Reschedule' : '+ Add Zoom / Meet Link')
-                  : 'Schedule Interview'
-              }
-            >
-              <Calendar className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
-              <span className="truncate">
-                {application.interviewDate
-                  ? (application.interviewLink ? 'Interview' : '+ Meet Link')
-                  : 'Interview'}
-              </span>
-            </Button>
-
-            {/* 4. View Resume */}
-            {application.resumeUrl ? (
-              <Button 
-                variant="default" 
-                size="sm"
-                onClick={() => openFileInViewer(application.resumeUrl!)}
-                className="medex-app-btn medex-app-btn-resume medex-applicant-resume-button w-full h-8 px-2 py-1 text-xs font-bold inline-flex items-center justify-center min-w-0"
-                title="View Resume"
-              >
-                <FileText className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
-                <span className="truncate">View Resume</span>
-              </Button>
-            ) : (
-              <div 
-                className="medex-app-btn medex-applicant-no-resume w-full h-8 px-2 py-1 text-xs font-bold inline-flex items-center justify-center min-w-0"
-                title="No resume uploaded"
-              >
-                <AlertCircle className="w-3.5 h-3.5 mr-1 flex-shrink-0 text-amber-600 dark:text-amber-400" />
-                <span className="truncate">No Resume</span>
-              </div>
-            )}
+        {/* Stage & Progress Bar */}
+        <div className="mb-3">
+          <div className="flex items-center justify-between text-xs mb-1 font-medium">
+            <span className={`text-xs font-semibold ${stageTextColorClass}`}>
+              Stage: {getStatusLabel(application.status)}
+            </span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold">
+              {getStatusProgress(application.status)}%
+            </span>
+          </div>
+          <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+            <div 
+              className={`h-full rounded-full transition-all duration-300 ${progressColorClass}`} 
+              style={{ width: `${getStatusProgress(application.status)}%` }} 
+            />
           </div>
         </div>
-      </Card>
+
+        {/* Action Buttons (2x2 Grid) */}
+        <div 
+          className="medex-applicant-footer grid grid-cols-2 gap-2 mt-auto"
+          data-slot="applicant-footer"
+        >
+          {/* 1. View */}
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              setSelectedApplication(application);
+              setIsViewDialogOpen(true);
+            }}
+            className="medex-app-btn medex-app-btn-view w-full h-9 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 rounded-lg shadow-2xs"
+            title="View Details"
+          >
+            <Eye className="w-3.5 h-3.5 mr-1.5 flex-shrink-0 text-slate-600" />
+            <span className="truncate">View</span>
+          </Button>
+
+          {/* 2. Update Status */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setSelectedApplication(application);
+              setIsStatusDialogOpen(true);
+            }}
+            className="medex-app-btn medex-app-btn-status w-full h-9 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 rounded-lg shadow-2xs"
+            title="Update Status"
+          >
+            <CheckCircle className="w-3.5 h-3.5 mr-1.5 flex-shrink-0 text-slate-600" />
+            <span className="truncate">Update Status</span>
+          </Button>
+
+          {/* 3. Interview / + Meet Link */}
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => {
+              setSelectedApplication(application);
+              setIsInterviewDialogOpen(true);
+            }}
+            className={`medex-app-btn medex-app-btn-interview w-full h-9 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 rounded-lg shadow-2xs text-white ${
+              application.interviewDate && !application.interviewLink
+                ? 'medex-btn-amber bg-[#f59e0b] hover:bg-[#d97706] border-transparent'
+                : 'medex-btn-purple bg-[#7c3aed] hover:bg-[#6d28d9] border-transparent'
+            }`}
+            title={
+              application.interviewDate
+                ? (application.interviewLink ? 'Interview' : '+ Add Zoom / Meet Link')
+                : 'Schedule Interview'
+            }
+          >
+            {application.interviewDate && !application.interviewLink ? (
+              <>
+                <Plus className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
+                <span className="truncate">+ Meet Link</span>
+              </>
+            ) : (
+              <>
+                <Calendar className="w-3.5 h-3.5 mr-1.5 flex-shrink-0" />
+                <span className="truncate">Interview</span>
+              </>
+            )}
+          </Button>
+
+          {/* 4. View Resume / No Resume */}
+          {application.resumeUrl ? (
+            <Button 
+              variant="default" 
+              size="sm"
+              onClick={() => openFileInViewer(application.resumeUrl!)}
+              className="medex-app-btn medex-app-btn-resume w-full h-9 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 bg-[#059669] hover:bg-[#047857] text-white border-transparent rounded-lg shadow-2xs"
+              title="View Resume"
+            >
+              <FileText className="w-3.5 h-3.5 mr-1.5 flex-shrink-0" />
+              <span className="truncate">View Resume</span>
+            </Button>
+          ) : (
+            <div 
+              className="medex-app-btn medex-app-no-resume w-full h-9 px-2 text-xs font-semibold inline-flex items-center justify-center min-w-0 bg-[#fffbeb] hover:bg-[#fef3c7] text-[#d97706] border border-[#fde68a] rounded-lg cursor-default shadow-2xs"
+              title="No resume uploaded"
+            >
+              <AlertCircle className="w-3.5 h-3.5 mr-1.5 flex-shrink-0 text-amber-500" />
+              <span className="truncate">No Resume</span>
+            </div>
+          )}
+        </div>
+      </div>
     );
   };
 
@@ -1103,133 +1135,107 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
           {/* Main Content */}
           <main className="flex-1 min-w-0">
             {/* Job Eligibility & Recruitment Overview Banner */}
-            {(selectedJob || eligibilitySummary) && (
-              <Card className="mb-4 sm:mb-6 p-4 sm:p-5 border-l-4 border-l-teal-600 bg-gradient-to-r from-teal-50/80 via-emerald-50/40 to-white dark:from-teal-950/40 dark:via-emerald-950/20 dark:to-gray-800 shadow-xs rounded-xl">
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-teal-800 dark:text-teal-300 bg-teal-100 dark:bg-teal-900/60 px-2 py-0.5 rounded">
-                        {selectedJob ? 'Target Job Eligibility Criteria' : 'Applications Overview'}
-                      </span>
-                      {selectedJob?.organization && (
-                        <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
-                          {selectedJob.organization}
-                        </span>
-                      )}
-                    </div>
-                    <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 truncate">
-                      {selectedJob?.title || eligibilitySummary?.jobTitle || 'All Candidates Across Jobs'}
-                    </h2>
-
-                    {/* Criteria Chips */}
-                    <div className="flex items-center gap-1.5 flex-wrap mt-2">
-                      {eligibilitySummary?.jobCriteria?.qualifications && eligibilitySummary.jobCriteria.qualifications.length > 0 && (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                          <GraduationCap className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
-                          Req: {eligibilitySummary.jobCriteria.qualifications.join(' / ')}
-                        </span>
-                      )}
-                      {eligibilitySummary?.jobCriteria?.speciality && (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-md bg-purple-50 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-800">
-                          <Stethoscope className="w-3.5 h-3.5 text-purple-600 flex-shrink-0" />
-                          {eligibilitySummary.jobCriteria.speciality}
-                        </span>
-                      )}
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                        <Clock className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
-                        Min Exp: {eligibilitySummary?.jobCriteria?.minExperience ? `${eligibilitySummary.jobCriteria.minExperience}+ Years` : 'Fresher / Any'}
-                      </span>
-                      {eligibilitySummary?.jobCriteria?.registrationRequired && (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                          State Reg Required
-                        </span>
-                      )}
-                    </div>
+            <div className="mb-4 bg-white dark:bg-gray-800 border border-slate-200/90 dark:border-gray-700 rounded-2xl p-4 sm:p-5 shadow-xs">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800 mb-1.5">
+                    <User className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                    <span>{selectedJob ? 'Target Job Eligibility Criteria' : 'Applications Overview'}</span>
                   </div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 truncate">
+                    {selectedJob?.title || eligibilitySummary?.jobTitle || 'All Candidates Across Jobs'}
+                  </h2>
 
-                  {/* Recruitment Metric Counters & 1-Click Toggle */}
-                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 flex-shrink-0">
-                    <div className="bg-white/90 dark:bg-gray-800/90 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-center min-w-[70px]">
-                      <div className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Total Apps</div>
-                      <div className="text-base font-bold text-gray-800 dark:text-gray-200">
+                  {/* Criteria Chips */}
+                  <div className="flex items-center gap-2 flex-wrap mt-2">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md bg-blue-50/70 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-100 dark:border-blue-900/60">
+                      <Clock className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+                      Min. Exp: {eligibilitySummary?.jobCriteria?.minExperience ? `${eligibilitySummary.jobCriteria.minExperience}+ Years` : 'Fresher / Any'}
+                    </span>
+                    {eligibilitySummary?.jobCriteria?.qualifications && eligibilitySummary.jobCriteria.qualifications.length > 0 && (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-md bg-slate-50 text-slate-700 dark:bg-gray-700 dark:text-slate-300 border border-slate-200 dark:border-gray-600">
+                        <GraduationCap className="w-3.5 h-3.5 text-slate-600 flex-shrink-0" />
+                        Req: {eligibilitySummary.jobCriteria.qualifications.join(' / ')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Recruitment Metric Counters & 1-Click Toggle */}
+                <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 flex-shrink-0">
+                  <div className="bg-white dark:bg-gray-800/90 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-gray-700 text-left min-w-[85px] shadow-2xs flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 flex items-center justify-center flex-shrink-0">
+                      <Target className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Total Apps</div>
+                      <div className="text-lg font-bold text-slate-900 dark:text-slate-100 leading-tight">
                         {eligibilitySummary?.totalApplications ?? applications.length}
                       </div>
                     </div>
+                  </div>
 
-                    <div className={`px-3 py-1.5 rounded-lg border text-center min-w-[90px] transition-all ${
-                      filters.eligibleOnly 
-                        ? 'bg-emerald-600 text-white border-emerald-700 shadow-sm' 
-                        : 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
-                    }`}>
-                      <div className={`text-[11px] font-bold ${filters.eligibleOnly ? 'text-emerald-100' : 'text-emerald-700 dark:text-emerald-400'}`}>
-                        🎯 Eligible
-                      </div>
-                      <div className="text-base font-extrabold">
+                  <div className="bg-white dark:bg-gray-800/90 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-gray-700 text-left min-w-[85px] shadow-2xs flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center flex-shrink-0">
+                      <Rocket className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Eligible</div>
+                      <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400 leading-tight">
                         {eligibilitySummary?.eligibleCount ?? applications.filter(a => a.isEligible).length}
                       </div>
                     </div>
+                  </div>
 
-                    <div className="bg-white/90 dark:bg-gray-800/90 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 text-center min-w-[70px]">
-                      <div className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Shortlisted</div>
-                      <div className="text-base font-bold text-blue-600 dark:text-blue-400">
+                  <div className="bg-white dark:bg-gray-800/90 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-gray-700 text-left min-w-[85px] shadow-2xs flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-950/60 text-purple-600 flex items-center justify-center flex-shrink-0">
+                      <Package className="w-4 h-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Shortlisted</div>
+                      <div className="text-lg font-bold text-purple-600 dark:text-purple-400 leading-tight">
                         {eligibilitySummary?.shortlistedCount ?? applications.filter(a => a.status === 'shortlisted').length}
                       </div>
                     </div>
-
-                    <Button
-                      size="sm"
-                      variant={filters.eligibleOnly ? "default" : "outline"}
-                      onClick={() => setFilters(prev => ({ ...prev, eligibleOnly: !prev.eligibleOnly }))}
-                      className={`h-9 px-3 text-xs sm:text-sm font-bold shadow-xs transition-all ${
-                        filters.eligibleOnly 
-                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-transparent' 
-                          : 'border-emerald-600 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
-                      }`}
-                    >
-                      {filters.eligibleOnly ? (
-                        <>
-                          <Check className="w-3.5 h-3.5 mr-1.5" />
-                          Eligible Only Active
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
-                          Show Eligible ({eligibilitySummary?.eligibleCount ?? applications.filter(a => a.isEligible).length})
-                        </>
-                      )}
-                    </Button>
                   </div>
+
+                  <Button
+                    size="sm"
+                    variant={filters.eligibleOnly ? "default" : "outline"}
+                    onClick={() => setFilters(prev => ({ ...prev, eligibleOnly: !prev.eligibleOnly }))}
+                    className={`h-10 px-3.5 text-xs font-bold transition-all rounded-xl ${
+                      filters.eligibleOnly 
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white border-transparent' 
+                        : 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30'
+                    }`}
+                  >
+                    <SlidersHorizontal className="w-3.5 h-3.5 mr-1.5" />
+                    Show Eligible ({eligibilitySummary?.eligibleCount ?? applications.filter(a => a.isEligible).length})
+                  </Button>
                 </div>
-              </Card>
-            )}
+              </div>
+            </div>
 
             <Tabs defaultValue="all" className="w-full">
               <div className="flex items-center justify-between mb-4 sm:mb-6">
-                <TabsList className="inline-flex h-9 sm:h-10 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800 p-1 text-gray-500 dark:text-gray-400">
+                <TabsList className="inline-flex h-9 sm:h-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-gray-800 p-1 text-slate-600 dark:text-gray-400 border border-slate-200 dark:border-gray-700">
                   <TabsTrigger 
                     value="all" 
-                    className="text-xs sm:text-sm px-2 sm:px-4 data-[state=active]:bg-white data-[state=active]:text-gray-900 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-gray-100"
+                    className="text-xs sm:text-sm px-3 sm:px-4 rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white font-semibold transition-all"
                   >
-                    All <span className="hidden sm:inline">({filteredApplications.length})</span>
+                    All ({filteredApplications.length})
                   </TabsTrigger>
                   <TabsTrigger 
                     value="active" 
-                    className="text-xs sm:text-sm px-2 sm:px-4 data-[state=active]:bg-white data-[state=active]:text-gray-900 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-gray-100"
+                    className="text-xs sm:text-sm px-3 sm:px-4 rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white font-semibold transition-all"
                   >
                     Active
                   </TabsTrigger>
                   <TabsTrigger 
                     value="interview" 
-                    className="text-xs sm:text-sm px-2 sm:px-4 data-[state=active]:bg-white data-[state=active]:text-gray-900 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-gray-100"
+                    className="text-xs sm:text-sm px-3 sm:px-4 rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white font-semibold transition-all"
                   >
-                    Interviews
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="completed" 
-                    className="text-xs sm:text-sm px-2 sm:px-4 data-[state=active]:bg-white data-[state=active]:text-gray-900 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-gray-100"
-                  >
-                    Completed
+                    Interviews Completed
                   </TabsTrigger>
                 </TabsList>
               </div>

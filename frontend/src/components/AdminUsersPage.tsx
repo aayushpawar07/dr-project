@@ -1554,8 +1554,8 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                   </table>
                 </div>
 
-                {/* 2. MOBILE CARD VIEW (Reference Image 1: visible on mobile < md, hidden on md and up) */}
-                <div className="admin-users-page__mobile-list block md:hidden p-3 space-y-3 bg-slate-50/50">
+                {/* 2. MOBILE CARD VIEW (visible on mobile < md, hidden on md and up) */}
+                <div className="admin-users-page__mobile-list block md:hidden p-2.5 sm:p-3 space-y-4 bg-slate-50/70">
                   {paginatedDirectory.map((userItem) => {
                     const roleLower = String(userItem.role || '').toLowerCase();
                     const isCandidate = roleLower === 'candidate';
@@ -1572,13 +1572,13 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                     return (
                       <div
                         key={userItem.id}
-                        className="bg-white rounded-xl border border-slate-200 shadow-xs p-3.5 space-y-3 transition-shadow hover:shadow-md"
+                        className="admin-users-page__mobile-card bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4 space-y-3.5 transition-shadow hover:shadow-md"
                       >
-                        {/* Top Row: User Avatar + Name + Contact on left, Status Badge on right */}
+                        {/* Top Row: User Avatar + Name + Contact on left, Status Badges on right */}
                         <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-start gap-2.5 min-w-0 flex-1 overflow-hidden pr-1">
+                          <div className="flex items-start gap-3 min-w-0 flex-1 overflow-hidden pr-1">
                             <div
-                              className="w-10 h-10 rounded-full flex items-center justify-center font-black text-xs text-white shrink-0 shadow-xs"
+                              className="w-11 h-11 rounded-full flex items-center justify-center font-black text-xs text-white shrink-0 shadow-xs"
                               style={{
                                 background: isCandidate
                                   ? 'linear-gradient(135deg, #10b981 0%, #047857 100%)'
@@ -1593,7 +1593,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                               <h3
                                 onClick={() => handleViewFullProfile(userItem)}
                                 title={userItem.name || 'Unnamed User'}
-                                className="font-bold text-slate-900 text-sm hover:text-blue-600 transition-colors cursor-pointer truncate block"
+                                className="font-bold text-slate-900 text-sm hover:text-blue-600 transition-colors cursor-pointer line-clamp-2 leading-tight"
                               >
                                 {userItem.name || 'Unnamed User'}
                               </h3>
@@ -1604,7 +1604,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                                 {userItem.email || 'No email'}
                               </p>
                               {userItem.phone && (
-                                <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5 truncate" title={userItem.phone}>
+                                <p className="text-[11px] text-slate-500 flex items-center gap-1.5 mt-0.5 truncate" title={userItem.phone}>
                                   <Phone className="w-3 h-3 text-slate-400 shrink-0" />
                                   <span className="truncate">{userItem.phone}</span>
                                 </p>
@@ -1612,7 +1612,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                             </div>
                           </div>
 
-                          {/* Right Status Badge */}
+                          {/* Right Status Badges */}
                           <div className="shrink-0 flex flex-col items-end gap-1.5 pl-1">
                             {userItem.isActive !== false ? (
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
@@ -1633,70 +1633,80 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                           </div>
                         </div>
 
-                        {/* Middle Row: Role pill + Organization */}
-                        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100 text-xs">
-                          {isCandidate ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
-                              Candidate / Doctor
-                            </span>
-                          ) : isEmployer ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200 shrink-0">
-                              Employer / HR
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200 shrink-0">
-                              {userItem.role || 'User'}
-                            </span>
-                          )}
+                        {/* Middle Section: Role pill + Hospital / Organization */}
+                        <div className="pt-2.5 border-t border-slate-100 space-y-2 text-xs">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {isCandidate ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                                Candidate / Doctor
+                              </span>
+                            ) : isEmployer ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200 shrink-0">
+                                Employer / HR
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200 shrink-0">
+                                {userItem.role || 'User'}
+                              </span>
+                            )}
+
+                            {userItem.employerCategory && isEmployer && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 uppercase tracking-wide shrink-0">
+                                {userItem.employerCategory}
+                              </span>
+                            )}
+                          </div>
 
                           {(userItem.companyName || userItem.currentOrganization) && (
                             <div 
-                              className="flex items-center gap-1 text-slate-600 truncate min-w-0 max-w-full"
+                              className="flex items-start gap-1.5 text-slate-700 text-xs min-w-0"
                               title={userItem.companyName || userItem.currentOrganization}
                             >
-                              <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                              <span className="truncate font-medium">{userItem.companyName || userItem.currentOrganization}</span>
+                              <Building2 className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                              <span className="font-semibold text-slate-800 leading-snug line-clamp-2">
+                                {userItem.companyName || userItem.currentOrganization}
+                              </span>
                             </div>
                           )}
                         </div>
 
                         {/* Qualifications & Location */}
                         {(userItem.qualification || userItem.speciality || userItem.currentCity || userItem.state) && (
-                          <div className="flex flex-wrap items-center gap-2.5 text-xs text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                          <div className="flex flex-wrap items-center gap-2.5 text-xs text-slate-600 bg-slate-50/80 p-2.5 rounded-xl border border-slate-100">
                             {(userItem.qualification || userItem.speciality) && (
                               <div 
-                                className="flex items-center gap-1 truncate min-w-0 max-w-full"
+                                className="flex items-center gap-1.5 truncate min-w-0 max-w-full"
                                 title={userItem.speciality || userItem.qualification}
                               >
                                 <GraduationCap className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                <span className="truncate font-medium">{userItem.speciality || userItem.qualification}</span>
+                                <span className="truncate font-semibold text-slate-700">{userItem.speciality || userItem.qualification}</span>
                               </div>
                             )}
                             {(userItem.currentCity || userItem.state) && (
                               <div 
-                                className="flex items-center gap-1 text-slate-500 truncate min-w-0 max-w-full"
+                                className="flex items-center gap-1.5 text-slate-500 truncate min-w-0 max-w-full"
                                 title={[userItem.currentCity, userItem.state].filter(Boolean).join(', ')}
                               >
                                 <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                <span className="truncate">{[userItem.currentCity, userItem.state].filter(Boolean).join(', ')}</span>
+                                <span className="truncate font-medium">{[userItem.currentCity, userItem.state].filter(Boolean).join(', ')}</span>
                               </div>
                             )}
                           </div>
                         )}
 
                         {/* Bottom Action Buttons */}
-                        <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                        <div className="flex items-center gap-2 pt-2.5 border-t border-slate-100">
                           <Button
                             size="sm"
                             onClick={() => handleImpersonate(userItem)}
                             disabled={isCurrentlyImpersonating}
-                            className="flex-1 h-9 text-xs font-bold text-white shadow-xs rounded-xl hover:opacity-95 transition-all cursor-pointer"
+                            className="flex-1 h-10 text-xs font-bold text-white shadow-xs rounded-xl hover:opacity-95 transition-all cursor-pointer"
                             style={{ backgroundColor: '#2563eb' }}
                           >
                             {isCurrentlyImpersonating ? (
                               <div className="animate-spin w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full mr-1.5" />
                             ) : (
-                              <Eye className="w-3.5 h-3.5 mr-1.5" />
+                              <Eye className="w-4 h-4 mr-1.5" />
                             )}
                             <span>{isEmployer ? 'View as HR' : isCandidate ? 'View as Doctor' : 'View Portal'}</span>
                           </Button>
@@ -1705,9 +1715,9 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                             size="sm"
                             variant="outline"
                             onClick={() => handleViewFullProfile(userItem)}
-                            className="flex-1 h-9 text-xs font-bold border-slate-300 text-slate-700 hover:bg-slate-100 rounded-xl cursor-pointer"
+                            className="flex-1 h-10 text-xs font-bold border-slate-300 text-slate-700 hover:bg-slate-100 rounded-xl cursor-pointer"
                           >
-                            <FileText className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
+                            <FileText className="w-4 h-4 mr-1.5 text-slate-500" />
                             Details
                           </Button>
 
@@ -1716,7 +1726,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-9 w-9 p-0 rounded-xl border-slate-300 text-slate-600 hover:bg-slate-100 cursor-pointer shrink-0"
+                                className="h-10 w-10 p-0 rounded-xl border-slate-300 text-slate-600 hover:bg-slate-100 cursor-pointer shrink-0"
                               >
                                 <MoreVertical className="w-4 h-4" />
                               </Button>

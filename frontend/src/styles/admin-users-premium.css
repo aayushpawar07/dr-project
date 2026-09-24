@@ -226,16 +226,27 @@
 }
 
 .admin-users-page__mobile-list {
-  background: linear-gradient(180deg, #f1f8fe, #f8fbfe) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1.15rem !important;
+  padding: 0.85rem 0.55rem 1.25rem !important;
+  background: linear-gradient(180deg, #edf4fb 0%, #f3f8fd 100%) !important;
 }
 
-.admin-users-page__mobile-list > div {
-  border-color: #cfe2f2 !important;
-  border-radius: 1rem !important;
-  box-shadow: 0 7px 18px rgba(25, 89, 137, 0.08) !important;
+.admin-users-page__mobile-list > div,
+.admin-users-page__mobile-card {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 1.1rem 1rem !important;
+  border: 1px solid #cce0f0 !important;
+  border-radius: 1.15rem !important;
+  box-shadow: 0 4px 16px rgba(25, 89, 137, 0.08), 0 1px 3px rgba(25, 89, 137, 0.04) !important;
+  background: #ffffff !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease !important;
 }
 
-.admin-users-page__mobile-list > div:active {
+.admin-users-page__mobile-list > div:active,
+.admin-users-page__mobile-card:active {
   transform: scale(0.995);
 }
 
@@ -274,13 +285,15 @@
 }
 
 .admin-users-page__mobile-list button {
-  min-height: 2.25rem;
+  min-height: 2.5rem;
 }
 
 @media (max-width: 767px) {
   .admin-users-page {
     padding-top: 0.75rem !important;
     padding-bottom: 1.25rem !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
   }
 
   .admin-users-page__header {
@@ -346,11 +359,22 @@
   }
 
   .admin-users-page__directory {
-    border-radius: 1rem !important;
+    border-radius: 1.15rem !important;
+    overflow: hidden !important;
   }
 
   .admin-users-page__directory > div:first-child {
-    padding: 0.9rem !important;
+    padding: 1rem !important;
+  }
+
+  .admin-users-page__mobile-list {
+    padding: 0.75rem 0.45rem 1.15rem !important;
+    gap: 1.15rem !important;
+  }
+
+  .admin-users-page__mobile-card {
+    padding: 1.15rem 1rem !important;
+    width: 100% !important;
   }
 }
 

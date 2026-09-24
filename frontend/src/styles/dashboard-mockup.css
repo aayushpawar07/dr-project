@@ -1375,20 +1375,26 @@
 
 .mx-candidates {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr));
+  gap: 16px;
+  padding: 16px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .mx-candidate {
   display: flex;
   flex-direction: column;
-  gap: 11px;
+  gap: 12px;
   border: 1px solid var(--mx-200);
   border-radius: var(--mx-radius);
   background: #fff;
-  padding: 16px 18px;
+  padding: 18px 20px;
   box-shadow: var(--mx-shadow-sm);
   transition: border-color 180ms ease, box-shadow 180ms ease;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .mx-candidate:hover {
@@ -1399,30 +1405,96 @@
 .mx-candidate__head {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  width: 100%;
 }
 
-.mx-candidate__identity { flex: 1; min-width: 0; }
+.mx-candidate__profile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  flex: 1;
+}
+
+.mx-candidate__identity {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
 
 .mx-candidate__identity h4 {
   margin: 0;
   color: var(--mx-900);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
-  overflow-wrap: anywhere;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
 }
 
-.mx-candidate__identity span {
+.mx-candidate__identity span,
+.mx-candidate__subinfo {
   display: block;
-  margin-top: 1px;
+  margin-top: 3px;
   color: var(--mx-500);
-  font-size: 12.5px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.35;
+}
+
+.mx-candidate__badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.mx-candidate__badge-eligible {
+  background: #ecfdf5 !important;
+  color: #065f46 !important;
+  border: 1px solid #a7f3d0 !important;
+  padding: 3px 10px !important;
+  border-radius: 9999px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 1px 2px rgba(6, 95, 70, 0.06) !important;
+}
+
+.mx-candidate__badge-match {
+  background: #fffbeb !important;
+  color: #b45309 !important;
+  border: 1px solid #fde68a !important;
+  padding: 3px 10px !important;
+  border-radius: 9999px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 1px 2px rgba(180, 83, 9, 0.06) !important;
 }
 
 .mx-candidate__details {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px 14px;
+  align-items: center;
+  gap: 8px 16px;
   color: var(--mx-500);
   font-size: 12.5px;
 }
@@ -1431,6 +1503,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  white-space: nowrap;
 }
 
 .mx-candidate__details svg { color: var(--mx-400); }
@@ -1447,8 +1520,9 @@
 
 .mx-candidate__contact {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
   border-top: 1px solid #eef2f6;
   padding-top: 10px;
   color: var(--mx-500);
@@ -1462,7 +1536,7 @@
   gap: 6px;
   color: inherit;
   text-decoration: none;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
 }
 
 .mx-candidate__contact a:hover { color: var(--mx-primary); }
@@ -1491,8 +1565,11 @@
 .mx-candidate__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
+  align-items: center;
+  gap: 8px;
   margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid #f1f5f9;
 }
 
 .mx-action {
@@ -1740,7 +1817,32 @@
 
   .mx-jobscroll > .mx-jobcard { flex-basis: 84vw; }
 
-  .mx-candidates { grid-template-columns: minmax(0, 1fr); }
+  .mx-candidates {
+    grid-template-columns: minmax(0, 1fr) !important;
+    padding: 12px !important;
+    gap: 12px !important;
+  }
+
+  .mx-candidate {
+    padding: 14px 16px !important;
+  }
+
+  .mx-candidate__head {
+    flex-wrap: wrap !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  .mx-candidate__profile {
+    width: 100% !important;
+  }
+
+  .mx-candidate__badges {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    padding-left: 58px !important;
+    gap: 6px !important;
+  }
 
   .mx-candidate__actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .mx-candidate__actions .mx-action--resume,

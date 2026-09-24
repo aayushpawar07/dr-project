@@ -1549,45 +1549,33 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                             return (
                             <article className="mx-candidate" key={application.id}>
                               <div className="mx-candidate__head">
-                                <div className="mx-avatar">{getInitials(application.candidateName)}</div>
-                                <div className="mx-candidate__identity">
-                                  <h4>{application.candidateName || 'Candidate'}</h4>
-                                  <span>
-                                    {[
-                                      application.candidateQualification,
-                                      application.candidateSpeciality,
-                                    ].filter(Boolean).join(' | ') || 'Qualification not added'}
-                                  </span>
+                                <div className="mx-candidate__profile">
+                                  <div className="mx-avatar">{getInitials(application.candidateName)}</div>
+                                  <div className="mx-candidate__identity">
+                                    <h4 title={application.candidateName || 'Candidate'}>
+                                      {application.candidateName || 'Candidate'}
+                                    </h4>
+                                    <span
+                                      className="mx-candidate__subinfo"
+                                      title={[
+                                        application.candidateQualification,
+                                        application.candidateSpeciality,
+                                      ].filter(Boolean).join(' | ') || 'Qualification not added'}
+                                    >
+                                      {[
+                                        application.candidateQualification,
+                                        application.candidateSpeciality,
+                                      ].filter(Boolean).join(' | ') || 'Qualification not added'}
+                                    </span>
+                                  </div>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <div className="mx-candidate__badges">
                                   {application.isEligible ? (
-                                    <span style={{
-                                      background: '#ecfdf5',
-                                      color: '#065f46',
-                                      border: '1px solid #a7f3d0',
-                                      padding: '2px 8px',
-                                      borderRadius: '9999px',
-                                      fontSize: '11px',
-                                      fontWeight: 700,
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: '3px'
-                                    }}>
+                                    <span className="mx-candidate__badge-eligible">
                                       🎯 100% Eligible
                                     </span>
                                   ) : (application.eligibilityScore ?? 0) >= 60 ? (
-                                    <span style={{
-                                      background: '#fffbeb',
-                                      color: '#b45309',
-                                      border: '1px solid #fde68a',
-                                      padding: '2px 8px',
-                                      borderRadius: '9999px',
-                                      fontSize: '11px',
-                                      fontWeight: 700,
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: '3px'
-                                    }}>
+                                    <span className="mx-candidate__badge-match">
                                       ⚡ {application.eligibilityScore}% Match
                                     </span>
                                   ) : null}

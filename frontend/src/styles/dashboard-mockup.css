@@ -1817,17 +1817,47 @@
 
   .mx-jobscroll > .mx-jobcard { flex-basis: 84vw; }
 
+  .application-job-groups {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    padding-bottom: 8px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .application-job-group {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    border-radius: 14px !important;
+    box-sizing: border-box !important;
+  }
+
+  .application-job-group__header {
+    padding: 12px 14px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
   .mx-candidates {
     grid-template-columns: minmax(0, 1fr) !important;
-    padding: 8px 10px !important;
-    gap: 12px !important;
+    padding: 8px 6px !important;
+    gap: 10px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .mx-candidate {
-    padding: 14px 15px !important;
-    border-radius: 14px !important;
+    padding: 14px 13px !important;
+    border-radius: 12px !important;
     gap: 11px !important;
     width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
     box-sizing: border-box !important;
   }
 

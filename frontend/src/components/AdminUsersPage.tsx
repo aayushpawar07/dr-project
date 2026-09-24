@@ -1332,8 +1332,8 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                             </td>
 
                             {/* User / Candidate / Hospital Name */}
-                            <td className="py-3.5 px-4 align-middle whitespace-nowrap">
-                              <div className="flex items-center gap-3">
+                            <td className="py-3.5 px-4 align-middle whitespace-nowrap max-w-[260px]">
+                              <div className="flex items-center gap-3 min-w-0 max-w-[260px]">
                                 <div
                                   className="w-10 h-10 rounded-full flex items-center justify-center font-black text-xs text-white shrink-0 shadow-xs"
                                   style={{
@@ -1346,22 +1346,22 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                                 >
                                   {nameInitials}
                                 </div>
-                                <div className="min-w-0">
+                                <div className="min-w-0 flex-1 overflow-hidden">
                                   <div
                                     onClick={() => handleViewFullProfile(userItem)}
-                                    className="font-bold text-slate-900 text-sm hover:text-blue-600 transition-colors cursor-pointer truncate max-w-[220px]"
+                                    className="font-bold text-slate-900 text-sm hover:text-blue-600 transition-colors cursor-pointer truncate max-w-[200px] block"
                                     title={userItem.name || userItem.email}
                                   >
                                     {userItem.name || 'Unnamed User'}
                                   </div>
-                                  <div className="text-xs text-slate-500 font-mono flex items-center gap-1 mt-0.5 truncate max-w-[220px]">
+                                  <div className="text-xs text-slate-500 font-mono flex items-center gap-1 mt-0.5 max-w-[200px] min-w-0 overflow-hidden" title={userItem.email || 'N/A'}>
                                     <Mail className="w-3 h-3 text-slate-400 shrink-0" />
-                                    <span>{userItem.email || 'N/A'}</span>
+                                    <span className="truncate min-w-0">{userItem.email || 'N/A'}</span>
                                   </div>
                                   {userItem.phone && (
-                                    <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                                    <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5 max-w-[200px] min-w-0 overflow-hidden">
                                       <Phone className="w-3 h-3 text-slate-400 shrink-0" />
-                                      <span>{userItem.phone}</span>
+                                      <span className="truncate min-w-0">{userItem.phone}</span>
                                     </div>
                                   )}
                                 </div>
@@ -1369,38 +1369,41 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                             </td>
 
                             {/* Role & Organization / Type & City */}
-                            <td className="py-3.5 px-4 align-middle whitespace-nowrap">
+                            <td className="py-3.5 px-4 align-middle whitespace-nowrap max-w-[240px]">
                               {activeTab === 'employer' ? (
-                                <div>
-                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
-                                    <Building2 className="w-3 h-3" />
-                                    {userItem.companyName || userItem.currentOrganization || 'Healthcare Facility'}
+                                <div className="min-w-0 max-w-[230px] overflow-hidden">
+                                  <span
+                                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200 max-w-[220px] truncate"
+                                    title={userItem.companyName || userItem.currentOrganization || 'Healthcare Facility'}
+                                  >
+                                    <Building2 className="w-3 h-3 shrink-0" />
+                                    <span className="truncate min-w-0">{userItem.companyName || userItem.currentOrganization || 'Healthcare Facility'}</span>
                                   </span>
-                                  <div className="text-xs text-slate-500 flex items-center gap-1 mt-1 font-medium">
+                                  <div className="text-xs text-slate-500 flex items-center gap-1 mt-1 font-medium max-w-[220px] min-w-0 truncate" title={[userItem.currentCity, userItem.state].filter(Boolean).join(', ') || 'Pan-India'}>
                                     <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                    <span>{[userItem.currentCity, userItem.state].filter(Boolean).join(', ') || 'Pan-India'}</span>
+                                    <span className="truncate min-w-0">{[userItem.currentCity, userItem.state].filter(Boolean).join(', ') || 'Pan-India'}</span>
                                   </div>
                                 </div>
                               ) : (
-                                <div>
+                                <div className="min-w-0 max-w-[230px] overflow-hidden">
                                   {isCandidate ? (
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
                                       Candidate / Doctor
                                     </span>
                                   ) : isEmployer ? (
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200 shrink-0">
                                       Employer / HR
                                     </span>
                                   ) : (
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 shrink-0">
                                       {userItem.role || 'User'}
                                     </span>
                                   )}
 
                                   {(userItem.companyName || userItem.currentOrganization) && (
-                                    <div className="text-xs text-slate-600 font-medium mt-1 flex items-center gap-1.5 max-w-[200px] truncate">
+                                    <div className="text-xs text-slate-600 font-medium mt-1 flex items-center gap-1.5 max-w-[220px] min-w-0 truncate" title={userItem.companyName || userItem.currentOrganization}>
                                       <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                      <span className="truncate">{userItem.companyName || userItem.currentOrganization}</span>
+                                      <span className="truncate min-w-0">{userItem.companyName || userItem.currentOrganization}</span>
                                     </div>
                                   )}
                                 </div>
@@ -1408,31 +1411,31 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                             </td>
 
                             {/* Specialty & Qualifications / HR Coordinator */}
-                            <td className="py-3.5 px-4 align-middle whitespace-nowrap">
+                            <td className="py-3.5 px-4 align-middle whitespace-nowrap max-w-[240px]">
                               {activeTab === 'employer' ? (
-                                <div>
-                                  <div className="font-semibold text-slate-800 text-xs flex items-center gap-1">
+                                <div className="min-w-0 max-w-[230px] overflow-hidden">
+                                  <div className="font-semibold text-slate-800 text-xs flex items-center gap-1 max-w-[220px] min-w-0 truncate" title={userItem.name || 'HR Administrator'}>
                                     <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                    <span>{userItem.name || 'HR Administrator'}</span>
+                                    <span className="truncate min-w-0">{userItem.name || 'HR Administrator'}</span>
                                   </div>
-                                  <div className="text-[11px] text-slate-500 font-mono mt-0.5">
-                                    {userItem.email || 'hr@hospital.org'}
+                                  <div className="text-[11px] text-slate-500 font-mono mt-0.5 max-w-[220px] min-w-0 truncate" title={userItem.email || 'hr@hospital.org'}>
+                                    <span className="truncate min-w-0">{userItem.email || 'hr@hospital.org'}</span>
                                   </div>
                                 </div>
                               ) : (
-                                <div>
-                                  <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                <div className="min-w-0 max-w-[230px] overflow-hidden">
+                                  <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5 max-w-[220px] min-w-0 truncate" title={userItem.speciality || userItem.qualification || (isEmployer ? 'Healthcare Org' : 'General Practice')}>
                                     {isCandidate ? <Stethoscope className="w-3.5 h-3.5 text-teal-600 shrink-0" /> : <GraduationCap className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
-                                    <span className="truncate max-w-[220px]">
+                                    <span className="truncate min-w-0 max-w-[200px]">
                                       {userItem.speciality || userItem.qualification || (isEmployer ? 'Healthcare Org' : 'General Practice')}
                                     </span>
                                   </div>
 
-                                  <div className="flex items-center gap-2 mt-1">
+                                  <div className="flex items-center gap-2 mt-1 min-w-0 max-w-[220px]">
                                     {(userItem.currentCity || userItem.state) && (
-                                      <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                                      <span className="text-[11px] text-slate-500 flex items-center gap-1 min-w-0 truncate max-w-[150px]" title={[userItem.currentCity, userItem.state].filter(Boolean).join(', ')}>
                                         <MapPin className="w-3 h-3 text-slate-400 shrink-0" />
-                                        <span>{[userItem.currentCity, userItem.state].filter(Boolean).join(', ')}</span>
+                                        <span className="truncate min-w-0">{[userItem.currentCity, userItem.state].filter(Boolean).join(', ')}</span>
                                       </span>
                                     )}
 
@@ -1441,7 +1444,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                                         href={userItem.resumeUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors shrink-0"
                                       >
                                         <FileText className="w-3 h-3" /> CV
                                       </a>
@@ -1573,7 +1576,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                       >
                         {/* Top Row: User Avatar + Name + Contact on left, Status Badge on right */}
                         <div className="flex items-start justify-between gap-2.5">
-                          <div className="flex items-start gap-3 min-w-0">
+                          <div className="flex items-start gap-3 min-w-0 flex-1 overflow-hidden">
                             <div
                               className="w-10 h-10 rounded-full flex items-center justify-center font-black text-xs text-white shrink-0 shadow-xs"
                               style={{
@@ -1586,18 +1589,24 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                             >
                               {nameInitials}
                             </div>
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1 overflow-hidden">
                               <h3
                                 onClick={() => handleViewFullProfile(userItem)}
-                                className="font-bold text-slate-900 text-sm hover:text-blue-600 transition-colors cursor-pointer truncate"
+                                title={userItem.name || 'Unnamed User'}
+                                className="font-bold text-slate-900 text-sm hover:text-blue-600 transition-colors cursor-pointer truncate block"
                               >
                                 {userItem.name || 'Unnamed User'}
                               </h3>
-                              <p className="text-xs text-slate-500 font-mono truncate mt-0.5">{userItem.email || 'No email'}</p>
+                              <p 
+                                title={userItem.email || 'No email'}
+                                className="text-xs text-slate-500 font-mono truncate block mt-0.5"
+                              >
+                                {userItem.email || 'No email'}
+                              </p>
                               {userItem.phone && (
-                                <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
+                                <p className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5 truncate" title={userItem.phone}>
                                   <Phone className="w-3 h-3 text-slate-400 shrink-0" />
-                                  <span>{userItem.phone}</span>
+                                  <span className="truncate">{userItem.phone}</span>
                                 </p>
                               )}
                             </div>
@@ -1606,18 +1615,18 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                           {/* Right Status Badge */}
                           <div className="shrink-0 flex flex-col items-end gap-1">
                             {userItem.isActive !== false ? (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                 Active
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
                                 <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                                 Inactive
                               </span>
                             )}
                             {userItem.isVerified && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 shrink-0">
                                 <ShieldCheck className="w-2.5 h-2.5" /> Verified
                               </span>
                             )}
@@ -1627,23 +1636,26 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                         {/* Middle Row: Role pill + Organization */}
                         <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100 text-xs">
                           {isCandidate ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
                               Candidate / Doctor
                             </span>
                           ) : isEmployer ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200 shrink-0">
                               Employer / HR
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200 shrink-0">
                               {userItem.role || 'User'}
                             </span>
                           )}
 
                           {(userItem.companyName || userItem.currentOrganization) && (
-                            <div className="flex items-center gap-1 text-slate-600 truncate max-w-[200px]">
+                            <div 
+                              className="flex items-center gap-1 text-slate-600 truncate min-w-0 max-w-full"
+                              title={userItem.companyName || userItem.currentOrganization}
+                            >
                               <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                              <span className="truncate">{userItem.companyName || userItem.currentOrganization}</span>
+                              <span className="truncate font-medium">{userItem.companyName || userItem.currentOrganization}</span>
                             </div>
                           )}
                         </div>
@@ -1652,15 +1664,21 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                         {(userItem.qualification || userItem.speciality || userItem.currentCity || userItem.state) && (
                           <div className="flex flex-wrap items-center gap-2.5 text-xs text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100">
                             {(userItem.qualification || userItem.speciality) && (
-                              <div className="flex items-center gap-1 truncate">
+                              <div 
+                                className="flex items-center gap-1 truncate min-w-0 max-w-full"
+                                title={userItem.speciality || userItem.qualification}
+                              >
                                 <GraduationCap className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                <span className="truncate font-medium">{userItem.qualification || userItem.speciality}</span>
+                                <span className="truncate font-medium">{userItem.speciality || userItem.qualification}</span>
                               </div>
                             )}
                             {(userItem.currentCity || userItem.state) && (
-                              <div className="flex items-center gap-1 text-slate-500">
+                              <div 
+                                className="flex items-center gap-1 text-slate-500 truncate min-w-0 max-w-full"
+                                title={[userItem.currentCity, userItem.state].filter(Boolean).join(', ')}
+                              >
                                 <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                <span>{[userItem.currentCity, userItem.state].filter(Boolean).join(', ')}</span>
+                                <span className="truncate">{[userItem.currentCity, userItem.state].filter(Boolean).join(', ')}</span>
                               </div>
                             )}
                           </div>
@@ -1854,12 +1872,12 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                             className="hover:bg-sky-50/40 transition-colors whitespace-nowrap"
                             style={{ backgroundColor: isEven ? '#fbfcfe' : '#ffffff' }}
                           >
-                            <td className="py-3 px-4 font-bold text-slate-900 align-middle">
-                              <div className="flex items-center gap-2">
-                                <span>{admin.name || 'N/A'}</span>
+                            <td className="py-3 px-4 font-bold text-slate-900 align-middle max-w-[200px]">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="truncate" title={admin.name}>{admin.name || 'N/A'}</span>
                                 {isCurrentUser(admin) && (
                                   <span
-                                    className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                                    className="text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0"
                                     style={{ backgroundColor: '#ffe4e6', color: '#9f1239', border: '1px solid #fecdd3' }}
                                   >
                                     You
@@ -1867,8 +1885,8 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                                 )}
                               </div>
                             </td>
-                            <td className="py-3 px-4 text-slate-600 font-mono text-xs align-middle">{admin.email || 'N/A'}</td>
-                            <td className="py-3 px-4 text-slate-600 text-xs align-middle">{admin.phone || 'N/A'}</td>
+                            <td className="py-3 px-4 text-slate-600 font-mono text-xs align-middle max-w-[240px] truncate" title={admin.email}>{admin.email || 'N/A'}</td>
+                            <td className="py-3 px-4 text-slate-600 text-xs align-middle max-w-[150px] truncate" title={admin.phone}>{admin.phone || 'N/A'}</td>
                             <td className="py-3 px-4 align-middle">
                               <span
                                 className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold"
@@ -1924,21 +1942,21 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                 <div className="block md:hidden p-3 space-y-3 bg-slate-50/50">
                   {paginatedAdmins.map((admin) => (
                     <div key={admin.id} className="bg-white rounded-xl border border-slate-200 p-3.5 space-y-2.5 shadow-xs">
-                      <div className="flex items-center justify-between">
-                        <div className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
-                          <span>{admin.name || 'N/A'}</span>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="font-bold text-slate-900 text-sm flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
+                          <span className="truncate" title={admin.name}>{admin.name || 'N/A'}</span>
                           {isCurrentUser(admin) && (
-                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200">
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200 shrink-0">
                               You
                             </span>
                           )}
                         </div>
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
                           Active
                         </span>
                       </div>
-                      <div className="text-xs text-slate-500 font-mono">{admin.email || 'N/A'}</div>
-                      {admin.phone && <div className="text-xs text-slate-500">{admin.phone}</div>}
+                      <div className="text-xs text-slate-500 font-mono truncate" title={admin.email}>{admin.email || 'N/A'}</div>
+                      {admin.phone && <div className="text-xs text-slate-500 truncate" title={admin.phone}>{admin.phone}</div>}
 
                       <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                         <Button
@@ -2104,7 +2122,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                     <div className="min-w-0">
                       {/* Name + Status Badges */}
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-xl font-extrabold text-slate-900 tracking-tight capitalize">
+                        <h3 className="text-xl font-extrabold text-slate-900 tracking-tight capitalize break-words">
                           {u.name || 'pravin meena'}
                         </h3>
 
@@ -2181,7 +2199,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                           <Mail className="w-3.5 h-3.5" style={{ color: '#94a3b8' }} />
                           <a
                             href={`mailto:${u.email}`}
-                            className="hover:underline font-medium"
+                            className="hover:underline font-medium break-all"
                             style={{ color: '#475569' }}
                           >
                             {u.email}

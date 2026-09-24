@@ -172,32 +172,40 @@
 }
 
 .admin-users-page__table tbody td:nth-child(2) {
-  min-width: 260px;
+  min-width: 240px;
+  max-width: 280px;
 }
 
 .admin-users-page__table tbody td:nth-child(3) {
-  min-width: 210px;
+  min-width: 200px;
+  max-width: 240px;
 }
 
 .admin-users-page__table tbody td:nth-child(4) {
-  min-width: 235px;
+  min-width: 220px;
+  max-width: 250px;
 }
 
 .admin-users-page__table tbody td:nth-child(5) {
-  min-width: 165px;
+  min-width: 150px;
+  max-width: 180px;
 }
 
 .admin-users-page__table tbody td:nth-child(6) {
-  min-width: 190px;
+  min-width: 170px;
+  max-width: 200px;
 }
 
 .admin-users-page__table td > div {
   max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .admin-users-page__table td .truncate {
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
 }
 
 .admin-users-page__mobile-list {
@@ -217,7 +225,31 @@
 .admin-users-page__mobile-list h3,
 .admin-users-page__mobile-list p,
 .admin-users-page__mobile-list span {
-  overflow-wrap: anywhere;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+.admin-users-page__mobile-list .truncate {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.admin-users-page__clamp-1 {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  min-width: 0 !important;
+}
+
+.admin-users-page__clamp-2 {
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 1.35 !important;
+  word-break: break-word !important;
 }
 
 .admin-users-page__mobile-list .flex-wrap {

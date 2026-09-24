@@ -962,7 +962,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
             <div className="relative flex-1 min-w-[220px]">
               <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Search by name, email, hospital, specialty..."
+                placeholder="Search name, email, hospital..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyDown={(e) => {
@@ -999,7 +999,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                   setRoleFilterDropdown(e.target.value as any);
                   setCurrentPage(1);
                 }}
-                className="h-10 px-2.5 sm:px-3 text-xs font-semibold rounded-xl border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                className="h-10 pl-2 pr-5 sm:px-3 text-[11px] sm:text-xs font-semibold rounded-xl border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer min-w-0 w-full truncate"
               >
                 <option value="all">Role: All</option>
                 <option value="employer">Employers / HR</option>
@@ -1014,7 +1014,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                   setStatusFilterDropdown(e.target.value as any);
                   setCurrentPage(1);
                 }}
-                className="h-10 px-2.5 sm:px-3 text-xs font-semibold rounded-xl border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                className="h-10 pl-2 pr-5 sm:px-3 text-[11px] sm:text-xs font-semibold rounded-xl border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer min-w-0 w-full truncate"
               >
                 <option value="all">Status: All</option>
                 <option value="active">Active Only</option>
@@ -1028,9 +1028,9 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                   setVerificationFilterDropdown(e.target.value as any);
                   setCurrentPage(1);
                 }}
-                className="h-10 px-2.5 sm:px-3 text-xs font-semibold rounded-xl border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                className="h-10 pl-2 pr-5 sm:px-3 text-[11px] sm:text-xs font-semibold rounded-xl border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer min-w-0 w-full truncate"
               >
-                <option value="all">Verification: All</option>
+                <option value="all">Verify: All</option>
                 <option value="verified">Verified Only</option>
                 <option value="pending">Pending</option>
               </select>
@@ -1055,11 +1055,11 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100">
             {activeTab === 'employer' ? (
               /* Employer Subcategory Pills (Reference Image 2) */
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 max-w-full">
+              <div className="admin-users-page__filter-chips flex items-center gap-2 overflow-x-auto pb-1.5 sm:pb-0 max-w-full">
                 <button
                   type="button"
                   onClick={() => { setEmployerCategory('all'); setCurrentPage(1); }}
-                  className="admin-category-pill admin-category-pill--all px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
+                  className="admin-category-pill admin-category-pill--all px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0"
                   style={{
                     backgroundColor: employerCategory === 'all' ? '#2563eb' : '#f1f5f9',
                     color: employerCategory === 'all' ? '#ffffff' : '#475569',
@@ -1071,7 +1071,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                 <button
                   type="button"
                   onClick={() => { setEmployerCategory('hospital'); setCurrentPage(1); }}
-                  className="admin-category-pill admin-category-pill--hospital px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
+                  className="admin-category-pill admin-category-pill--hospital px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0"
                   style={{
                     backgroundColor: employerCategory === 'hospital' ? '#2563eb' : '#f1f5f9',
                     color: employerCategory === 'hospital' ? '#ffffff' : '#475569',
@@ -1083,7 +1083,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                 <button
                   type="button"
                   onClick={() => { setEmployerCategory('college'); setCurrentPage(1); }}
-                  className="admin-category-pill admin-category-pill--college px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
+                  className="admin-category-pill admin-category-pill--college px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0"
                   style={{
                     backgroundColor: employerCategory === 'college' ? '#2563eb' : '#f1f5f9',
                     color: employerCategory === 'college' ? '#ffffff' : '#475569',
@@ -1095,7 +1095,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                 <button
                   type="button"
                   onClick={() => { setEmployerCategory('institute'); setCurrentPage(1); }}
-                  className="admin-category-pill admin-category-pill--institute px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
+                  className="admin-category-pill admin-category-pill--institute px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0"
                   style={{
                     backgroundColor: employerCategory === 'institute' ? '#2563eb' : '#f1f5f9',
                     color: employerCategory === 'institute' ? '#ffffff' : '#475569',
@@ -1107,7 +1107,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                 <button
                   type="button"
                   onClick={() => { setEmployerCategory('other'); setCurrentPage(1); }}
-                  className="admin-category-pill admin-category-pill--other px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
+                  className="admin-category-pill admin-category-pill--other px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0"
                   style={{
                     backgroundColor: employerCategory === 'other' ? '#2563eb' : '#f1f5f9',
                     color: employerCategory === 'other' ? '#ffffff' : '#475569',
@@ -1119,11 +1119,11 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
               </div>
             ) : (
               /* General Role Category Pills (Reference Image 1) */
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 max-w-full">
+              <div className="admin-users-page__filter-chips flex items-center gap-2 overflow-x-auto pb-1.5 sm:pb-0 max-w-full">
                 <button
                   type="button"
                   onClick={() => { setActiveTab('all'); setRoleFilterDropdown('all'); setCurrentPage(1); }}
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0"
                   style={{
                     backgroundColor: activeTab === 'all' ? '#0f2942' : '#f1f5f9',
                     color: activeTab === 'all' ? '#ffffff' : '#475569',
@@ -1135,7 +1135,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                 <button
                   type="button"
                   onClick={() => { setActiveTab('employer'); setCurrentPage(1); }}
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0"
                   style={{
                     backgroundColor: activeTab === 'employer' ? '#6366f1' : '#f1f5f9',
                     color: activeTab === 'employer' ? '#ffffff' : '#475569',
@@ -1147,7 +1147,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                 <button
                   type="button"
                   onClick={() => { setActiveTab('candidate'); setCurrentPage(1); }}
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0"
                   style={{
                     backgroundColor: activeTab === 'candidate' ? '#0d9488' : '#f1f5f9',
                     color: activeTab === 'candidate' ? '#ffffff' : '#475569',
@@ -1159,7 +1159,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                 <button
                   type="button"
                   onClick={() => { setActiveTab('admin'); setCurrentPage(1); }}
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0"
                   style={{
                     backgroundColor: activeTab === 'admin' ? '#e11d48' : '#f1f5f9',
                     color: activeTab === 'admin' ? '#ffffff' : '#475569',
@@ -1172,14 +1172,14 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
             )}
 
             {/* Quick Filter Badges */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+            <div className="admin-users-page__filter-chips flex items-center gap-2 overflow-x-auto pb-1.5 sm:pb-0">
               <button
                 type="button"
                 onClick={() => {
                   setStatusFilter(statusFilter === 'hasResume' ? 'all' : 'hasResume');
                   setCurrentPage(1);
                 }}
-                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap border ${
+                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 border ${
                   statusFilter === 'hasResume'
                     ? 'bg-emerald-600 text-white border-emerald-600'
                     : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
@@ -1195,7 +1195,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                   setStatusFilter(statusFilter === 'verified' ? 'all' : 'verified');
                   setCurrentPage(1);
                 }}
-                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap border ${
+                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shrink-0 border ${
                   statusFilter === 'verified'
                     ? 'bg-blue-600 text-white border-blue-600'
                     : 'bg-blue-50 text-blue-800 border-blue-200 hover:bg-blue-100'
@@ -1575,8 +1575,8 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                         className="bg-white rounded-xl border border-slate-200 shadow-xs p-3.5 space-y-3 transition-shadow hover:shadow-md"
                       >
                         {/* Top Row: User Avatar + Name + Contact on left, Status Badge on right */}
-                        <div className="flex items-start justify-between gap-2.5">
-                          <div className="flex items-start gap-3 min-w-0 flex-1 overflow-hidden">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-2.5 min-w-0 flex-1 overflow-hidden pr-1">
                             <div
                               className="w-10 h-10 rounded-full flex items-center justify-center font-black text-xs text-white shrink-0 shadow-xs"
                               style={{
@@ -1613,7 +1613,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                           </div>
 
                           {/* Right Status Badge */}
-                          <div className="shrink-0 flex flex-col items-end gap-1">
+                          <div className="shrink-0 flex flex-col items-end gap-1.5 pl-1">
                             {userItem.isActive !== false ? (
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>

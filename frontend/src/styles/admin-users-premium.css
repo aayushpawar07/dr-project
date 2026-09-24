@@ -91,11 +91,28 @@
   border-color: #e1edf7;
 }
 
+.admin-users-page__filter-chips {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  gap: 0.5rem !important;
+}
+
+.admin-users-page__filter-chips::-webkit-scrollbar {
+  display: none !important;
+}
+
+.admin-users-page__filter-chips > button,
 .admin-category-pill {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   border: 1px solid transparent;
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
 }
 
 .admin-category-pill--all {
@@ -312,6 +329,13 @@
   .admin-users-page__toolbar {
     padding: 0.85rem !important;
     border-radius: 1rem;
+  }
+
+  .admin-users-page__toolbar select {
+    padding-left: 0.45rem !important;
+    padding-right: 1.25rem !important;
+    font-size: 11px !important;
+    text-overflow: ellipsis !important;
   }
 
   .admin-users-page__toolbar .flex.items-center.gap-1\.5,

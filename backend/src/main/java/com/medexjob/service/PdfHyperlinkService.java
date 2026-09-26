@@ -1,5 +1,6 @@
 package com.medexjob.service;
 
+import jakarta.annotation.PostConstruct;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -7,8 +8,7 @@ import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
-import org.apache.pdfbox.pdmodel.graphics.color.PDColor;
-import org.apache.pdfbox.pdmodel.graphics.color.PDDeviceRGB;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.pdmodel.interactive.action.PDActionURI;
 import org.apache.pdfbox.pdmodel.interactive.annotation.PDAnnotationLink;
 import org.apache.pdfbox.pdmodel.interactive.annotation.PDBorderStyleDictionary;
@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Automatically stamps a professional header/footer branding banner with a clickable
+ * Automatically stamps a professional header/footer branding banner with MedExJob logo and a clickable
  * hyperlink to MedExJob.com onto uploaded job notification PDFs.
  */
 @Service
@@ -32,8 +32,24 @@ public class PdfHyperlinkService {
     private static final Logger log = LoggerFactory.getLogger(PdfHyperlinkService.class);
     private static final String DEFAULT_WEBSITE_URL = "https://medexjob.com";
 
+    private byte[] logoBytes;
+
+    @PostConstruct
+    public void init() {
+        try (InputStream is = getClass().getResourceAsStream("/medex-logo.png")) {
+            if (is != null) {
+                this.logoBytes = is.readAllBytes();
+                log.info("MedExJob logo loaded successfully for PDF stamping ({} bytes).", logoBytes.length);
+            } else {
+                log.warn("medex-logo.png not found in classpath root.");
+            }
+        } catch (Exception e) {
+            log.warn("Failed to load medex-logo.png from classpath: {}", e.getMessage());
+        }
+    }
+
     /**
-     * Stamped banner text and clickable URL annotation.
+     * Stamped banner text, logo, and clickable URL annotation.
      */
     public byte[] addHyperlinkBanner(byte[] pdfBytes, String targetUrl) {
         if (pdfBytes == null || pdfBytes.length == 0) {
@@ -56,6 +72,15 @@ public class PdfHyperlinkService {
                 return pdfBytes;
             }
 
+            PDImageXObject logoImage = null;
+            if (logoBytes != null && logoBytes.length > 0) {
+                try {
+                    logoImage = PDImageXObject.createFromByteArray(document, logoBytes, "medex_logo");
+                } catch (Exception e) {
+                    log.warn("Could not create PDImageXObject from logo: {}", e.getMessage());
+                }
+            }
+
             PDType1Font boldFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
             PDType1Font regularFont = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
 
@@ -64,34 +89,51 @@ public class PdfHyperlinkService {
                 if (mediaBox == null) continue;
 
                 float width = mediaBox.getWidth();
-                float bannerHeight = 22f;
+                float bannerHeight = 24f;
                 float bannerY = 8f; // Near the bottom edge
                 float bannerX = 14f;
                 float bannerWidth = Math.max(100f, width - 28f);
 
-                // 1. Draw subtle banner background and text
+                // 1. Draw subtle banner background, logo and text
                 try (PDPageContentStream cs = new PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true, true)) {
-                    // Light blue background bar (#eff6ff)
-                    cs.setNonStrokingColor(0.937f, 0.965f, 1.0f);
+                    // Soft light blue background bar (#eff6ff)
+                    cs.setNonStrokingColor(0.941f, 0.969f, 1.0f);
                     cs.setStrokingColor(0.749f, 0.859f, 0.996f); // #bfdbfe
                     cs.setLineWidth(0.8f);
                     cs.addRect(bannerX, bannerY, bannerWidth, bannerHeight);
                     cs.fillAndStroke();
 
-                    // Text: MedExJob Branding and Link
+                    float currentX = bannerX + 8f;
+                    float textY = bannerY + 7.5f;
+
+                    // Draw Logo if available
+                    if (logoImage != null) {
+                        try {
+                            float origW = logoImage.getWidth();
+                            float origH = logoImage.getHeight();
+                            float logoH = 18f;
+                            float logoW = (origH > 0) ? (logoH * (origW / origH)) : 18f;
+                            logoW = Math.min(logoW, 60f); // Keep in neat shape
+                            float logoY = bannerY + (bannerHeight - logoH) / 2f;
+                            cs.drawImage(logoImage, currentX, logoY, logoW, logoH);
+                            currentX += logoW + 8f;
+                        } catch (Exception logoDrawErr) {
+                            log.debug("Logo draw skipped: {}", logoDrawErr.getMessage());
+                        }
+                    }
+
+                    // Text: MedExJob Branding and Link (Notice: "Official" word removed)
                     String brandPrefix = "MedExJob.com";
-                    String textMiddle = " — Official Medical Notification  |  View more verified jobs at ";
+                    String textMiddle = " — Medical Notification  |  View verified jobs at ";
                     String linkText = "https://medexjob.com";
 
                     float fontSize = 8.5f;
-                    float textY = bannerY + 6.5f;
-                    float textX = bannerX + 12f;
 
                     // Brand in bold blue (#1d4ed8)
                     cs.beginText();
                     cs.setFont(boldFont, fontSize);
                     cs.setNonStrokingColor(0.114f, 0.306f, 0.847f);
-                    cs.newLineAtOffset(textX, textY);
+                    cs.newLineAtOffset(currentX, textY);
                     cs.showText(brandPrefix);
                     cs.endText();
 
@@ -101,7 +143,7 @@ public class PdfHyperlinkService {
                     cs.beginText();
                     cs.setFont(regularFont, fontSize);
                     cs.setNonStrokingColor(0.200f, 0.255f, 0.333f);
-                    cs.newLineAtOffset(textX + brandWidth, textY);
+                    cs.newLineAtOffset(currentX + brandWidth, textY);
                     cs.showText(textMiddle);
                     cs.endText();
 
@@ -111,7 +153,7 @@ public class PdfHyperlinkService {
                     cs.beginText();
                     cs.setFont(boldFont, fontSize);
                     cs.setNonStrokingColor(0.145f, 0.388f, 0.922f);
-                    cs.newLineAtOffset(textX + brandWidth + middleWidth, textY);
+                    cs.newLineAtOffset(currentX + brandWidth + middleWidth, textY);
                     cs.showText(linkText);
                     cs.endText();
                 }
@@ -135,7 +177,7 @@ public class PdfHyperlinkService {
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             document.save(out);
-            log.info("Successfully stamped MedExJob hyperlink onto {} page(s) of uploaded PDF.", pageCount);
+            log.info("Successfully stamped MedExJob logo and hyperlink onto {} page(s) of uploaded PDF.", pageCount);
             return out.toByteArray();
         } catch (Exception ex) {
             log.warn("Failed to stamp hyperlink onto PDF: {}. Returning original PDF bytes.", ex.getMessage());
@@ -150,31 +192,71 @@ public class PdfHyperlinkService {
         if (original == null || original.isEmpty()) {
             return original;
         }
+
         try {
-            byte[] stampedBytes = addHyperlinkBanner(original.getBytes(), targetUrl);
-            return new StampedMultipartFile(original, stampedBytes);
+            byte[] stamped = addHyperlinkBanner(original.getBytes(), targetUrl);
+            return new StampedMultipartFile(original, stamped);
         } catch (IOException e) {
-            log.error("Could not read original multipart file for stamping: {}", e.getMessage());
+            log.warn("Could not read original multipart file bytes for PDF stamping: {}", e.getMessage());
             return original;
         }
     }
 
+    public MultipartFile stampMultipartFile(MultipartFile original) {
+        return stampMultipartFile(original, DEFAULT_WEBSITE_URL);
+    }
+
+    public byte[] stampMedExJobHyperlink(byte[] pdfBytes) {
+        return addHyperlinkBanner(pdfBytes, DEFAULT_WEBSITE_URL);
+    }
+
+    /**
+     * In-memory MultipartFile implementation wrapping stamped PDF bytes.
+     */
     private static class StampedMultipartFile implements MultipartFile {
-        private final MultipartFile original;
+        private final MultipartFile delegate;
         private final byte[] content;
 
-        StampedMultipartFile(MultipartFile original, byte[] content) {
-            this.original = original;
-            this.content = content;
+        public StampedMultipartFile(MultipartFile delegate, byte[] content) {
+            this.delegate = delegate;
+            this.content = content != null ? content : new byte[0];
         }
 
-        @Override public String getName() { return original.getName(); }
-        @Override public String getOriginalFilename() { return original.getOriginalFilename(); }
-        @Override public String getContentType() { return "application/pdf"; }
-        @Override public boolean isEmpty() { return content == null || content.length == 0; }
-        @Override public long getSize() { return content != null ? content.length : 0; }
-        @Override public byte[] getBytes() { return content; }
-        @Override public InputStream getInputStream() { return new ByteArrayInputStream(content); }
+        @Override
+        public String getName() {
+            return delegate.getName();
+        }
+
+        @Override
+        public String getOriginalFilename() {
+            return delegate.getOriginalFilename();
+        }
+
+        @Override
+        public String getContentType() {
+            return "application/pdf";
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return content.length == 0;
+        }
+
+        @Override
+        public long getSize() {
+            return content.length;
+        }
+
+        @Override
+        public byte[] getBytes() {
+            return content;
+        }
+
+        @Override
+        public InputStream getInputStream() {
+            return new ByteArrayInputStream(content);
+        }
+
         @Override
         public void transferTo(File dest) throws IOException, IllegalStateException {
             java.nio.file.Files.write(dest.toPath(), content);

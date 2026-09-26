@@ -44,6 +44,7 @@ import {
   createManualRecruitment,
   ManualRecruitmentPayload,
 } from '../api/recruitments';
+import { uploadNotificationPdf } from '../api/jobs';
 import {
   buildStructuredJobDescription,
   cardFieldText,
@@ -284,7 +285,8 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
   const [publishingRecruitment, setPublishingRecruitment] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const secondaryFileInputRef = useRef<HTMLInputElement>(null);
+  const parserPdfInputRef = useRef<HTMLInputElement>(null);
+  const aiFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!initialData) return;
@@ -353,6 +355,16 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
         ? rawTitle
         : `${rawTitle} Recruitment ${new Date().getFullYear()} - Multiple Departments`;
 
+      let notificationPdfUrl: string | undefined = undefined;
+      if (formData.pdfFile) {
+        try {
+          const uploaded = await uploadNotificationPdf(formData.pdfFile);
+          notificationPdfUrl = uploaded?.pdfUrl;
+        } catch (pdfErr) {
+          console.warn('Failed to pre-upload PDF for multi-department recruitment:', pdfErr);
+        }
+      }
+
       const payload: ManualRecruitmentPayload = {
         organisationName: formData.organization.trim() || 'Medical Institution / Hospital',
         title: cleanTitle,
@@ -369,7 +381,7 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
         importantInstructions: formData.requirements || undefined,
         selectionProcess: formData.selectionProcess || undefined,
         officialApplicationUrl: formData.applyLink || undefined,
-        officialNotificationUrl: formData.applyLink || undefined,
+        officialNotificationUrl: notificationPdfUrl || formData.applyLink || undefined,
         officialWebsite: formData.applyLink || undefined,
         publishImmediately: true,
         vacancies: recData.departments.map((d) => ({
@@ -553,12 +565,28 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
     }));
   };
 
-  const handlePdf = async (file?: File) => {
+  const handleAttachPdfOnly = (file?: File) => {
+    if (!file) return;
+
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      setPdfError('Please select a valid PDF file.');
+      return;
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      setPdfError('PDF must be 20 MB or smaller.');
+      return;
+    }
+
     setField('pdfFile', file);
     setPdfError('');
-    setPdfMessage('');
     setPdfExtraction(null);
     setSelectedVacancyIndex(0);
+    setPdfMessage(
+      `PDF "${file.name}" attached successfully! Your parsed/entered job details are preserved. MedExJob logo & website hyperlink will be stamped automatically upon saving.`
+    );
+  };
+
+  const handlePdf = async (file?: File) => {
     if (!file) return;
 
     if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
@@ -569,6 +597,23 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
       setPdfError('PDF must be 20 MB or smaller.');
       return;
     }
+
+    const hasExistingContent = formData.title.trim() || formData.organization.trim() || rawPastedNotice.trim();
+    if (hasExistingContent) {
+      const confirmOverwrite = window.confirm(
+        'Extracting details from this PDF with AI will overwrite your currently entered / parsed fields.\n\nDo you want to proceed with AI Auto-Fill?\n\n(Click Cancel if you only want to attach the PDF without overwriting your fields).'
+      );
+      if (!confirmOverwrite) {
+        handleAttachPdfOnly(file);
+        return;
+      }
+    }
+
+    setField('pdfFile', file);
+    setPdfError('');
+    setPdfMessage('');
+    setPdfExtraction(null);
+    setSelectedVacancyIndex(0);
 
     setExtractingPdf(true);
     try {
@@ -811,11 +856,77 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
                         </div>
                       </div>
                     )}
+
+                    {/* Dedicated PDF Attachment Section for Parsed / Auto-Filled Notice */}
+                    <div className="p-3.5 rounded-xl border border-indigo-200 bg-white/95 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2 text-xs font-bold text-indigo-950">
+                          <FileText className="h-4 w-4 text-indigo-600 shrink-0" />
+                          <span>Attach PDF Notice for this Parsed Post</span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            ✓ Preserves Parsed Fields
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 m-0">
+                          Upload the original PDF notice. Your parsed fields above will NOT be overwritten. MedExJob logo &amp; hyperlink are added automatically.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+                        {formData.pdfFile ? (
+                          <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg text-xs">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                            <span className="font-semibold text-emerald-800 truncate max-w-[150px]">
+                              {formData.pdfFile.name}
+                            </span>
+                            <span className="text-slate-400 text-[10px] shrink-0">
+                              ({(formData.pdfFile.size / 1024 / 1024).toFixed(2)} MB)
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => parserPdfInputRef.current?.click()}
+                              className="text-[11px] text-indigo-600 hover:text-indigo-800 font-semibold underline ml-1 cursor-pointer"
+                            >
+                              Change
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setField('pdfFile', undefined);
+                                setPdfMessage('');
+                              }}
+                              className="text-[11px] text-rose-600 hover:text-rose-800 font-semibold underline cursor-pointer"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => parserPdfInputRef.current?.click()}
+                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-indigo-700 transition cursor-pointer"
+                          >
+                            <Upload className="h-3.5 w-3.5" />
+                            <span>Attach Notification PDF</span>
+                          </button>
+                        )}
+                        <input
+                          ref={parserPdfInputRef}
+                          type="file"
+                          accept="application/pdf,.pdf"
+                          className="hidden"
+                          onChange={(e) => {
+                            handleAttachPdfOnly(e.target.files?.[0]);
+                            e.target.value = '';
+                          }}
+                        />
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Manual PDF Upload: Available for all jobs (Government & Private) with Automatic Website Hyperlink */}
+              {/* Manual PDF Upload: Available for all jobs (Government & Private) with Automatic Website Hyperlink & Logo */}
               <div className="mb-6 rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50/60 to-indigo-50/40 p-5 shadow-sm">
                 <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                   <div className="flex items-center gap-3">
@@ -825,14 +936,14 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="text-sm font-bold text-slate-900">
-                          Job Notification PDF (Manual Upload)
+                          Job Notification PDF Document
                         </h3>
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                          ✓ Auto Hyperlink
+                          ✓ MedExJob Logo &amp; Link
                         </span>
                       </div>
                       <p className="text-xs text-slate-500">
-                        Upload job notification PDF. MedExJob website hyperlink is automatically stamped into the final PDF.
+                        Upload job notification PDF. MedExJob logo and website hyperlink are automatically stamped into the final PDF.
                       </p>
                     </div>
                   </div>
@@ -845,7 +956,7 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
                         setPdfExtraction(null);
                         setPdfMessage('');
                       }}
-                      className="text-xs font-semibold text-rose-600 hover:text-rose-700 underline"
+                      className="text-xs font-semibold text-rose-600 hover:text-rose-700 underline cursor-pointer"
                     >
                       Remove PDF
                     </button>
@@ -864,41 +975,66 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
                           </span>
                         </div>
                         <div className="text-[11px] text-emerald-700 font-medium">
-                          ✓ Clickable MedExJob hyperlink banner (https://medexjob.com) will be stamped automatically.
+                          ✓ MedExJob logo &amp; clickable website hyperlink (https://medexjob.com) will be stamped automatically. Form fields remain preserved.
                         </div>
                       </div>
                     ) : (
                       <div className="text-xs text-slate-500">
-                        No PDF selected yet. Upload notification PDF (Max 20 MB). Hyperlink banner will be added automatically.
+                        No PDF selected yet. Upload notification PDF (Max 20 MB). MedExJob logo &amp; clickable hyperlink banner will be added automatically to each page.
                       </div>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+                  <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto">
+                    {/* Primary Button: Attach PDF (Preserves all parsed/entered fields) */}
                     <button
                       type="button"
                       className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-blue-700 transition cursor-pointer"
                       onClick={() => fileInputRef.current?.click()}
-                      disabled={extractingPdf}
                     >
-                      {extractingPdf ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>Extracting with AI…</span>
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="h-4 w-4" />
-                          <span>{formData.pdfFile ? 'Change PDF' : 'Upload PDF Notice'}</span>
-                        </>
-                      )}
+                      <Upload className="h-4 w-4" />
+                      <span>{formData.pdfFile ? 'Change PDF' : 'Attach PDF (Keep Details)'}</span>
                     </button>
                     <input
                       ref={fileInputRef}
                       type="file"
                       accept="application/pdf,.pdf"
                       className="hidden"
-                      onChange={(e) => void handlePdf(e.target.files?.[0])}
+                      onChange={(e) => {
+                        handleAttachPdfOnly(e.target.files?.[0]);
+                        e.target.value = '';
+                      }}
+                    />
+
+                    {/* Secondary Button: Extract & Fill with AI */}
+                    <button
+                      type="button"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition cursor-pointer"
+                      onClick={() => aiFileInputRef.current?.click()}
+                      disabled={extractingPdf}
+                      title="Extract fields from PDF with Gemini AI (Note: populates empty form fields or asks before overwrite)"
+                    >
+                      {extractingPdf ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-600" />
+                          <span>Extracting…</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
+                          <span>Extract &amp; Fill with AI</span>
+                        </>
+                      )}
+                    </button>
+                    <input
+                      ref={aiFileInputRef}
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      className="hidden"
+                      onChange={(e) => {
+                        void handlePdf(e.target.files?.[0]);
+                        e.target.value = '';
+                      }}
                     />
                   </div>
                 </div>

@@ -566,14 +566,16 @@ export function JobDetailPage({
                       (job as any).employerName ||
                       '';
                     return orgName ? (
-                      <div className="flex items-center gap-2 text-gray-700 flex-wrap">
-                        <Building2 className="w-5 h-5 text-amber-700 shrink-0" />
-                        <span className="medex-org-highlight rounded-md bg-amber-100 px-2.5 py-0.5 text-lg font-semibold text-amber-900">{orgName}</span>
-                        {Boolean(job.employer?.isVerified || (job as any).isEmployerVerified || (job as any).employerVerified) && (
-                          <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800 text-xs font-bold px-2 py-0.5 inline-flex items-center gap-1">
-                            <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" /> Verified Employer
-                          </Badge>
-                        )}
+                      <div className="flex items-start gap-2 text-gray-700 min-w-0">
+                        <Building2 className="w-5 h-5 text-amber-700 shrink-0 mt-1" />
+                        <div className="flex items-center gap-2 flex-wrap min-w-0 flex-1">
+                          <span className="medex-org-highlight rounded-md bg-amber-100 px-2.5 py-0.5 text-lg font-semibold text-amber-900 break-words">{orgName}</span>
+                          {Boolean(job.employer?.isVerified || (job as any).isEmployerVerified || (job as any).employerVerified) && (
+                            <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800 text-xs font-bold px-2 py-0.5 inline-flex items-center gap-1 shrink-0">
+                              <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" /> Verified Employer
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     ) : null;
                   })()}
@@ -1589,9 +1591,9 @@ export function JobDetailPage({
             <Card className="p-6 job-detail-about-org medex-about-organization-card hidden lg:block">
               <h3 className="text-lg text-gray-900 mb-4">About Organization</h3>
               <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Building2 className="w-5 h-5 text-gray-400" />
-                  <span className="medex-org-highlight text-sm">
+                <div className="flex items-start gap-2 min-w-0">
+                  <Building2 className="w-5 h-5 text-gray-400 shrink-0 mt-0.5" />
+                  <span className="medex-org-highlight text-sm break-words flex-1 min-w-0">
                     {job.organization}
                   </span>
                 </div>

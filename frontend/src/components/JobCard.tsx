@@ -190,16 +190,18 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
               {displayTitle}
             </h3>
             {organizationName && (
-              <div className="flex items-center gap-1.5 mt-2 min-w-0 flex-wrap">
-                <Building2 className="w-4 h-4 shrink-0 text-red-600" />
-                <span className="truncate text-sm font-semibold text-red-600">
-                  {organizationName}
-                </span>
-                {isEmployerVerified && (
-                  <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800 text-[10px] font-bold px-1.5 py-0 inline-flex items-center gap-1">
-                    <Check className="w-3 h-3 text-emerald-600 stroke-[3]" /> Verified Employer
-                  </Badge>
-                )}
+              <div className="flex items-start gap-1.5 mt-2 min-w-0">
+                <Building2 className="w-4 h-4 shrink-0 text-red-600 mt-0.5" />
+                <div className="flex items-center gap-1.5 min-w-0 flex-wrap flex-1">
+                  <span className="text-sm font-semibold text-red-600 break-words" title={organizationName}>
+                    {organizationName}
+                  </span>
+                  {isEmployerVerified && (
+                    <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800 text-[10px] font-bold px-1.5 py-0 inline-flex items-center gap-1 shrink-0">
+                      <Check className="w-3 h-3 text-emerald-600 stroke-[3]" /> Verified Employer
+                    </Badge>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -234,18 +236,19 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
             </div>
           )}
 
-          {(salaryText || experienceText) && (
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              {salaryText && (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-3 py-1.5 text-green-700 font-medium">
-                  💰 {salaryText}
-                </span>
-              )}
-              {experienceText && (
-                <span className="inline-flex items-center gap-1.5 text-sm text-gray-600 font-medium">
-                  📊 Experience: {experienceText}
-                </span>
-              )}
+          {salaryText && (
+            <div className="w-full">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-sm text-green-700 font-medium">
+                💰 {salaryText}
+              </span>
+            </div>
+          )}
+
+          {experienceText && (
+            <div className="w-full">
+              <span className="inline-flex items-center gap-1.5 text-sm text-gray-600 font-medium">
+                📊 Experience: {experienceText}
+              </span>
             </div>
           )}
         </div>

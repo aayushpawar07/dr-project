@@ -342,14 +342,16 @@ export function GovernmentJobDetail({
 
                 <div>
                   <h1 className="mb-2 text-2xl sm:text-3xl font-bold text-slate-800">{job.title}</h1>
-                  <div className="flex items-center gap-2 text-slate-600 flex-wrap">
-                    <Building2 className="h-5 w-5 shrink-0 text-amber-700" />
-                    <span className="medex-org-highlight rounded-md bg-amber-100 px-2.5 py-0.5 text-lg font-semibold text-amber-900">{organization}</span>
-                    {Boolean(job.employer?.isVerified || job.isEmployerVerified || job.employerVerified) && (
-                      <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800 text-xs font-bold px-2 py-0.5 inline-flex items-center gap-1">
-                        <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" /> Verified Employer
-                      </Badge>
-                    )}
+                  <div className="flex items-start gap-2 text-slate-600 min-w-0">
+                    <Building2 className="h-5 w-5 shrink-0 text-amber-700 mt-1" />
+                    <div className="flex items-center gap-2 flex-wrap min-w-0 flex-1">
+                      <span className="medex-org-highlight rounded-md bg-amber-100 px-2.5 py-0.5 text-lg font-semibold text-amber-900 break-words">{organization}</span>
+                      {Boolean(job.employer?.isVerified || job.isEmployerVerified || job.employerVerified) && (
+                        <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800 text-xs font-bold px-2 py-0.5 inline-flex items-center gap-1 shrink-0">
+                          <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" /> Verified Employer
+                        </Badge>
+                      )}
+                    </div>
                   </div>
 
                   {job.sourceRecruitmentId && (
@@ -488,9 +490,9 @@ export function GovernmentJobDetail({
             <Card className="p-6 job-detail-about-org medex-about-organization-card hidden lg:block border-slate-200 shadow-none">
               <h3 className="mb-4 font-semibold text-slate-800">About Organization</h3>
               <div className="space-y-3 text-sm text-slate-600">
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-2 min-w-0">
                   <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-                  <span className="medex-org-highlight">{organization}</span>
+                  <span className="medex-org-highlight flex-1 min-w-0 break-words">{organization}</span>
                 </div>
                 {locationText && (
                   <div className="flex items-start gap-2">

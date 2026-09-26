@@ -242,6 +242,9 @@
   }
 
   .job-detail-page .medex-job-organization-line {
+    display: flex !important;
+    align-items: flex-start !important;
+    flex-wrap: nowrap !important;
     margin: 0 0 5px !important;
     gap: 6px !important;
     font-size: 0.78rem !important;

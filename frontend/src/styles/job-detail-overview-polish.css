@@ -38,7 +38,8 @@
 
 .medex-job-organization-line {
   display: flex !important;
-  align-items: center !important;
+  align-items: flex-start !important;
+  flex-wrap: nowrap !important;
   gap: 8px !important;
   margin: 0 0 15px !important;
   color: #b45309 !important;
@@ -53,6 +54,8 @@
 .medex-about-organization-name {
   display: inline-block !important;
   max-width: 100% !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
   padding: 3px 10px !important;
   border-radius: 8px !important;
   background: #fef3c7 !important;

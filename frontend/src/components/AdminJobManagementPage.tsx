@@ -6,7 +6,6 @@ import {
   Trash2,
   Eye,
   Loader2,
-  ArrowLeft,
   CheckCircle,
   XCircle,
   Clock,
@@ -24,15 +23,14 @@ import {
   ArrowRight,
   MoreVertical,
   Copy,
-  Sparkles,
   Filter,
   ChevronLeft,
   ChevronRight,
-  Check,
   AlertCircle,
-  RefreshCw,
   Briefcase,
-  Share2,
+  Award,
+  GraduationCap,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -117,41 +115,43 @@ export function AdminJobManagementPage({
   const { token } = useAuth();
   const navigate = useNavigate();
 
-  // Primary state
+  // Primary data state
   const [jobs, setJobs] = useState<Job[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [appLoading, setAppLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Active view switcher ('jobs' default, 'applications' preserved)
+  // Active view switcher ('jobs' default, 'applications' tab)
   const [activeView, setActiveView] = useState<"jobs" | "applications">("jobs");
 
-  // Filtering & Sorting state
+  // Jobs filtering & sorting state
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterSector, setFilterSector] = useState<string>("all");
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("latest");
-
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
 
-  // Quick Preview modal
-  const [previewJob, setPreviewJob] = useState<Job | null>(null);
+  // Applications filtering & sorting state
+  const [appSearchTerm, setAppSearchTerm] = useState("");
+  const [appFilterStatus, setAppFilterStatus] = useState<string>("all");
+  const [appSortBy, setAppSortBy] = useState<string>("latest");
+  const [appCurrentPage, setAppCurrentPage] = useState(1);
 
-  // Applications view state
-  const [appLoading, setAppLoading] = useState(false);
+  // Modals state
+  const [previewJob, setPreviewJob] = useState<Job | null>(null);
+  const [selectedAppForDetails, setSelectedAppForDetails] = useState<any | null>(null);
+  const [interviewModalApp, setInterviewModalApp] = useState<any | null>(null);
   const [interviewDate, setInterviewDate] = useState("");
   const [interviewLink, setInterviewLink] = useState("");
-  const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
 
   // Load all jobs for admin
   const loadJobs = async () => {
     setLoading(true);
     setError(null);
     try {
-      // Fetch up to 1000 jobs so metric cards and client filters calculate accurate counts
       const data = await fetchAdminJobs({
         size: 1000,
         sort: "createdAt,desc",
@@ -174,13 +174,13 @@ export function AdminJobManagementPage({
     }
   };
 
-  // Load applications
+  // Load candidate applications
   const loadApplications = async () => {
     setAppLoading(true);
     try {
       if (!token) throw new Error("Authentication token not found.");
       const data = await fetchApplications(
-        { size: 50, sort: "appliedDate,desc" },
+        { size: 200, sort: "appliedDate,desc" },
         token
       );
       setApplications(data?.content || []);
@@ -193,14 +193,20 @@ export function AdminJobManagementPage({
 
   useEffect(() => {
     loadJobs();
+    loadApplications();
   }, []);
 
-  // Reset to first page when filters change
+  // Reset pagination when job filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, filterStatus, filterSector, filterCategory, sortBy]);
 
-  // Date formatting helper: DD/MM/YYYY matching Image 2
+  // Reset pagination when application filters change
+  useEffect(() => {
+    setAppCurrentPage(1);
+  }, [appSearchTerm, appFilterStatus, appSortBy]);
+
+  // Date formatting helper: DD/MM/YYYY
   const formatDateDMY = (dateStr?: string) => {
     if (!dateStr) return "N/A";
     try {
@@ -233,13 +239,13 @@ export function AdminJobManagementPage({
     if (job.status === "closed") return true;
     try {
       const last = new Date(job.lastDate).getTime();
-      return last < Date.now() - 86400000; // 1 day buffer
+      return last < Date.now() - 86400000;
     } catch {
       return false;
     }
   };
 
-  // Duplicate detection
+  // Duplicate detection for jobs
   const duplicateJobIds = useMemo(() => {
     const map = new Map<string, string[]>();
     jobs.forEach((j) => {
@@ -256,7 +262,7 @@ export function AdminJobManagementPage({
     return dupeIds;
   }, [jobs]);
 
-  // Metric counts for the 4 top summary cards
+  // Metric counts for the 4 top summary cards (Jobs View)
   const summaryMetrics = useMemo(() => {
     const total = jobs.length;
     const active = jobs.filter(
@@ -275,11 +281,29 @@ export function AdminJobManagementPage({
     };
   }, [jobs]);
 
+  // Metric counts for the 4 top summary cards (Applications View)
+  const appSummaryMetrics = useMemo(() => {
+    const total = applications.length;
+    const shortlisted = applications.filter((a) => a.status === "shortlisted").length;
+    const interviews = applications.filter(
+      (a) => a.status === "interview" || a.interviewDate
+    ).length;
+    const selected = applications.filter(
+      (a) => a.status === "selected" || a.status === "hired"
+    ).length;
+
+    return {
+      total,
+      shortlisted,
+      interviews,
+      selected,
+    };
+  }, [applications]);
+
   // Filtered and Sorted Jobs
   const filteredAndSortedJobs = useMemo(() => {
     return jobs
       .filter((job) => {
-        // Search filter
         if (searchTerm.trim()) {
           const q = searchTerm.toLowerCase();
           const matchTitle = job.title?.toLowerCase().includes(q);
@@ -292,7 +316,6 @@ export function AdminJobManagementPage({
           }
         }
 
-        // Status filter
         if (filterStatus === "active") {
           if (job.status !== "active" || isJobClosedOrExpired(job)) return false;
         } else if (filterStatus === "closing_soon") {
@@ -305,12 +328,10 @@ export function AdminJobManagementPage({
           if (job.status !== "draft") return false;
         }
 
-        // Sector filter
         if (filterSector !== "all" && job.sector !== filterSector) {
           return false;
         }
 
-        // Category filter
         if (filterCategory !== "all" && job.category !== filterCategory) {
           return false;
         }
@@ -334,7 +355,7 @@ export function AdminJobManagementPage({
       });
   }, [jobs, searchTerm, filterStatus, filterSector, filterCategory, sortBy]);
 
-  // Paginated slice
+  // Paginated jobs slice
   const totalPages = Math.ceil(filteredAndSortedJobs.length / pageSize) || 1;
   const startIndex = (currentPage - 1) * pageSize;
   const paginatedJobs = filteredAndSortedJobs.slice(
@@ -342,7 +363,58 @@ export function AdminJobManagementPage({
     startIndex + pageSize
   );
 
-  // Helper to generate page numbers with ellipsis matching Image 2
+  // Filtered and Sorted Applications
+  const filteredAndSortedApplications = useMemo(() => {
+    return applications
+      .filter((app) => {
+        if (appSearchTerm.trim()) {
+          const q = appSearchTerm.toLowerCase();
+          const matchName = app.candidateName?.toLowerCase().includes(q);
+          const matchEmail = app.candidateEmail?.toLowerCase().includes(q);
+          const matchPhone = app.candidatePhone?.toLowerCase().includes(q);
+          const matchJob = app.jobTitle?.toLowerCase().includes(q);
+          const matchOrg = app.jobOrganization?.toLowerCase().includes(q);
+          const matchSpec = app.candidateSpeciality?.toLowerCase().includes(q);
+          if (!matchName && !matchEmail && !matchPhone && !matchJob && !matchOrg && !matchSpec) {
+            return false;
+          }
+        }
+
+        if (appFilterStatus !== "all") {
+          if (appFilterStatus === "pending") {
+            if (app.status !== "pending" && app.status !== "applied") return false;
+          } else if (appFilterStatus === "interview") {
+            if (app.status !== "interview" && !app.interviewDate) return false;
+          } else if (app.status !== appFilterStatus) {
+            return false;
+          }
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        if (appSortBy === "latest") {
+          return new Date(b.appliedDate).getTime() - new Date(a.appliedDate).getTime();
+        }
+        if (appSortBy === "name_asc") {
+          return (a.candidateName || "").localeCompare(b.candidateName || "");
+        }
+        if (appSortBy === "exp_high") {
+          return (b.candidateYearsExperience || 0) - (a.candidateYearsExperience || 0);
+        }
+        return 0;
+      });
+  }, [applications, appSearchTerm, appFilterStatus, appSortBy]);
+
+  // Paginated applications slice
+  const appTotalPages = Math.ceil(filteredAndSortedApplications.length / pageSize) || 1;
+  const appStartIndex = (appCurrentPage - 1) * pageSize;
+  const paginatedApplications = filteredAndSortedApplications.slice(
+    appStartIndex,
+    appStartIndex + pageSize
+  );
+
+  // Helper to generate page numbers with ellipsis
   const getPageNumbers = (current: number, total: number) => {
     if (total <= 7) {
       return Array.from({ length: total }, (_, i) => i + 1);
@@ -356,7 +428,7 @@ export function AdminJobManagementPage({
     return [1, "...", current - 1, current, current + 1, "...", total];
   };
 
-  // Card Left Accent class matching Image 2
+  // Job card accents
   const getCardAccentClass = (job: Job, index: number) => {
     if (isJobClosedOrExpired(job)) {
       return index % 2 === 0 ? "accent-orange" : "accent-red";
@@ -370,12 +442,21 @@ export function AdminJobManagementPage({
     if (job.status === "draft") {
       return "accent-gray";
     }
-    // Rotating clean palette for active jobs matching Image 2 (Green, Blue, Purple)
     const accents = ["accent-green", "accent-blue", "accent-purple"];
     return accents[index % accents.length];
   };
 
-  // Status Badge matching Image 2
+  // Application card accents
+  const getAppAccentClass = (app: any) => {
+    const status = (app.status || "").toLowerCase();
+    if (status === "shortlisted") return "accent-green";
+    if (status === "interview") return "accent-purple";
+    if (status === "selected" || status === "hired") return "accent-green";
+    if (status === "rejected") return "accent-red";
+    return "accent-blue";
+  };
+
+  // Job status badge
   const renderStatusBadge = (job: Job) => {
     if (job.status === "draft") {
       return <span className="admin-jm-badge admin-jm-badge-draft">Draft</span>;
@@ -392,7 +473,33 @@ export function AdminJobManagementPage({
     return <span className="admin-jm-badge admin-jm-badge-active">Active</span>;
   };
 
-  // Metadata Sub-row extractors
+  // Application status badge
+  const renderAppStatusBadge = (app: any) => {
+    const status = (app.status || "").toLowerCase();
+    if (status === "shortlisted") {
+      return <span className="admin-jm-badge admin-jm-badge-shortlisted">Shortlisted</span>;
+    }
+    if (status === "interview") {
+      return <span className="admin-jm-badge admin-jm-badge-interview">Interview</span>;
+    }
+    if (status === "selected" || status === "hired") {
+      return <span className="admin-jm-badge admin-jm-badge-selected">Selected</span>;
+    }
+    if (status === "rejected") {
+      return <span className="admin-jm-badge admin-jm-badge-rejected">Rejected</span>;
+    }
+    return <span className="admin-jm-badge admin-jm-badge-upcoming">Applied</span>;
+  };
+
+  // Candidate avatar initials
+  const getCandidateInitials = (name?: string) => {
+    if (!name) return "MD";
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
+  // Metadata Sub-row extractors for Job
   const getPostName = (job: Job) => {
     if (job.jobRoles) {
       if (Array.isArray(job.jobRoles) && job.jobRoles.length > 0) {
@@ -446,7 +553,7 @@ export function AdminJobManagementPage({
     return chips.slice(0, 3);
   };
 
-  // Handlers
+  // Handlers for Jobs
   const handleCreateNewJob = () => {
     onNavigate("admin-post-job");
   };
@@ -529,31 +636,46 @@ export function AdminJobManagementPage({
     toast.success("Job link copied to clipboard!");
   };
 
-  // Applications status update handler
-  const handleUpdateAppStatus = async (appId: string, newStatus: string) => {
+  // Handlers for Applications
+  const handleUpdateAppStatus = async (
+    appId: string,
+    newStatus: string,
+    dateToSave?: string | null,
+    linkToSave?: string | null
+  ) => {
     try {
       if (!token) throw new Error("Authentication token not found.");
-      let finalInterviewDate = null;
-      let finalInterviewLink = null;
-      if (newStatus === "interview" && selectedAppId === appId) {
-        finalInterviewDate = interviewDate;
-        finalInterviewLink = interviewLink;
-      }
       await updateApplicationStatus(
         appId,
         newStatus,
         token,
         undefined,
-        finalInterviewDate,
-        finalInterviewLink
+        dateToSave !== undefined ? dateToSave : undefined,
+        linkToSave !== undefined ? linkToSave : undefined
       );
-      toast.success("Application status updated!");
+      toast.success(`Application status updated to ${newStatus}!`);
       loadApplications();
-      setSelectedAppId(null);
+      setInterviewModalApp(null);
     } catch (e: any) {
       console.error("Error updating application status:", e);
       toast.error(`Error: ${e.message}`);
     }
+  };
+
+  const handleOpenInterviewModal = (app: any) => {
+    setInterviewModalApp(app);
+    setInterviewDate(app.interviewDate ? app.interviewDate.slice(0, 16) : "");
+    setInterviewLink(app.interviewLink || "");
+  };
+
+  const handleSaveInterviewSchedule = async () => {
+    if (!interviewModalApp) return;
+    await handleUpdateAppStatus(
+      interviewModalApp.id,
+      "interview",
+      interviewDate || null,
+      interviewLink || null
+    );
   };
 
   return (
@@ -574,7 +696,7 @@ export function AdminJobManagementPage({
           </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-            {/* View Switcher: allows switching to Applications view without losing features */}
+            {/* View Switcher: Toggle between Jobs and Applications */}
             <div className="inline-flex bg-slate-100 p-1 rounded-lg border border-slate-200/80">
               <button
                 type="button"
@@ -603,7 +725,7 @@ export function AdminJobManagementPage({
               </button>
             </div>
 
-            {/* Right Action Buttons matching Image 2 */}
+            {/* Right Action Buttons */}
             <div className="admin-jm-header-actions">
               <button
                 type="button"
@@ -628,7 +750,7 @@ export function AdminJobManagementPage({
 
         {activeView === "jobs" ? (
           <>
-            {/* 4 Summary Cards matching Image 2 */}
+            {/* 4 Summary Cards (Jobs) */}
             <div className="admin-jm-stats-grid">
               {/* Total Jobs */}
               <div
@@ -707,7 +829,7 @@ export function AdminJobManagementPage({
               </div>
             </div>
 
-            {/* Search & Unified Filter Bar matching Image 2 */}
+            {/* Search & Unified Filter Bar (Jobs) */}
             <div className="admin-jm-filter-container">
               <div className="admin-jm-filter-row">
                 {/* Search Input */}
@@ -724,7 +846,6 @@ export function AdminJobManagementPage({
 
                 {/* Dropdowns + Filter Button */}
                 <div className="admin-jm-filter-selects">
-                  {/* Status Dropdown */}
                   <Select value={filterStatus} onValueChange={setFilterStatus}>
                     <SelectTrigger className="admin-jm-select-trigger">
                       <SelectValue placeholder="All Statuses" />
@@ -739,7 +860,6 @@ export function AdminJobManagementPage({
                     </SelectContent>
                   </Select>
 
-                  {/* Job Type / Sector Dropdown */}
                   <Select value={filterSector} onValueChange={setFilterSector}>
                     <SelectTrigger className="admin-jm-select-trigger">
                       <SelectValue placeholder="All Jobs" />
@@ -751,7 +871,6 @@ export function AdminJobManagementPage({
                     </SelectContent>
                   </Select>
 
-                  {/* Category Dropdown */}
                   <Select
                     value={filterCategory}
                     onValueChange={setFilterCategory}
@@ -774,7 +893,6 @@ export function AdminJobManagementPage({
                     </SelectContent>
                   </Select>
 
-                  {/* Blue Filter Button */}
                   <button
                     type="button"
                     onClick={loadJobs}
@@ -805,7 +923,7 @@ export function AdminJobManagementPage({
               </div>
             </div>
 
-            {/* Meta Row: Count + Sort dropdown matching Image 2 */}
+            {/* Meta Row: Count + Sort dropdown (Jobs) */}
             <div className="admin-jm-meta-bar">
               <div className="admin-jm-meta-count">
                 Showing {filteredAndSortedJobs.length > 0 ? startIndex + 1 : 0} -{" "}
@@ -1107,7 +1225,7 @@ export function AdminJobManagementPage({
               </div>
             )}
 
-            {/* Bottom Pagination Bar matching Image 2 */}
+            {/* Bottom Pagination Bar (Jobs) */}
             {!loading && filteredAndSortedJobs.length > 0 && (
               <div className="admin-jm-pagination">
                 <div className="admin-jm-pagination-info">
@@ -1117,7 +1235,6 @@ export function AdminJobManagementPage({
                 </div>
 
                 <div className="admin-jm-pagination-controls">
-                  {/* Prev Button */}
                   <button
                     type="button"
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
@@ -1128,7 +1245,6 @@ export function AdminJobManagementPage({
                     <ChevronLeft className="w-4 h-4" />
                   </button>
 
-                  {/* Page Numbers */}
                   {getPageNumbers(currentPage, totalPages).map((p, idx) => {
                     if (p === "...") {
                       return (
@@ -1152,7 +1268,6 @@ export function AdminJobManagementPage({
                     );
                   })}
 
-                  {/* Next Button */}
                   <button
                     type="button"
                     onClick={() =>
@@ -1169,169 +1284,792 @@ export function AdminJobManagementPage({
             )}
           </>
         ) : (
-          /* Applications View (Preserving all applications management functionality) */
-          <div className="space-y-6 mt-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-slate-900">
-                Candidate Applications ({applications.length})
-              </h2>
-              {appLoading && <Loader2 className="w-5 h-5 animate-spin text-blue-600" />}
+          /* ===================================================================
+             Applications View (Redesigned with the same SaaS Card Layout & Color System)
+             =================================================================== */
+          <>
+            {/* 4 Summary Cards (Applications) */}
+            <div className="admin-jm-stats-grid">
+              {/* Total Applications */}
+              <div
+                className={`admin-jm-stat-card ${
+                  appFilterStatus === "all" ? "active-filter" : ""
+                }`}
+                onClick={() => setAppFilterStatus("all")}
+                title="Click to view all applications"
+              >
+                <div className="admin-jm-stat-icon-wrapper admin-jm-stat-icon-blue">
+                  <Users className="w-6 h-6" />
+                </div>
+                <div className="admin-jm-stat-content">
+                  <span className="admin-jm-stat-label">Total Applications</span>
+                  <span className="admin-jm-stat-value">
+                    {appSummaryMetrics.total}
+                  </span>
+                </div>
+              </div>
+
+              {/* Shortlisted */}
+              <div
+                className={`admin-jm-stat-card ${
+                  appFilterStatus === "shortlisted" ? "active-filter" : ""
+                }`}
+                onClick={() => setAppFilterStatus("shortlisted")}
+                title="Click to filter Shortlisted candidates"
+              >
+                <div className="admin-jm-stat-icon-wrapper admin-jm-stat-icon-green">
+                  <CheckCircle className="w-6 h-6" />
+                </div>
+                <div className="admin-jm-stat-content">
+                  <span className="admin-jm-stat-label">Shortlisted</span>
+                  <span className="admin-jm-stat-value text-emerald-600">
+                    {appSummaryMetrics.shortlisted}
+                  </span>
+                </div>
+              </div>
+
+              {/* Interviews Scheduled */}
+              <div
+                className={`admin-jm-stat-card ${
+                  appFilterStatus === "interview" ? "active-filter" : ""
+                }`}
+                onClick={() => setAppFilterStatus("interview")}
+                title="Click to filter Interviews Scheduled"
+              >
+                <div className="admin-jm-stat-icon-wrapper admin-jm-stat-icon-orange">
+                  <Video className="w-6 h-6" />
+                </div>
+                <div className="admin-jm-stat-content">
+                  <span className="admin-jm-stat-label">Interviews Scheduled</span>
+                  <span className="admin-jm-stat-value text-amber-600">
+                    {appSummaryMetrics.interviews}
+                  </span>
+                </div>
+              </div>
+
+              {/* Selected / Hired */}
+              <div
+                className={`admin-jm-stat-card ${
+                  appFilterStatus === "selected" ? "active-filter" : ""
+                }`}
+                onClick={() => setAppFilterStatus("selected")}
+                title="Click to filter Selected candidates"
+              >
+                <div className="admin-jm-stat-icon-wrapper admin-jm-stat-icon-green" style={{ background: "#16a34a" }}>
+                  <Award className="w-6 h-6" />
+                </div>
+                <div className="admin-jm-stat-content">
+                  <span className="admin-jm-stat-label">Selected / Hired</span>
+                  <span className="admin-jm-stat-value text-green-600">
+                    {appSummaryMetrics.selected}
+                  </span>
+                </div>
+              </div>
             </div>
 
-            {applications.length > 0 ? (
-              <div className="space-y-4">
-                {applications.map((app: any) => (
-                  <div
-                    key={app.id}
-                    className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs"
+            {/* Search & Filter Bar (Applications) */}
+            <div className="admin-jm-filter-container">
+              <div className="admin-jm-filter-row">
+                {/* Search Input */}
+                <div className="admin-jm-search-box">
+                  <Search className="admin-jm-search-icon" />
+                  <input
+                    type="text"
+                    placeholder="Search by candidate name, email, phone, job title..."
+                    value={appSearchTerm}
+                    onChange={(e) => setAppSearchTerm(e.target.value)}
+                    className="admin-jm-search-input"
+                  />
+                </div>
+
+                {/* Dropdowns + Filter Button */}
+                <div className="admin-jm-filter-selects">
+                  <Select value={appFilterStatus} onValueChange={setAppFilterStatus}>
+                    <SelectTrigger className="admin-jm-select-trigger">
+                      <SelectValue placeholder="All Statuses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="pending">Applied / Pending</SelectItem>
+                      <SelectItem value="shortlisted">Shortlisted</SelectItem>
+                      <SelectItem value="interview">Interview</SelectItem>
+                      <SelectItem value="selected">Selected</SelectItem>
+                      <SelectItem value="rejected">Rejected</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <button
+                    type="button"
+                    onClick={loadApplications}
+                    className="admin-jm-btn-filter"
                   >
-                    <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <h3 className="text-base font-bold text-slate-900">
-                            {app.candidateName}
-                          </h3>
-                          <Badge variant="outline" className="capitalize">
-                            {app.status}
-                          </Badge>
-                          {app.interviewDate && (
-                            <Badge className="bg-purple-100 text-purple-700 border-purple-200">
-                              Interview: {new Date(app.interviewDate).toLocaleString()}
-                            </Badge>
-                          )}
-                        </div>
+                    <Filter className="w-4 h-4 mr-1" />
+                    Filter
+                  </button>
 
-                        <p className="text-sm text-slate-700 mb-1">
-                          <strong>Job:</strong> {app.jobTitle} at {app.jobOrganization}
-                        </p>
-
-                        <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600 mt-2">
-                          <div className="flex items-center gap-1">
-                            <Mail className="w-3.5 h-3.5" />
-                            <span>{app.candidateEmail}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Phone className="w-3.5 h-3.5" />
-                            <span>{app.candidatePhone}</span>
-                          </div>
-                          <div>
-                            Applied: {formatDateDMY(app.appliedDate)}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 mt-4">
-                          <Label className="text-xs text-slate-600">
-                            Change Status:
-                          </Label>
-                          <Select
-                            value={app.status}
-                            onValueChange={(val) => {
-                              if (val === "interview") {
-                                setSelectedAppId(app.id);
-                                setInterviewDate(
-                                  app.interviewDate
-                                    ? app.interviewDate.slice(0, 16)
-                                    : ""
-                                );
-                                setInterviewLink(app.interviewLink || "");
-                              } else {
-                                handleUpdateAppStatus(app.id, val);
-                              }
-                            }}
-                          >
-                            <SelectTrigger className="w-[130px] h-8 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="applied">Applied</SelectItem>
-                              <SelectItem value="shortlisted">Shortlisted</SelectItem>
-                              <SelectItem value="interview">Interview</SelectItem>
-                              <SelectItem value="selected">Selected</SelectItem>
-                              <SelectItem value="rejected">Rejected</SelectItem>
-                            </SelectContent>
-                          </Select>
-
-                          {app.resumeUrl && (
-                            <a
-                              href={app.resumeUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs font-semibold text-blue-600 hover:underline inline-flex items-center gap-1 ml-3"
-                            >
-                              <FileText className="w-3.5 h-3.5" />
-                              View Resume
-                            </a>
-                          )}
-                        </div>
-
-                        {selectedAppId === app.id && (
-                          <div className="mt-4 p-4 bg-purple-50/70 border border-purple-200 rounded-lg space-y-3">
-                            <h4 className="text-xs font-semibold text-purple-900 flex items-center gap-1.5">
-                              <Calendar className="w-4 h-4 text-purple-600" />
-                              Schedule Interview
-                            </h4>
-                            <div className="grid sm:grid-cols-2 gap-3">
-                              <div>
-                                <Label className="text-xs text-slate-700">
-                                  Date & Time:
-                                </Label>
-                                <Input
-                                  type="datetime-local"
-                                  value={interviewDate}
-                                  onChange={(e) => setInterviewDate(e.target.value)}
-                                  className="mt-1 text-xs bg-white"
-                                />
-                              </div>
-                              <div>
-                                <Label className="text-xs text-slate-700">
-                                  Meeting URL (Meet / Zoom):
-                                </Label>
-                                <Input
-                                  type="url"
-                                  placeholder="https://meet.google.com/..."
-                                  value={interviewLink}
-                                  onChange={(e) => setInterviewLink(e.target.value)}
-                                  className="mt-1 text-xs bg-white"
-                                />
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2 pt-1">
-                              <Button
-                                size="sm"
-                                className="bg-purple-600 hover:bg-purple-700 text-white text-xs"
-                                onClick={() => handleUpdateAppStatus(app.id, "interview")}
-                              >
-                                Save & Send Invite
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-xs"
-                                onClick={() => setSelectedAppId(null)}
-                              >
-                                Cancel
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  {(appSearchTerm || appFilterStatus !== "all") && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAppSearchTerm("");
+                        setAppFilterStatus("all");
+                      }}
+                      className="text-xs font-semibold text-rose-600 hover:text-rose-800 underline px-2 py-1"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
               </div>
-            ) : (
+            </div>
+
+            {/* Meta Row: Count + Sort dropdown (Applications) */}
+            <div className="admin-jm-meta-bar">
+              <div className="admin-jm-meta-count">
+                Showing {filteredAndSortedApplications.length > 0 ? appStartIndex + 1 : 0} -{" "}
+                {Math.min(
+                  appStartIndex + pageSize,
+                  filteredAndSortedApplications.length
+                )}{" "}
+                of {filteredAndSortedApplications.length} applications
+              </div>
+
+              <div className="admin-jm-meta-sort">
+                <span>Sort by:</span>
+                <Select value={appSortBy} onValueChange={setAppSortBy}>
+                  <SelectTrigger className="w-[170px] h-8 text-xs font-medium bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="latest">Latest Applied</SelectItem>
+                    <SelectItem value="name_asc">Candidate Name (A-Z)</SelectItem>
+                    <SelectItem value="exp_high">Experience (High-Low)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Loading Indicator */}
+            {appLoading && (
+              <div className="flex justify-center items-center py-16">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                <span className="ml-3 text-base font-medium text-slate-700">
+                  Loading applications...
+                </span>
+              </div>
+            )}
+
+            {/* Empty State */}
+            {!appLoading && filteredAndSortedApplications.length === 0 && (
               <div className="admin-jm-empty-card">
                 <FileText className="admin-jm-empty-icon" />
                 <h3 className="admin-jm-empty-title">No applications found</h3>
                 <p className="admin-jm-empty-subtitle">
-                  Applications will appear here once candidates submit applications.
+                  {appSearchTerm || appFilterStatus !== "all"
+                    ? "Try adjusting your search query or status filter."
+                    : "Candidate applications will appear here once candidates apply."}
                 </p>
               </div>
             )}
-          </div>
+
+            {/* Application Cards List (Matching Job Card Layout & Color System) */}
+            {!appLoading && paginatedApplications.length > 0 && (
+              <div className="admin-jm-card-list">
+                {paginatedApplications.map((app) => {
+                  const accentClass = getAppAccentClass(app);
+
+                  return (
+                    <div
+                      key={app.id}
+                      className={`admin-jm-card ${accentClass}`}
+                    >
+                      <div className="admin-jm-card-inner">
+                        {/* Left Main Content */}
+                        <div className="admin-jm-card-left">
+                          {/* Row 1: Candidate Avatar + Name + Badges */}
+                          <div className="admin-jm-card-header">
+                            <div className="admin-jm-avatar">
+                              {getCandidateInitials(app.candidateName)}
+                            </div>
+                            <h3
+                              onClick={() => setSelectedAppForDetails(app)}
+                              className="admin-jm-card-title cursor-pointer"
+                              title="Click to view candidate details"
+                            >
+                              {app.candidateName}
+                            </h3>
+                            {renderAppStatusBadge(app)}
+
+                            {app.interviewDate && (
+                              <span className="admin-jm-badge admin-jm-badge-interview flex items-center gap-1">
+                                <Video className="w-3 h-3 text-purple-600" />
+                                <span>
+                                  Interview:{" "}
+                                  {new Date(app.interviewDate).toLocaleString([], {
+                                    dateStyle: "short",
+                                    timeStyle: "short",
+                                  })}
+                                </span>
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Row 2: Target Job + Organization */}
+                          <div className="admin-jm-card-org-loc">
+                            <div className="admin-jm-card-org">
+                              <Briefcase className="w-4 h-4 text-slate-400 shrink-0" />
+                              <span>{app.jobTitle}</span>
+                            </div>
+                            <div className="admin-jm-card-loc">
+                              <Building2 className="w-4 h-4 text-slate-400 shrink-0" />
+                              <span>{app.jobOrganization}</span>
+                            </div>
+                            {app.candidateCity && (
+                              <div className="admin-jm-card-loc">
+                                <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+                                <span>{app.candidateCity}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Row 3: Contact & Applied Date Info */}
+                          <div className="admin-jm-card-metrics">
+                            <div className="admin-jm-metric-item">
+                              <Mail className="w-4 h-4 text-slate-400 shrink-0" />
+                              <span>
+                                Email: <strong>{app.candidateEmail}</strong>
+                              </span>
+                            </div>
+                            <div className="admin-jm-metric-item">
+                              <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+                              <span>
+                                Phone: <strong>{app.candidatePhone}</strong>
+                              </span>
+                            </div>
+                            <div className="admin-jm-metric-item">
+                              <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
+                              <span>
+                                Applied:{" "}
+                                <strong>{formatDateDMY(app.appliedDate)}</strong>
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Row 4: Subtle Sub-row box matching Job Card */}
+                          <div className="admin-jm-card-meta-box">
+                            <div className="admin-jm-meta-field">
+                              <span>Qualification:</span>
+                              <span className="value">
+                                {app.candidateQualification || "MBBS / Graduate"}
+                              </span>
+                            </div>
+                            <div className="admin-jm-meta-field">
+                              <span>Experience:</span>
+                              <span className="value">
+                                {app.candidateYearsExperience !== undefined &&
+                                app.candidateYearsExperience !== null
+                                  ? `${app.candidateYearsExperience} Years`
+                                  : "As per resume"}
+                              </span>
+                            </div>
+                            <div className="admin-jm-meta-field">
+                              <span>Speciality:</span>
+                              <span className="value">
+                                {app.candidateSpeciality || "General Medicine"}
+                              </span>
+                            </div>
+                            <div className="admin-jm-meta-field">
+                              <span>Interview Mode:</span>
+                              <span className="value">
+                                {app.interviewLink
+                                  ? "Online (Video)"
+                                  : app.interviewDate
+                                  ? "Scheduled"
+                                  : "Not Scheduled"}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Row 5: Tags / Chips */}
+                          <div className="admin-jm-card-tags">
+                            <span className="admin-jm-tag-chip">
+                              #{(app.status || "APPLIED").toUpperCase()}
+                            </span>
+                            {app.candidateSpeciality && (
+                              <span className="admin-jm-tag-chip">
+                                #{app.candidateSpeciality}
+                              </span>
+                            )}
+                            {app.resumeUrl && (
+                              <span className="admin-jm-tag-chip" style={{ color: "#047857", backgroundColor: "#ecfdf5", borderColor: "#a7f3d0" }}>
+                                #Resume Attached
+                              </span>
+                            )}
+                            {app.interviewLink && (
+                              <span className="admin-jm-tag-chip" style={{ color: "#7e22ce", backgroundColor: "#f3e8ff", borderColor: "#e9d5ff" }}>
+                                #Video Meeting Link
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Right Action Column matching Job Card */}
+                        <div className="admin-jm-card-right">
+                          <div className="admin-jm-card-posted">
+                            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                            <span>Applied: {formatDateDMY(app.appliedDate)}</span>
+                          </div>
+
+                          {/* Primary Action Button: View Resume or View Details */}
+                          {app.resumeUrl ? (
+                            <a
+                              href={app.resumeUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="admin-jm-btn-view"
+                            >
+                              View Resume
+                              <FileText className="w-4 h-4" />
+                            </a>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedAppForDetails(app)}
+                              className="admin-jm-btn-view"
+                            >
+                              View Details
+                              <ArrowRight className="w-4 h-4" />
+                            </button>
+                          )}
+
+                          {/* Sub-actions: Schedule Interview Button + 3-dot dropdown */}
+                          <div className="admin-jm-card-subactions">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenInterviewModal(app)}
+                              className="admin-jm-btn-edit"
+                              title="Schedule or update interview"
+                            >
+                              <Video className="w-3.5 h-3.5 text-purple-600" />
+                              <span>Schedule</span>
+                            </button>
+
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <button
+                                  type="button"
+                                  className="admin-jm-btn-dots"
+                                  title="Application options"
+                                >
+                                  <MoreVertical className="w-4 h-4" />
+                                </button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-52">
+                                <DropdownMenuItem
+                                  onClick={() => setSelectedAppForDetails(app)}
+                                  className="cursor-pointer"
+                                >
+                                  <Eye className="w-4 h-4 mr-2 text-slate-500" />
+                                  View Candidate Profile
+                                </DropdownMenuItem>
+
+                                {app.resumeUrl && (
+                                  <DropdownMenuItem asChild>
+                                    <a
+                                      href={app.resumeUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="cursor-pointer flex items-center"
+                                    >
+                                      <FileText className="w-4 h-4 mr-2 text-blue-600" />
+                                      Open Resume PDF
+                                    </a>
+                                  </DropdownMenuItem>
+                                )}
+
+                                <DropdownMenuItem
+                                  onClick={() => handleOpenInterviewModal(app)}
+                                  className="cursor-pointer text-purple-600 focus:text-purple-700 font-medium"
+                                >
+                                  <Video className="w-4 h-4 mr-2" />
+                                  Schedule / Edit Interview
+                                </DropdownMenuItem>
+
+                                <DropdownMenuSeparator />
+
+                                <div className="px-2 py-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                                  Update Status
+                                </div>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handleUpdateAppStatus(app.id, "applied")
+                                  }
+                                  className="cursor-pointer text-xs"
+                                >
+                                  Mark as Applied
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handleUpdateAppStatus(app.id, "shortlisted")
+                                  }
+                                  className="cursor-pointer text-xs text-emerald-700 font-medium"
+                                >
+                                  Mark as Shortlisted
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handleOpenInterviewModal(app)
+                                  }
+                                  className="cursor-pointer text-xs text-purple-700 font-medium"
+                                >
+                                  Schedule Interview
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handleUpdateAppStatus(app.id, "selected")
+                                  }
+                                  className="cursor-pointer text-xs text-green-700 font-medium"
+                                >
+                                  Mark as Selected / Hired
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    handleUpdateAppStatus(app.id, "rejected")
+                                  }
+                                  className="cursor-pointer text-xs text-rose-600"
+                                >
+                                  Mark as Rejected
+                                </DropdownMenuItem>
+
+                                <DropdownMenuSeparator />
+
+                                <DropdownMenuItem asChild>
+                                  <a
+                                    href={`mailto:${app.candidateEmail}`}
+                                    className="cursor-pointer text-xs flex items-center"
+                                  >
+                                    <Mail className="w-3.5 h-3.5 mr-2 text-slate-500" />
+                                    Email Candidate
+                                  </a>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                  <a
+                                    href={`tel:${app.candidatePhone}`}
+                                    className="cursor-pointer text-xs flex items-center"
+                                  >
+                                    <Phone className="w-3.5 h-3.5 mr-2 text-slate-500" />
+                                    Call Candidate
+                                  </a>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Bottom Pagination Bar (Applications) */}
+            {!appLoading && filteredAndSortedApplications.length > 0 && (
+              <div className="admin-jm-pagination">
+                <div className="admin-jm-pagination-info">
+                  Showing {appStartIndex + 1} -{" "}
+                  {Math.min(
+                    appStartIndex + pageSize,
+                    filteredAndSortedApplications.length
+                  )}{" "}
+                  of {filteredAndSortedApplications.length} applications
+                </div>
+
+                <div className="admin-jm-pagination-controls">
+                  <button
+                    type="button"
+                    onClick={() => setAppCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={appCurrentPage === 1}
+                    className="admin-jm-page-btn"
+                    title="Previous page"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+
+                  {getPageNumbers(appCurrentPage, appTotalPages).map((p, idx) => {
+                    if (p === "...") {
+                      return (
+                        <span key={`app-ell-${idx}`} className="admin-jm-page-ellipsis">
+                          ...
+                        </span>
+                      );
+                    }
+                    const pageNum = Number(p);
+                    return (
+                      <button
+                        key={pageNum}
+                        type="button"
+                        onClick={() => setAppCurrentPage(pageNum)}
+                        className={`admin-jm-page-btn ${
+                          appCurrentPage === pageNum ? "active" : ""
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAppCurrentPage((p) => Math.min(appTotalPages, p + 1))
+                    }
+                    disabled={appCurrentPage === appTotalPages}
+                    className="admin-jm-page-btn"
+                    title="Next page"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
-        {/* Quick Preview Dialog */}
+        {/* ===================================================================
+           Modals & Dialogs
+           =================================================================== */}
+
+        {/* Schedule / Edit Interview Dialog */}
+        <Dialog
+          open={!!interviewModalApp}
+          onOpenChange={(open) => !open && setInterviewModalApp(null)}
+        >
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <Video className="w-5 h-5 text-purple-600" />
+                Schedule Interview
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                {interviewModalApp && (
+                  <>
+                    Candidate: <strong>{interviewModalApp.candidateName}</strong> for{" "}
+                    <strong>{interviewModalApp.jobTitle}</strong>
+                  </>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 my-2">
+              <div>
+                <Label htmlFor="dlgInterviewDate" className="text-xs font-semibold text-slate-700">
+                  Interview Date & Time:
+                </Label>
+                <Input
+                  id="dlgInterviewDate"
+                  type="datetime-local"
+                  value={interviewDate}
+                  onChange={(e) => setInterviewDate(e.target.value)}
+                  className="mt-1.5 text-sm bg-white"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="dlgInterviewLink" className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                  <Video className="w-3.5 h-3.5 text-purple-600" />
+                  Meeting Link (Google Meet / Zoom URL):
+                </Label>
+                <Input
+                  id="dlgInterviewLink"
+                  type="url"
+                  placeholder="https://meet.google.com/xyz-abcd-efg"
+                  value={interviewLink}
+                  onChange={(e) => setInterviewLink(e.target.value)}
+                  className="mt-1.5 text-sm bg-white"
+                />
+                <span className="text-[11px] text-slate-500 mt-1 block">
+                  Paste the online meeting link where the candidate will join.
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setInterviewModalApp(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+                onClick={handleSaveInterviewSchedule}
+              >
+                <Calendar className="w-3.5 h-3.5 mr-1" />
+                Save Schedule
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Candidate Application Preview Dialog */}
+        <Dialog
+          open={!!selectedAppForDetails}
+          onOpenChange={(open) => !open && setSelectedAppForDetails(null)}
+        >
+          <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
+            {selectedAppForDetails && (
+              <>
+                <DialogHeader>
+                  <div className="flex items-center gap-2 mb-1">
+                    {renderAppStatusBadge(selectedAppForDetails)}
+                    <span className="text-xs text-slate-500 font-medium">
+                      Applied: {formatDateDMY(selectedAppForDetails.appliedDate)}
+                    </span>
+                  </div>
+                  <DialogTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <div className="admin-jm-avatar">
+                      {getCandidateInitials(selectedAppForDetails.candidateName)}
+                    </div>
+                    <span>{selectedAppForDetails.candidateName}</span>
+                  </DialogTitle>
+                  <DialogDescription className="text-sm text-slate-600 flex items-center gap-2 mt-1">
+                    <Briefcase className="w-4 h-4 text-slate-400" />
+                    <span>{selectedAppForDetails.jobTitle}</span>
+                    <span>•</span>
+                    <Building2 className="w-4 h-4 text-slate-400" />
+                    <span>{selectedAppForDetails.jobOrganization}</span>
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="space-y-4 my-3 text-sm">
+                  {/* Contact Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 bg-slate-50 rounded-xl border border-slate-200/80">
+                    <div>
+                      <div className="text-xs text-slate-500">Email Address</div>
+                      <a
+                        href={`mailto:${selectedAppForDetails.candidateEmail}`}
+                        className="font-semibold text-blue-600 hover:underline text-xs"
+                      >
+                        {selectedAppForDetails.candidateEmail}
+                      </a>
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-500">Phone Number</div>
+                      <a
+                        href={`tel:${selectedAppForDetails.candidatePhone}`}
+                        className="font-semibold text-slate-900 text-xs"
+                      >
+                        {selectedAppForDetails.candidatePhone}
+                      </a>
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-500">Qualification</div>
+                      <div className="font-semibold text-slate-900 text-xs">
+                        {selectedAppForDetails.candidateQualification || "MBBS"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-slate-500">Experience</div>
+                      <div className="font-semibold text-slate-900 text-xs">
+                        {selectedAppForDetails.candidateYearsExperience !== undefined &&
+                        selectedAppForDetails.candidateYearsExperience !== null
+                          ? `${selectedAppForDetails.candidateYearsExperience} Years`
+                          : "As per resume"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Interview Status Box */}
+                  {selectedAppForDetails.interviewDate && (
+                    <div className="p-3.5 bg-purple-50/70 border border-purple-200 rounded-xl space-y-1.5">
+                      <div className="text-xs font-bold text-purple-900 flex items-center gap-1.5">
+                        <Video className="w-4 h-4 text-purple-600" />
+                        Interview Scheduled
+                      </div>
+                      <div className="text-xs text-purple-800">
+                        Date & Time:{" "}
+                        <strong>
+                          {new Date(
+                            selectedAppForDetails.interviewDate
+                          ).toLocaleString()}
+                        </strong>
+                      </div>
+                      {selectedAppForDetails.interviewLink && (
+                        <a
+                          href={selectedAppForDetails.interviewLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:underline bg-white px-2.5 py-1 rounded border border-emerald-200 mt-1"
+                        >
+                          <Video className="w-3.5 h-3.5" />
+                          <span>Join Video Meeting</span>
+                          <ExternalLink className="w-3 h-3 ml-1" />
+                        </a>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Notes / Summary */}
+                  {selectedAppForDetails.notes && (
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Candidate Notes
+                      </h4>
+                      <p className="text-slate-600 bg-white p-3 rounded-lg border border-slate-200 text-xs leading-relaxed">
+                        {selectedAppForDetails.notes}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Resume Button */}
+                  {selectedAppForDetails.resumeUrl && (
+                    <div className="pt-2">
+                      <a
+                        href={selectedAppForDetails.resumeUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-3.5 py-2 rounded-lg hover:bg-blue-100 transition-colors"
+                      >
+                        <FileText className="w-4 h-4" />
+                        <span>Open Full Resume / CV</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between pt-3 border-t border-slate-200">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        handleOpenInterviewModal(selectedAppForDetails);
+                        setSelectedAppForDetails(null);
+                      }}
+                      className="text-xs"
+                    >
+                      <Video className="w-3.5 h-3.5 mr-1 text-purple-600" />
+                      Schedule Interview
+                    </Button>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSelectedAppForDetails(null)}
+                  >
+                    Close
+                  </Button>
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Job Quick Preview Dialog */}
         <Dialog open={!!previewJob} onOpenChange={(open) => !open && setPreviewJob(null)}>
           <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
             {previewJob && (

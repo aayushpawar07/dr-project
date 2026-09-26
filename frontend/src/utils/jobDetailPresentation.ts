@@ -1,4 +1,5 @@
 import "../styles/job-detail-presentation.css";
+import { isNotMentioned } from "./extractedFieldDisplay";
 
 type DescriptionSectionKey =
   | "details"
@@ -273,10 +274,10 @@ function parseSections(raw: string): DescriptionSection[] {
     // Check standalone Category breakdown or Category Quota line
     if (/^(?:Category\s*(?:Breakdown|Quota|Wise|Reservation)|Categories)\s*[:\-]/i.test(rawLine)) {
       const catBreakdown = extractCategoryBreakdown(rawLine);
-      if (catBreakdown) {
+      if (catBreakdown && catBreakdown.items.length > 0) {
         generateCategoryTableMarkdown(catBreakdown).forEach((r) => buckets.get("details")?.push(r));
-        continue;
       }
+      continue;
     }
 
     // Check if it's a section heading line, e.g. "### Department-Wise Vacancy Breakdown:" or "ELIGIBILITY CRITERIA"
@@ -292,7 +293,7 @@ function parseSections(raw: string): DescriptionSection[] {
     if (detected) {
       current = detected;
       const rest = headingMatch ? rawLine.replace(BULLET_PATTERN, "").slice(headingMatch[0].length).trim() : "";
-      if (rest && rest.length > 2 && !/^[:：\s]+$/.test(rest)) {
+      if (rest && rest.length > 2 && !/^[:：\s]+$/.test(rest) && !isNotMentioned(rest)) {
         buckets.get(current)?.push(rest.replace(/^[:：\s]+/, ''));
       }
       continue;
@@ -312,6 +313,10 @@ function parseSections(raw: string): DescriptionSection[] {
       const valPart = cleanForKv.slice(colonIdx + 1).trim();
 
       if (valPart.length > 0) {
+        if (isNotMentioned(valPart)) {
+          // Skip completely if the value is not mentioned / not specified
+          continue;
+        }
         const keySection = detectKeySection(keyPart);
         if (keySection) {
           // Special handling for "Job Description:"
@@ -325,9 +330,9 @@ function parseSections(raw: string): DescriptionSection[] {
       }
     }
 
-    // Filter out orphan/garbage lines like "Speciality /", "Additional", empty bullets
+    // Filter out orphan/garbage lines like "Speciality /", "Additional", empty bullets, or Not Mentioned
     const cleanLine = rawLine.replace(BULLET_PATTERN, "").replace(/^[:：\s]+/, '').trim();
-    if (!cleanLine || cleanLine.length < 2 || /^[-*•·:/\\|]+$/.test(cleanLine)) continue;
+    if (!cleanLine || cleanLine.length < 2 || /^[-*•·:/\\|]+$/.test(cleanLine) || isNotMentioned(cleanLine)) continue;
     if (/^(additional|speciality\s*\/|speciality)$/i.test(cleanLine)) continue;
 
     buckets.get(current)?.push(rawLine);
@@ -390,7 +395,8 @@ function iconForLabel(label: string): IconName {
   return "info";
 }
 
-function createKeyValueRow(labelText: string, valueText: string): HTMLElement {
+function createKeyValueRow(labelText: string, valueText: string): HTMLElement | null {
+  if (isNotMentioned(valueText) || !valueText.trim()) return null;
   const row = document.createElement("div");
   row.className = "medex-kv-row";
 
@@ -428,6 +434,7 @@ function createContentBlock(section: DescriptionSection): HTMLElement {
   block.className = `medex-section-body medex-section-${section.key}`;
   let list: HTMLDivElement | null = null;
   let kvGrid: HTMLDivElement | null = null;
+  let lastSubheading: HTMLElement | null = null;
 
   const flushList = () => {
     if (list) {
@@ -476,7 +483,15 @@ function createContentBlock(section: DescriptionSection): HTMLElement {
     if (group.type === 'table') {
       flushList();
       flushGrid();
-      block.append(renderMarkdownTable(group.rows));
+      const tbl = renderMarkdownTable(group.rows);
+      if (tbl) {
+        block.append(tbl);
+        lastSubheading = null;
+      } else if (lastSubheading && block.contains(lastSubheading)) {
+        // If the table was empty/Not Mentioned and dropped, remove the preceding orphaned heading
+        lastSubheading.remove();
+        lastSubheading = null;
+      }
       return;
     }
 
@@ -493,38 +508,54 @@ function createContentBlock(section: DescriptionSection): HTMLElement {
       text.textContent = stripBullet(line).replace(/[:：]+$/, "");
       heading.append(text);
       block.append(heading);
+      lastSubheading = heading;
       return;
     }
 
     const clean = stripBullet(line).replace(/^[:：\s]+/, '').trim();
-    if (!clean || clean.length < 2 || /^[-*•·:/\\|]+$/.test(clean)) return;
+    if (!clean || clean.length < 2 || /^[-*•·:/\\|]+$/.test(clean) || isNotMentioned(clean)) return;
     if (/^(additional|speciality\s*\/|speciality)$/i.test(clean)) return;
 
     const colonIndex = clean.indexOf(":");
     if (colonIndex > 0 && colonIndex <= 55 && clean.slice(colonIndex + 1).trim()) {
-      flushList();
-      if (!kvGrid) {
-        kvGrid = document.createElement("div");
-        kvGrid.className = "medex-kv-grid";
+      const val = clean.slice(colonIndex + 1).trim();
+      if (isNotMentioned(val)) return;
+      const kv = createKeyValueRow(clean.slice(0, colonIndex), val);
+      if (kv) {
+        flushList();
+        if (!kvGrid) {
+          kvGrid = document.createElement("div");
+          kvGrid.className = "medex-kv-grid";
+        }
+        kvGrid.append(kv);
+        lastSubheading = null;
       }
-      kvGrid.append(createKeyValueRow(clean.slice(0, colonIndex), clean.slice(colonIndex + 1)));
       return;
     }
 
     const compactNumberRow = clean.match(/^(.{2,45}?)\s+(\d{1,4})$/);
     if (compactNumberRow && !/[.!?]$/.test(clean)) {
-      flushList();
-      if (!kvGrid) {
-        kvGrid = document.createElement("div");
-        kvGrid.className = "medex-kv-grid";
+      if (isNotMentioned(compactNumberRow[2])) return;
+      const kv = createKeyValueRow(compactNumberRow[1], compactNumberRow[2]);
+      if (kv) {
+        flushList();
+        if (!kvGrid) {
+          kvGrid = document.createElement("div");
+          kvGrid.className = "medex-kv-grid";
+        }
+        kvGrid.append(kv);
+        lastSubheading = null;
       }
-      kvGrid.append(createKeyValueRow(compactNumberRow[1], compactNumberRow[2]));
       return;
     }
 
     flushGrid();
 
     if (BULLET_PATTERN.test(line)) {
+      if (isNotMentioned(clean)) return;
+      const colonI = clean.indexOf(":");
+      if (colonI > 0 && isNotMentioned(clean.slice(colonI + 1).trim())) return;
+
       if (!list) {
         list = document.createElement("div");
         list.className = "medex-description-list";
@@ -537,10 +568,15 @@ function createContentBlock(section: DescriptionSection): HTMLElement {
       appendLinkifiedText(text, clean);
       item.append(text);
       list.append(item);
+      lastSubheading = null;
       return;
     }
 
     flushList();
+    if (isNotMentioned(clean)) return;
+    const colonI = clean.indexOf(":");
+    if (colonI > 0 && isNotMentioned(clean.slice(colonI + 1).trim())) return;
+
     const paragraph = document.createElement("div");
     paragraph.className = "medex-description-line";
     paragraph.append(iconElement(section.key === "details" ? "info" : bulletIconForSection(section.key), "medex-line-icon"));
@@ -548,6 +584,7 @@ function createContentBlock(section: DescriptionSection): HTMLElement {
     appendLinkifiedText(text, clean);
     paragraph.append(text);
     block.append(paragraph);
+    lastSubheading = null;
   });
 
   flushList();
@@ -555,42 +592,86 @@ function createContentBlock(section: DescriptionSection): HTMLElement {
   return block;
 }
 
-function renderMarkdownTable(rows: string[]): HTMLElement {
+function renderMarkdownTable(rows: string[]): HTMLElement | null {
+  if (rows.length === 0) return null;
+
+  const rawHeader = rows[0].split('|').slice(1, -1).map((c) => c.trim());
+  if (rawHeader.length === 0) return null;
+
+  const rawDataRows: string[][] = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i].trim();
+    if (/^[|:\-\s]+$/.test(r) || !r.startsWith('|')) continue;
+    const cells = r.split('|').slice(1, -1).map((c) => c.trim());
+    if (cells.length > 0) {
+      rawDataRows.push(cells);
+    }
+  }
+
+  if (rawDataRows.length === 0) return null;
+
+  // Determine active columns that have actual non-"Not Mentioned" data
+  const activeColIndices: number[] = [];
+  for (let c = 0; c < rawHeader.length; c++) {
+    const hasData = rawDataRows.some((row) => {
+      const val = row[c] ?? '';
+      return val && !isNotMentioned(val);
+    });
+    if (hasData) {
+      activeColIndices.push(c);
+    }
+  }
+
+  // If no columns or only 1 column has data and no numerical/factual breakdown
+  if (activeColIndices.length === 0) return null;
+  if (activeColIndices.length === 1) {
+    const onlyColHasDetails = rawDataRows.some((row) => {
+      const val = row[activeColIndices[0]] ?? '';
+      return val && !isNotMentioned(val) && /\d+/.test(val);
+    });
+    if (!onlyColHasDetails) return null;
+  }
+
+  // Filter rows: drop rows where all active non-first columns are "Not Mentioned" or empty
+  const filteredRows = rawDataRows.filter((row) => {
+    return activeColIndices.some((c, idx) => {
+      if (idx === 0 && activeColIndices.length > 1) return false;
+      const val = row[c] ?? '';
+      return val && !isNotMentioned(val);
+    });
+  });
+
+  if (filteredRows.length === 0) return null;
+
   const container = document.createElement("div");
   container.className = "medex-table-wrapper";
   const table = document.createElement("table");
   table.className = "medex-breakdown-table";
 
-  if (rows.length === 0) return container;
-
-  const headerCells = rows[0].split('|').slice(1, -1).map((c) => c.trim());
   const thead = document.createElement("thead");
   const trHead = document.createElement("tr");
-  headerCells.forEach((cell) => {
+  activeColIndices.forEach((c) => {
     const th = document.createElement("th");
-    th.textContent = cell;
+    th.textContent = rawHeader[c] || '';
     trHead.append(th);
   });
   thead.append(trHead);
   table.append(thead);
 
   const tbody = document.createElement("tbody");
-  for (let i = 1; i < rows.length; i++) {
-    const r = rows[i];
-    if (/^[|:\-\s]+$/.test(r)) continue;
-    const cells = r.split('|').slice(1, -1).map((c) => c.trim());
+  filteredRows.forEach((row) => {
     const tr = document.createElement("tr");
-    const isTotalRow = cells.some((c) => /^total$/i.test(c));
+    const isTotalRow = row.some((c) => /^total$/i.test(c));
     if (isTotalRow) {
       tr.className = "medex-table-total-row";
     }
-    cells.forEach((cell) => {
+    activeColIndices.forEach((c) => {
       const td = document.createElement("td");
-      td.textContent = cell;
+      td.textContent = row[c] || '';
       tr.append(td);
     });
     tbody.append(tr);
-  }
+  });
   table.append(tbody);
   container.append(table);
   return container;

@@ -5,6 +5,7 @@ import {
   BriefcaseIcon,
   Building2,
   Calendar,
+  Check,
   ExternalLink,
   FileText,
   GraduationCap,
@@ -29,7 +30,7 @@ import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
-import { cardFieldText, cardSalaryText, displayJobDescription } from '../utils/extractedFieldDisplay';
+import { cardFieldText, cardSalaryText, displayJobDescription, isNotMentioned } from '../utils/extractedFieldDisplay';
 import { cleanLocation } from '../utils/locationCleaner';
 import { buildJobShareText, getJobShareUrl, shareTextWithoutUrl } from '../utils/shareContent';
 
@@ -341,9 +342,14 @@ export function GovernmentJobDetail({
 
                 <div>
                   <h1 className="mb-2 text-2xl sm:text-3xl font-bold text-slate-800">{job.title}</h1>
-                  <div className="flex items-center gap-2 text-slate-600">
+                  <div className="flex items-center gap-2 text-slate-600 flex-wrap">
                     <Building2 className="h-5 w-5 shrink-0 text-amber-700" />
                     <span className="medex-org-highlight rounded-md bg-amber-100 px-2.5 py-0.5 text-lg font-semibold text-amber-900">{organization}</span>
+                    {Boolean(job.employer?.isVerified || job.isEmployerVerified || job.employerVerified) && (
+                      <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800 text-xs font-bold px-2 py-0.5 inline-flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" /> Verified Employer
+                      </Badge>
+                    )}
                   </div>
 
                   {job.sourceRecruitmentId && (
@@ -359,13 +365,13 @@ export function GovernmentJobDetail({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-5 text-sm text-slate-500">
-                  {locationText && (
+                  {locationText && !isNotMentioned(locationText) && (
                     <div className="flex items-center gap-1.5">
                       <MapPin className="h-4 w-4" />
                       <span>{locationText}</span>
                     </div>
                   )}
-                  {job.numberOfPosts != null && (
+                  {job.numberOfPosts != null && !isNotMentioned(job.numberOfPosts) && (
                     <div className="flex items-center gap-1.5">
                       <Briefcase className="h-4 w-4" />
                       <span>{job.numberOfPosts} post{job.numberOfPosts === 1 ? '' : 's'}</span>
@@ -385,23 +391,31 @@ export function GovernmentJobDetail({
             <Card className="p-4 sm:p-6 job-detail-facts border-slate-200 shadow-none">
               <h2 className="mb-3 sm:mb-4 text-lg sm:text-xl font-bold text-slate-800">Job Details</h2>
               <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
-                <PrivateStyleDetail icon={MapPin} label="Location" value={locationText || 'See notification'} />
-                <PrivateStyleDetail
-                  icon={Briefcase}
-                  label="Number of Posts"
-                  value={job.numberOfPosts != null ? String(job.numberOfPosts) : 'See notification'}
-                />
-                <PrivateStyleDetail
-                  icon={GraduationCap}
-                  label="Qualification"
-                  value={cardFieldText(job.qualification, 'See job description')}
-                  className="col-span-2"
-                />
-                <PrivateStyleDetail
-                  icon={BriefcaseIcon}
-                  label="Experience"
-                  value={cardFieldText(job.experience, 'See job description')}
-                />
+                {locationText && !isNotMentioned(locationText) && (
+                  <PrivateStyleDetail icon={MapPin} label="Location" value={locationText} />
+                )}
+                {job.numberOfPosts != null && !isNotMentioned(job.numberOfPosts) && (
+                  <PrivateStyleDetail
+                    icon={Briefcase}
+                    label="Number of Posts"
+                    value={String(job.numberOfPosts)}
+                  />
+                )}
+                {job.qualification && !isNotMentioned(job.qualification) && (
+                  <PrivateStyleDetail
+                    icon={GraduationCap}
+                    label="Qualification"
+                    value={cardFieldText(job.qualification)}
+                    className="col-span-2"
+                  />
+                )}
+                {job.experience && !isNotMentioned(job.experience) && (
+                  <PrivateStyleDetail
+                    icon={BriefcaseIcon}
+                    label="Experience"
+                    value={cardFieldText(job.experience)}
+                  />
+                )}
                 {cardSalaryText(job.salary) && (
                   <PrivateStyleDetail icon={IndianRupee} label="Salary" value={cardSalaryText(job.salary)} />
                 )}

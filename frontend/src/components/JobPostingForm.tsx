@@ -815,47 +815,47 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
                 )}
               </div>
 
-              {/* Simplified PDF Upload: Only for Government Jobs, completely omitted for Private */}
-              {formData.sector === 'government' ? (
-                <div className="mb-6 rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50/60 to-indigo-50/40 p-5 shadow-sm">
-                  <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-xs">
-                        <FileText className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-sm font-bold text-slate-900">
-                            Government Official Vacancy PDF
-                          </h3>
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
-                            Govt Job Notice
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500">
-                          Upload the official recruitment PDF notification to auto-extract details.
-                        </p>
-                      </div>
+              {/* Manual PDF Upload: Available for all jobs (Government & Private) with Automatic Website Hyperlink */}
+              <div className="mb-6 rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50/60 to-indigo-50/40 p-5 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-xs">
+                      <FileText className="h-5 w-5" />
                     </div>
-
-                    {formData.pdfFile && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setField('pdfFile', undefined);
-                          setPdfExtraction(null);
-                          setPdfMessage('');
-                        }}
-                        className="text-xs font-semibold text-rose-600 hover:text-rose-700 underline"
-                      >
-                        Remove PDF
-                      </button>
-                    )}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-slate-900">
+                          Job Notification PDF (Manual Upload)
+                        </h3>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                          ✓ Auto Hyperlink
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500">
+                        Upload job notification PDF. MedExJob website hyperlink is automatically stamped into the final PDF.
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row items-center gap-3 bg-white/90 p-4 rounded-xl border border-blue-100">
-                    <div className="flex-1 w-full">
-                      {formData.pdfFile ? (
+                  {formData.pdfFile && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setField('pdfFile', undefined);
+                        setPdfExtraction(null);
+                        setPdfMessage('');
+                      }}
+                      className="text-xs font-semibold text-rose-600 hover:text-rose-700 underline"
+                    >
+                      Remove PDF
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-3 bg-white/90 p-4 rounded-xl border border-blue-100">
+                  <div className="flex-1 w-full">
+                    {formData.pdfFile ? (
+                      <div className="space-y-1">
                         <div className="flex items-center gap-2 text-xs font-semibold text-slate-800">
                           <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
                           <span className="truncate">{formData.pdfFile.name}</span>
@@ -863,71 +863,74 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
                             ({(formData.pdfFile.size / 1024 / 1024).toFixed(2)} MB)
                           </span>
                         </div>
-                      ) : (
-                        <div className="text-xs text-slate-500">
-                          No PDF selected yet. Single clean PDF upload (Max 20 MB).
+                        <div className="text-[11px] text-emerald-700 font-medium">
+                          ✓ Clickable MedExJob hyperlink banner (https://medexjob.com) will be stamped automatically.
                         </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
-                      <button
-                        type="button"
-                        className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-blue-700 transition cursor-pointer"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={extractingPdf}
-                      >
-                        {extractingPdf ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            <span>Extracting with AI…</span>
-                          </>
-                        ) : (
-                          <>
-                            <Upload className="h-4 w-4" />
-                            <span>{formData.pdfFile ? 'Change PDF' : 'Upload PDF Notice'}</span>
-                          </>
-                        )}
-                      </button>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="application/pdf,.pdf"
-                        className="hidden"
-                        onChange={(e) => void handlePdf(e.target.files?.[0])}
-                      />
-                    </div>
+                      </div>
+                    ) : (
+                      <div className="text-xs text-slate-500">
+                        No PDF selected yet. Upload notification PDF (Max 20 MB). Hyperlink banner will be added automatically.
+                      </div>
+                    )}
                   </div>
 
-                  {/* If multi-vacancy PDF extracted */}
-                  {(pdfExtraction?.vacancies?.length || 0) > 1 && (
-                    <div className="mt-3 bg-white p-3 rounded-xl border border-slate-200">
-                      <Label className="text-xs font-semibold text-slate-700 mb-1.5 block">
-                        Found {pdfExtraction!.vacancies!.length} vacancies in this PDF. Select vacancy to apply:
-                      </Label>
-                      <Select
-                        value={String(selectedVacancyIndex)}
-                        onValueChange={(val) =>
-                          applyExtractedVacancy(pdfExtraction!, Number(val))
-                        }
-                      >
-                        <SelectTrigger className="bg-white border-slate-200 h-9 text-xs">
-                          <SelectValue placeholder="Select vacancy row" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {pdfExtraction!.vacancies!.map((v, i) => (
-                            <SelectItem key={`${v.postName}-${i}`} value={String(i)}>
-                              {v.postName || `Vacancy ${i + 1}`}
-                              {v.department ? ` — ${v.department}` : ''}
-                              {v.numberOfVacancies ? ` (${v.numberOfVacancies} posts)` : ''}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
+                    <button
+                      type="button"
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-blue-700 transition cursor-pointer"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={extractingPdf}
+                    >
+                      {extractingPdf ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Extracting with AI…</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4" />
+                          <span>{formData.pdfFile ? 'Change PDF' : 'Upload PDF Notice'}</span>
+                        </>
+                      )}
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      className="hidden"
+                      onChange={(e) => void handlePdf(e.target.files?.[0])}
+                    />
+                  </div>
                 </div>
-              ) : null}
+
+                {/* If multi-vacancy PDF extracted */}
+                {(pdfExtraction?.vacancies?.length || 0) > 1 && (
+                  <div className="mt-3 bg-white p-3 rounded-xl border border-slate-200">
+                    <Label className="text-xs font-semibold text-slate-700 mb-1.5 block">
+                      Found {pdfExtraction!.vacancies!.length} vacancies in this PDF. Select vacancy to apply:
+                    </Label>
+                    <Select
+                      value={String(selectedVacancyIndex)}
+                      onValueChange={(val) =>
+                        applyExtractedVacancy(pdfExtraction!, Number(val))
+                      }
+                    >
+                      <SelectTrigger className="bg-white border-slate-200 h-9 text-xs">
+                        <SelectValue placeholder="Select vacancy row" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {pdfExtraction!.vacancies!.map((v, i) => (
+                          <SelectItem key={`${v.postName}-${i}`} value={String(i)}>
+                            {v.postName || `Vacancy ${i + 1}`}
+                            {v.department ? ` — ${v.department}` : ''}
+                            {v.numberOfVacancies ? ` (${v.numberOfVacancies} posts)` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
 
               {/* PDF Feedback Messages */}
               {pdfMessage && (

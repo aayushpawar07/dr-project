@@ -42,6 +42,7 @@ import {
   cleanExtractedName,
   departmentSubtitle,
   detailFieldText,
+  isNotMentioned,
 } from '../utils/extractedFieldDisplay';
 import {
   parseRecruitmentBreakdown,
@@ -1282,14 +1283,15 @@ function VacancyPanel({
   const department = cleanExtractedName(vacancy.department || vacancy.speciality || vacancy.postName);
   const DepartmentIcon = getDepartmentIcon(department);
   const displayCount = vacancy.displayCount ?? vacancy.numberOfVacancies;
-  const details: Array<{ icon: LucideIcon; label: string; value: string; tone: string }> = [
-    { icon: GraduationCap, label: 'Qualification', value: detailFieldText(vacancy.qualification) || 'As per official notification', tone: 'icon-blue' },
-    { icon: Stethoscope, label: 'Experience', value: detailFieldText(vacancy.experience) || 'As per official notification', tone: 'icon-indigo' },
-    { icon: IndianRupee, label: 'Salary / Pay', value: detailFieldText(vacancy.salary, vacancy.payScale, vacancy.payLevel) || 'As per official notification', tone: 'icon-teal' },
-    { icon: Users, label: 'Age Limit', value: detailFieldText(vacancy.ageLimit) || 'As per official notification', tone: 'icon-purple' },
-    { icon: ShieldCheck, label: 'Other Eligibility', value: detailFieldText(vacancy.otherEligibilityRequirements) || 'As per official notification', tone: 'icon-orange' },
-    { icon: BriefcaseBusiness, label: 'Selection Process', value: detailFieldText(recruitment.selectionProcess) || 'As per official notification', tone: 'icon-indigo' },
+  const rawDetails: Array<{ icon: LucideIcon; label: string; value: string; tone: string }> = [
+    { icon: GraduationCap, label: 'Qualification', value: detailFieldText(vacancy.qualification), tone: 'icon-blue' },
+    { icon: Stethoscope, label: 'Experience', value: detailFieldText(vacancy.experience), tone: 'icon-indigo' },
+    { icon: IndianRupee, label: 'Salary / Pay', value: detailFieldText(vacancy.salary, vacancy.payScale, vacancy.payLevel), tone: 'icon-teal' },
+    { icon: Users, label: 'Age Limit', value: detailFieldText(vacancy.ageLimit), tone: 'icon-purple' },
+    { icon: ShieldCheck, label: 'Other Eligibility', value: detailFieldText(vacancy.otherEligibilityRequirements), tone: 'icon-orange' },
+    { icon: BriefcaseBusiness, label: 'Selection Process', value: detailFieldText(recruitment.selectionProcess), tone: 'icon-indigo' },
   ];
+  const details = rawDetails.filter((item) => item.value && !isNotMentioned(item.value));
 
   return (
     <div className="vacancy-panel">
@@ -1317,26 +1319,33 @@ function VacancyPanel({
         </div>
       </div>
 
-      <div className="detail-grid">
-        {details.map((item) => <DetailCard key={item.label} {...item} />)}
-      </div>
-
-      <div className="dates-strip">
-        <div className="dates-title"><CalendarDays size={15} />Important Dates</div>
-        <div className="dates-grid">
-          <DateItem label="Notification Date" value={recruitment.verificationDate ? formatDate(recruitment.verificationDate) : 'Not specified'} />
-          <DateItem label="Application Start Date" value={recruitment.applicationStartDate ? formatDate(recruitment.applicationStartDate) : 'Not specified'} />
-          <DateItem label="Last Date to Apply" value={applyByLabel} />
+      {details.length > 0 && (
+        <div className="detail-grid">
+          {details.map((item) => <DetailCard key={item.label} {...item} />)}
         </div>
-      </div>
+      )}
+
+      {(recruitment.verificationDate || recruitment.applicationStartDate || (applyByLabel && !isNotMentioned(applyByLabel))) && (
+        <div className="dates-strip">
+          <div className="dates-title"><CalendarDays size={15} />Important Dates</div>
+          <div className="dates-grid">
+            {recruitment.verificationDate && (
+              <DateItem label="Notification Date" value={formatDate(recruitment.verificationDate)} />
+            )}
+            {recruitment.applicationStartDate && (
+              <DateItem label="Application Start Date" value={formatDate(recruitment.applicationStartDate)} />
+            )}
+            {applyByLabel && !isNotMentioned(applyByLabel) && (
+              <DateItem label="Last Date to Apply" value={applyByLabel} />
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="vacancy-actions">
-        <button className="vacancy-action" onClick={onViewJob}><BriefcaseBusiness size={15} />{isGovernment ? 'View Details' : 'View & Apply'}</button>
-        {recruitment.officialApplicationUrl && (
-          <button className={`vacancy-action ${isGovernment ? 'primary' : 'private-primary'}`} onClick={() => openExternal(recruitment.officialApplicationUrl)}>
-            <ExternalLink size={15} />{isGovernment ? 'Official Apply' : 'Apply Now'}
-          </button>
-        )}
+        <button className="vacancy-action" onClick={onViewJob}>
+          <BriefcaseBusiness size={15} />{isGovernment ? 'View Details' : 'View & Apply'}
+        </button>
       </div>
     </div>
   );

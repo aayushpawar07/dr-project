@@ -204,6 +204,14 @@ export async function uploadJobImage(jobId: string, file: File): Promise<{ jobIm
   return (await apiClient.post(`/jobs/${jobId}/upload-image`, formData, { headers: { 'Content-Type': 'multipart/form-data' } })).data;
 }
 
+export async function uploadNotificationPdf(file: File): Promise<{ pdfUrl: string; originalFilename: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  return (await apiClient.post('/jobs/upload-notification-pdf', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })).data;
+}
+
 export async function fetchAdminJobs(params: { search?: string; status?: string; sector?: 'government' | 'private'; page?: number; size?: number; sort?: string } = {}) {
   try { return (await apiClient.get('/admin/jobs', { params })).data; }
   catch (err: any) { console.error('Error fetching admin jobs:', err); throw err.response?.data || err; }

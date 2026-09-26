@@ -31,14 +31,17 @@ public class EmployerController {
     private final UserRepository userRepository;
     private final EntityManager entityManager;
     private final NotificationService notificationService;
+    private final com.medexjob.service.FileUploadService fileUploadService;
     private final Path uploadPath = Paths.get("uploads/verification");
 
     public EmployerController(EmployerRepository employerRepository, UserRepository userRepository,
-            EntityManager entityManager, NotificationService notificationService) {
+            EntityManager entityManager, NotificationService notificationService,
+            com.medexjob.service.FileUploadService fileUploadService) {
         this.employerRepository = employerRepository;
         this.userRepository = userRepository;
         this.entityManager = entityManager;
         this.notificationService = notificationService;
+        this.fileUploadService = fileUploadService;
         try {
             Files.createDirectories(uploadPath);
         } catch (IOException e) {
@@ -414,20 +417,32 @@ public class EmployerController {
                 Object p = body.get("pincode");
                 employer.setPincode(p != null ? String.valueOf(p).trim() : null);
             }
+            if (body.containsKey("contactPerson")) {
+                Object cp = body.get("contactPerson");
+                employer.setContactPerson(cp != null ? String.valueOf(cp).trim() : null);
+            }
+            if (body.containsKey("designation")) {
+                Object des = body.get("designation");
+                employer.setDesignation(des != null ? String.valueOf(des).trim() : null);
+            }
+            if (body.containsKey("documentUrl")) {
+                Object doc = body.get("documentUrl");
+                employer.setDocumentUrl(doc != null ? String.valueOf(doc).trim() : null);
+            }
 
             // Also update contact person and phone in User if provided
             if (employer.getUser() != null) {
                 User u = employer.getUser();
                 boolean userChanged = false;
-                if (body.containsKey("userName") || body.containsKey("name")) {
-                    Object nameVal = body.getOrDefault("userName", body.get("name"));
+                if (body.containsKey("userName") || body.containsKey("name") || body.containsKey("contactPerson")) {
+                    Object nameVal = body.getOrDefault("contactPerson", body.getOrDefault("userName", body.get("name")));
                     if (nameVal != null && !String.valueOf(nameVal).trim().isEmpty()) {
                         u.setName(String.valueOf(nameVal).trim());
                         userChanged = true;
                     }
                 }
                 if (body.containsKey("phone") || body.containsKey("contactPhone")) {
-                    Object phoneVal = body.getOrDefault("phone", body.get("contactPhone"));
+                    Object phoneVal = body.getOrDefault("contactPhone", body.get("phone"));
                     if (phoneVal != null && !String.valueOf(phoneVal).trim().isEmpty()) {
                         u.setPhone(String.valueOf(phoneVal).trim());
                         userChanged = true;
@@ -442,6 +457,112 @@ public class EmployerController {
             return ResponseEntity.ok(toResponse(saved));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("error", "Failed to update employer profile: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Submit employer verification details and optional proof document
+     * POST /api/employers/{id}/submit-verification
+     */
+    @PostMapping("/{id}/submit-verification")
+    @Transactional
+    public ResponseEntity<?> submitVerification(
+            @PathVariable UUID id,
+            @RequestBody Map<String, Object> body) {
+        try {
+            Optional<Employer> employerOpt = employerRepository.findById(id);
+            if (employerOpt.isEmpty()) {
+                employerOpt = employerRepository.findByUserId(id);
+            }
+            if (employerOpt.isEmpty()) {
+                return ResponseEntity.status(404).body(Map.of("error", "Employer not found"));
+            }
+
+            Employer employer = employerOpt.get();
+
+            if (body.containsKey("companyName") && body.get("companyName") != null) {
+                String val = String.valueOf(body.get("companyName")).trim();
+                if (!val.isEmpty()) employer.setCompanyName(val);
+            }
+            if (body.containsKey("companyType") && body.get("companyType") != null) {
+                String typeStr = String.valueOf(body.get("companyType")).trim().toUpperCase(Locale.ROOT);
+                try {
+                    employer.setCompanyType(Employer.CompanyType.valueOf(typeStr));
+                } catch (Exception ignored) {}
+            }
+            if (body.containsKey("address")) {
+                Object addr = body.get("address");
+                employer.setAddress(addr != null ? String.valueOf(addr).trim() : null);
+            }
+            if (body.containsKey("city")) {
+                Object c = body.get("city");
+                employer.setCity(c != null ? String.valueOf(c).trim() : null);
+            }
+            if (body.containsKey("state")) {
+                Object s = body.get("state");
+                employer.setState(s != null ? String.valueOf(s).trim() : null);
+            }
+            if (body.containsKey("pincode")) {
+                Object p = body.get("pincode");
+                employer.setPincode(p != null ? String.valueOf(p).trim() : null);
+            }
+            if (body.containsKey("website")) {
+                Object web = body.get("website");
+                employer.setWebsite(web != null ? String.valueOf(web).trim() : null);
+            }
+            if (body.containsKey("contactPerson")) {
+                Object cp = body.get("contactPerson");
+                employer.setContactPerson(cp != null ? String.valueOf(cp).trim() : null);
+            }
+            if (body.containsKey("designation")) {
+                Object des = body.get("designation");
+                employer.setDesignation(des != null ? String.valueOf(des).trim() : null);
+            }
+            if (body.containsKey("documentUrl")) {
+                Object doc = body.get("documentUrl");
+                employer.setDocumentUrl(doc != null ? String.valueOf(doc).trim() : null);
+            }
+
+            // Update user contact info
+            if (employer.getUser() != null) {
+                User u = employer.getUser();
+                boolean uChanged = false;
+                if (body.containsKey("contactPerson") || body.containsKey("name")) {
+                    Object name = body.getOrDefault("contactPerson", body.get("name"));
+                    if (name != null && !String.valueOf(name).trim().isEmpty()) {
+                        u.setName(String.valueOf(name).trim());
+                        uChanged = true;
+                    }
+                }
+                if (body.containsKey("contactPhone") || body.containsKey("phone")) {
+                    Object ph = body.getOrDefault("contactPhone", body.get("phone"));
+                    if (ph != null && !String.valueOf(ph).trim().isEmpty()) {
+                        u.setPhone(String.valueOf(ph).trim());
+                        uChanged = true;
+                    }
+                }
+                if (uChanged) {
+                    userRepository.save(u);
+                }
+            }
+
+            employer.setVerificationStatus(Employer.VerificationStatus.PENDING);
+            employer.setIsVerified(false);
+            employer.setVerificationNotes(null);
+
+            Employer saved = employerRepository.save(employer);
+
+            // Notify Admin
+            try {
+                notificationService.notifyAdminPendingApproval(
+                        "employer_verification",
+                        String.format("New employer verification request from %s", saved.getCompanyName()),
+                        saved.getId());
+            } catch (Exception ignored) {}
+
+            return ResponseEntity.ok(toResponse(saved));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to submit verification: " + e.getMessage()));
         }
     }
 
@@ -752,19 +873,17 @@ public class EmployerController {
         return employerRepository.findById(id)
                 .map(employer -> {
                     try {
-                        String fileName = id + "_" + document.getOriginalFilename();
-                        Path filePath = uploadPath.resolve(fileName);
-                        Files.copy(document.getInputStream(), filePath);
-
-                        // In a real implementation, you'd store document references in a separate table
-                        // For now, we'll just acknowledge the upload
+                        String fileUrl = fileUploadService.uploadFile(document, "verification");
+                        employer.setDocumentUrl(fileUrl);
+                        employerRepository.save(employer);
 
                         Map<String, Object> response = new HashMap<>();
                         response.put("message", "Document uploaded successfully");
-                        response.put("fileName", fileName);
+                        response.put("documentUrl", fileUrl);
+                        response.put("fileName", document.getOriginalFilename());
                         return ResponseEntity.ok(response);
                     } catch (IOException e) {
-                        return ResponseEntity.internalServerError().build();
+                        return ResponseEntity.internalServerError().body(Map.of("error", "Failed to upload document: " + e.getMessage()));
                     }
                 })
                 .orElse(ResponseEntity.notFound().build());
@@ -928,6 +1047,10 @@ public class EmployerController {
             m.put("city", employer.getCity());
             m.put("state", employer.getState());
             m.put("pincode", employer.getPincode());
+            m.put("contactPerson", employer.getContactPerson() != null ? employer.getContactPerson() : (employer.getUser() != null ? employer.getUser().getName() : ""));
+            m.put("designation", employer.getDesignation() != null ? employer.getDesignation() : "");
+            m.put("documentUrl", employer.getDocumentUrl() != null ? employer.getDocumentUrl() : "");
+            m.put("contactPhone", employer.getUser() != null && employer.getUser().getPhone() != null ? employer.getUser().getPhone() : "");
         } catch (Exception e) {
             System.err.println("Error getting company details: " + e.getMessage());
         }

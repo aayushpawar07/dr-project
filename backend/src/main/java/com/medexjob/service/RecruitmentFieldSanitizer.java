@@ -21,13 +21,27 @@ public final class RecruitmentFieldSanitizer {
 
     private RecruitmentFieldSanitizer() {}
 
+    public static boolean isNotMentioned(String value) {
+        if (value == null || value.isBlank()) return true;
+        String trimmed = value.trim().toLowerCase();
+        return trimmed.equals("not mentioned") || trimmed.equals("not specified")
+                || trimmed.equals("not available") || trimmed.equals("n/a")
+                || trimmed.equals("na") || trimmed.equals("nil")
+                || trimmed.equals("none") || trimmed.equals("null")
+                || trimmed.equals("as per rules") || trimmed.equals("as per norms")
+                || trimmed.equals("see notification") || trimmed.equals("as per notification");
+    }
+
     public static void sanitize(RecruitmentExtractionResult result) {
         if (result == null) return;
         if (result.getRecruitment() != null) {
             RecruitmentExtractionResult.RecruitmentData recruitment = result.getRecruitment();
             recruitment.setTitle(cleanName(recruitment.getTitle()));
             recruitment.setOrganisationName(cleanName(recruitment.getOrganisationName()));
-            recruitment.setLocation(cleanName(recruitment.getLocation()));
+            recruitment.setLocation(isNotMentioned(recruitment.getLocation()) ? null : cleanName(recruitment.getLocation()));
+            if (isNotMentioned(recruitment.getApplicationFee())) recruitment.setApplicationFee(null);
+            if (isNotMentioned(recruitment.getSelectionProcess())) recruitment.setSelectionProcess(null);
+            if (isNotMentioned(recruitment.getImportantInstructions())) recruitment.setImportantInstructions(null);
         }
         if (result.getVacancies() == null) return;
         for (RecruitmentExtractionResult.VacancyData vacancy : result.getVacancies()) {
@@ -40,7 +54,9 @@ public final class RecruitmentFieldSanitizer {
         String qualification = vacancy.getQualification();
         String experience = vacancy.getExperience();
 
-        if (isRegulatoryDump(qualification)) {
+        if (isNotMentioned(qualification)) {
+            vacancy.setQualification(null);
+        } else if (isRegulatoryDump(qualification)) {
             if (!hasText(vacancy.getOtherEligibilityRequirements())) {
                 vacancy.setOtherEligibilityRequirements(qualification.trim());
             }
@@ -49,22 +65,26 @@ public final class RecruitmentFieldSanitizer {
             vacancy.setQualification(clip(qualification, 120));
         }
 
-        if (isRegulatoryDump(experience) || sameText(experience, qualification) || sameText(experience, vacancy.getQualification())) {
+        if (isNotMentioned(experience) || isRegulatoryDump(experience) || sameText(experience, qualification) || sameText(experience, vacancy.getQualification())) {
             vacancy.setExperience(null);
         } else {
             vacancy.setExperience(clip(experience, 80));
         }
 
         vacancy.setPostName(cleanName(vacancy.getPostName()));
-        vacancy.setDepartment(cleanName(vacancy.getDepartment()));
-        vacancy.setSpeciality(cleanName(vacancy.getSpeciality()));
-        vacancy.setSubSpeciality(cleanName(vacancy.getSubSpeciality()));
-        vacancy.setSalary(shortSalary(vacancy.getSalary()));
-        vacancy.setPayScale(clip(vacancy.getPayScale(), 80));
-        vacancy.setPayLevel(clip(vacancy.getPayLevel(), 40));
-        vacancy.setAgeLimit(clip(vacancy.getAgeLimit(), 80));
-        vacancy.setJobType(cleanName(vacancy.getJobType()));
-        vacancy.setLocation(cleanName(vacancy.getLocation()));
+        vacancy.setDepartment(isNotMentioned(vacancy.getDepartment()) ? null : cleanName(vacancy.getDepartment()));
+        vacancy.setSpeciality(isNotMentioned(vacancy.getSpeciality()) ? null : cleanName(vacancy.getSpeciality()));
+        vacancy.setSubSpeciality(isNotMentioned(vacancy.getSubSpeciality()) ? null : cleanName(vacancy.getSubSpeciality()));
+        vacancy.setCategory(isNotMentioned(vacancy.getCategory()) ? null : cleanName(vacancy.getCategory()));
+        vacancy.setSalary(isNotMentioned(vacancy.getSalary()) ? null : shortSalary(vacancy.getSalary()));
+        vacancy.setPayScale(isNotMentioned(vacancy.getPayScale()) ? null : clip(vacancy.getPayScale(), 80));
+        vacancy.setPayLevel(isNotMentioned(vacancy.getPayLevel()) ? null : clip(vacancy.getPayLevel(), 40));
+        vacancy.setAgeLimit(isNotMentioned(vacancy.getAgeLimit()) ? null : clip(vacancy.getAgeLimit(), 80));
+        vacancy.setJobType(isNotMentioned(vacancy.getJobType()) ? null : cleanName(vacancy.getJobType()));
+        vacancy.setLocation(isNotMentioned(vacancy.getLocation()) ? null : cleanName(vacancy.getLocation()));
+        if (isNotMentioned(vacancy.getOtherEligibilityRequirements())) {
+            vacancy.setOtherEligibilityRequirements(null);
+        }
     }
 
     public static String cardValue(String value, String fallback) {

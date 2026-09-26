@@ -45,8 +45,9 @@ public class JobController {
     private final JobSearchService jobSearchService;
     private final PasswordEncoder passwordEncoder;
     private final com.medexjob.service.FileUploadService fileUploadService;
+    private final com.medexjob.service.PdfHyperlinkService pdfHyperlinkService;
 
-    public JobController(JobRepository jobRepository, EmployerRepository employerRepository, UserRepository userRepository, SubscriptionRepository subscriptionRepository, NotificationService notificationService, JobSearchService jobSearchService, PasswordEncoder passwordEncoder, com.medexjob.service.FileUploadService fileUploadService) {
+    public JobController(JobRepository jobRepository, EmployerRepository employerRepository, UserRepository userRepository, SubscriptionRepository subscriptionRepository, NotificationService notificationService, JobSearchService jobSearchService, PasswordEncoder passwordEncoder, com.medexjob.service.FileUploadService fileUploadService, com.medexjob.service.PdfHyperlinkService pdfHyperlinkService) {
         this.jobRepository = jobRepository;
         this.employerRepository = employerRepository;
         this.userRepository = userRepository;
@@ -55,6 +56,7 @@ public class JobController {
         this.jobSearchService = jobSearchService;
         this.passwordEncoder = passwordEncoder;
         this.fileUploadService = fileUploadService;
+        this.pdfHyperlinkService = pdfHyperlinkService;
     }
 
     @GetMapping
@@ -681,22 +683,66 @@ public class JobController {
             
             Job job = jobOpt.get();
             
+            // Stamp PDF with MedExJob website hyperlink banner
+            MultipartFile processedFile = pdfHyperlinkService.stampMultipartFile(file, "https://medexjob.com/job/" + id);
+
             // Upload file using existing FileUploadService
-            String fileUrl = fileUploadService.uploadFile(file, "job-documents");
-            logger.info("Job document uploaded successfully. URL: {}", fileUrl);
+            String fileUrl = fileUploadService.uploadFile(processedFile, "job-documents");
+            logger.info("Job document processed with MedExJob hyperlink and uploaded. URL: {}", fileUrl);
             
             // Update job with the document URL
             job.setJobDocumentUrl(fileUrl);
+            job.setPdfUrl(fileUrl);
             jobRepository.save(job);
             
             return ResponseEntity.ok(Map.of(
-                "message", "Document uploaded successfully",
+                "message", "Document uploaded successfully with MedExJob hyperlink",
                 "jobDocumentUrl", fileUrl,
+                "pdfUrl", fileUrl,
                 "jobId", id.toString()
             ));
         } catch (Exception e) {
             logger.error("Error uploading job document: {}", e.getMessage(), e);
             return ResponseEntity.status(500).body(Map.of("error", "Failed to upload document: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Manual notification PDF upload with automatic MedExJob website hyperlink stamping
+     * POST /api/jobs/upload-notification-pdf
+     */
+    @PostMapping("/upload-notification-pdf")
+    public ResponseEntity<?> uploadNotificationPdf(@RequestParam("file") MultipartFile file) {
+        try {
+            if (file == null || file.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "No PDF file provided"));
+            }
+
+            String contentType = file.getContentType();
+            String originalFilename = file.getOriginalFilename();
+            if (contentType == null || !contentType.equals("application/pdf")) {
+                String ext = (originalFilename != null && originalFilename.contains("."))
+                        ? originalFilename.substring(originalFilename.lastIndexOf(".") + 1).toLowerCase()
+                        : "";
+                if (!ext.equals("pdf")) {
+                    return ResponseEntity.badRequest().body(Map.of("error", "Only PDF files are allowed"));
+                }
+            }
+
+            MultipartFile processedFile = pdfHyperlinkService.stampMultipartFile(file, "https://medexjob.com");
+            String fileUrl = fileUploadService.uploadFile(processedFile, "job-documents");
+            logger.info("Notification PDF uploaded with MedExJob hyperlink. URL: {}", fileUrl);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Notification PDF processed and uploaded with MedExJob hyperlink",
+                    "url", fileUrl,
+                    "pdfUrl", fileUrl,
+                    "jobDocumentUrl", fileUrl,
+                    "fileName", originalFilename != null ? originalFilename : "notification.pdf"
+            ));
+        } catch (Exception e) {
+            logger.error("Error uploading notification PDF: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).body(Map.of("error", "Failed to upload notification PDF: " + e.getMessage()));
         }
     }
 

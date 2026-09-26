@@ -18,7 +18,14 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Job } from '../types';
 import { buildJobShareText, getJobShareUrl, shareTextWithoutUrl } from '../utils/shareContent';
-import { cardFieldText, cardSalaryText } from '../utils/extractedFieldDisplay';
+import {
+  cardFieldText,
+  cardSalaryText,
+  formatCardQualification,
+  formatCardExperience,
+  formatCardSalary,
+  isNotMentioned,
+} from '../utils/extractedFieldDisplay';
 import { cleanLocation } from '../utils/locationCleaner';
 
 interface JobCardProps {
@@ -49,9 +56,10 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
   const rawLocation = job.location || [view.city, view.state].filter(Boolean).join(', ');
   const fallbackCityState = [view.city, view.state].filter(Boolean).join(', ');
   const locationText = cleanLocation(rawLocation, organizationName, fallbackCityState);
-  const qualificationText = cardFieldText(job.qualification);
-  const experienceText = cardFieldText(job.experience);
-  const salaryText = cardSalaryText(job.salary || view.salaryRange);
+  const qualificationText = formatCardQualification(job.qualification);
+  const experienceText = formatCardExperience(job.experience);
+  const salaryText = formatCardSalary(job.salary || view.salaryRange);
+  const isEmployerVerified = Boolean(view.employer?.isVerified || view.isEmployerVerified || view.employerVerified);
   const roleCount = Array.isArray(view.postNames) ? view.postNames.length : 0;
   const daysLeft = job.lastDate
     ? Math.ceil((new Date(job.lastDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
@@ -182,11 +190,16 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
               {displayTitle}
             </h3>
             {organizationName && (
-              <div className="flex items-center gap-1.5 mt-2 min-w-0">
+              <div className="flex items-center gap-1.5 mt-2 min-w-0 flex-wrap">
                 <Building2 className="w-4 h-4 shrink-0 text-red-600" />
                 <span className="truncate text-sm font-semibold text-red-600">
                   {organizationName}
                 </span>
+                {isEmployerVerified && (
+                  <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800 text-[10px] font-bold px-1.5 py-0 inline-flex items-center gap-1">
+                    <Check className="w-3 h-3 text-emerald-600 stroke-[3]" /> Verified Employer
+                  </Badge>
+                )}
               </div>
             )}
           </div>

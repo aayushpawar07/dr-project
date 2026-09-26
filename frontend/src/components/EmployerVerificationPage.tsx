@@ -9,6 +9,9 @@ import {
   FileText,
   Eye,
   Upload,
+  ExternalLink,
+  MapPin,
+  Phone,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -97,6 +100,11 @@ export function EmployerVerificationPage({
         address: emp.address || "",
         city: emp.city || "",
         state: emp.state || "",
+        pincode: emp.pincode || "",
+        contactPerson: emp.contactPerson || emp.userName || "N/A",
+        designation: emp.designation || "",
+        contactPhone: emp.contactPhone || "N/A",
+        documentUrl: emp.documentUrl || "",
       }));
       setEmployers(mappedEmployers);
     } catch (error: any) {
@@ -289,18 +297,46 @@ export function EmployerVerificationPage({
                   <TableRow key={employer.id}>
                     <TableCell>
                       <div>
-                        <p className="font-medium">{employer.companyName}</p>
-                        <p className="text-sm text-gray-500">
-                          {employer.website}
-                        </p>
+                        <p className="font-semibold text-slate-900">{employer.companyName}</p>
+                        {employer.website && (
+                          <a
+                            href={employer.website.startsWith('http') ? employer.website : `https://${employer.website}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-0.5"
+                          >
+                            {employer.website} <ExternalLink className="w-2.5 h-2.5" />
+                          </a>
+                        )}
+                        {[employer.city, employer.state].filter(Boolean).length > 0 && (
+                          <span className="text-[11px] text-slate-400 block mt-0.5">
+                            {[employer.city, employer.state].filter(Boolean).join(', ')}
+                          </span>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-medium">{employer.userName}</p>
-                        <p className="text-sm text-gray-500">
-                          {employer.userEmail}
+                        <p className="font-medium text-slate-800">
+                          {employer.contactPerson}
+                          {employer.designation ? (
+                            <span className="text-xs font-normal text-slate-500"> ({employer.designation})</span>
+                          ) : null}
                         </p>
+                        <p className="text-xs text-slate-500">{employer.userEmail}</p>
+                        {employer.contactPhone && employer.contactPhone !== 'N/A' && (
+                          <p className="text-xs text-slate-600 font-mono mt-0.5">{employer.contactPhone}</p>
+                        )}
+                        {employer.documentUrl && (
+                          <a
+                            href={employer.documentUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 underline mt-1"
+                          >
+                            <FileText className="w-3 h-3" /> View Proof Document <ExternalLink className="w-2.5 h-2.5" />
+                          </a>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -315,13 +351,13 @@ export function EmployerVerificationPage({
                     <TableCell>
                       <div className="flex gap-2">
                         {employer.verificationStatus === "pending" ? (
-                          // PENDING: Show Approve and Reject only (no View)
+                          // PENDING: Show Approve and Reject
                           <>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleReview(employer, "approved")}
-                              className="text-green-600 hover:text-green-700"
+                              className="text-green-600 hover:text-green-700 hover:bg-green-50"
                             >
                               <CheckCircle className="w-4 h-4 mr-1" />
                               Approve
@@ -330,14 +366,14 @@ export function EmployerVerificationPage({
                               variant="outline"
                               size="sm"
                               onClick={() => handleReview(employer, "rejected")}
-                              className="text-red-600 hover:text-red-700"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
                             >
                               <XCircle className="w-4 h-4 mr-1" />
                               Reject
                             </Button>
                           </>
                         ) : employer.verificationStatus === "approved" ? (
-                          // APPROVED: Show View button only (navigates to Employer Management)
+                          // APPROVED: Show View button
                           <Button
                             variant="outline"
                             size="sm"
@@ -360,13 +396,59 @@ export function EmployerVerificationPage({
 
         {/* Review Dialog */}
         <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[550px]">
             <DialogHeader>
               <DialogTitle>
                 {reviewAction === "approved" ? "Approve" : "Reject"}{" "}
                 Verification Request
               </DialogTitle>
             </DialogHeader>
+
+            {selectedEmployer && (
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs text-slate-700 space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="text-slate-400 block">Organisation:</span>
+                    <strong className="text-slate-900">{selectedEmployer.companyName}</strong> ({selectedEmployer.companyType})
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block">Contact Person:</span>
+                    <strong className="text-slate-900">{selectedEmployer.contactPerson}</strong>
+                    {selectedEmployer.designation && ` — ${selectedEmployer.designation}`}
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block">Work Email:</span>
+                    <span className="text-slate-900">{selectedEmployer.userEmail}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block">Mobile Phone:</span>
+                    <span className="text-slate-900">{selectedEmployer.contactPhone || '—'}</span>
+                  </div>
+                  {[selectedEmployer.address, selectedEmployer.city, selectedEmployer.state, selectedEmployer.pincode].filter(Boolean).length > 0 && (
+                    <div className="col-span-2">
+                      <span className="text-slate-400 block">Official Address:</span>
+                      <span className="text-slate-900">
+                        {[selectedEmployer.address, selectedEmployer.city, selectedEmployer.state, selectedEmployer.pincode].filter(Boolean).join(', ')}
+                      </span>
+                    </div>
+                  )}
+                  {selectedEmployer.documentUrl && (
+                    <div className="col-span-2 pt-1 border-t border-slate-200">
+                      <span className="text-slate-400 block">Verification Proof Document:</span>
+                      <a
+                        href={selectedEmployer.documentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 font-bold text-blue-600 hover:text-blue-800 underline mt-0.5"
+                      >
+                        <FileText className="w-3.5 h-3.5" /> Open / Review Document <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-4">
               <div>
                 <Label htmlFor="reviewNotes">Review Notes (Optional)</Label>
@@ -379,8 +461,15 @@ export function EmployerVerificationPage({
                 />
               </div>
               <div className="flex gap-3">
-                <Button onClick={submitReview} className="flex-1">
-                  {reviewAction === "approved" ? "Approve" : "Reject"} Request
+                <Button
+                  onClick={submitReview}
+                  className={`flex-1 ${
+                    reviewAction === "approved"
+                      ? "bg-green-600 hover:bg-green-700 text-white"
+                      : "bg-red-600 hover:bg-red-700 text-white"
+                  }`}
+                >
+                  Confirm {reviewAction === "approved" ? "Approval" : "Rejection"}
                 </Button>
                 <Button
                   variant="outline"

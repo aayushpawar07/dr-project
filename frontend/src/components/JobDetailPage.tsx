@@ -45,7 +45,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { saveJob, unsaveJob, checkIfJobIsSaved } from "../api/savedJobs";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 import { ResumeUploadSection } from "./ResumeUploadSection";
-import { cardFieldText, cardSalaryText, displayJobDescription } from "../utils/extractedFieldDisplay";
+import { cardFieldText, cardSalaryText, displayJobDescription, isNotMentioned } from "../utils/extractedFieldDisplay";
 import { cleanLocation } from "../utils/locationCleaner";
 import { buildJobShareText, getJobShareUrl, shareTextWithoutUrl } from "../utils/shareContent";
 
@@ -566,9 +566,14 @@ export function JobDetailPage({
                       (job as any).employerName ||
                       '';
                     return orgName ? (
-                      <div className="flex items-center gap-2 text-gray-700">
+                      <div className="flex items-center gap-2 text-gray-700 flex-wrap">
                         <Building2 className="w-5 h-5 text-amber-700 shrink-0" />
                         <span className="medex-org-highlight rounded-md bg-amber-100 px-2.5 py-0.5 text-lg font-semibold text-amber-900">{orgName}</span>
+                        {Boolean(job.employer?.isVerified || (job as any).isEmployerVerified || (job as any).employerVerified) && (
+                          <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800 text-xs font-bold px-2 py-0.5 inline-flex items-center gap-1">
+                            <Check className="w-3.5 h-3.5 text-emerald-600 stroke-[3]" /> Verified Employer
+                          </Badge>
+                        )}
                       </div>
                     ) : null;
                   })()}
@@ -610,47 +615,55 @@ export function JobDetailPage({
             <Card className="p-4 sm:p-6 job-detail-facts">
               <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Job Details</h2>
               <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
-                <div className="flex items-start gap-2 sm:gap-3 rounded-lg border border-gray-200 bg-white p-2.5 sm:p-3.5 shadow-none">
-                  <div className="rounded-md bg-blue-50 p-1.5 sm:p-2 text-blue-600 shrink-0">
-                    <MapPin className="w-4 h-4" />
+                {locationText && !isNotMentioned(locationText) && (
+                  <div className="flex items-start gap-2 sm:gap-3 rounded-lg border border-gray-200 bg-white p-2.5 sm:p-3.5 shadow-none">
+                    <div className="rounded-md bg-blue-50 p-1.5 sm:p-2 text-blue-600 shrink-0">
+                      <MapPin className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500">Location</p>
+                      <p className="mt-0.5 text-xs sm:text-sm font-medium leading-tight sm:leading-snug text-gray-900 break-words">
+                        {locationText}
+                      </p>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500">Location</p>
-                    <p className="mt-0.5 text-xs sm:text-sm font-medium leading-tight sm:leading-snug text-gray-900 break-words">
-                      {locationText || "Location"}
-                    </p>
-                  </div>
-                </div>
+                )}
 
-                <div className="flex items-start gap-2 sm:gap-3 rounded-lg border border-gray-200 bg-white p-2.5 sm:p-3.5 shadow-none">
-                  <div className="rounded-md bg-blue-50 p-1.5 sm:p-2 text-blue-600 shrink-0">
-                    <Briefcase className="w-4 h-4" />
+                {job.numberOfPosts != null && !isNotMentioned(job.numberOfPosts) && (
+                  <div className="flex items-start gap-2 sm:gap-3 rounded-lg border border-gray-200 bg-white p-2.5 sm:p-3.5 shadow-none">
+                    <div className="rounded-md bg-blue-50 p-1.5 sm:p-2 text-blue-600 shrink-0">
+                      <Briefcase className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500">Number of Posts</p>
+                      <p className="mt-0.5 text-xs sm:text-sm font-medium leading-tight sm:leading-snug text-gray-900 break-words">{job.numberOfPosts}</p>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500">Number of Posts</p>
-                    <p className="mt-0.5 text-xs sm:text-sm font-medium leading-tight sm:leading-snug text-gray-900 break-words">{job.numberOfPosts || "See description"}</p>
-                  </div>
-                </div>
+                )}
 
-                <div className="flex items-start gap-2 sm:gap-3 rounded-lg border border-gray-200 bg-white p-2.5 sm:p-3.5 shadow-none col-span-2">
-                  <div className="rounded-md bg-blue-50 p-1.5 sm:p-2 text-blue-600 shrink-0">
-                    <GraduationCap className="w-4 h-4" />
+                {job.qualification && !isNotMentioned(job.qualification) && (
+                  <div className="flex items-start gap-2 sm:gap-3 rounded-lg border border-gray-200 bg-white p-2.5 sm:p-3.5 shadow-none col-span-2">
+                    <div className="rounded-md bg-blue-50 p-1.5 sm:p-2 text-blue-600 shrink-0">
+                      <GraduationCap className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500">Qualification</p>
+                      <p className="mt-0.5 text-xs sm:text-sm font-medium leading-tight sm:leading-snug text-gray-900 break-words">{cardFieldText(job.qualification)}</p>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500">Qualification</p>
-                    <p className="mt-0.5 text-xs sm:text-sm font-medium leading-tight sm:leading-snug text-gray-900 break-words">{cardFieldText(job.qualification, 'See job description')}</p>
-                  </div>
-                </div>
+                )}
 
-                <div className="flex items-start gap-2 sm:gap-3 rounded-lg border border-gray-200 bg-white p-2.5 sm:p-3.5 shadow-none">
-                  <div className="rounded-md bg-blue-50 p-1.5 sm:p-2 text-blue-600 shrink-0">
-                    <Briefcase className="w-4 h-4" />
+                {job.experience && !isNotMentioned(job.experience) && (
+                  <div className="flex items-start gap-2 sm:gap-3 rounded-lg border border-gray-200 bg-white p-2.5 sm:p-3.5 shadow-none">
+                    <div className="rounded-md bg-blue-50 p-1.5 sm:p-2 text-blue-600 shrink-0">
+                      <Briefcase className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500">Experience</p>
+                      <p className="mt-0.5 text-xs sm:text-sm font-medium leading-tight sm:leading-snug text-gray-900 break-words">{cardFieldText(job.experience)}</p>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-gray-500">Experience</p>
-                    <p className="mt-0.5 text-xs sm:text-sm font-medium leading-tight sm:leading-snug text-gray-900 break-words">{cardFieldText(job.experience, 'See job description')}</p>
-                  </div>
-                </div>
+                )}
 
                 {cardSalaryText(job.salary) && (
                   <div className="flex items-start gap-2 sm:gap-3 rounded-lg border border-gray-200 bg-white p-2.5 sm:p-3.5 shadow-none">

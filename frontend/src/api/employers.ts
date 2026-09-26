@@ -31,6 +31,10 @@ export interface EmployerResponse {
   employerStatus?: 'active' | 'discontinued';
   verificationNotes?: string;
   verifiedAt?: string;
+  contactPerson?: string;
+  designation?: string;
+  documentUrl?: string;
+  contactPhone?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -227,6 +231,9 @@ export interface EmployerProfileUpdatePayload {
   name?: string;
   phone?: string;
   contactPhone?: string;
+  contactPerson?: string;
+  designation?: string;
+  documentUrl?: string;
 }
 
 export async function updateEmployerProfile(
@@ -245,6 +252,26 @@ export async function updateEmployerProfile(
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
     throw new Error(errBody.error || errBody.message || `Failed to update employer profile (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function submitEmployerVerification(
+  id: string,
+  data: EmployerProfileUpdatePayload,
+  token: string
+): Promise<EmployerResponse> {
+  const res = await authFetch(`${API_BASE}/employers/${id}/submit-verification`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => ({}));
+    throw new Error(errBody.error || errBody.message || `Failed to submit verification (${res.status})`);
   }
   return res.json();
 }

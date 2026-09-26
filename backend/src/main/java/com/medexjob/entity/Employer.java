@@ -58,6 +58,18 @@ public class Employer {
     @Size(max = 10)
     @Column(name = "pincode")
     private String pincode;
+
+    @Size(max = 150)
+    @Column(name = "contact_person")
+    private String contactPerson;
+
+    @Size(max = 100)
+    @Column(name = "designation")
+    private String designation;
+
+    @Size(max = 500)
+    @Column(name = "document_url")
+    private String documentUrl;
     
     @Column(name = "is_verified", nullable = false)
     private Boolean isVerified = false;
@@ -172,6 +184,30 @@ public class Employer {
     
     public void setPincode(String pincode) {
         this.pincode = pincode;
+    }
+
+    public String getContactPerson() {
+        return contactPerson;
+    }
+
+    public void setContactPerson(String contactPerson) {
+        this.contactPerson = contactPerson;
+    }
+
+    public String getDesignation() {
+        return designation;
+    }
+
+    public void setDesignation(String designation) {
+        this.designation = designation;
+    }
+
+    public String getDocumentUrl() {
+        return documentUrl;
+    }
+
+    public void setDocumentUrl(String documentUrl) {
+        this.documentUrl = documentUrl;
     }
     
     public Boolean getIsVerified() {

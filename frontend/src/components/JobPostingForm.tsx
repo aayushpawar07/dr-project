@@ -582,7 +582,7 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
     setPdfExtraction(null);
     setSelectedVacancyIndex(0);
     setPdfMessage(
-      `PDF "${file.name}" attached successfully! Your parsed/entered job details are preserved. MedExJob logo & website hyperlink will be stamped automatically upon saving.`
+      `PDF "${file.name}" attached successfully!`
     );
   };
 
@@ -934,17 +934,9 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
                       <FileText className="h-5 w-5" />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-bold text-slate-900">
-                          Job Notification PDF Document
-                        </h3>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                          ✓ MedExJob Logo &amp; Link
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-500">
-                        Upload job notification PDF. MedExJob logo and website hyperlink are automatically stamped into the final PDF.
-                      </p>
+                      <h3 className="text-sm font-bold text-slate-900">
+                        Job Notification PDF Document
+                      </h3>
                     </div>
                   </div>
 
@@ -966,34 +958,29 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
                 <div className="flex flex-col sm:flex-row items-center gap-3 bg-white/90 p-4 rounded-xl border border-blue-100">
                   <div className="flex-1 w-full">
                     {formData.pdfFile ? (
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-800">
-                          <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                          <span className="truncate">{formData.pdfFile.name}</span>
-                          <span className="text-slate-400 font-normal shrink-0">
-                            ({(formData.pdfFile.size / 1024 / 1024).toFixed(2)} MB)
-                          </span>
-                        </div>
-                        <div className="text-[11px] text-emerald-700 font-medium">
-                          ✓ MedExJob logo &amp; clickable website hyperlink (https://medexjob.com) will be stamped automatically. Form fields remain preserved.
-                        </div>
+                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-800">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                        <span className="truncate">{formData.pdfFile.name}</span>
+                        <span className="text-slate-400 font-normal shrink-0">
+                          ({(formData.pdfFile.size / 1024 / 1024).toFixed(2)} MB)
+                        </span>
                       </div>
                     ) : (
                       <div className="text-xs text-slate-500">
-                        No PDF selected yet. Upload notification PDF (Max 20 MB). MedExJob logo &amp; clickable hyperlink banner will be added automatically to each page.
+                        No PDF selected yet. Upload notification PDF (Max 20 MB).
                       </div>
                     )}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto">
-                    {/* Primary Button: Attach PDF (Preserves all parsed/entered fields) */}
+                    {/* Primary Button: Attach PDF */}
                     <button
                       type="button"
                       className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-blue-700 transition cursor-pointer"
                       onClick={() => fileInputRef.current?.click()}
                     >
                       <Upload className="h-4 w-4" />
-                      <span>{formData.pdfFile ? 'Change PDF' : 'Attach PDF (Keep Details)'}</span>
+                      <span>{formData.pdfFile ? 'Change PDF' : 'Attach PDF'}</span>
                     </button>
                     <input
                       ref={fileInputRef}

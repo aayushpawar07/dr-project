@@ -1,11 +1,9 @@
 .admin-applications-page {
-  --apps-ink: #102a43;
-  --apps-blue: #0878e8;
-  --apps-navy: #0c3b66;
-  --apps-line: #d7e7f4;
-  background:
-    radial-gradient(circle at 88% 0%, rgba(24, 140, 235, 0.1), transparent 28rem),
-    linear-gradient(180deg, #f5faff 0%, #eef6fc 55%, #f8fbfe 100%) !important;
+  --apps-ink: #0f172a;
+  --apps-blue: #0a6e79;
+  --apps-navy: #06515a;
+  --apps-line: #e2e8f0;
+  background: #f8fafc !important;
   color: var(--apps-ink);
 }
 
@@ -14,16 +12,16 @@
 }
 
 .admin-applications-page__header {
-  padding: 1rem 1.25rem;
-  border: 1px solid rgba(193, 218, 238, 0.9);
-  border-radius: 1.25rem;
-  background: linear-gradient(120deg, #ffffff, #f4faff 72%, #e6f4ff);
-  box-shadow: 0 10px 28px rgba(27, 91, 138, 0.08);
+  padding: 1.25rem 1.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
 }
 
 .admin-applications-page__header h1 {
-  color: #102a43 !important;
-  letter-spacing: -0.035em;
+  color: #0f172a !important;
+  letter-spacing: -0.025em;
 }
 
 .admin-applications-page__title-icon {
@@ -35,13 +33,13 @@
   flex: 0 0 auto;
   border-radius: 0.85rem;
   color: #ffffff;
-  background: linear-gradient(145deg, #167be8, #0753a0);
-  box-shadow: 0 8px 18px rgba(8, 120, 232, 0.25);
+  background: linear-gradient(135deg, #0a6e79, #2d9b8e);
+  box-shadow: 0 4px 12px rgba(10, 110, 121, 0.2);
 }
 
 .admin-applications-page__header button {
-  border-color: #b9d7ef;
-  background: rgba(255, 255, 255, 0.85);
+  border-color: #cbd5e1;
+  background: #ffffff;
 }
 
 .admin-applications-page__topbar {
@@ -70,8 +68,8 @@
   height: 2.35rem;
   border-radius: 0.7rem;
   color: #fff;
-  background: linear-gradient(145deg, #6425f4, #3b13ba);
-  box-shadow: 0 7px 16px rgba(91, 45, 210, 0.25);
+  background: linear-gradient(135deg, #0a6e79, #2d9b8e);
+  box-shadow: 0 4px 12px rgba(10, 110, 121, 0.2);
 }
 
 .admin-applications-page__brand strong,
@@ -1154,8 +1152,38 @@
 
 @media (min-width: 1600px) {
   .admin-applications-page .medex-applicant-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
+}
+
+/* Modern candidates grid matching Employer Dashboard mockup */
+.admin-applications-page .mx-candidates {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)) !important;
+  gap: 1.25rem !important;
+  padding: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+@media (max-width: 767px) {
+  .admin-applications-page .mx-candidates {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 1rem !important;
+  }
+}
+
+@media (min-width: 1200px) {
+  .admin-applications-page .mx-candidates {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+.admin-applications-page .mx-candidates--list,
+.admin-applications-page.view-list .mx-candidates {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1.25rem !important;
 }
 
 /* Spacious premium applicant cards: preserve every field while restoring

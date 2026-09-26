@@ -10,7 +10,8 @@
  */
 
 .employer-dashboard,
-.candidate-dashboard {
+.candidate-dashboard,
+.admin-applications-page {
   --mx-primary: #0a6e79;
   --mx-primary-light: #1a8f9e;
   --mx-primary-dark: #06515a;

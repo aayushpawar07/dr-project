@@ -382,7 +382,7 @@ export function GovernmentJobDetail({
                   {job.postedDate && (
                     <div className="flex items-center gap-1.5">
                       <Calendar className="h-4 w-4" />
-                      <span>Posted {new Date(job.postedDate).toLocaleDateString('en-IN')}</span>
+                      <span>Posted {formatLongDate(job.postedDate)}</span>
                     </div>
                   )}
                 </div>

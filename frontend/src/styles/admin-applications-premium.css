@@ -37,20 +37,7 @@
   box-shadow: 0 4px 12px rgba(10, 110, 121, 0.2);
 }
 
-.admin-applications-page__header button {
-  border-color: #cbd5e1;
-  background: #ffffff;
-}
 
-.admin-applications-page__topbar {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  min-height: 3.25rem;
-  padding-bottom: 0.9rem;
-  margin-bottom: 0.9rem;
-  border-bottom: 1px solid #e2eef8;
-}
 
 .admin-applications-page__brand {
   display: flex;
@@ -167,19 +154,8 @@
 
 .admin-applications-page__view-tools {
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.5rem;
   flex-shrink: 0;
-}
-
-.admin-applications-page__view-tools button {
-  min-height: 2.2rem;
-  border-color: #d2e3f1;
-  color: #315778;
-  background: #fff;
-}
-
-.admin-applications-page__view-tools button[data-size="icon"] {
-  width: 2.2rem;
 }
 
 .admin-applications-page__tabs-toolbar {
@@ -206,93 +182,73 @@
 }
 
 .admin-applications-page__filter-card {
-  border: 1px solid var(--apps-line) !important;
+  border: 1px solid #e2e8f0 !important;
   border-radius: 1rem !important;
-  background: linear-gradient(180deg, #ffffff, #f7fbff) !important;
-  box-shadow: 0 10px 24px rgba(27, 91, 138, 0.08) !important;
+  background: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
 }
 
 .admin-applications-page__filter-card h3 {
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid #e1edf7;
-  color: var(--apps-navy) !important;
+  border-bottom: 1px solid #f1f5f9;
+  color: #0f172a !important;
+  font-weight: 750 !important;
 }
 
 .admin-applications-page__filter-card input,
 .admin-applications-page__filter-card select,
-.admin-applications-page__filter-card button[data-state] {
-  border-color: #c9ddec !important;
-  background: #f8fcff !important;
-  border-radius: 0.7rem !important;
+.admin-applications-page__filter-card button[data-state],
+.admin-applications-page__filter-card [role="combobox"] {
+  border-color: #cbd5e1 !important;
+  background: #ffffff !important;
+  border-radius: 0.75rem !important;
 }
 
 .admin-applications-page__filter-card input:focus,
-.admin-applications-page__filter-card select:focus {
-  border-color: var(--apps-blue) !important;
-  box-shadow: 0 0 0 3px rgba(8, 120, 232, 0.12);
+.admin-applications-page__filter-card select:focus,
+.admin-applications-page__filter-card [role="combobox"]:focus {
+  border-color: #0a6e79 !important;
+  box-shadow: 0 0 0 3px rgba(10, 110, 121, 0.15) !important;
 }
 
 .admin-applications-page__overview {
-  border-color: var(--apps-line) !important;
+  border-color: #e2e8f0 !important;
   background:
-    radial-gradient(circle at 100% 0%, rgba(13, 148, 136, 0.08), transparent 18rem),
-    linear-gradient(110deg, #ffffff, #f5fbff) !important;
-  box-shadow: 0 12px 28px rgba(27, 91, 138, 0.09) !important;
+    radial-gradient(circle at 100% 0%, rgba(10, 110, 121, 0.06), transparent 20rem),
+    linear-gradient(135deg, #ffffff, #f8fbfb) !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+  border-radius: 1rem !important;
 }
 
 .admin-applications-page__overview h2 {
-  color: #102a43 !important;
+  color: #0f172a !important;
   overflow-wrap: anywhere;
 }
 
-.admin-applications-page__overview > div > div:last-child > div {
-  border-color: #cfe2f2 !important;
-  box-shadow: 0 5px 14px rgba(27, 91, 138, 0.06);
-}
-
-.admin-applications-page__overview > div > div:last-child > div:nth-child(1) {
-  background: #eef6ff !important;
-}
-
-.admin-applications-page__overview > div > div:last-child > div:nth-child(2) {
-  background: #ecfbf7 !important;
-}
-
-.admin-applications-page__overview > div > div:last-child > div:nth-child(3) {
-  background: #f5efff !important;
-}
-
-.admin-applications-page__overview > div > div:last-child > div:nth-child(4) {
-  background: #fff7e8 !important;
-}
-
-.admin-applications-page__overview > div > div:last-child button {
-  border-color: #70b5f4 !important;
-  color: #0755a6 !important;
-  background: #f2f9ff !important;
-}
-
-.admin-applications-page__overview > div > div:last-child button:hover,
-.admin-applications-page__overview > div > div:last-child button.bg-blue-600 {
-  color: #ffffff !important;
-  background: linear-gradient(135deg, #0c82ed, #0755a6) !important;
-}
-
 .admin-applications-page__tabs [role="tablist"] {
-  border: 1px solid #cfe2f2;
-  background: #eaf4fb !important;
-  box-shadow: 0 5px 12px rgba(27, 91, 138, 0.05);
+  border: 1px solid #e2e8f0;
+  background: #f1f5f9 !important;
+  border-radius: 0.75rem;
+  padding: 0.25rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
 }
 
 .admin-applications-page__tabs [role="tab"] {
   min-height: 2.25rem;
-  color: #42647d !important;
+  color: #64748b !important;
+  border-radius: 0.55rem;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.admin-applications-page__tabs [role="tab"]:hover {
+  color: #0f172a !important;
 }
 
 .admin-applications-page__tabs [role="tab"][data-state="active"] {
-  background: #ffffff !important;
-  color: #0755a6 !important;
-  box-shadow: 0 4px 10px rgba(27, 91, 138, 0.12) !important;
+  background: #0a6e79 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(10, 110, 121, 0.25) !important;
 }
 
 .admin-applications-page .medex-applicant-grid {
@@ -523,44 +479,46 @@
 }
 
 .admin-applications-page__sidebar {
-  width: 220px !important;
+  width: 280px !important;
 }
 
 .admin-applications-page__filter-card {
-  padding: 0.85rem !important;
-  border-radius: 0.85rem !important;
+  padding: 1.25rem !important;
+  border-radius: 1rem !important;
   background: #ffffff !important;
-  box-shadow: 0 5px 16px rgba(30, 75, 110, 0.06) !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
 }
 
 .admin-applications-page__filter-card h3 {
-  margin-bottom: 0.8rem !important;
-  padding-bottom: 0.6rem !important;
-  font-size: 0.78rem !important;
+  margin-bottom: 0.85rem !important;
+  padding-bottom: 0.75rem !important;
+  font-size: 0.88rem !important;
 }
 
 .admin-applications-page__filter-card .space-y-4 {
-  gap: 0.7rem !important;
+  gap: 0.9rem !important;
 }
 
 .admin-applications-page__filter-card label {
-  font-size: 0.64rem !important;
-  letter-spacing: 0.025em !important;
-  text-transform: none !important;
+  font-size: 0.68rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.03em !important;
+  text-transform: uppercase !important;
+  color: #475569 !important;
 }
 
 .admin-applications-page__filter-card input,
 .admin-applications-page__filter-card button,
 .admin-applications-page__filter-card [role="combobox"] {
-  min-height: 2.15rem !important;
-  height: 2.15rem !important;
-  border-radius: 0.55rem !important;
-  font-size: 0.7rem !important;
+  min-height: 2.35rem !important;
+  height: 2.35rem !important;
+  border-radius: 0.65rem !important;
+  font-size: 0.78rem !important;
 }
 
 .admin-applications-page__filter-card > div > div[role="button"] {
-  padding: 0.55rem !important;
-  border-radius: 0.65rem !important;
+  padding: 0.75rem !important;
+  border-radius: 0.75rem !important;
 }
 
 .admin-applications-page__overview {

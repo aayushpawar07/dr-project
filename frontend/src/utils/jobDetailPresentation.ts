@@ -343,13 +343,33 @@ function parseSections(raw: string): DescriptionSection[] {
   );
 }
 
+function formatDatesInText(text: string): string {
+  if (!text) return text;
+  // Match ISO date YYYY-MM-DD (e.g. 2026-09-18 -> 18 September 2026)
+  return text.replace(/\b(\d{4})-(\d{2})-(\d{2})\b/g, (_match, y, m, d) => {
+    const year = parseInt(y, 10);
+    const month = parseInt(m, 10) - 1;
+    const day = parseInt(d, 10);
+    const dateObj = new Date(year, month, day);
+    if (!Number.isNaN(dateObj.getTime())) {
+      return dateObj.toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+    }
+    return _match;
+  });
+}
+
 function appendLinkifiedText(parent: HTMLElement, text: string) {
+  const formattedText = formatDatesInText(text);
   const urlPattern = /(https?:\/\/[^\s]+|www\.[^\s]+)/gi;
   let lastIndex = 0;
 
-  for (const match of text.matchAll(urlPattern)) {
+  for (const match of formattedText.matchAll(urlPattern)) {
     const index = match.index ?? 0;
-    if (index > lastIndex) parent.append(document.createTextNode(text.slice(lastIndex, index)));
+    if (index > lastIndex) parent.append(document.createTextNode(formattedText.slice(lastIndex, index)));
     const value = match[0].replace(/[),.;]+$/, "");
     const anchor = document.createElement("a");
     anchor.href = value.startsWith("www.") ? `https://${value}` : value;
@@ -363,7 +383,7 @@ function appendLinkifiedText(parent: HTMLElement, text: string) {
     lastIndex = index + match[0].length;
   }
 
-  if (lastIndex < text.length) parent.append(document.createTextNode(text.slice(lastIndex)));
+  if (lastIndex < formattedText.length) parent.append(document.createTextNode(formattedText.slice(lastIndex)));
 }
 
 function stripBullet(line: string): string {

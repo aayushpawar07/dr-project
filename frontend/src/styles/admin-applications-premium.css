@@ -1356,3 +1356,334 @@
     padding: 0.9rem !important;
   }
 }
+
+/* ==========================================================================
+   PIXEL-ACCURATE DESIGN SYSTEM MATCHING USER REFERENCE IMAGE 2
+   ========================================================================== */
+
+/* 1. Header Bar */
+.medex-app-header {
+  background: #ffffff !important;
+  border: 1px solid #e8eff7 !important;
+  border-radius: 1.25rem !important;
+  padding: 1.1rem 1.6rem !important;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03) !important;
+  margin-bottom: 1.5rem !important;
+}
+
+.medex-app-header-brand-icon {
+  width: 3.1rem !important;
+  height: 3.1rem !important;
+  border-radius: 0.95rem !important;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #ffffff !important;
+  flex-shrink: 0 !important;
+}
+
+.medex-app-header-title {
+  font-size: 1.35rem !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1.2 !important;
+}
+
+.medex-app-live-portal-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.45rem !important;
+  padding: 0.2rem 0.65rem !important;
+  border-radius: 9999px !important;
+  background: #ecfdf5 !important;
+  border: 1px solid #a7f3d0 !important;
+  color: #059669 !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+}
+
+.medex-app-live-portal-dot {
+  width: 0.45rem !important;
+  height: 0.45rem !important;
+  border-radius: 50% !important;
+  background: #10b981 !important;
+}
+
+.medex-app-header-subtitle {
+  font-size: 0.82rem !important;
+  color: #64748b !important;
+  margin-top: 0.25rem !important;
+}
+
+.medex-app-user-pill {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.65rem !important;
+  padding: 0.45rem 0.9rem !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 0.85rem !important;
+  color: #1e293b !important;
+}
+
+.medex-app-back-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  height: 2.5rem !important;
+  padding: 0 1.1rem !important;
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 0.85rem !important;
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+  color: #1e293b !important;
+  transition: all 0.15s ease !important;
+}
+.medex-app-back-btn:hover {
+  background: #f8fafc !important;
+  border-color: #94a3b8 !important;
+}
+
+/* 2. Overview Banner Card */
+.medex-overview-banner {
+  position: relative !important;
+  background: #ffffff !important;
+  border: 1px solid #e8eff7 !important;
+  border-radius: 1.25rem !important;
+  padding: 1.75rem 2rem !important;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03) !important;
+  margin-bottom: 1.5rem !important;
+  overflow: hidden !important;
+}
+
+.medex-scope-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.45rem !important;
+  padding: 0.35rem 0.85rem !important;
+  border-radius: 9999px !important;
+  background: #eff6ff !important;
+  border: 1px solid #dbeafe !important;
+  color: #2563eb !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  margin-bottom: 0.6rem !important;
+}
+
+.medex-overview-title {
+  font-size: 1.55rem !important;
+  font-weight: 850 !important;
+  color: #0f172a !important;
+  letter-spacing: -0.025em !important;
+  margin-bottom: 0.4rem !important;
+  line-height: 1.25 !important;
+}
+
+.medex-overview-criteria {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  font-size: 0.82rem !important;
+  color: #64748b !important;
+  font-weight: 500 !important;
+}
+
+/* Decorative Illustration in Top-Right */
+.medex-overview-illustration {
+  position: absolute !important;
+  top: 1.25rem !important;
+  right: 1.75rem !important;
+  width: 8.5rem !important;
+  height: 6.5rem !important;
+  pointer-events: none !important;
+  user-select: none !important;
+}
+
+/* 3. The 4 Stat Cards in 2x2 Grid */
+.medex-stat-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 1.15rem !important;
+  margin-top: 1.5rem !important;
+}
+
+@media (max-width: 768px) {
+  .medex-stat-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.medex-stat-card {
+  position: relative !important;
+  background: #ffffff !important;
+  border: 1px solid #e8eff7 !important;
+  border-radius: 1.15rem !important;
+  padding: 1.25rem 1.4rem !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  overflow: hidden !important;
+}
+
+.medex-stat-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.07) !important;
+}
+
+/* Accent Left Strips - exactly like reference Image 2 */
+.medex-stat-card--blue {
+  border-left: 5px solid #2563eb !important;
+}
+
+.medex-stat-card--green {
+  border-left: 5px solid #10b981 !important;
+}
+
+.medex-stat-card--purple {
+  border-left: 5px solid #8b5cf6 !important;
+}
+
+.medex-stat-card--amber {
+  border-left: 5px solid #f59e0b !important;
+}
+
+/* Stat Card Icon Boxes */
+.medex-stat-icon-box {
+  width: 3.25rem !important;
+  height: 3.25rem !important;
+  border-radius: 0.95rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  margin-right: 1.1rem !important;
+}
+
+.medex-stat-icon-box--blue {
+  background: #eff6ff !important;
+  color: #2563eb !important;
+}
+
+.medex-stat-icon-box--green {
+  background: #ecfdf5 !important;
+  color: #10b981 !important;
+}
+
+.medex-stat-icon-box--purple {
+  background: #f5f3ff !important;
+  color: #8b5cf6 !important;
+}
+
+.medex-stat-icon-box--amber {
+  background: #fffbeb !important;
+  color: #f59e0b !important;
+}
+
+.medex-stat-icon-box svg {
+  width: 1.55rem !important;
+  height: 1.55rem !important;
+}
+
+.medex-stat-label {
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  color: #64748b !important;
+  line-height: 1 !important;
+  margin-bottom: 0.35rem !important;
+}
+
+.medex-stat-value {
+  font-size: 1.85rem !important;
+  font-weight: 850 !important;
+  color: #0f172a !important;
+  line-height: 1 !important;
+  margin-bottom: 0.35rem !important;
+  letter-spacing: -0.02em !important;
+}
+
+.medex-stat-trend {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.3rem !important;
+  font-size: 0.76rem !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+}
+
+.medex-stat-trend--green {
+  color: #10b981 !important;
+}
+
+.medex-stat-trend--muted {
+  color: #94a3b8 !important;
+}
+
+.medex-stat-trend--amber {
+  color: #f59e0b !important;
+}
+
+.medex-stat-chevron {
+  width: 2rem !important;
+  height: 2rem !important;
+  border-radius: 50% !important;
+  background: #f8fafc !important;
+  color: #94a3b8 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0 !important;
+  transition: all 0.15s ease !important;
+}
+
+.medex-stat-card:hover .medex-stat-chevron {
+  background: #eff6ff !important;
+  color: #2563eb !important;
+}
+
+/* 4. Sidebar Cards */
+.medex-filter-card {
+  background: #ffffff !important;
+  border: 1px solid #e8eff7 !important;
+  border-radius: 1.25rem !important;
+  padding: 1.25rem !important;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03) !important;
+}
+
+.medex-filter-toggle-blue {
+  background: #eff6ff !important;
+  border: 1px solid #dbeafe !important;
+  border-radius: 1rem !important;
+  padding: 0.75rem 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  transition: all 0.15s ease !important;
+}
+.medex-filter-toggle-blue:hover {
+  background: #e0f2fe !important;
+}
+
+.medex-filter-helper-green {
+  background: #ecfdf5 !important;
+  border: 1px solid #a7f3d0 !important;
+  border-radius: 1rem !important;
+  padding: 0.75rem 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  transition: all 0.15s ease !important;
+}
+.medex-filter-helper-green:hover {
+  background: #d1fae5 !important;
+}

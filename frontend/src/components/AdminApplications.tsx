@@ -1055,86 +1055,180 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
   return (
     <div className={`admin-applications-page view-${viewMode} min-h-screen bg-gray-50 dark:bg-gray-900`}>
       <div className="admin-applications-page__container container mx-auto 2xl:max-w-[1600px] xl:max-w-[1400px] px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
-        {/* Top Header matching Image 1 */}
-        <div className="admin-applications-page__header mb-6 bg-white dark:bg-gray-800 border border-slate-100 dark:border-gray-700 rounded-2xl p-4 sm:px-6 sm:py-4 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            {/* Left: Blue gradient icon + Title + Live Portal + Subtitle */}
-            <div className="flex items-center gap-4 min-w-0">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => onNavigate(userRole === 'employer' ? 'dashboard/employer' : 'dashboard/admin')}
-                className="lg:hidden flex-shrink-0 text-slate-500 hover:text-slate-800 hover:bg-slate-100"
-                aria-label="Back to dashboard"
+        {/* Top Header matching Reference Image 2 */}
+        <div 
+          className="medex-app-header flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+          style={{
+            backgroundColor: '#ffffff',
+            border: '1px solid #e8eff7',
+            borderRadius: '1.25rem',
+            padding: '1.1rem 1.6rem',
+            boxShadow: '0 2px 12px rgba(15, 23, 42, 0.03)',
+            marginBottom: '1.5rem'
+          }}
+        >
+          {/* Left: Blue gradient icon + Title + Live Portal + Subtitle */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: 0 }}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onNavigate(userRole === 'employer' ? 'dashboard/employer' : 'dashboard/admin')}
+              className="lg:hidden flex-shrink-0 text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+              aria-label="Back to dashboard"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            {/* Vibrant Blue rounded squircle icon container */}
+            <div 
+              className="medex-app-header-brand-icon"
+              style={{
+                width: '3.1rem',
+                height: '3.1rem',
+                borderRadius: '0.95rem',
+                background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ffffff',
+                flexShrink: 0
+              }}
+            >
+              <Briefcase style={{ width: '1.65rem', height: '1.65rem' }} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+                <h1 
+                  className="medex-app-header-title"
+                  style={{
+                    fontSize: '1.35rem',
+                    fontWeight: 800,
+                    color: '#0f172a',
+                    letterSpacing: '-0.02em',
+                    lineHeight: 1.2
+                  }}
+                >
+                  Application Management
+                </h1>
+                <span 
+                  className="medex-app-live-portal-pill"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    padding: '0.2rem 0.65rem',
+                    borderRadius: '9999px',
+                    backgroundColor: '#ecfdf5',
+                    border: '1px solid #a7f3d0',
+                    color: '#059669',
+                    fontSize: '0.75rem',
+                    fontWeight: 600
+                  }}
+                >
+                  <span 
+                    className="medex-app-live-portal-dot"
+                    style={{
+                      width: '0.45rem',
+                      height: '0.45rem',
+                      borderRadius: '50%',
+                      backgroundColor: '#10b981'
+                    }} 
+                  />
+                  Live Portal
+                </span>
+              </div>
+              <p 
+                className="medex-app-header-subtitle"
+                style={{
+                  fontSize: '0.82rem',
+                  color: '#64748b',
+                  marginTop: '0.25rem'
+                }}
               >
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              {/* Vibrant Blue rounded squircle icon container */}
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center flex-shrink-0 shadow-md shadow-blue-500/25">
-                <Briefcase className="w-6 h-6" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-                    Application Management
-                  </h1>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                    Live Portal
-                  </span>
+                Review candidates, verify qualifications, and manage applications for your posted jobs.
+              </p>
+            </div>
+          </div>
+
+          {/* Right: User Pill + Back to Dashboard Button */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }} className="self-end md:self-center">
+            {/* Mobile Filter Sheet Trigger */}
+            <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm" className="lg:hidden rounded-xl border-slate-200">
+                  <Filter className="w-4 h-4 mr-1.5 text-blue-600" />
+                  Filters
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[320px] sm:w-[400px] overflow-y-auto">
+                <SheetHeader>
+                  <SheetTitle>Filter Candidates</SheetTitle>
+                  <SheetDescription>
+                    Narrow applications by criteria, eligibility, and job post
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="mt-5">
+                  <FilterPanel onClose={() => setIsFilterSheetOpen(false)} />
                 </div>
-                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                  Review candidates, verify qualifications, and manage applications for your posted jobs.
-                </p>
+              </SheetContent>
+            </Sheet>
+
+            {/* Account profile pill matching Reference Image 2 */}
+            <div 
+              className="medex-app-user-pill hidden sm:flex"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.65rem',
+                padding: '0.45rem 0.9rem',
+                backgroundColor: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '0.85rem',
+                color: '#1e293b'
+              }}
+            >
+              <div style={{
+                width: '1.85rem',
+                height: '1.85rem',
+                borderRadius: '50%',
+                backgroundColor: '#e2e8f0',
+                color: '#475569',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <User style={{ width: '1.05rem', height: '1.05rem' }} />
               </div>
+              <div style={{ textAlign: 'left', lineHeight: 1.15 }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0f172a' }}>{user?.name || 'Aayush Paradkar'}</div>
+                <div style={{ fontSize: '0.68rem', color: '#94a3b8', textTransform: 'capitalize' }}>{userRole === 'admin' ? 'Administrator' : 'Employer'}</div>
+              </div>
+              <ChevronDown style={{ width: '0.85rem', height: '0.85rem', color: '#94a3b8', marginLeft: '0.2rem' }} />
             </div>
 
-            {/* Right: User Pill + Back to Dashboard Button */}
-            <div className="flex items-center gap-3 flex-shrink-0 self-end md:self-center">
-              {/* Mobile Filter Sheet Trigger */}
-              <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="outline" size="sm" className="lg:hidden rounded-xl border-slate-200">
-                    <Filter className="w-4 h-4 mr-1.5 text-blue-600" />
-                    Filters
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-[320px] sm:w-[400px] overflow-y-auto">
-                  <SheetHeader>
-                    <SheetTitle>Filter Candidates</SheetTitle>
-                    <SheetDescription>
-                      Narrow applications by criteria, eligibility, and job post
-                    </SheetDescription>
-                  </SheetHeader>
-                  <div className="mt-5">
-                    <FilterPanel onClose={() => setIsFilterSheetOpen(false)} />
-                  </div>
-                </SheetContent>
-              </Sheet>
-
-              {/* Account profile pill matching Image 1 */}
-              <div className="hidden sm:flex items-center gap-3 px-3.5 py-1.5 rounded-xl bg-slate-50 dark:bg-gray-800/80 border border-slate-200/80 dark:border-gray-700 text-slate-700 dark:text-slate-200">
-                <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center">
-                  <User className="w-4 h-4" />
-                </div>
-                <div className="text-left text-xs leading-tight">
-                  <div className="font-semibold text-slate-900 dark:text-slate-100">{user?.name || 'Aayush Paradkar'}</div>
-                  <div className="text-[11px] text-slate-400 capitalize">{userRole === 'admin' ? 'Administrator' : 'Employer'}</div>
-                </div>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
-              </div>
-
-              {/* Back to Dashboard Button matching Image 1 */}
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => onNavigate(userRole === 'employer' ? 'dashboard/employer' : 'dashboard/admin')}
-                className="hidden lg:flex items-center gap-2 h-10 px-4 rounded-xl border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-gray-700 font-medium text-xs shadow-2xs"
-              >
-                <ArrowLeft className="w-4 h-4 text-slate-600 dark:text-slate-300" />
-                Back to Dashboard
-              </Button>
-            </div>
+            {/* Back to Dashboard Button matching Reference Image 2 */}
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => onNavigate(userRole === 'employer' ? 'dashboard/employer' : 'dashboard/admin')}
+              className="medex-app-back-btn hidden lg:flex"
+              style={{
+                height: '2.5rem',
+                padding: '0 1.1rem',
+                backgroundColor: '#ffffff',
+                border: '1px solid #cbd5e1',
+                borderRadius: '0.85rem',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                color: '#1e293b',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              <ArrowLeft style={{ width: '1rem', height: '1rem', color: '#475569' }} />
+              Back to Dashboard
+            </Button>
           </div>
         </div>
 
@@ -1143,7 +1237,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
           {/* Desktop Sidebar Filters */}
           <aside className="admin-applications-page__sidebar hidden lg:block lg:w-64 xl:w-72 flex-shrink-0">
             <div className="sticky top-4">
-              <Card className="admin-applications-page__filter-card p-4 rounded-2xl border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+              <Card className="medex-filter-card">
                 <FilterPanel />
               </Card>
             </div>
@@ -1151,110 +1245,276 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
 
           {/* Main Content */}
           <main className="admin-applications-page__main flex-1 min-w-0">
-            {/* Job Eligibility & Recruitment Overview Banner matching Image 1 */}
-            <div className="admin-applications-page__overview relative mb-6 bg-white dark:bg-gray-800 border border-slate-100 dark:border-gray-700 rounded-2xl p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
-              {/* Decorative graphic in top-right corner from Image 1 */}
-              <div className="absolute top-4 right-6 hidden md:flex items-center justify-center pointer-events-none select-none">
-                <div className="relative w-36 h-28 opacity-90">
-                  <div className="absolute inset-0 bg-gradient-to-tr from-blue-100/40 to-teal-50/60 rounded-3xl blur-xl" />
-                  <div className="relative w-28 h-24 bg-white/90 dark:bg-gray-800/90 border border-blue-100 dark:border-blue-900 rounded-2xl shadow-sm p-3 transform rotate-3 flex flex-col justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-600 flex items-center justify-center">
-                        <User className="w-4 h-4" />
+            {/* Job Eligibility & Recruitment Overview Banner matching Reference Image 2 */}
+            <div 
+              className="medex-overview-banner"
+              style={{
+                position: 'relative',
+                backgroundColor: '#ffffff',
+                border: '1px solid #e8eff7',
+                borderRadius: '1.25rem',
+                padding: '1.75rem 2rem',
+                boxShadow: '0 2px 12px rgba(15, 23, 42, 0.03)',
+                marginBottom: '1.5rem',
+                overflow: 'hidden'
+              }}
+            >
+              {/* Decorative graphic in top-right corner from Reference Image 2 */}
+              <div 
+                className="medex-overview-illustration hidden md:flex items-center justify-center"
+                style={{
+                  position: 'absolute',
+                  top: '1.25rem',
+                  right: '1.75rem',
+                  width: '8.5rem',
+                  height: '6.5rem',
+                  pointerEvents: 'none',
+                  userSelect: 'none'
+                }}
+              >
+                <div style={{ position: 'relative', width: '7rem', height: '5.5rem' }}>
+                  <div style={{
+                    width: '6.5rem',
+                    height: '5rem',
+                    backgroundColor: 'rgba(255,255,255,0.95)',
+                    border: '1.5px solid #dbeafe',
+                    borderRadius: '1rem',
+                    boxShadow: '0 4px 12px rgba(37,99,235,0.06)',
+                    padding: '0.65rem',
+                    transform: 'rotate(4deg)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                      <div style={{
+                        width: '1.5rem',
+                        height: '1.5rem',
+                        borderRadius: '50%',
+                        backgroundColor: '#dbeafe',
+                        color: '#2563eb',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <User style={{ width: '0.9rem', height: '0.9rem' }} />
                       </div>
-                      <div className="space-y-1">
-                        <div className="w-12 h-2 bg-blue-100 dark:bg-blue-900 rounded-full" />
-                        <div className="w-8 h-1.5 bg-slate-100 dark:bg-gray-700 rounded-full" />
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                        <div style={{ width: '2.5rem', height: '0.35rem', backgroundColor: '#bfdbfe', borderRadius: '9999px' }} />
+                        <div style={{ width: '1.5rem', height: '0.3rem', backgroundColor: '#e2e8f0', borderRadius: '9999px' }} />
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <div className="w-full h-1.5 bg-slate-100 dark:bg-gray-700 rounded-full" />
-                      <div className="w-3/4 h-1.5 bg-slate-100 dark:bg-gray-700 rounded-full" />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      <div style={{ width: '100%', height: '0.3rem', backgroundColor: '#f1f5f9', borderRadius: '9999px' }} />
+                      <div style={{ width: '70%', height: '0.3rem', backgroundColor: '#f1f5f9', borderRadius: '9999px' }} />
                     </div>
                   </div>
-                  <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/30 border-2 border-white dark:border-gray-800">
-                    <Check className="w-4 h-4 stroke-[3]" />
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '-0.25rem',
+                    right: '-0.25rem',
+                    width: '1.85rem',
+                    height: '1.85rem',
+                    borderRadius: '50%',
+                    backgroundColor: '#10b981',
+                    color: '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 10px rgba(16,185,129,0.35)',
+                    border: '2px solid #ffffff'
+                  }}>
+                    <Check style={{ width: '0.95rem', height: '0.95rem', strokeWidth: 3 }} />
                   </div>
                 </div>
               </div>
 
               {/* Scope Badge */}
-              <div className="mb-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#eff6ff] text-[#2563eb] border border-[#dbeafe] dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800">
-                  <Users className="w-3.5 h-3.5 text-[#2563eb] dark:text-blue-400" />
+              <div style={{ marginBottom: '0.6rem' }}>
+                <span 
+                  className="medex-scope-badge"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    padding: '0.35rem 0.85rem',
+                    borderRadius: '9999px',
+                    backgroundColor: '#eff6ff',
+                    border: '1px solid #dbeafe',
+                    color: '#2563eb',
+                    fontSize: '0.75rem',
+                    fontWeight: 700
+                  }}
+                >
+                  <Users style={{ width: '0.9rem', height: '0.9rem', color: '#2563eb', flexShrink: 0 }} />
                   <span>{selectedJob ? 'Target Job Active Filter' : 'All Candidates Overview'}</span>
                 </span>
               </div>
 
               {/* Title */}
-              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2">
+              <h2 
+                className="medex-overview-title"
+                style={{
+                  fontSize: '1.55rem',
+                  fontWeight: 850,
+                  color: '#0f172a',
+                  letterSpacing: '-0.025em',
+                  marginBottom: '0.4rem',
+                  lineHeight: 1.25
+                }}
+              >
                 {selectedJob?.title || eligibilitySummary?.jobTitle || 'All Candidates Across Posted Jobs'}
               </h2>
 
               {/* Sub-chips: Min Exp & Qualifications */}
-              <div className="flex items-center gap-2 flex-wrap text-xs text-slate-600 dark:text-slate-400 font-medium">
-                <span className="inline-flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-slate-500" />
-                  Min Exp: <strong className="font-semibold text-slate-800 dark:text-slate-200">{eligibilitySummary?.jobCriteria?.minExperience ? `${eligibilitySummary.jobCriteria.minExperience}+ Years` : 'Fresher / Any'}</strong>
+              <div 
+                className="medex-overview-criteria"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  fontSize: '0.82rem',
+                  color: '#64748b',
+                  fontWeight: 500
+                }}
+              >
+                <Clock style={{ width: '1rem', height: '1rem', color: '#64748b', flexShrink: 0 }} />
+                <span>
+                  Min Exp: <strong style={{ fontWeight: 700, color: '#1e293b' }}>{eligibilitySummary?.jobCriteria?.minExperience ? `${eligibilitySummary.jobCriteria.minExperience}+ Years` : 'Fresher / Any'}</strong>
                 </span>
                 {eligibilitySummary?.jobCriteria?.qualifications && eligibilitySummary.jobCriteria.qualifications.length > 0 && (
                   <>
-                    <span className="text-slate-300">•</span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <GraduationCap className="w-4 h-4 text-slate-500" />
-                      Req: <strong className="font-semibold text-slate-800 dark:text-slate-200">{eligibilitySummary.jobCriteria.qualifications.join(' / ')}</strong>
+                    <span style={{ color: '#cbd5e1' }}>•</span>
+                    <GraduationCap style={{ width: '1rem', height: '1rem', color: '#64748b', flexShrink: 0 }} />
+                    <span>
+                      Req: <strong style={{ fontWeight: 700, color: '#1e293b' }}>{eligibilitySummary.jobCriteria.qualifications.join(' / ')}</strong>
                     </span>
                   </>
                 )}
               </div>
 
-              {/* 2x2 Metric Cards Grid (EXACT MATCH TO IMAGE 1) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                {/* 1. Total Applications */}
+              {/* 2x2 Metric Cards Grid (EXACT MATCH TO REFERENCE IMAGE 2) */}
+              <div 
+                className="medex-stat-grid"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                  gap: '1.15rem',
+                  marginTop: '1.5rem'
+                }}
+              >
+                {/* 1. Total Applications (Blue Accent) */}
                 <div 
                   role="button"
                   tabIndex={0}
                   onClick={() => {}}
-                  className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200/80 dark:border-gray-700 border-l-[5px] border-l-[#3b82f6] p-4 sm:p-5 shadow-xs flex items-center justify-between transition-all hover:shadow-md cursor-pointer"
+                  className="medex-stat-card medex-stat-card--blue"
+                  style={{
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #e8eff7',
+                    borderLeft: '5px solid #2563eb',
+                    borderRadius: '1.15rem',
+                    padding: '1.25rem 1.4rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    boxShadow: '0 2px 8px rgba(15, 23, 42, 0.03)'
+                  }}
                 >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="w-12 h-12 rounded-2xl bg-[#eff6ff] dark:bg-blue-950/60 text-[#2563eb] flex items-center justify-center flex-shrink-0">
-                      <Users className="w-6 h-6 text-[#2563eb] dark:text-blue-400" />
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div 
+                      className="medex-stat-icon-box medex-stat-icon-box--blue"
+                      style={{
+                        width: '3.25rem',
+                        height: '3.25rem',
+                        borderRadius: '0.95rem',
+                        backgroundColor: '#eff6ff',
+                        color: '#2563eb',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        marginRight: '1.1rem'
+                      }}
+                    >
+                      <Users style={{ width: '1.55rem', height: '1.55rem' }} />
                     </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Total Applications</div>
-                      <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 leading-tight mt-0.5">
+                    <div>
+                      <div className="medex-stat-label" style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', marginBottom: '0.35rem', lineHeight: 1 }}>
+                        Total Applications
+                      </div>
+                      <div className="medex-stat-value" style={{ fontSize: '1.85rem', fontWeight: 850, color: '#0f172a', lineHeight: 1, marginBottom: '0.35rem', letterSpacing: '-0.02em' }}>
                         {eligibilitySummary?.totalApplications ?? applications.length}
                       </div>
-                      <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-1">
-                        <TrendingUp className="w-3.5 h-3.5" />
+                      <div className="medex-stat-trend medex-stat-trend--green" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.76rem', fontWeight: 600, color: '#10b981', lineHeight: 1 }}>
+                        <TrendingUp style={{ width: '0.9rem', height: '0.9rem' }} />
                         <span>+0 since last week</span>
                       </div>
                     </div>
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-gray-700 text-slate-400 flex items-center justify-center flex-shrink-0 hover:bg-slate-100 transition-colors">
-                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                  <div 
+                    className="medex-stat-chevron"
+                    style={{
+                      width: '2rem',
+                      height: '2rem',
+                      borderRadius: '50%',
+                      backgroundColor: '#f8fafc',
+                      color: '#94a3b8',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}
+                  >
+                    <ChevronRight style={{ width: '1rem', height: '1rem' }} />
                   </div>
                 </div>
 
-                {/* 2. 100% Eligible */}
+                {/* 2. 100% Eligible (Green Accent) */}
                 <div 
                   role="button"
                   tabIndex={0}
                   onClick={() => setFilters(prev => ({ ...prev, eligibleOnly: !prev.eligibleOnly }))}
-                  className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200/80 dark:border-gray-700 border-l-[5px] border-l-[#10b981] p-4 sm:p-5 shadow-xs flex items-center justify-between transition-all hover:shadow-md cursor-pointer"
+                  className="medex-stat-card medex-stat-card--green"
+                  style={{
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #e8eff7',
+                    borderLeft: '5px solid #10b981',
+                    borderRadius: '1.15rem',
+                    padding: '1.25rem 1.4rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    boxShadow: '0 2px 8px rgba(15, 23, 42, 0.03)'
+                  }}
                 >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="w-12 h-12 rounded-2xl bg-[#ecfdf5] dark:bg-emerald-950/60 text-[#10b981] flex items-center justify-center flex-shrink-0">
-                      <CheckCircle className="w-6 h-6 text-[#10b981] dark:text-emerald-400" />
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div 
+                      className="medex-stat-icon-box medex-stat-icon-box--green"
+                      style={{
+                        width: '3.25rem',
+                        height: '3.25rem',
+                        borderRadius: '0.95rem',
+                        backgroundColor: '#ecfdf5',
+                        color: '#10b981',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        marginRight: '1.1rem'
+                      }}
+                    >
+                      <CheckCircle style={{ width: '1.55rem', height: '1.55rem' }} />
                     </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-medium text-slate-500 dark:text-slate-400">100% Eligible</div>
-                      <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 leading-tight mt-0.5">
+                    <div>
+                      <div className="medex-stat-label" style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', marginBottom: '0.35rem', lineHeight: 1 }}>
+                        100% Eligible
+                      </div>
+                      <div className="medex-stat-value" style={{ fontSize: '1.85rem', fontWeight: 850, color: '#0f172a', lineHeight: 1, marginBottom: '0.35rem', letterSpacing: '-0.02em' }}>
                         {eligibilitySummary?.eligibleCount ?? applications.filter(a => a.isEligible).length}
                       </div>
-                      <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-1">
-                        <TrendingUp className="w-3.5 h-3.5" />
+                      <div className="medex-stat-trend medex-stat-trend--green" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.76rem', fontWeight: 600, color: '#10b981', lineHeight: 1 }}>
+                        <TrendingUp style={{ width: '0.9rem', height: '0.9rem' }} />
                         <span>
                           {applications.length > 0
                             ? `${Math.round(((eligibilitySummary?.eligibleCount ?? applications.filter(a => a.isEligible).length) / (eligibilitySummary?.totalApplications ?? applications.length)) * 100)}% of total`
@@ -1263,28 +1523,68 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                       </div>
                     </div>
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-gray-700 text-slate-400 flex items-center justify-center flex-shrink-0 hover:bg-slate-100 transition-colors">
-                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                  <div 
+                    className="medex-stat-chevron"
+                    style={{
+                      width: '2rem',
+                      height: '2rem',
+                      borderRadius: '50%',
+                      backgroundColor: '#f8fafc',
+                      color: '#94a3b8',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}
+                  >
+                    <ChevronRight style={{ width: '1rem', height: '1rem' }} />
                   </div>
                 </div>
 
-                {/* 3. Shortlisted */}
+                {/* 3. Shortlisted (Purple Accent) */}
                 <div 
                   role="button"
                   tabIndex={0}
                   onClick={() => {}}
-                  className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200/80 dark:border-gray-700 border-l-[5px] border-l-[#8b5cf6] p-4 sm:p-5 shadow-xs flex items-center justify-between transition-all hover:shadow-md cursor-pointer"
+                  className="medex-stat-card medex-stat-card--purple"
+                  style={{
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #e8eff7',
+                    borderLeft: '5px solid #8b5cf6',
+                    borderRadius: '1.15rem',
+                    padding: '1.25rem 1.4rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    boxShadow: '0 2px 8px rgba(15, 23, 42, 0.03)'
+                  }}
                 >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="w-12 h-12 rounded-2xl bg-[#f5f3ff] dark:bg-purple-950/60 text-[#8b5cf6] flex items-center justify-center flex-shrink-0">
-                      <Star className="w-6 h-6 text-[#8b5cf6] dark:text-purple-400" />
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div 
+                      className="medex-stat-icon-box medex-stat-icon-box--purple"
+                      style={{
+                        width: '3.25rem',
+                        height: '3.25rem',
+                        borderRadius: '0.95rem',
+                        backgroundColor: '#f5f3ff',
+                        color: '#8b5cf6',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        marginRight: '1.1rem'
+                      }}
+                    >
+                      <Star style={{ width: '1.55rem', height: '1.55rem' }} />
                     </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Shortlisted</div>
-                      <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 leading-tight mt-0.5">
+                    <div>
+                      <div className="medex-stat-label" style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', marginBottom: '0.35rem', lineHeight: 1 }}>
+                        Shortlisted
+                      </div>
+                      <div className="medex-stat-value" style={{ fontSize: '1.85rem', fontWeight: 850, color: '#0f172a', lineHeight: 1, marginBottom: '0.35rem', letterSpacing: '-0.02em' }}>
                         {eligibilitySummary?.shortlistedCount ?? applications.filter(a => a.status === 'shortlisted').length}
                       </div>
-                      <div className="text-xs font-medium text-slate-400 flex items-center gap-1 mt-1">
+                      <div className="medex-stat-trend medex-stat-trend--muted" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.76rem', fontWeight: 500, color: '#94a3b8', lineHeight: 1 }}>
                         <span>—</span>
                         <span>
                           {applications.length > 0
@@ -1294,29 +1594,69 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                       </div>
                     </div>
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-gray-700 text-slate-400 flex items-center justify-center flex-shrink-0 hover:bg-slate-100 transition-colors">
-                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                  <div 
+                    className="medex-stat-chevron"
+                    style={{
+                      width: '2rem',
+                      height: '2rem',
+                      borderRadius: '50%',
+                      backgroundColor: '#f8fafc',
+                      color: '#94a3b8',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}
+                  >
+                    <ChevronRight style={{ width: '1rem', height: '1rem' }} />
                   </div>
                 </div>
 
-                {/* 4. Pending Review */}
+                {/* 4. Pending Review (Amber Accent) */}
                 <div 
                   role="button"
                   tabIndex={0}
                   onClick={() => {}}
-                  className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200/80 dark:border-gray-700 border-l-[5px] border-l-[#f59e0b] p-4 sm:p-5 shadow-xs flex items-center justify-between transition-all hover:shadow-md cursor-pointer"
+                  className="medex-stat-card medex-stat-card--amber"
+                  style={{
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #e8eff7',
+                    borderLeft: '5px solid #f59e0b',
+                    borderRadius: '1.15rem',
+                    padding: '1.25rem 1.4rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    boxShadow: '0 2px 8px rgba(15, 23, 42, 0.03)'
+                  }}
                 >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="w-12 h-12 rounded-2xl bg-[#fffbeb] dark:bg-amber-950/60 text-[#f59e0b] flex items-center justify-center flex-shrink-0">
-                      <Clock className="w-6 h-6 text-[#f59e0b] dark:text-amber-400" />
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div 
+                      className="medex-stat-icon-box medex-stat-icon-box--amber"
+                      style={{
+                        width: '3.25rem',
+                        height: '3.25rem',
+                        borderRadius: '0.95rem',
+                        backgroundColor: '#fffbeb',
+                        color: '#f59e0b',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        marginRight: '1.1rem'
+                      }}
+                    >
+                      <Clock style={{ width: '1.55rem', height: '1.55rem' }} />
                     </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Pending Review</div>
-                      <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 leading-tight mt-0.5">
+                    <div>
+                      <div className="medex-stat-label" style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', marginBottom: '0.35rem', lineHeight: 1 }}>
+                        Pending Review
+                      </div>
+                      <div className="medex-stat-value" style={{ fontSize: '1.85rem', fontWeight: 850, color: '#0f172a', lineHeight: 1, marginBottom: '0.35rem', letterSpacing: '-0.02em' }}>
                         {applications.filter(a => ['pending', 'applied'].includes(a.status)).length}
                       </div>
-                      <div className="text-xs font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1 mt-1">
-                        <TrendingUp className="w-3.5 h-3.5" />
+                      <div className="medex-stat-trend medex-stat-trend--amber" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.76rem', fontWeight: 600, color: '#f59e0b', lineHeight: 1 }}>
+                        <TrendingUp style={{ width: '0.9rem', height: '0.9rem' }} />
                         <span>
                           {applications.length > 0
                             ? `${Math.round((applications.filter(a => ['pending', 'applied'].includes(a.status)).length / (eligibilitySummary?.totalApplications ?? applications.length)) * 100)}% of total`
@@ -1325,8 +1665,21 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                       </div>
                     </div>
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-gray-700 text-slate-400 flex items-center justify-center flex-shrink-0 hover:bg-slate-100 transition-colors">
-                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                  <div 
+                    className="medex-stat-chevron"
+                    style={{
+                      width: '2rem',
+                      height: '2rem',
+                      borderRadius: '50%',
+                      backgroundColor: '#f8fafc',
+                      color: '#94a3b8',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}
+                  >
+                    <ChevronRight style={{ width: '1rem', height: '1rem' }} />
                   </div>
                 </div>
               </div>

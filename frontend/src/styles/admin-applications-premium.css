@@ -207,16 +207,14 @@
 .admin-applications-page__filter-card input:focus,
 .admin-applications-page__filter-card select:focus,
 .admin-applications-page__filter-card [role="combobox"]:focus {
-  border-color: #0a6e79 !important;
-  box-shadow: 0 0 0 3px rgba(10, 110, 121, 0.15) !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
 }
 
 .admin-applications-page__overview {
-  border-color: #e2e8f0 !important;
-  background:
-    radial-gradient(circle at 100% 0%, rgba(10, 110, 121, 0.06), transparent 20rem),
-    linear-gradient(135deg, #ffffff, #f8fbfb) !important;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+  border: 1px solid #e2e8f0 !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03) !important;
   border-radius: 1rem !important;
 }
 
@@ -246,9 +244,9 @@
 }
 
 .admin-applications-page__tabs [role="tab"][data-state="active"] {
-  background: #0a6e79 !important;
+  background: #2563eb !important;
   color: #ffffff !important;
-  box-shadow: 0 2px 8px rgba(10, 110, 121, 0.25) !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25) !important;
 }
 
 .admin-applications-page .medex-applicant-grid {

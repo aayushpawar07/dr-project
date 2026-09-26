@@ -6,7 +6,7 @@ import {
   Loader2, ArrowLeft, AlertCircle, Video, ExternalLink, Check, Sparkles, 
   ShieldCheck, GraduationCap, Stethoscope, SlidersHorizontal, RefreshCw, Award,
   Building2, Plus, Star, Target, Rocket, Package, User, Bell, ChevronDown,
-  ArrowUpDown, Grid2X2, List, Edit, X, AlertTriangle
+  ArrowUpDown, Grid2X2, List, Edit, X, AlertTriangle, ChevronRight, TrendingUp
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
@@ -505,7 +505,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
         </Select>
       </div>
 
-      {/* 3. Quick 1-Click Toggle: 100% Eligible Only */}
+      {/* 3. Card 1: 100% Eligible Only with Switch (Exact match to Image 1 & 3) */}
       <div
         role="button"
         tabIndex={0}
@@ -516,49 +516,54 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
             setFilters(prev => ({ ...prev, eligibleOnly: !prev.eligibleOnly }));
           }
         }}
-        className={`p-3 rounded-xl border transition-all cursor-pointer select-none ${
-          filters.eligibleOnly 
-            ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 shadow-2xs' 
-            : 'bg-white dark:bg-gray-800 border-slate-200 dark:border-gray-700 hover:border-slate-300'
-        }`}
+        className="p-3 rounded-2xl border border-blue-100 bg-[#eef5ff] dark:bg-blue-950/40 dark:border-blue-800 transition-all cursor-pointer select-none flex items-center justify-between shadow-2xs"
       >
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
-              filters.eligibleOnly 
-                ? 'bg-emerald-600 text-white' 
-                : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600'
-            }`}>
-              <Target className="w-4 h-4" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-tight">
-                100% Eligible Only
-              </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate leading-tight">
-                Filter strictly qualified candidates
-              </p>
-            </div>
-          </div>
-          {/* Sleek Toggle switch indicator */}
-          <div className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors duration-200 ease-in-out ${
-            filters.eligibleOnly ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-600'
-          }`}>
-            <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out my-auto mx-0.5 ${
-              filters.eligibleOnly ? 'translate-x-4' : 'translate-x-0'
-            }`} />
-          </div>
+        <div className="flex items-center gap-2.5 min-w-0">
+          <Target className="w-5 h-5 text-blue-600 flex-shrink-0" />
+          <span className="text-xs font-bold text-slate-800 dark:text-slate-100 leading-tight">
+            100% Eligible Only
+          </span>
+        </div>
+        {/* iOS-style toggle switch */}
+        <div className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition-colors duration-200 ease-in-out ${
+          filters.eligibleOnly ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'
+        }`}>
+          <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out my-auto mx-0.5 ${
+            filters.eligibleOnly ? 'translate-x-4' : 'translate-x-0'
+          }`} />
         </div>
       </div>
 
-      {/* 4. Medical Qualification */}
+      {/* 4. Card 2: Filter strictly qualified candidates (Exact match to Image 1 & 3) */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => setFilters(prev => ({ ...prev, eligibleOnly: !prev.eligibleOnly }))}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            setFilters(prev => ({ ...prev, eligibleOnly: !prev.eligibleOnly }));
+          }
+        }}
+        className="p-3 rounded-2xl border border-emerald-100 bg-[#ecfdf5] dark:bg-emerald-950/30 dark:border-emerald-800 transition-all cursor-pointer select-none flex items-center justify-between hover:bg-emerald-100/60 shadow-2xs"
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          <Filter className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+          <div className="text-xs font-semibold text-emerald-900 dark:text-emerald-200 leading-tight">
+            Filter strictly qualified candidates
+          </div>
+        </div>
+        <ChevronRight className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+      </div>
+
+      {/* 5. Medical Qualification */}
       <div>
         <Label htmlFor="qualification" className="text-[11px] font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wider">Required Medical Degree</Label>
         <Select 
           value={filters.qualification} 
           onValueChange={(value) => setFilters(prev => ({ ...prev, qualification: value }))}
         >
-          <SelectTrigger className="mt-1.5 text-xs sm:text-sm h-10 border-slate-300 focus:border-[#0a6e79] rounded-xl">
+          <SelectTrigger className="mt-1.5 text-xs sm:text-sm h-10 border-slate-200 focus:border-blue-500 rounded-xl">
             <SelectValue placeholder="All Qualifications" />
           </SelectTrigger>
           <SelectContent>
@@ -576,7 +581,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
         </Select>
       </div>
 
-      {/* 5. Speciality */}
+      {/* 6. Speciality */}
       <div>
         <Label htmlFor="speciality" className="text-[11px] font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wider">Medical Speciality</Label>
         <Input
@@ -584,18 +589,18 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
           placeholder="e.g. Cardiology, Paediatrics..."
           value={filters.speciality}
           onChange={(e) => setFilters(prev => ({ ...prev, speciality: e.target.value }))}
-          className="mt-1.5 text-xs sm:text-sm h-10 border-slate-300 focus:border-[#0a6e79] rounded-xl"
+          className="mt-1.5 text-xs sm:text-sm h-10 border-slate-200 focus:border-blue-500 rounded-xl"
         />
       </div>
 
-      {/* 6. Clinical Experience */}
+      {/* 7. Clinical Experience */}
       <div>
         <Label htmlFor="minExp" className="text-[11px] font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wider">Clinical Experience</Label>
         <Select 
           value={filters.minExp} 
           onValueChange={(value) => setFilters(prev => ({ ...prev, minExp: value }))}
         >
-          <SelectTrigger className="mt-1.5 text-xs sm:text-sm h-10 border-slate-300 focus:border-[#0a6e79] rounded-xl">
+          <SelectTrigger className="mt-1.5 text-xs sm:text-sm h-10 border-slate-200 focus:border-blue-500 rounded-xl">
             <SelectValue placeholder="Any Experience" />
           </SelectTrigger>
           <SelectContent>
@@ -610,14 +615,14 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
         </Select>
       </div>
 
-      {/* 7. State Medical Council Registration */}
+      {/* 8. State Medical Council Registration */}
       <div>
         <Label htmlFor="registrationStatus" className="text-[11px] font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wider">State Medical Registration</Label>
         <Select 
           value={filters.registrationStatus} 
           onValueChange={(value) => setFilters(prev => ({ ...prev, registrationStatus: value }))}
         >
-          <SelectTrigger className="mt-1.5 text-xs sm:text-sm h-10 border-slate-300 focus:border-[#0a6e79] rounded-xl">
+          <SelectTrigger className="mt-1.5 text-xs sm:text-sm h-10 border-slate-200 focus:border-blue-500 rounded-xl">
             <SelectValue placeholder="All Candidates" />
           </SelectTrigger>
           <SelectContent>
@@ -628,7 +633,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
         </Select>
       </div>
 
-      {/* 8. Registration Council */}
+      {/* 9. Registration Council */}
       <div>
         <Label htmlFor="council" className="text-[11px] font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wider">Medical Council / State</Label>
         <Input
@@ -636,11 +641,11 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
           placeholder="e.g. Maharashtra Medical Council..."
           value={filters.council}
           onChange={(e) => setFilters(prev => ({ ...prev, council: e.target.value }))}
-          className="mt-1.5 text-xs sm:text-sm h-10 border-slate-300 focus:border-[#0a6e79] rounded-xl"
+          className="mt-1.5 text-xs sm:text-sm h-10 border-slate-200 focus:border-blue-500 rounded-xl"
         />
       </div>
 
-      {/* 9. Candidate State / City */}
+      {/* 10. Candidate State / City */}
       <div className="grid grid-cols-2 gap-2">
         <div>
           <Label htmlFor="state" className="text-[11px] font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wider">State</Label>
@@ -649,7 +654,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
             placeholder="e.g. Maharashtra"
             value={filters.state}
             onChange={(e) => setFilters(prev => ({ ...prev, state: e.target.value }))}
-            className="mt-1 text-xs h-9 border-slate-300 focus:border-[#0a6e79] rounded-xl"
+            className="mt-1 text-xs h-9 border-slate-200 focus:border-blue-500 rounded-xl"
           />
         </div>
         <div>
@@ -659,19 +664,19 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
             placeholder="e.g. Mumbai"
             value={filters.city}
             onChange={(e) => setFilters(prev => ({ ...prev, city: e.target.value }))}
-            className="mt-1 text-xs h-9 border-slate-300 focus:border-[#0a6e79] rounded-xl"
+            className="mt-1 text-xs h-9 border-slate-200 focus:border-blue-500 rounded-xl"
           />
         </div>
       </div>
 
-      {/* 10. Application Status */}
+      {/* 11. Application Status */}
       <div>
         <Label htmlFor="status" className="text-[11px] font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wider">Application Status</Label>
         <Select 
           value={filters.status} 
           onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}
         >
-          <SelectTrigger className="mt-1.5 text-xs sm:text-sm h-10 border-slate-300 focus:border-[#0a6e79] rounded-xl">
+          <SelectTrigger className="mt-1.5 text-xs sm:text-sm h-10 border-slate-200 focus:border-blue-500 rounded-xl">
             <SelectValue placeholder="All Statuses" />
           </SelectTrigger>
           <SelectContent>
@@ -685,14 +690,14 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
         </Select>
       </div>
 
-      {/* 11. Sort By */}
+      {/* 12. Sort By */}
       <div>
         <Label htmlFor="sortBy" className="text-[11px] font-bold text-slate-700 dark:text-gray-300 uppercase tracking-wider">Sort Order</Label>
         <Select 
           value={filters.sortBy} 
           onValueChange={(value) => setFilters(prev => ({ ...prev, sortBy: value }))}
         >
-          <SelectTrigger className="mt-1.5 text-xs sm:text-sm h-10 border-slate-300 focus:border-[#0a6e79] rounded-xl">
+          <SelectTrigger className="mt-1.5 text-xs sm:text-sm h-10 border-slate-200 focus:border-blue-500 rounded-xl">
             <SelectValue placeholder="Sort Order" />
           </SelectTrigger>
           <SelectContent>
@@ -724,7 +729,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
             });
             onClose?.();
           }}
-          className="flex-1 text-xs h-10 rounded-xl border-slate-300 text-slate-700 hover:bg-slate-100"
+          className="flex-1 text-xs h-10 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-100"
         >
           <RefreshCw className="w-3.5 h-3.5 mr-1 text-slate-500" />
           Reset
@@ -735,7 +740,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
             loadApplications();
             onClose?.();
           }}
-          className="flex-1 text-xs h-10 rounded-xl bg-[#0a6e79] hover:bg-[#06515a] text-white font-bold shadow-xs"
+          className="flex-1 text-xs h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-xs"
         >
           Apply Filters
         </Button>
@@ -1050,11 +1055,11 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
   return (
     <div className={`admin-applications-page view-${viewMode} min-h-screen bg-gray-50 dark:bg-gray-900`}>
       <div className="admin-applications-page__container container mx-auto 2xl:max-w-[1600px] xl:max-w-[1400px] px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
-        {/* Unified SaaS Top Header */}
-        <div className="admin-applications-page__header mb-5 bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-2xl p-4 sm:p-5 shadow-xs">
+        {/* Top Header matching Image 1 */}
+        <div className="admin-applications-page__header mb-6 bg-white dark:bg-gray-800 border border-slate-100 dark:border-gray-700 rounded-2xl p-4 sm:px-6 sm:py-4 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            {/* Left: Brand Icon + Title + Subtitle */}
-            <div className="flex items-center gap-3.5 min-w-0">
+            {/* Left: Blue gradient icon + Title + Live Portal + Subtitle */}
+            <div className="flex items-center gap-4 min-w-0">
               <Button
                 variant="ghost"
                 size="icon"
@@ -1064,33 +1069,33 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
               >
                 <ArrowLeft className="w-5 h-5" />
               </Button>
-              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[#0a6e79] to-[#2d9b8e] text-white flex items-center justify-center flex-shrink-0 shadow-sm shadow-[#0a6e79]/30">
-                <Briefcase className="w-5 h-5" />
+              {/* Vibrant Blue rounded squircle icon container */}
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center flex-shrink-0 shadow-md shadow-blue-500/25">
+                <Briefcase className="w-6 h-6" />
               </div>
               <div className="min-w-0">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5 flex-wrap">
                   <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
                     Application Management
                   </h1>
-                  <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                     Live Portal
                   </span>
                 </div>
-                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                  {userRole === 'employer' || user?.role === 'EMPLOYER' 
-                    ? 'Review candidates, verify qualifications, and manage applications for your posted jobs'
-                    : 'Manage applications, review candidate qualifications, and track hiring pipelines across MedExJob'}
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                  Review candidates, verify qualifications, and manage applications for your posted jobs.
                 </p>
               </div>
             </div>
 
-            {/* Right: Actions, Notifications, User info, Desktop Back button */}
-            <div className="flex items-center gap-2.5 sm:gap-3 flex-shrink-0 self-end md:self-center">
+            {/* Right: User Pill + Back to Dashboard Button */}
+            <div className="flex items-center gap-3 flex-shrink-0 self-end md:self-center">
               {/* Mobile Filter Sheet Trigger */}
               <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
                 <SheetTrigger asChild>
-                  <Button variant="outline" size="sm" className="lg:hidden rounded-xl border-slate-300">
-                    <Filter className="w-4 h-4 mr-1.5 text-[#0a6e79]" />
+                  <Button variant="outline" size="sm" className="lg:hidden rounded-xl border-slate-200">
+                    <Filter className="w-4 h-4 mr-1.5 text-blue-600" />
                     Filters
                   </Button>
                 </SheetTrigger>
@@ -1107,25 +1112,26 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                 </SheetContent>
               </Sheet>
 
-              {/* Account profile pill */}
-              <div className="hidden sm:flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700 text-slate-700 dark:text-slate-200">
-                <span className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#0a6e79] to-[#06515a] text-white text-xs font-bold flex items-center justify-center">
-                  {(user?.name || 'A').charAt(0).toUpperCase()}
-                </span>
-                <div className="text-left text-xs leading-none">
-                  <div className="font-semibold text-slate-800 dark:text-slate-200">{user?.name || 'Administrator'}</div>
-                  <div className="text-[10px] text-slate-400 capitalize">{userRole || 'Admin'}</div>
+              {/* Account profile pill matching Image 1 */}
+              <div className="hidden sm:flex items-center gap-3 px-3.5 py-1.5 rounded-xl bg-slate-50 dark:bg-gray-800/80 border border-slate-200/80 dark:border-gray-700 text-slate-700 dark:text-slate-200">
+                <div className="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center">
+                  <User className="w-4 h-4" />
                 </div>
+                <div className="text-left text-xs leading-tight">
+                  <div className="font-semibold text-slate-900 dark:text-slate-100">{user?.name || 'Aayush Paradkar'}</div>
+                  <div className="text-[11px] text-slate-400 capitalize">{userRole === 'admin' ? 'Administrator' : 'Employer'}</div>
+                </div>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 ml-0.5" />
               </div>
 
-              {/* Back to Dashboard Button */}
+              {/* Back to Dashboard Button matching Image 1 */}
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={() => onNavigate(userRole === 'employer' ? 'dashboard/employer' : 'dashboard/admin')}
-                className="hidden lg:flex items-center gap-1.5 h-9 rounded-xl border-slate-300 text-slate-700 hover:text-slate-900 hover:border-slate-400 font-medium"
+                className="hidden lg:flex items-center gap-2 h-10 px-4 rounded-xl border-slate-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-gray-700 font-medium text-xs shadow-2xs"
               >
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-4 h-4 text-slate-600 dark:text-slate-300" />
                 Back to Dashboard
               </Button>
             </div>
@@ -1137,8 +1143,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
           {/* Desktop Sidebar Filters */}
           <aside className="admin-applications-page__sidebar hidden lg:block lg:w-64 xl:w-72 flex-shrink-0">
             <div className="sticky top-4">
-              <Card className="admin-applications-page__filter-card p-4">
-                <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4"><SlidersHorizontal className="w-4 h-4 text-[#0a6e79]" /> Filters</h3>
+              <Card className="admin-applications-page__filter-card p-4 rounded-2xl border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
                 <FilterPanel />
               </Card>
             </div>
@@ -1146,114 +1151,182 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
 
           {/* Main Content */}
           <main className="admin-applications-page__main flex-1 min-w-0">
-            {/* Job Eligibility & Recruitment Overview Banner */}
-            <div className="admin-applications-page__overview mb-5 bg-white dark:bg-gray-800 border border-slate-200/90 dark:border-gray-700 rounded-2xl p-4 sm:p-5 shadow-xs">
-              {/* Top Row: Job Scope / Title & Criteria chips on left, Toggle on right */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-100 dark:border-gray-700/60">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-50 text-teal-800 border border-teal-200 dark:bg-teal-950/60 dark:text-teal-300 dark:border-teal-800">
-                      <Target className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400" />
-                      {selectedJob ? 'Target Job Active Filter' : 'All Candidates Overview'}
-                    </span>
-                    {selectedJob && (
-                      <span className="text-[11px] text-slate-500 font-medium hidden md:inline">
-                        ID: #{selectedJob.id}
-                      </span>
-                    )}
+            {/* Job Eligibility & Recruitment Overview Banner matching Image 1 */}
+            <div className="admin-applications-page__overview relative mb-6 bg-white dark:bg-gray-800 border border-slate-100 dark:border-gray-700 rounded-2xl p-5 sm:p-6 shadow-[0_2px_12px_rgba(0,0,0,0.03)] overflow-hidden">
+              {/* Decorative graphic in top-right corner from Image 1 */}
+              <div className="absolute top-4 right-6 hidden md:flex items-center justify-center pointer-events-none select-none">
+                <div className="relative w-36 h-28 opacity-90">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-blue-100/40 to-teal-50/60 rounded-3xl blur-xl" />
+                  <div className="relative w-28 h-24 bg-white/90 dark:bg-gray-800/90 border border-blue-100 dark:border-blue-900 rounded-2xl shadow-sm p-3 transform rotate-3 flex flex-col justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-950 text-blue-600 flex items-center justify-center">
+                        <User className="w-4 h-4" />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="w-12 h-2 bg-blue-100 dark:bg-blue-900 rounded-full" />
+                        <div className="w-8 h-1.5 bg-slate-100 dark:bg-gray-700 rounded-full" />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="w-full h-1.5 bg-slate-100 dark:bg-gray-700 rounded-full" />
+                      <div className="w-3/4 h-1.5 bg-slate-100 dark:bg-gray-700 rounded-full" />
+                    </div>
                   </div>
-                  <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 truncate">
-                    {selectedJob?.title || eligibilitySummary?.jobTitle || 'All Candidates Across Posted Jobs'}
-                  </h2>
-
-                  {/* Criteria Chips */}
-                  <div className="flex items-center gap-2 flex-wrap mt-2">
-                    <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-teal-50/70 text-teal-800 dark:bg-teal-950/40 dark:text-teal-300 border border-teal-100 dark:border-teal-900/60">
-                      <Clock className="w-3.5 h-3.5 text-teal-600 flex-shrink-0" />
-                      Min Exp: <strong className="font-semibold">{eligibilitySummary?.jobCriteria?.minExperience ? `${eligibilitySummary.jobCriteria.minExperience}+ Years` : 'Fresher / Any'}</strong>
-                    </span>
-                    {eligibilitySummary?.jobCriteria?.qualifications && eligibilitySummary.jobCriteria.qualifications.length > 0 && (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-50 text-slate-700 dark:bg-gray-700 dark:text-slate-300 border border-slate-200 dark:border-gray-600">
-                        <GraduationCap className="w-3.5 h-3.5 text-slate-600 flex-shrink-0" />
-                        Req: <strong className="font-semibold">{eligibilitySummary.jobCriteria.qualifications.join(' / ')}</strong>
-                      </span>
-                    )}
+                  <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md shadow-emerald-500/30 border-2 border-white dark:border-gray-800">
+                    <Check className="w-4 h-4 stroke-[3]" />
                   </div>
-                </div>
-
-                {/* Right: Quick Action Pill: 100% Eligible Only Switch */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setFilters(prev => ({ ...prev, eligibleOnly: !prev.eligibleOnly }))}
-                    className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all shadow-2xs ${
-                      filters.eligibleOnly 
-                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-emerald-600/20' 
-                        : 'bg-white dark:bg-gray-800 text-slate-700 dark:text-slate-200 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/40'
-                    }`}
-                  >
-                    <Target className={`w-4 h-4 ${filters.eligibleOnly ? 'text-white' : 'text-emerald-600'}`} />
-                    <span>100% Eligible Only</span>
-                    <span className={`px-1.5 py-0.2 rounded-full text-[11px] font-bold ${
-                      filters.eligibleOnly ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-800'
-                    }`}>
-                      {eligibilitySummary?.eligibleCount ?? applications.filter(a => a.isEligible).length}
-                    </span>
-                  </button>
                 </div>
               </div>
 
-              {/* Bottom Row: 4 Metric Cards in a balanced responsive grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 pt-4">
+              {/* Scope Badge */}
+              <div className="mb-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#eff6ff] text-[#2563eb] border border-[#dbeafe] dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800">
+                  <Users className="w-3.5 h-3.5 text-[#2563eb] dark:text-blue-400" />
+                  <span>{selectedJob ? 'Target Job Active Filter' : 'All Candidates Overview'}</span>
+                </span>
+              </div>
+
+              {/* Title */}
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2">
+                {selectedJob?.title || eligibilitySummary?.jobTitle || 'All Candidates Across Posted Jobs'}
+              </h2>
+
+              {/* Sub-chips: Min Exp & Qualifications */}
+              <div className="flex items-center gap-2 flex-wrap text-xs text-slate-600 dark:text-slate-400 font-medium">
+                <span className="inline-flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-slate-500" />
+                  Min Exp: <strong className="font-semibold text-slate-800 dark:text-slate-200">{eligibilitySummary?.jobCriteria?.minExperience ? `${eligibilitySummary.jobCriteria.minExperience}+ Years` : 'Fresher / Any'}</strong>
+                </span>
+                {eligibilitySummary?.jobCriteria?.qualifications && eligibilitySummary.jobCriteria.qualifications.length > 0 && (
+                  <>
+                    <span className="text-slate-300">•</span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <GraduationCap className="w-4 h-4 text-slate-500" />
+                      Req: <strong className="font-semibold text-slate-800 dark:text-slate-200">{eligibilitySummary.jobCriteria.qualifications.join(' / ')}</strong>
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* 2x2 Metric Cards Grid (EXACT MATCH TO IMAGE 1) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
                 {/* 1. Total Applications */}
-                <div className="bg-slate-50/70 dark:bg-gray-800/80 p-3 sm:p-3.5 rounded-xl border border-slate-200/80 dark:border-gray-700 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-teal-100/70 dark:bg-teal-950/70 text-teal-700 dark:text-teal-300 flex items-center justify-center flex-shrink-0">
-                    <Users className="w-5 h-5 text-teal-700 dark:text-teal-400" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate">Total Applications</div>
-                    <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 leading-tight">
-                      {eligibilitySummary?.totalApplications ?? applications.length}
+                <div 
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {}}
+                  className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200/80 dark:border-gray-700 border-l-[5px] border-l-[#3b82f6] p-4 sm:p-5 shadow-xs flex items-center justify-between transition-all hover:shadow-md cursor-pointer"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-12 h-12 rounded-2xl bg-[#eff6ff] dark:bg-blue-950/60 text-[#2563eb] flex items-center justify-center flex-shrink-0">
+                      <Users className="w-6 h-6 text-[#2563eb] dark:text-blue-400" />
                     </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Total Applications</div>
+                      <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 leading-tight mt-0.5">
+                        {eligibilitySummary?.totalApplications ?? applications.length}
+                      </div>
+                      <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-1">
+                        <TrendingUp className="w-3.5 h-3.5" />
+                        <span>+0 since last week</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-gray-700 text-slate-400 flex items-center justify-center flex-shrink-0 hover:bg-slate-100 transition-colors">
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
                   </div>
                 </div>
 
                 {/* 2. 100% Eligible */}
-                <div className="bg-emerald-50/50 dark:bg-emerald-950/20 p-3 sm:p-3.5 rounded-xl border border-emerald-100 dark:border-emerald-900/60 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 flex items-center justify-center flex-shrink-0">
-                    <CheckCircle className="w-5 h-5 text-emerald-700 dark:text-emerald-400" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[11px] sm:text-xs text-emerald-700 dark:text-emerald-400 font-semibold truncate">100% Eligible</div>
-                    <div className="text-xl sm:text-2xl font-black text-emerald-700 dark:text-emerald-400 leading-tight">
-                      {eligibilitySummary?.eligibleCount ?? applications.filter(a => a.isEligible).length}
+                <div 
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setFilters(prev => ({ ...prev, eligibleOnly: !prev.eligibleOnly }))}
+                  className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200/80 dark:border-gray-700 border-l-[5px] border-l-[#10b981] p-4 sm:p-5 shadow-xs flex items-center justify-between transition-all hover:shadow-md cursor-pointer"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-12 h-12 rounded-2xl bg-[#ecfdf5] dark:bg-emerald-950/60 text-[#10b981] flex items-center justify-center flex-shrink-0">
+                      <CheckCircle className="w-6 h-6 text-[#10b981] dark:text-emerald-400" />
                     </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-medium text-slate-500 dark:text-slate-400">100% Eligible</div>
+                      <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 leading-tight mt-0.5">
+                        {eligibilitySummary?.eligibleCount ?? applications.filter(a => a.isEligible).length}
+                      </div>
+                      <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mt-1">
+                        <TrendingUp className="w-3.5 h-3.5" />
+                        <span>
+                          {applications.length > 0
+                            ? `${Math.round(((eligibilitySummary?.eligibleCount ?? applications.filter(a => a.isEligible).length) / (eligibilitySummary?.totalApplications ?? applications.length)) * 100)}% of total`
+                            : '100% of total'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-gray-700 text-slate-400 flex items-center justify-center flex-shrink-0 hover:bg-slate-100 transition-colors">
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
                   </div>
                 </div>
 
                 {/* 3. Shortlisted */}
-                <div className="bg-purple-50/50 dark:bg-purple-950/20 p-3 sm:p-3.5 rounded-xl border border-purple-100 dark:border-purple-900/60 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 flex items-center justify-center flex-shrink-0">
-                    <Star className="w-5 h-5 text-purple-700 dark:text-purple-400" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[11px] sm:text-xs text-purple-700 dark:text-purple-400 font-semibold truncate">Shortlisted</div>
-                    <div className="text-xl sm:text-2xl font-black text-purple-700 dark:text-purple-400 leading-tight">
-                      {eligibilitySummary?.shortlistedCount ?? applications.filter(a => a.status === 'shortlisted').length}
+                <div 
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {}}
+                  className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200/80 dark:border-gray-700 border-l-[5px] border-l-[#8b5cf6] p-4 sm:p-5 shadow-xs flex items-center justify-between transition-all hover:shadow-md cursor-pointer"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-12 h-12 rounded-2xl bg-[#f5f3ff] dark:bg-purple-950/60 text-[#8b5cf6] flex items-center justify-center flex-shrink-0">
+                      <Star className="w-6 h-6 text-[#8b5cf6] dark:text-purple-400" />
                     </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Shortlisted</div>
+                      <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 leading-tight mt-0.5">
+                        {eligibilitySummary?.shortlistedCount ?? applications.filter(a => a.status === 'shortlisted').length}
+                      </div>
+                      <div className="text-xs font-medium text-slate-400 flex items-center gap-1 mt-1">
+                        <span>—</span>
+                        <span>
+                          {applications.length > 0
+                            ? `${Math.round(((eligibilitySummary?.shortlistedCount ?? applications.filter(a => a.status === 'shortlisted').length) / (eligibilitySummary?.totalApplications ?? applications.length)) * 100)}% of total`
+                            : '0% of total'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-gray-700 text-slate-400 flex items-center justify-center flex-shrink-0 hover:bg-slate-100 transition-colors">
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
                   </div>
                 </div>
 
                 {/* 4. Pending Review */}
-                <div className="bg-amber-50/50 dark:bg-amber-950/20 p-3 sm:p-3.5 rounded-xl border border-amber-100 dark:border-amber-900/60 flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 flex items-center justify-center flex-shrink-0">
-                    <Clock className="w-5 h-5 text-amber-700 dark:text-amber-400" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-[11px] sm:text-xs text-amber-700 dark:text-amber-400 font-semibold truncate">Pending Review</div>
-                    <div className="text-xl sm:text-2xl font-black text-amber-700 dark:text-amber-400 leading-tight">
-                      {applications.filter(a => ['pending', 'applied'].includes(a.status)).length}
+                <div 
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {}}
+                  className="bg-white dark:bg-gray-800 rounded-2xl border border-slate-200/80 dark:border-gray-700 border-l-[5px] border-l-[#f59e0b] p-4 sm:p-5 shadow-xs flex items-center justify-between transition-all hover:shadow-md cursor-pointer"
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-12 h-12 rounded-2xl bg-[#fffbeb] dark:bg-amber-950/60 text-[#f59e0b] flex items-center justify-center flex-shrink-0">
+                      <Clock className="w-6 h-6 text-[#f59e0b] dark:text-amber-400" />
                     </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Pending Review</div>
+                      <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 leading-tight mt-0.5">
+                        {applications.filter(a => ['pending', 'applied'].includes(a.status)).length}
+                      </div>
+                      <div className="text-xs font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1 mt-1">
+                        <TrendingUp className="w-3.5 h-3.5" />
+                        <span>
+                          {applications.length > 0
+                            ? `${Math.round((applications.filter(a => ['pending', 'applied'].includes(a.status)).length / (eligibilitySummary?.totalApplications ?? applications.length)) * 100)}% of total`
+                            : '0% of total'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-gray-700 text-slate-400 flex items-center justify-center flex-shrink-0 hover:bg-slate-100 transition-colors">
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
                   </div>
                 </div>
               </div>
@@ -1264,29 +1337,29 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                 <TabsList className="inline-flex h-9 sm:h-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-gray-800 p-1 text-slate-600 dark:text-gray-400 border border-slate-200 dark:border-gray-700">
                   <TabsTrigger 
                     value="all" 
-                    className="text-xs sm:text-sm px-3 sm:px-4 rounded-lg data-[state=active]:bg-[#0a6e79] data-[state=active]:text-white font-semibold transition-all"
+                    className="text-xs sm:text-sm px-3 sm:px-4 rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white font-semibold transition-all"
                   >
                     <Users className="w-3.5 h-3.5 mr-1.5" /> All ({filteredApplications.length})
                   </TabsTrigger>
                   <TabsTrigger 
                     value="active" 
-                    className="text-xs sm:text-sm px-3 sm:px-4 rounded-lg data-[state=active]:bg-[#0a6e79] data-[state=active]:text-white font-semibold transition-all"
+                    className="text-xs sm:text-sm px-3 sm:px-4 rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white font-semibold transition-all"
                   >
                     <Rocket className="w-3.5 h-3.5 mr-1.5" /> Active
                   </TabsTrigger>
                   <TabsTrigger 
                     value="interview" 
-                    className="text-xs sm:text-sm px-3 sm:px-4 rounded-lg data-[state=active]:bg-[#0a6e79] data-[state=active]:text-white font-semibold transition-all"
+                    className="text-xs sm:text-sm px-3 sm:px-4 rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white font-semibold transition-all"
                   >
                     <Calendar className="w-3.5 h-3.5 mr-1.5" /> Interviews Completed
                   </TabsTrigger>
-                  <TabsTrigger value="shortlisted" className="text-xs sm:text-sm px-3 sm:px-4 rounded-lg data-[state=active]:bg-[#0a6e79] data-[state=active]:text-white font-semibold transition-all">
+                  <TabsTrigger value="shortlisted" className="text-xs sm:text-sm px-3 sm:px-4 rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white font-semibold transition-all">
                     <Star className="w-3.5 h-3.5 mr-1.5" /> Shortlisted
                   </TabsTrigger>
-                  <TabsTrigger value="hired" className="text-xs sm:text-sm px-3 sm:px-4 rounded-lg data-[state=active]:bg-[#0a6e79] data-[state=active]:text-white font-semibold transition-all">
+                  <TabsTrigger value="hired" className="text-xs sm:text-sm px-3 sm:px-4 rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white font-semibold transition-all">
                     <CheckCircle className="w-3.5 h-3.5 mr-1.5" /> Hired
                   </TabsTrigger>
-                  <TabsTrigger value="rejected" className="text-xs sm:text-sm px-3 sm:px-4 rounded-lg data-[state=active]:bg-[#0a6e79] data-[state=active]:text-white font-semibold transition-all">
+                  <TabsTrigger value="rejected" className="text-xs sm:text-sm px-3 sm:px-4 rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white font-semibold transition-all">
                     <XCircle className="w-3.5 h-3.5 mr-1.5" /> Rejected
                   </TabsTrigger>
                 </TabsList>
@@ -1298,7 +1371,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                       ...prev,
                       sortBy: prev.sortBy === 'eligibility' ? 'appliedDate' : 'eligibility'
                     }))}
-                    className="h-10 text-xs font-semibold rounded-xl border-slate-300 text-slate-700 hover:text-slate-900 hover:bg-slate-100"
+                    className="h-10 text-xs font-semibold rounded-xl border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-100"
                   >
                     <ArrowUpDown className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
                     Sort: {filters.sortBy === 'eligibility' ? 'Eligibility Match' : 'Applied Date'}
@@ -1311,7 +1384,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                       aria-label="Grid view"
                       onClick={() => setViewMode('grid')}
                       className={`h-8 w-8 rounded-lg transition-all ${
-                        viewMode === 'grid' ? 'bg-white text-[#0a6e79] shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                        viewMode === 'grid' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-500 hover:text-slate-900'
                       }`}
                     >
                       <Grid2X2 className="w-4 h-4" />
@@ -1322,7 +1395,7 @@ export function AdminApplications({ onNavigate, userRole }: AdminApplicationsPro
                       aria-label="List view"
                       onClick={() => setViewMode('list')}
                       className={`h-8 w-8 rounded-lg transition-all ${
-                        viewMode === 'list' ? 'bg-white text-[#0a6e79] shadow-xs' : 'text-slate-500 hover:text-slate-900'
+                        viewMode === 'list' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-500 hover:text-slate-900'
                       }`}
                     >
                       <List className="w-4 h-4" />

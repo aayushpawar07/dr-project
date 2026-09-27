@@ -40,6 +40,7 @@ import {
   updateEmployerVerificationStatus,
   uploadEmployerDocument,
 } from "../api/employers";
+import "../styles/employer-verification.css";
 
 interface EmployerVerificationPageProps {
   onNavigate: (page: string) => void;
@@ -572,198 +573,333 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
     }
   };
 
-  // Render Type Pill Badge with exact colors from screenshot
+  // Render Type Pill Badge with exact colors from reference mockup
   const renderTypeBadge = (type: string) => {
     const t = (type || "Hospital").toLowerCase();
     if (t.includes("gov")) {
       return (
-        <span className="inline-block bg-[#0284c7] text-white text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-md shadow-xs">
+        <span
+          className="ev-type-badge government"
+          style={{ backgroundColor: "#0284c7", color: "#ffffff" }}
+        >
           Government
         </span>
       );
     }
     if (t.includes("college") || t.includes("univ") || t.includes("edu")) {
       return (
-        <span className="inline-block bg-[#1e3a8a] text-white text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-md shadow-xs">
+        <span
+          className="ev-type-badge college"
+          style={{ backgroundColor: "#1e3a8a", color: "#ffffff" }}
+        >
           College
+        </span>
+      );
+    }
+    if (t.includes("private")) {
+      return (
+        <span
+          className="ev-type-badge private"
+          style={{ backgroundColor: "#4338ca", color: "#ffffff" }}
+        >
+          Private
         </span>
       );
     }
     // Default / Hospital
     return (
-      <span className="inline-block bg-[#0052cc] text-white text-[11px] sm:text-xs font-semibold px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-md shadow-xs">
+      <span
+        className="ev-type-badge hospital"
+        style={{ backgroundColor: "#0056b3", color: "#ffffff" }}
+      >
         Hospital
       </span>
     );
   };
 
-  // Render Status Pill Badge with icon
+  // Render Status Pill Badge with icon and exact colors
   const renderStatusBadge = (status: string) => {
     if (status === "approved") {
       return (
-        <span className="inline-flex items-center gap-1 bg-[#dcfce7] text-[#15803d] border border-[#bbf7d0] text-[11px] sm:text-xs font-semibold px-2 sm:px-2.5 py-0.5 rounded-full">
-          <Check className="w-3.5 h-3.5 text-[#16a34a] stroke-[2.5]" />
+        <span
+          className="ev-status-pill approved"
+          style={{
+            backgroundColor: "#dcfce7",
+            color: "#15803d",
+            border: "1px solid #bbf7d0",
+          }}
+        >
+          <Check className="w-3.5 h-3.5 stroke-[2.5]" style={{ color: "#16a34a" }} />
           Approved
         </span>
       );
     }
     if (status === "rejected") {
       return (
-        <span className="inline-flex items-center gap-1 bg-[#fee2e2] text-[#b91c1c] border border-[#fecaca] text-[11px] sm:text-xs font-semibold px-2 sm:px-2.5 py-0.5 rounded-full">
-          <X className="w-3.5 h-3.5 text-[#dc2626] stroke-[2.5]" />
+        <span
+          className="ev-status-pill rejected"
+          style={{
+            backgroundColor: "#fee2e2",
+            color: "#b91c1c",
+            border: "1px solid #fecaca",
+          }}
+        >
+          <X className="w-3.5 h-3.5 stroke-[2.5]" style={{ color: "#dc2626" }} />
           Rejected
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 bg-[#fef3c7] text-[#b45309] border border-[#fde68a] text-[11px] sm:text-xs font-semibold px-2 sm:px-2.5 py-0.5 rounded-full">
-        <Clock className="w-3.5 h-3.5 text-[#d97706] stroke-[2.5]" />
+      <span
+        className="ev-status-pill pending"
+        style={{
+          backgroundColor: "#fef3c7",
+          color: "#b45309",
+          border: "1px solid #fde68a",
+        }}
+      >
+        <Clock className="w-3.5 h-3.5 stroke-[2.5]" style={{ color: "#d97706" }} />
         Pending
       </span>
     );
   };
 
   return (
-    <div className="min-h-screen bg-[#f1f5f9]/70 pb-12">
-      <div className="max-w-[1240px] mx-auto px-3 sm:px-5 lg:px-6 pt-5 sm:pt-7">
+    <div className="ev-page-wrapper">
+      <div className="ev-container">
 
-        {/* 1. HERO BANNER WITH MEDICAL GRAPHIC MOTIF */}
-        <div className="relative bg-gradient-to-r from-[#eef4f9] via-[#e5eff8] to-[#d8e8f8] rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-7 md:p-8 mb-6 overflow-hidden">
-          {/* Medical Stethoscope SVG Illustration on Right (Desktop/iPad) */}
-          <div className="hidden md:block absolute right-0 top-0 bottom-0 w-80 lg:w-[420px] pointer-events-none select-none opacity-90 overflow-hidden">
+        {/* 1. HERO BANNER WITH REALISTIC MEDICAL STETHOSCOPE GRAPHIC */}
+        <div className="ev-hero-banner">
+          <div className="ev-hero-content">
+            <h1 className="ev-hero-title">
+              Employee Verification
+            </h1>
+            <p className="ev-hero-subtitle">
+              Review and approve employer verification requests
+            </p>
+          </div>
+
+          {/* Stethoscope Graphic Illustration on Right (Desktop/iPad) */}
+          <div className="ev-hero-graphic">
             <svg
-              viewBox="0 0 400 200"
+              viewBox="0 0 520 220"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
-              className="w-full h-full object-cover scale-110 translate-x-8"
+              className="w-full h-full object-contain"
+              style={{ filter: "drop-shadow(0 6px 14px rgba(15, 39, 68, 0.10))" }}
             >
               <defs>
-                <linearGradient id="stethGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#0284c7" stopOpacity="0.85" />
-                  <stop offset="100%" stopColor="#1e3a8a" stopOpacity="0.95" />
+                {/* Metal Chrome Gradient */}
+                <linearGradient id="chromeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#f8fafc" />
+                  <stop offset="25%" stopColor="#cbd5e1" />
+                  <stop offset="50%" stopColor="#ffffff" />
+                  <stop offset="75%" stopColor="#94a3b8" />
+                  <stop offset="100%" stopColor="#e2e8f0" />
                 </linearGradient>
-                <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="8" result="blur" />
-                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                </filter>
+
+                {/* Dark Chrome Shadow Gradient */}
+                <linearGradient id="metalRimGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#334155" />
+                  <stop offset="40%" stopColor="#64748b" />
+                  <stop offset="70%" stopColor="#cbd5e1" />
+                  <stop offset="100%" stopColor="#475569" />
+                </linearGradient>
+
+                {/* Blue Tube 3D Cylindrical Gradient */}
+                <linearGradient id="blueTubeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#1e3a8a" />
+                  <stop offset="25%" stopColor="#0284c7" />
+                  <stop offset="50%" stopColor="#38bdf8" />
+                  <stop offset="75%" stopColor="#0369a1" />
+                  <stop offset="100%" stopColor="#0c4a6e" />
+                </linearGradient>
+
+                {/* Diaphragm Gradient */}
+                <radialGradient id="diaphragmGrad" cx="40%" cy="35%" r="65%">
+                  <stop offset="0%" stopColor="#e0f2fe" />
+                  <stop offset="60%" stopColor="#bae6fd" />
+                  <stop offset="90%" stopColor="#38bdf8" />
+                  <stop offset="100%" stopColor="#0284c7" />
+                </radialGradient>
+
+                {/* Ambient Glow */}
+                <radialGradient id="ambientGlow" cx="60%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.25" />
+                  <stop offset="60%" stopColor="#0284c7" stopOpacity="0.08" />
+                  <stop offset="100%" stopColor="#0284c7" stopOpacity="0" />
+                </radialGradient>
               </defs>
-              <ellipse cx="280" cy="100" rx="90" ry="70" fill="url(#stethGrad)" opacity="0.12" />
-              <circle cx="285" cy="95" r="42" stroke="#0369a1" strokeWidth="8" opacity="0.75" />
-              <circle cx="285" cy="95" r="28" fill="#e0f2fe" stroke="#0284c7" strokeWidth="4" />
+
+              {/* Soft Ambient Glow */}
+              <ellipse cx="360" cy="110" rx="150" ry="85" fill="url(#ambientGlow)" />
+
+              {/* Ambient Shadow under chestpiece and tubes */}
+              <ellipse cx="380" cy="125" rx="55" ry="24" fill="#0f2744" opacity="0.12" />
               <path
-                d="M 285 137 C 285 180, 200 170, 150 140 C 100 110, 110 50, 170 40 C 230 30, 260 70, 260 110"
-                stroke="#0284c7"
-                strokeWidth="10"
+                d="M 120 120 C 180 185, 320 185, 380 125"
+                stroke="#0f2744"
+                strokeWidth="16"
+                strokeLinecap="round"
+                fill="none"
+                opacity="0.08"
+              />
+
+              {/* Binaural Metal Tubes (Headset arching back) */}
+              <path
+                d="M 120 45 C 160 30, 200 50, 210 95"
+                stroke="url(#chromeGrad)"
+                strokeWidth="8"
+                strokeLinecap="round"
+                fill="none"
+              />
+              <path
+                d="M 85 90 C 130 75, 175 80, 210 95"
+                stroke="url(#chromeGrad)"
+                strokeWidth="8"
+                strokeLinecap="round"
+                fill="none"
+              />
+
+              {/* Binaural Spring / Arch */}
+              <path
+                d="M 140 55 C 155 75, 155 85, 140 100"
+                stroke="url(#chromeGrad)"
+                strokeWidth="4"
+                strokeLinecap="round"
+                fill="none"
+              />
+
+              {/* Black Earpieces */}
+              <ellipse cx="118" cy="43" rx="7" ry="5" fill="#1e293b" />
+              <ellipse cx="83" cy="88" rx="7" ry="5" fill="#1e293b" />
+
+              {/* Main Blue Tube - Curved Loop */}
+              <path
+                d="M 210 95 C 225 155, 150 175, 230 185 C 310 195, 330 145, 375 120"
+                stroke="url(#blueTubeGrad)"
+                strokeWidth="15"
+                strokeLinecap="round"
+                fill="none"
+              />
+
+              {/* Tube Specular Reflection Stroke */}
+              <path
+                d="M 211 96 C 224 153, 152 173, 230 183 C 308 193, 328 144, 374 119"
+                stroke="#ffffff"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                fill="none"
+                opacity="0.55"
+              />
+
+              {/* Chrome Stem to Chestpiece */}
+              <path
+                d="M 370 123 L 388 114"
+                stroke="url(#chromeGrad)"
+                strokeWidth="12"
+                strokeLinecap="round"
+              />
+
+              {/* Chestpiece Body (Dual-head) */}
+              <ellipse cx="375" cy="100" rx="16" ry="12" fill="url(#metalRimGrad)" />
+              <ellipse cx="375" cy="100" rx="12" ry="9" fill="url(#chromeGrad)" />
+
+              {/* Diaphragm Large Head */}
+              <ellipse cx="400" cy="115" rx="46" ry="38" fill="url(#metalRimGrad)" />
+              <ellipse cx="400" cy="115" rx="42" ry="34" fill="url(#chromeGrad)" />
+              <ellipse cx="400" cy="115" rx="36" ry="29" fill="#0f172a" />
+              <ellipse cx="400" cy="115" rx="32" ry="26" fill="url(#diaphragmGrad)" />
+
+              {/* Specular Highlight Arc on Diaphragm */}
+              <path
+                d="M 378 102 C 390 92, 412 92, 424 102"
+                stroke="#ffffff"
+                strokeWidth="3.5"
                 strokeLinecap="round"
                 fill="none"
                 opacity="0.85"
               />
-              <path
-                d="M 170 40 C 140 20, 120 40, 100 70"
-                stroke="#38bdf8"
-                strokeWidth="6"
-                strokeLinecap="round"
-                fill="none"
-                opacity="0.6"
-              />
-              <circle cx="100" cy="70" r="8" fill="#0284c7" />
-              <circle cx="285" cy="95" r="12" fill="#0284c7" />
+              <circle cx="395" cy="112" r="5" fill="#ffffff" opacity="0.4" />
             </svg>
-            <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-[#eef4f9] to-transparent pointer-events-none" />
-          </div>
-
-          <div className="relative z-10 max-w-xl">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#0f2438]">
-              Employee Verification
-            </h1>
-            <p className="text-sm sm:text-base text-slate-500 font-medium mt-1">
-              Review and approve employer verification requests
-            </p>
           </div>
         </div>
 
-        {/* 2. STATS SUMMARY CARDS (MOBILE: 3-COL ROW, DESKTOP: 3-COL GRID) */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-5 lg:gap-6 mb-5 sm:mb-6">
+        {/* 2. STATS SUMMARY CARDS */}
+        <div className="ev-stats-grid">
 
           {/* Pending Card */}
           <div
             onClick={() => setStatusFilter((prev) => (prev === "pending" ? "all" : "pending"))}
-            className={`bg-white rounded-xl sm:rounded-2xl border transition-all cursor-pointer p-2.5 sm:p-4 md:p-5 flex items-center justify-between shadow-xs hover:shadow-md ${
-              statusFilter === "pending" ? "ring-2 ring-amber-400 border-amber-300" : "border-slate-200"
-            }`}
+            className={`ev-stat-card ${statusFilter === "pending" ? "is-active-pending" : ""}`}
           >
-            <div className="flex items-center gap-2 sm:gap-3.5">
-              <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-[#fef3c7] flex items-center justify-center shrink-0 border border-amber-200">
-                <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-[#d97706] stroke-[2.5]" />
+            <div className="ev-stat-main">
+              <div
+                className="ev-stat-icon-circle pending"
+                style={{ backgroundColor: "#fef3c7", borderColor: "#fde68a", color: "#d97706" }}
+              >
+                <Clock className="w-5 h-5 stroke-[2.5]" style={{ color: "#d97706" }} />
               </div>
-              <div>
-                <p className="text-lg sm:text-2xl font-bold text-slate-900 leading-tight">
-                  {pendingCount}
-                </p>
-                <p className="text-[11px] sm:text-xs text-slate-500 font-medium whitespace-nowrap">
+              <div className="ev-stat-info">
+                <div className="ev-stat-number">{pendingCount}</div>
+                <div className="ev-stat-label">
                   <span className="hidden sm:inline">Pending Reviews</span>
                   <span className="inline sm:hidden">Pending</span>
-                </p>
+                </div>
               </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+            <ChevronRight className="ev-stat-arrow" />
           </div>
 
           {/* Approved Card */}
           <div
             onClick={() => setStatusFilter((prev) => (prev === "approved" ? "all" : "approved"))}
-            className={`bg-white rounded-xl sm:rounded-2xl border transition-all cursor-pointer p-2.5 sm:p-4 md:p-5 flex items-center justify-between shadow-xs hover:shadow-md ${
-              statusFilter === "approved" ? "ring-2 ring-emerald-500 border-emerald-300" : "border-slate-200"
-            }`}
+            className={`ev-stat-card ${statusFilter === "approved" ? "is-active-approved" : ""}`}
           >
-            <div className="flex items-center gap-2 sm:gap-3.5">
-              <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-[#10b981] flex items-center justify-center shrink-0 shadow-xs">
-                <Check className="w-4 h-4 sm:w-5 sm:h-5 text-white stroke-[3]" />
+            <div className="ev-stat-main">
+              <div
+                className="ev-stat-icon-circle approved"
+                style={{ backgroundColor: "#10b981", borderColor: "#059669", color: "#ffffff" }}
+              >
+                <Check className="w-5 h-5 stroke-[3]" style={{ color: "#ffffff" }} />
               </div>
-              <div>
-                <p className="text-lg sm:text-2xl font-bold text-slate-900 leading-tight">
-                  {approvedCount}
-                </p>
-                <p className="text-[11px] sm:text-xs text-slate-500 font-medium whitespace-nowrap">
-                  Approved
-                </p>
+              <div className="ev-stat-info">
+                <div className="ev-stat-number">{approvedCount}</div>
+                <div className="ev-stat-label">Approved</div>
               </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+            <ChevronRight className="ev-stat-arrow" />
           </div>
 
           {/* Rejected Card */}
           <div
             onClick={() => setStatusFilter((prev) => (prev === "rejected" ? "all" : "rejected"))}
-            className={`bg-white rounded-xl sm:rounded-2xl border transition-all cursor-pointer p-2.5 sm:p-4 md:p-5 flex items-center justify-between shadow-xs hover:shadow-md ${
-              statusFilter === "rejected" ? "ring-2 ring-red-400 border-red-300" : "border-slate-200"
-            }`}
+            className={`ev-stat-card ${statusFilter === "rejected" ? "is-active-rejected" : ""}`}
           >
-            <div className="flex items-center gap-2 sm:gap-3.5">
-              <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-full bg-[#fee2e2] flex items-center justify-center shrink-0 border border-red-200">
-                <XCircle className="w-4 h-4 sm:w-5 sm:h-5 text-[#dc2626] stroke-[2.2]" />
+            <div className="ev-stat-main">
+              <div
+                className="ev-stat-icon-circle rejected"
+                style={{ backgroundColor: "#fee2e2", borderColor: "#fecaca", color: "#dc2626" }}
+              >
+                <XCircle className="w-5 h-5 stroke-[2.2]" style={{ color: "#dc2626" }} />
               </div>
-              <div>
-                <p className="text-lg sm:text-2xl font-bold text-slate-900 leading-tight">
-                  {rejectedCount}
-                </p>
-                <p className="text-[11px] sm:text-xs text-slate-500 font-medium whitespace-nowrap">
-                  Rejected
-                </p>
+              <div className="ev-stat-info">
+                <div className="ev-stat-number">{rejectedCount}</div>
+                <div className="ev-stat-label">Rejected</div>
               </div>
             </div>
-            <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+            <ChevronRight className="ev-stat-arrow" />
           </div>
 
         </div>
 
         {/* 3. SEARCH & FILTERS BAR */}
-        <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs p-3 sm:p-4 mb-5 sm:mb-6">
-          {/* Desktop Filter Row (md and above) */}
-          <div className="hidden md:flex items-center gap-3">
+        <div className="ev-filters-bar">
+          {/* Desktop Filter Row */}
+          <div className="ev-desktop-filters">
             {/* Search Input */}
-            <div className="relative flex-1 min-w-[260px]">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <div className="ev-search-wrapper">
+              <Search className="ev-search-icon" />
               <input
                 type="text"
                 value={searchTerm}
@@ -772,19 +908,20 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
                   setCurrentPage(1);
                 }}
                 placeholder="Search by name, hospital, location, or contact..."
-                className="w-full pl-9 pr-4 py-2 bg-slate-50/60 hover:bg-slate-50 focus:bg-white border border-slate-200 rounded-lg text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                className="ev-search-input"
+                style={{ paddingLeft: "42px" }}
               />
             </div>
 
             {/* Type Dropdown */}
-            <div className="relative min-w-[130px]">
+            <div className="ev-select-wrapper">
               <select
                 value={typeFilter}
                 onChange={(e) => {
                   setTypeFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full appearance-none bg-white border border-slate-200 rounded-lg py-2 pl-3 pr-8 text-sm text-slate-700 font-medium hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
+                className="ev-select"
               >
                 <option value="all">All Types</option>
                 <option value="hospital">Hospital</option>
@@ -792,63 +929,65 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
                 <option value="government">Government</option>
                 <option value="private">Private</option>
               </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <ChevronDown className="ev-select-arrow" />
             </div>
 
             {/* Status Dropdown */}
-            <div className="relative min-w-[130px]">
+            <div className="ev-select-wrapper">
               <select
                 value={statusFilter}
                 onChange={(e) => {
                   setStatusFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full appearance-none bg-white border border-slate-200 rounded-lg py-2 pl-3 pr-8 text-sm text-slate-700 font-medium hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
+                className="ev-select"
               >
                 <option value="all">All Status</option>
                 <option value="pending">Pending</option>
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
               </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <ChevronDown className="ev-select-arrow" />
             </div>
 
             {/* Date Range Dropdown */}
-            <div className="relative min-w-[140px]">
+            <div className="ev-select-wrapper" style={{ minWidth: 140 }}>
+              <Calendar className="ev-select-calendar-icon" />
               <select
                 value={dateRangeFilter}
                 onChange={(e) => {
                   setDateRangeFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full appearance-none bg-white border border-slate-200 rounded-lg py-2 pl-8 pr-8 text-sm text-slate-700 font-medium hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
+                className="ev-select with-calendar"
+                style={{ paddingLeft: "34px" }}
               >
                 <option value="all">Date Range</option>
                 <option value="today">Today</option>
                 <option value="7days">Last 7 Days</option>
                 <option value="30days">Last 30 Days</option>
               </select>
-              <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <ChevronDown className="ev-select-arrow" />
             </div>
 
             {/* Reset Button */}
             <button
               type="button"
               onClick={handleResetFilters}
-              className="bg-[#0066cc] hover:bg-[#0055b3] text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-xs transition-colors shrink-0 cursor-pointer"
+              className="ev-reset-button"
+              style={{ backgroundColor: "#0066cc", color: "#ffffff" }}
             >
               <RotateCcw className="w-3.5 h-3.5 stroke-[2.5]" />
               Reset
             </button>
           </div>
 
-          {/* Mobile Filter View (matching mobile screenshot on right) */}
-          <div className="block md:hidden space-y-2.5">
+          {/* Mobile Filter View */}
+          <div className="ev-mobile-filters">
             {/* Row 1: Search + Filter Toggle */}
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <div className="ev-mobile-search-row">
+              <div className="ev-search-wrapper">
+                <Search className="ev-search-icon" />
                 <input
                   type="text"
                   value={searchTerm}
@@ -857,16 +996,17 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
                     setCurrentPage(1);
                   }}
                   placeholder="Search by name, hospital..."
-                  className="w-full pl-9 pr-3 py-2 bg-slate-50/70 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="ev-search-input"
+                  style={{ paddingLeft: "42px" }}
                 />
               </div>
               <button
                 type="button"
                 onClick={() => setShowMobileFilters((prev) => !prev)}
-                className={`p-2 border rounded-lg transition-colors ${
+                className={`ev-filter-toggle-btn ${
                   showMobileFilters || typeFilter !== "all" || statusFilter !== "all"
-                    ? "bg-blue-50 border-blue-300 text-blue-600"
-                    : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                    ? "is-active"
+                    : ""
                 }`}
                 aria-label="Filter Options"
               >
@@ -875,15 +1015,15 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
             </div>
 
             {/* Row 2: All Types & All Status side-by-side */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="relative">
+            <div className="ev-mobile-dropdowns-row">
+              <div className="ev-select-wrapper">
                 <select
                   value={typeFilter}
                   onChange={(e) => {
                     setTypeFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full appearance-none bg-white border border-slate-200 rounded-lg py-1.5 pl-3 pr-7 text-xs text-slate-700 font-medium"
+                  className="ev-select"
                 >
                   <option value="all">All Types</option>
                   <option value="hospital">Hospital</option>
@@ -891,33 +1031,34 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
                   <option value="government">Government</option>
                   <option value="private">Private</option>
                 </select>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <ChevronDown className="ev-select-arrow" />
               </div>
 
-              <div className="relative">
+              <div className="ev-select-wrapper">
                 <select
                   value={statusFilter}
                   onChange={(e) => {
                     setStatusFilter(e.target.value);
                     setCurrentPage(1);
                   }}
-                  className="w-full appearance-none bg-white border border-slate-200 rounded-lg py-1.5 pl-3 pr-7 text-xs text-slate-700 font-medium"
+                  className="ev-select"
                 >
                   <option value="all">All Status</option>
                   <option value="pending">Pending</option>
                   <option value="approved">Approved</option>
                   <option value="rejected">Rejected</option>
                 </select>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <ChevronDown className="ev-select-arrow" />
               </div>
             </div>
 
             {/* Row 3: Reset Link on the right */}
-            <div className="flex justify-end pt-1">
+            <div className="ev-mobile-reset-row">
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="text-[#0066cc] text-xs font-semibold flex items-center gap-1 hover:underline"
+                className="ev-mobile-reset-link"
+                style={{ color: "#0066cc" }}
               >
                 <RotateCcw className="w-3 h-3 stroke-[2.5]" />
                 Reset
@@ -927,79 +1068,76 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
         </div>
 
         {/* 4A. DESKTOP & IPAD TABLE VIEW */}
-        <div className="hidden md:block bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs overflow-hidden mb-4">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-[#f8fafc] border-b border-slate-200 text-xs font-semibold text-slate-600">
-                  <th className="py-3.5 px-4 text-center w-12">#</th>
-                  <th className="py-3.5 px-4">Name / Organization</th>
-                  <th className="py-3.5 px-4 text-center">Type</th>
-                  <th className="py-3.5 px-4 text-center">Status</th>
-                  <th className="py-3.5 px-4 text-center">Submitted On</th>
-                  <th className="py-3.5 px-4 text-center">Actions</th>
+        <div className="ev-table-card">
+          <div className="ev-table-responsive">
+            <table className="ev-table">
+              <thead className="ev-table-header">
+                <tr>
+                  <th className="text-center" style={{ width: 48 }}>#</th>
+                  <th>Name / Organization</th>
+                  <th className="text-center" style={{ width: 130 }}>Type</th>
+                  <th className="text-center" style={{ width: 130 }}>Status</th>
+                  <th className="text-center" style={{ width: 120 }}>Submitted On</th>
+                  <th className="text-center" style={{ width: 120 }}>Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-sm">
+              <tbody className="ev-table-body">
                 {paginatedEmployers.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-slate-400">
-                      <p className="text-base font-semibold text-slate-600">No verification requests found</p>
-                      <p className="text-xs text-slate-400 mt-1">Try adjusting your filters or search keywords</p>
+                    <td colSpan={6} style={{ padding: "48px 16px", textAlign: "center", color: "#94a3b8" }}>
+                      <p style={{ fontSize: "15px", fontWeight: 700, color: "#475569" }}>No verification requests found</p>
+                      <p style={{ fontSize: "12px", color: "#94a3b8", marginTop: "4px" }}>Try adjusting your filters or search keywords</p>
                     </td>
                   </tr>
                 ) : (
                   paginatedEmployers.map((emp, idx) => {
                     const rowNumber = (currentPage - 1) * pageSize + idx + 1;
                     return (
-                      <tr
-                        key={emp.id}
-                        className="hover:bg-blue-50/30 transition-colors group cursor-default"
-                      >
+                      <tr key={emp.id}>
                         {/* # Row Number */}
-                        <td className="py-3 px-4 text-center text-slate-500 font-medium text-xs">
+                        <td className="ev-row-index text-center">
                           {rowNumber}
                         </td>
 
                         {/* Name / Organization */}
-                        <td className="py-3 px-4 max-w-[340px]">
+                        <td style={{ maxWidth: 340 }}>
                           <div>
-                            <button
-                              type="button"
+                            <h3
                               onClick={() => handleOpenDetail(emp)}
-                              className="font-semibold text-slate-900 text-[13.5px] hover:text-[#0066cc] text-left leading-snug line-clamp-1 cursor-pointer"
+                              className="ev-org-name"
                             >
                               {emp.companyName}
-                            </button>
-                            <p className="text-xs text-slate-400 truncate mt-0.5 font-normal">
+                            </h3>
+                            <p className="ev-org-email">
                               {emp.userEmail}
                             </p>
                           </div>
                         </td>
 
                         {/* Type */}
-                        <td className="py-3 px-4 text-center">
+                        <td className="text-center">
                           {renderTypeBadge(emp.companyType)}
                         </td>
 
                         {/* Status */}
-                        <td className="py-3 px-4 text-center">
+                        <td className="text-center">
                           {renderStatusBadge(emp.verificationStatus)}
                         </td>
 
                         {/* Submitted On */}
-                        <td className="py-3 px-4 text-center text-xs text-slate-600 font-medium">
+                        <td className="ev-date-cell">
                           {formatDateDisplay(emp.createdAt)}
                         </td>
 
                         {/* Actions */}
-                        <td className="py-3 px-4 text-center">
-                          <div className="inline-flex items-center gap-1.5 relative">
+                        <td className="text-center">
+                          <div className="ev-actions-cell">
                             {/* Blue View Button */}
                             <button
                               type="button"
                               onClick={() => handleOpenDetail(emp)}
-                              className="bg-[#0066cc] hover:bg-[#0055b3] text-white text-xs font-semibold px-3 py-1 rounded-md inline-flex items-center gap-1 shadow-xs transition-colors cursor-pointer"
+                              className="ev-view-btn"
+                              style={{ backgroundColor: "#0066cc", color: "#ffffff" }}
                             >
                               <Eye className="w-3.5 h-3.5 stroke-[2.2]" />
                               View
@@ -1012,7 +1150,7 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
                                 e.stopPropagation();
                                 setActionMenuOpenId(actionMenuOpenId === emp.id ? null : emp.id);
                               }}
-                              className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                              className="ev-more-btn"
                               aria-label="More options"
                             >
                               <MoreVertical className="w-4 h-4" />
@@ -1021,13 +1159,36 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
                             {/* Dropdown Menu */}
                             {actionMenuOpenId === emp.id && (
                               <div
-                                className="absolute right-0 top-8 z-30 w-44 bg-white rounded-lg shadow-lg border border-slate-200 py-1 text-left text-xs"
+                                style={{
+                                  position: "absolute",
+                                  right: 0,
+                                  top: "34px",
+                                  zIndex: 40,
+                                  width: "180px",
+                                  backgroundColor: "#ffffff",
+                                  borderRadius: "8px",
+                                  boxShadow: "0 10px 25px rgba(0,0,0,0.12)",
+                                  border: "1px solid #e2e8f0",
+                                  padding: "4px 0",
+                                  textAlign: "left",
+                                  fontSize: "12px",
+                                }}
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <button
                                   type="button"
                                   onClick={() => handleOpenDetail(emp)}
-                                  className="w-full px-3 py-2 text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                                  style={{
+                                    width: "100%",
+                                    padding: "8px 12px",
+                                    color: "#334155",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "8px",
+                                    background: "none",
+                                    border: "none",
+                                    cursor: "pointer",
+                                  }}
                                 >
                                   <Eye className="w-3.5 h-3.5 text-blue-600" />
                                   View Full Details
@@ -1040,7 +1201,17 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
                                       handleReviewAction("approved");
                                       setActionMenuOpenId(null);
                                     }}
-                                    className="w-full px-3 py-2 text-emerald-700 hover:bg-emerald-50 flex items-center gap-2"
+                                    style={{
+                                      width: "100%",
+                                      padding: "8px 12px",
+                                      color: "#15803d",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "8px",
+                                      background: "none",
+                                      border: "none",
+                                      cursor: "pointer",
+                                    }}
                                   >
                                     <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
                                     Approve Request
@@ -1054,7 +1225,17 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
                                       handleReviewAction("rejected");
                                       setActionMenuOpenId(null);
                                     }}
-                                    className="w-full px-3 py-2 text-red-700 hover:bg-red-50 flex items-center gap-2"
+                                    style={{
+                                      width: "100%",
+                                      padding: "8px 12px",
+                                      color: "#b91c1c",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "8px",
+                                      background: "none",
+                                      border: "none",
+                                      cursor: "pointer",
+                                    }}
                                   >
                                     <XCircle className="w-3.5 h-3.5 text-red-600" />
                                     Reject Request
@@ -1066,7 +1247,18 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
                                     setActionMenuOpenId(null);
                                     onNavigate(`employer-management/${emp.id}`);
                                   }}
-                                  className="w-full px-3 py-2 text-slate-700 hover:bg-slate-50 flex items-center gap-2 border-t border-slate-100"
+                                  style={{
+                                    width: "100%",
+                                    padding: "8px 12px",
+                                    color: "#475569",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "8px",
+                                    borderTop: "1px solid #f1f5f9",
+                                    background: "none",
+                                    border: "none",
+                                    cursor: "pointer",
+                                  }}
                                 >
                                   <Building2 className="w-3.5 h-3.5 text-slate-500" />
                                   Employer Profile
@@ -1084,12 +1276,12 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
           </div>
         </div>
 
-        {/* 4B. MOBILE CARD LIST VIEW (exact matching right screenshot) */}
-        <div className="block md:hidden space-y-2.5 mb-4">
+        {/* 4B. MOBILE CARD LIST VIEW */}
+        <div className="ev-mobile-list">
           {paginatedEmployers.length === 0 ? (
-            <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-400">
-              <p className="text-sm font-semibold text-slate-600">No requests found</p>
-              <p className="text-xs text-slate-400 mt-1">Try resetting filters</p>
+            <div style={{ background: "#ffffff", borderRadius: "12px", border: "1px solid #e2e8f0", padding: "32px", textAlign: "center", color: "#94a3b8" }}>
+              <p style={{ fontSize: "14px", fontWeight: 700, color: "#475569" }}>No requests found</p>
+              <p style={{ fontSize: "12px", color: "#94a3b8", marginTop: "4px" }}>Try resetting filters</p>
             </div>
           ) : (
             paginatedEmployers.map((emp, idx) => {
@@ -1098,28 +1290,28 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
                 <div
                   key={emp.id}
                   onClick={() => handleOpenDetail(emp)}
-                  className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-xs active:bg-slate-50 transition-colors cursor-pointer"
+                  className="ev-mobile-card"
                 >
                   {/* Title & Email */}
                   <div>
-                    <h3 className="font-semibold text-slate-900 text-[13.5px] leading-snug line-clamp-1">
+                    <h3 className="ev-mobile-card-title">
                       {rowNumber}. {emp.companyName}
                     </h3>
-                    <p className="text-xs text-slate-400 truncate mt-0.5">
+                    <p className="ev-mobile-card-email">
                       {emp.userEmail}
                     </p>
                   </div>
 
                   {/* Badges & Date & Chevron */}
-                  <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-100">
-                    <div className="flex items-center gap-2 flex-wrap">
+                  <div className="ev-mobile-card-footer">
+                    <div className="ev-mobile-card-badges">
                       {renderTypeBadge(emp.companyType)}
                       {renderStatusBadge(emp.verificationStatus)}
-                      <span className="text-[11px] text-slate-500 font-medium">
+                      <span className="ev-mobile-date">
                         {formatDateDisplay(emp.createdAt)}
                       </span>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+                    <ChevronRight className="ev-mobile-chevron" />
                   </div>
                 </div>
               );
@@ -1128,19 +1320,19 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
         </div>
 
         {/* 5. PAGINATION BAR (Desktop & Mobile) */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1 pb-6">
-          <p className="text-xs sm:text-sm text-slate-500 font-medium order-2 sm:order-1">
+        <div className="ev-pagination-row">
+          <div className="ev-pagination-info">
             Showing {filteredEmployers.length === 0 ? 0 : (currentPage - 1) * pageSize + 1} to{" "}
             {Math.min(currentPage * pageSize, filteredEmployers.length)} of {filteredEmployers.length} records
-          </p>
+          </div>
 
-          <div className="flex items-center gap-1.5 order-1 sm:order-2">
+          <div className="ev-pagination-controls">
             {/* Prev Button */}
             <button
               type="button"
               disabled={currentPage <= 1}
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              className="w-8 h-8 rounded-md border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+              className="ev-page-arrow"
               aria-label="Previous Page"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -1154,11 +1346,12 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
                   key={pg}
                   type="button"
                   onClick={() => setCurrentPage(pg)}
-                  className={`w-8 h-8 rounded-md text-xs sm:text-sm font-bold flex items-center justify-center transition-all cursor-pointer ${
+                  className={`ev-page-num ${isActive ? "active" : "inactive"}`}
+                  style={
                     isActive
-                      ? "bg-[#c81e1e] text-white shadow-xs"
-                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                  }`}
+                      ? { backgroundColor: "#c81e1e", color: "#ffffff" }
+                      : { backgroundColor: "#f1f5f9", color: "#334155" }
+                  }
                 >
                   {pg}
                 </button>
@@ -1170,7 +1363,7 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
               type="button"
               disabled={currentPage >= totalPages}
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              className="w-8 h-8 rounded-md border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition-colors cursor-pointer"
+              className="ev-page-arrow"
               aria-label="Next Page"
             >
               <ChevronRight className="w-4 h-4" />
@@ -1178,102 +1371,105 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
           </div>
         </div>
 
-        {/* 6. BOTTOM FEATURE HIGHLIGHTS STRIP (MATCHING IMAGE BOTTOM RIBBON) */}
-        <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs p-4 sm:p-5 mb-5">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 lg:gap-0 lg:divide-x lg:divide-slate-200">
+        {/* 6. BOTTOM FEATURE HIGHLIGHTS STRIP */}
+        <div className="ev-features-card">
+          <div className="ev-features-grid">
 
             {/* 1. Responsive Design */}
-            <div className="flex items-start gap-3 lg:px-4">
-              <div className="w-9 h-9 rounded-lg border border-red-200 bg-red-50/50 flex items-center justify-center text-[#c81e1e] shrink-0">
+            <div className="ev-feature-item">
+              <div
+                className="ev-feature-icon-box"
+                style={{ backgroundColor: "#fef2f2", borderColor: "#fecaca", color: "#c81e1e" }}
+              >
                 <Monitor className="w-5 h-5 stroke-[1.8]" />
               </div>
-              <div>
-                <h4 className="font-bold text-slate-900 text-xs sm:text-[13px] leading-tight">
-                  Responsive Design
-                </h4>
-                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                  Perfect experience on both desktop & mobile
-                </p>
+              <div className="ev-feature-copy">
+                <h4>Responsive Design</h4>
+                <p>Perfect experience on both desktop & mobile</p>
               </div>
             </div>
 
             {/* 2. Search & Filter */}
-            <div className="flex items-start gap-3 lg:px-4">
-              <div className="w-9 h-9 rounded-lg border border-red-200 bg-red-50/50 flex items-center justify-center text-[#c81e1e] shrink-0">
+            <div className="ev-feature-item">
+              <div
+                className="ev-feature-icon-box"
+                style={{ backgroundColor: "#fef2f2", borderColor: "#fecaca", color: "#c81e1e" }}
+              >
                 <Search className="w-5 h-5 stroke-[1.8]" />
               </div>
-              <div>
-                <h4 className="font-bold text-slate-900 text-xs sm:text-[13px] leading-tight">
-                  Search & Filter
-                </h4>
-                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                  Find records quickly by name, type, status, date
-                </p>
+              <div className="ev-feature-copy">
+                <h4>Search & Filter</h4>
+                <p>Find records quickly by name, type, status, date</p>
               </div>
             </div>
 
             {/* 3. Clean Table View */}
-            <div className="flex items-start gap-3 lg:px-4">
-              <div className="w-9 h-9 rounded-lg border border-red-200 bg-red-50/50 flex items-center justify-center text-[#c81e1e] shrink-0">
+            <div className="ev-feature-item">
+              <div
+                className="ev-feature-icon-box"
+                style={{ backgroundColor: "#fef2f2", borderColor: "#fecaca", color: "#c81e1e" }}
+              >
                 <Eye className="w-5 h-5 stroke-[1.8]" />
               </div>
-              <div>
-                <h4 className="font-bold text-slate-900 text-xs sm:text-[13px] leading-tight">
-                  Clean Table View
-                </h4>
-                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                  All details in one place (no horizontal scroll)
-                </p>
+              <div className="ev-feature-copy">
+                <h4>Clean Table View</h4>
+                <p>All details in one place (no horizontal scroll)</p>
               </div>
             </div>
 
             {/* 4. Easy Actions */}
-            <div className="flex items-start gap-3 lg:px-4">
-              <div className="w-9 h-9 rounded-lg border border-red-200 bg-red-50/50 flex items-center justify-center text-[#c81e1e] shrink-0">
+            <div className="ev-feature-item">
+              <div
+                className="ev-feature-icon-box"
+                style={{ backgroundColor: "#fef2f2", borderColor: "#fecaca", color: "#c81e1e" }}
+              >
                 <CheckCircle className="w-5 h-5 stroke-[1.8]" />
               </div>
-              <div>
-                <h4 className="font-bold text-slate-900 text-xs sm:text-[13px] leading-tight">
-                  Easy Actions
-                </h4>
-                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                  View details, approve/reject with one click
-                </p>
+              <div className="ev-feature-copy">
+                <h4>Easy Actions</h4>
+                <p>View details, approve/reject with one click</p>
               </div>
             </div>
 
             {/* 5. Pagination */}
-            <div className="flex items-start gap-3 lg:px-4 col-span-2 sm:col-span-1">
-              <div className="w-9 h-9 rounded-lg border border-red-200 bg-red-50/50 flex items-center justify-center text-[#c81e1e] shrink-0 font-bold text-xs">
+            <div className="ev-feature-item">
+              <div
+                className="ev-feature-icon-box font-bold text-xs"
+                style={{ backgroundColor: "#fef2f2", borderColor: "#fecaca", color: "#c81e1e" }}
+              >
                 &lt; &gt;
               </div>
-              <div>
-                <h4 className="font-bold text-slate-900 text-xs sm:text-[13px] leading-tight">
-                  Pagination
-                </h4>
-                <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                  Better performance with large data
-                </p>
+              <div className="ev-feature-copy">
+                <h4>Pagination</h4>
+                <p>Better performance with large data</p>
               </div>
             </div>
 
           </div>
         </div>
 
-        {/* 7. BOTTOM TELEGRAM JOIN BAR (MATCHING IMAGE BOTTOM CAPSULE) */}
-        <div className="flex justify-center mb-6">
+        {/* 7. BOTTOM TELEGRAM JOIN BAR */}
+        <div className="ev-telegram-center">
           <a
             href="https://t.me/DoctorgovtjobMedexupdate"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2.5 bg-gradient-to-r from-[#c81e1e] via-[#b91c1c] to-[#991b1b] text-white px-5 sm:px-8 py-2.5 rounded-full shadow-md hover:shadow-lg hover:opacity-95 transition-all text-xs sm:text-sm font-medium"
+            className="ev-telegram-pill"
+            style={{
+              background: "linear-gradient(90deg, #c81e1e 0%, #b91c1c 50%, #991b1b 100%)",
+              color: "#ffffff",
+            }}
           >
             {/* Telegram circular icon */}
-            <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center shrink-0">
-              <Send className="w-3 h-3 text-[#0088cc] -translate-x-0.5 translate-y-0.5 rotate-[-25deg]" />
+            <div
+              className="ev-telegram-icon-circle"
+              style={{ backgroundColor: "#ffffff" }}
+            >
+              <Send className="w-3 h-3 text-[#0088cc] -translate-x-0.5 translate-y-0.5 rotate-[-25deg]" style={{ color: "#0088cc" }} />
             </div>
             <span>
-              Join for more updates &rarr; <strong className="underline ml-0.5">@DoctorgovtjobMedexupdate</strong>
+              Join for more updates &rarr;{" "}
+              <strong className="ev-telegram-channel">@DoctorgovtjobMedexupdate</strong>
             </span>
           </a>
         </div>

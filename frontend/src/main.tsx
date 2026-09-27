@@ -23,6 +23,7 @@ import "./styles/dashboard-mobile-tablet.css";
 import "./styles/dashboard-mockup.css";
 import "./styles/candidate-dashboard-modern.css";
 import "./styles/candidate-profile-modal.css";
+import "./styles/employer-verification.css";
 import "./utils/dashboardNavigation";
 import "./utils/jobDetailPresentation";
 import "./utils/jobDetailSummaryLayout";

@@ -1001,3 +1001,328 @@
   text-decoration: underline;
   font-weight: 800;
 }
+
+/* ==========================================================================
+   9. VERIFICATION DETAIL MODAL POLISH
+   ========================================================================== */
+.ev-modal-header {
+  padding: 18px 24px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.ev-modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ev-modal-shield-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #0284c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ev-modal-body {
+  padding: 20px 24px;
+  max-height: 75vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Brand Banner Card */
+.ev-modal-brand-card {
+  background: linear-gradient(135deg, #f0f7ff 0%, #ffffff 50%, #f8fafc 100%);
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.ev-modal-brand-logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0056b3 0%, #0084d1 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 800;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(0, 86, 179, 0.25);
+  border: 2px solid #ffffff;
+}
+
+.ev-modal-brand-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ev-modal-brand-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.ev-modal-brand-name {
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #0f2744;
+  margin: 0 0 4px 0;
+  line-height: 1.35;
+}
+
+.ev-modal-brand-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12px;
+  color: #64748b;
+  flex-wrap: wrap;
+}
+
+.ev-modal-brand-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Information Grid */
+.ev-modal-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .ev-modal-info-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ev-modal-info-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.ev-modal-info-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.ev-modal-info-card.col-span-full {
+  grid-column: 1 / -1;
+}
+
+.ev-modal-card-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ev-modal-card-icon-box.blue {
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  color: #2563eb;
+}
+
+.ev-modal-card-icon-box.indigo {
+  background: #eef2ff;
+  border: 1px solid #e0e7ff;
+  color: #4f46e5;
+}
+
+.ev-modal-card-icon-box.emerald {
+  background: #ecfdf5;
+  border: 1px solid #d1fae5;
+  color: #059669;
+}
+
+.ev-modal-card-icon-box.sky {
+  background: #f0f9ff;
+  border: 1px solid #e0f2fe;
+  color: #0284c7;
+}
+
+.ev-modal-card-icon-box.amber {
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
+  color: #d97706;
+}
+
+.ev-modal-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.ev-modal-card-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.ev-modal-card-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.ev-modal-card-value a {
+  color: #0066cc;
+  text-decoration: none;
+}
+
+.ev-modal-card-value a:hover {
+  text-decoration: underline;
+}
+
+.ev-modal-card-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
+
+/* Proof Document Card */
+.ev-modal-doc-card {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border: 1px solid #86efac;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ev-modal-doc-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ev-modal-doc-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  background: #dcfce7;
+  color: #15803d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ev-modal-doc-btn {
+  background-color: #0066cc !important;
+  color: #ffffff !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  padding: 7px 14px !important;
+  border-radius: 7px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  text-decoration: none !important;
+  box-shadow: 0 1px 3px rgba(0, 102, 204, 0.25) !important;
+  white-space: nowrap !important;
+}
+
+.ev-modal-doc-btn:hover {
+  background-color: #0052a3 !important;
+}
+
+/* Admin Remarks Section */
+.ev-modal-remarks-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.ev-modal-remarks-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.ev-modal-chips-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.ev-modal-chip {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.12s;
+  user-select: none;
+}
+
+.ev-modal-chip:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+  border-color: #cbd5e1;
+}
+
+/* Modal Footer */
+.ev-modal-footer {
+  padding: 14px 24px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}

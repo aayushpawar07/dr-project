@@ -25,6 +25,7 @@ import {
   X,
   ShieldCheck,
   Send,
+  Globe,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import {
@@ -1475,162 +1476,275 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
 
       {/* 8. MODAL DIALOG: REVIEW & DETAILS */}
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-        <DialogContent className="sm:max-w-[580px] p-0 overflow-hidden rounded-2xl">
-          <DialogHeader className="p-5 pb-4 bg-slate-50 border-b border-slate-200">
-            <div className="flex items-center justify-between gap-3">
+        <DialogContent className="sm:max-w-[660px] p-0 overflow-hidden rounded-2xl border border-slate-200 shadow-2xl">
+          {/* Header */}
+          <DialogHeader className="ev-modal-header">
+            <div className="ev-modal-title-group">
+              <div className="ev-modal-shield-box">
+                <ShieldCheck className="w-5 h-5 text-[#0066cc]" />
+              </div>
               <div>
-                <DialogTitle className="text-lg font-bold text-slate-900">
+                <DialogTitle className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
                   Verification Request Details
                 </DialogTitle>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 mt-0.5 font-medium">
                   Review applicant organization credentials and take action
                 </p>
               </div>
-              {selectedEmployer && renderStatusBadge(selectedEmployer.verificationStatus)}
             </div>
+            {selectedEmployer && renderStatusBadge(selectedEmployer.verificationStatus)}
           </DialogHeader>
 
           {selectedEmployer && (
-            <div className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
-              {/* Organization Info Card */}
-              <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-200 text-xs space-y-2.5">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <span className="text-slate-400 block text-[11px]">Organization Name</span>
-                    <h3 className="font-bold text-slate-900 text-sm mt-0.5">
-                      {selectedEmployer.companyName}
-                    </h3>
-                  </div>
-                  <div>{renderTypeBadge(selectedEmployer.companyType)}</div>
+            <div className="ev-modal-body">
+              {/* Organization Brand Card */}
+              <div className="ev-modal-brand-card">
+                <div className="ev-modal-brand-logo">
+                  <Building2 className="w-7 h-7 text-white" />
                 </div>
+                <div className="ev-modal-brand-info">
+                  <div className="ev-modal-brand-badges">
+                    {renderTypeBadge(selectedEmployer.companyType)}
+                    {[selectedEmployer.city, selectedEmployer.state].filter(Boolean).length > 0 && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
+                        <MapPin className="w-3 h-3 text-slate-400" />
+                        {[selectedEmployer.city, selectedEmployer.state].filter(Boolean).join(", ")}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="ev-modal-brand-name">
+                    {selectedEmployer.companyName}
+                  </h3>
+                  <div className="ev-modal-brand-meta">
+                    <span className="ev-modal-brand-meta-item">
+                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                      Submitted on {formatDateDisplay(selectedEmployer.createdAt)}
+                    </span>
+                  </div>
+                </div>
+              </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200">
-                  <div>
-                    <span className="text-slate-400 block text-[11px]">Contact Person</span>
-                    <strong className="text-slate-800">
-                      {selectedEmployer.contactPerson || selectedEmployer.userName || "N/A"}
-                    </strong>
+              {/* 2x2 Information Grid */}
+              <div className="ev-modal-info-grid">
+                {/* Primary Contact Person */}
+                <div className="ev-modal-info-card">
+                  <div className="ev-modal-card-icon-box blue">
+                    <User className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div className="ev-modal-card-content">
+                    <span className="ev-modal-card-label">Primary Contact</span>
+                    <p className="ev-modal-card-value">
+                      {selectedEmployer.contactPerson || selectedEmployer.userName || "Not specified"}
+                    </p>
                     {selectedEmployer.designation && (
-                      <span className="text-slate-500 block text-[11px]">
+                      <span className="ev-modal-card-tag">
                         {selectedEmployer.designation}
                       </span>
                     )}
                   </div>
+                </div>
 
-                  <div>
-                    <span className="text-slate-400 block text-[11px]">Official Email</span>
-                    <a
-                      href={`mailto:${selectedEmployer.userEmail}`}
-                      className="text-blue-600 font-medium hover:underline block truncate"
-                    >
-                      {selectedEmployer.userEmail}
-                    </a>
+                {/* Official Email */}
+                <div className="ev-modal-info-card">
+                  <div className="ev-modal-card-icon-box indigo">
+                    <Mail className="w-4 h-4 text-indigo-600" />
                   </div>
-
-                  <div>
-                    <span className="text-slate-400 block text-[11px]">Contact Phone</span>
-                    <a
-                      href={`tel:${selectedEmployer.contactPhone}`}
-                      className="text-slate-800 font-medium hover:underline block"
-                    >
-                      {selectedEmployer.contactPhone || "—"}
-                    </a>
-                  </div>
-
-                  <div>
-                    <span className="text-slate-400 block text-[11px]">Official Website</span>
-                    {selectedEmployer.website ? (
+                  <div className="ev-modal-card-content">
+                    <span className="ev-modal-card-label">Official Email</span>
+                    <p className="ev-modal-card-value">
                       <a
-                        href={selectedEmployer.website.startsWith("http") ? selectedEmployer.website : `https://${selectedEmployer.website}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 font-medium hover:underline inline-flex items-center gap-1"
+                        href={`mailto:${selectedEmployer.userEmail}`}
+                        className="text-blue-600 hover:underline block truncate"
+                        title={selectedEmployer.userEmail}
                       >
-                        Visit Website <ExternalLink className="w-2.5 h-2.5" />
+                        {selectedEmployer.userEmail}
                       </a>
-                    ) : (
-                      <span className="text-slate-400">Not provided</span>
-                    )}
+                    </p>
                   </div>
+                </div>
 
-                  {[selectedEmployer.city, selectedEmployer.state].filter(Boolean).length > 0 && (
-                    <div className="sm:col-span-2">
-                      <span className="text-slate-400 block text-[11px]">Location</span>
-                      <span className="text-slate-800 font-medium">
+                {/* Contact Phone */}
+                <div className="ev-modal-info-card">
+                  <div className="ev-modal-card-icon-box emerald">
+                    <Phone className="w-4 h-4 text-emerald-600" />
+                  </div>
+                  <div className="ev-modal-card-content">
+                    <span className="ev-modal-card-label">Contact Phone</span>
+                    <p className="ev-modal-card-value">
+                      {selectedEmployer.contactPhone && selectedEmployer.contactPhone !== "0000000000" ? (
+                        <a
+                          href={`tel:${selectedEmployer.contactPhone}`}
+                          className="text-emerald-700 hover:underline"
+                        >
+                          {selectedEmployer.contactPhone}
+                        </a>
+                      ) : (
+                        <span className="text-slate-400 font-normal text-xs">Not provided</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Official Website */}
+                <div className="ev-modal-info-card">
+                  <div className="ev-modal-card-icon-box sky">
+                    <Globe className="w-4 h-4 text-sky-600" />
+                  </div>
+                  <div className="ev-modal-card-content">
+                    <span className="ev-modal-card-label">Official Website</span>
+                    <p className="ev-modal-card-value">
+                      {selectedEmployer.website && selectedEmployer.website.trim() ? (
+                        <a
+                          href={
+                            selectedEmployer.website.startsWith("http")
+                              ? selectedEmployer.website
+                              : `https://${selectedEmployer.website}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 inline-flex items-center gap-1 hover:underline truncate"
+                        >
+                          <span className="truncate">{selectedEmployer.website.replace(/^https?:\/\//, "")}</span>
+                          <ExternalLink className="w-3 h-3 shrink-0" />
+                        </a>
+                      ) : (
+                        <span className="text-slate-400 font-normal text-xs">Not provided</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Registered Address (Spans full width) */}
+                {[selectedEmployer.address, selectedEmployer.city, selectedEmployer.state, selectedEmployer.pincode].filter(Boolean).length > 0 && (
+                  <div className="ev-modal-info-card col-span-full">
+                    <div className="ev-modal-card-icon-box amber">
+                      <MapPin className="w-4 h-4 text-amber-600" />
+                    </div>
+                    <div className="ev-modal-card-content">
+                      <span className="ev-modal-card-label">Registered Address & Jurisdiction</span>
+                      <p className="ev-modal-card-value text-xs font-semibold text-slate-700">
                         {[selectedEmployer.address, selectedEmployer.city, selectedEmployer.state, selectedEmployer.pincode]
                           .filter(Boolean)
                           .join(", ")}
-                      </span>
+                      </p>
                     </div>
-                  )}
-
-                  {selectedEmployer.documentUrl && (
-                    <div className="sm:col-span-2 pt-2 border-t border-slate-200">
-                      <span className="text-slate-400 block text-[11px] mb-1">
-                        Proof Document / License
-                      </span>
-                      <a
-                        href={selectedEmployer.documentUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
-                      >
-                        <FileText className="w-3.5 h-3.5" />
-                        View Uploaded Proof Document <ExternalLink className="w-3 h-3" />
-                      </a>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
-              {/* Admin Remarks / Notes */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Verification Remarks / Notes (Optional)
-                </label>
+              {/* Proof Document Card */}
+              {selectedEmployer.documentUrl ? (
+                <div className="ev-modal-doc-card">
+                  <div className="ev-modal-doc-info">
+                    <div className="ev-modal-doc-icon">
+                      <FileText className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900 leading-tight">
+                        Proof of Registration / Medical License
+                      </h4>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Official verification document attached by applicant
+                      </p>
+                    </div>
+                  </div>
+                  <a
+                    href={selectedEmployer.documentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ev-modal-doc-btn"
+                    style={{ backgroundColor: "#0066cc", color: "#ffffff" }}
+                  >
+                    <span>View Document</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 p-3.5 text-center">
+                  <p className="text-xs text-slate-400 font-medium">
+                    Proof document / registration license was not attached with this submission
+                  </p>
+                </div>
+              )}
+
+              {/* Admin Remarks & Quick Decision Chips */}
+              <div className="ev-modal-remarks-section">
+                <div className="ev-modal-remarks-header">
+                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                    Verification Remarks / Notes (Optional)
+                  </label>
+                  <span className="text-[11px] text-slate-400 font-medium">Recorded with action</span>
+                </div>
+
+                {/* Quick Preset Chips */}
+                <div className="ev-modal-chips-row">
+                  <span className="text-[11px] text-slate-400 font-semibold mr-1">Quick notes:</span>
+                  {[
+                    "Credentials verified & approved",
+                    "Government affiliation verified",
+                    "Pending license document",
+                    "Invalid contact details",
+                  ].map((chip) => (
+                    <button
+                      key={chip}
+                      type="button"
+                      onClick={() => setReviewNotes(chip)}
+                      className="ev-modal-chip"
+                    >
+                      {chip}
+                    </button>
+                  ))}
+                </div>
+
                 <Textarea
                   value={reviewNotes}
                   onChange={(e) => setReviewNotes(e.target.value)}
                   placeholder="Enter remarks or approval/rejection reason for employer reference..."
                   rows={2}
-                  className="text-xs resize-none"
+                  className="text-xs bg-slate-50/50 hover:bg-slate-50 focus:bg-white border-slate-200 rounded-lg resize-none"
                 />
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5 pt-2">
+              {/* Action Buttons Footer */}
+              <div className="ev-modal-footer -mx-6 -mb-5 mt-2 rounded-b-2xl">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => onNavigate(`employer-management/${selectedEmployer.id}`)}
-                  className="w-full sm:w-auto text-xs"
+                  className="border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold text-xs gap-1.5 h-9 px-3.5 cursor-pointer"
                 >
-                  <Building2 className="w-3.5 h-3.5 mr-1" />
+                  <Building2 className="w-4 h-4 text-slate-500" />
                   Full Employer Profile
                 </Button>
 
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <div className="flex items-center gap-2">
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     disabled={isSubmittingReview}
                     onClick={() => handleReviewAction("rejected")}
-                    className="flex-1 sm:flex-initial text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 text-xs"
+                    className="border-red-200 bg-red-50/60 hover:bg-red-100 text-red-600 hover:text-red-700 font-bold text-xs gap-1.5 h-9 px-4 cursor-pointer"
                   >
-                    <XCircle className="w-3.5 h-3.5 mr-1" />
-                    Reject
+                    <XCircle className="w-4 h-4 text-red-600" />
+                    Reject Request
                   </Button>
                   <Button
                     type="button"
                     size="sm"
                     disabled={isSubmittingReview}
                     onClick={() => handleReviewAction("approved")}
-                    className="flex-1 sm:flex-initial bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
+                    className="font-bold text-xs gap-1.5 h-9 px-4 shadow-sm hover:opacity-95 cursor-pointer"
+                    style={{
+                      backgroundColor: "#10b981",
+                      color: "#ffffff",
+                      border: "none",
+                    }}
                   >
-                    <CheckCircle className="w-3.5 h-3.5 mr-1" />
-                    Approve
+                    <CheckCircle2 className="w-4 h-4 text-white" />
+                    Approve Request
                   </Button>
                 </div>
               </div>

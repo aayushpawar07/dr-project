@@ -174,6 +174,7 @@ function AppContent() {
           <Route path="/refund-cancellation" element={<RefundCancellationPage onNavigate={handleNavigate} />} />
           <Route path="/contact" element={<ContactUsPage onNavigate={handleNavigate} />} />
           <Route path="/subscription" element={<SubscriptionPage onNavigate={handleNavigate} />} />
+          <Route path="/employee-verification" element={<EmployerVerificationPage onNavigate={handleNavigate} />} />
 
           <Route
             path="/notifications"

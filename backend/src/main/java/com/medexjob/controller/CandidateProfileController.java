@@ -49,59 +49,84 @@ public class CandidateProfileController {
             created.setCandidate(user.get());
             return created;
         });
-        profile.setSpeciality(string(body.get("speciality")));
-        profile.setSubSpeciality(string(body.get("subSpeciality")));
-        profile.setQualification(string(body.get("qualification")));
-        profile.setYearsExperience(integer(body.get("yearsExperience")));
-        profile.setRegistrationCouncil(string(body.get("registrationCouncil")));
-        profile.setRegistrationNumber(string(body.get("registrationNumber")));
-        profile.setCurrentCity(string(body.get("currentCity")));
-        profile.setState(string(body.get("state")));
-        profile.setPreferredLocation(string(body.get("preferredLocation")));
-        profile.setEmploymentPreference(string(body.get("employmentPreference")));
-        profile.setProfileSummary(string(body.get("profileSummary")));
-        profile.setProfilePhotoUrl(string(body.get("profilePhotoUrl")));
-        profile.setMedicalCategory(string(body.get("medicalCategory")));
-        profile.setCurrentOrganization(string(body.get("currentOrganization")));
-        profile.setPreferredJobRole(string(body.get("preferredJobRole")));
-        profile.setSkills(string(body.get("skills")));
-        profile.setRegistrationYear(string(body.get("registrationYear")));
-        profile.setRegistrationState(string(body.get("registrationState")));
-        profile.setResumeUrl(string(body.get("resumeUrl")));
-        profile.setResumeFileName(string(body.get("resumeFileName")));
+        if (body.containsKey("speciality")) profile.setSpeciality(string(body.get("speciality")));
+        if (body.containsKey("subSpeciality")) profile.setSubSpeciality(string(body.get("subSpeciality")));
+        if (body.containsKey("qualification")) profile.setQualification(string(body.get("qualification")));
+        if (body.containsKey("yearsExperience")) profile.setYearsExperience(integer(body.get("yearsExperience")));
+        if (body.containsKey("registrationCouncil")) profile.setRegistrationCouncil(string(body.get("registrationCouncil")));
+        if (body.containsKey("registrationNumber")) profile.setRegistrationNumber(string(body.get("registrationNumber")));
+        if (body.containsKey("currentCity")) profile.setCurrentCity(string(body.get("currentCity")));
+        if (body.containsKey("state")) profile.setState(string(body.get("state")));
+        if (body.containsKey("preferredLocation")) profile.setPreferredLocation(string(body.get("preferredLocation")));
+        if (body.containsKey("employmentPreference")) profile.setEmploymentPreference(string(body.get("employmentPreference")));
+        if (body.containsKey("profileSummary")) profile.setProfileSummary(string(body.get("profileSummary")));
+        if (body.containsKey("profilePhotoUrl")) profile.setProfilePhotoUrl(string(body.get("profilePhotoUrl")));
+        if (body.containsKey("medicalCategory")) profile.setMedicalCategory(string(body.get("medicalCategory")));
+        if (body.containsKey("currentOrganization")) profile.setCurrentOrganization(string(body.get("currentOrganization")));
+        if (body.containsKey("preferredJobRole")) profile.setPreferredJobRole(string(body.get("preferredJobRole")));
+        if (body.containsKey("skills")) profile.setSkills(string(body.get("skills")));
+        if (body.containsKey("registrationYear")) profile.setRegistrationYear(string(body.get("registrationYear")));
+        if (body.containsKey("registrationState")) profile.setRegistrationState(string(body.get("registrationState")));
+        if (body.containsKey("resumeUrl")) profile.setResumeUrl(string(body.get("resumeUrl")));
+        if (body.containsKey("resumeFileName")) profile.setResumeFileName(string(body.get("resumeFileName")));
 
         // Structured step-by-step qualification fields
-        String profCat = string(body.get("professionalCategory"));
-        if (profCat != null && !profCat.isBlank()) {
-            profile.setProfessionalCategory(profCat);
-            if (profile.getMedicalCategory() == null || profile.getMedicalCategory().isBlank()) {
-                profile.setMedicalCategory(profCat);
+        if (body.containsKey("professionalCategory")) {
+            String profCat = string(body.get("professionalCategory"));
+            if (profCat != null && !profCat.isBlank()) {
+                profile.setProfessionalCategory(profCat);
+                if (profile.getMedicalCategory() == null || profile.getMedicalCategory().isBlank()) {
+                    profile.setMedicalCategory(profCat);
+                }
             }
         }
-        String basicQual = string(body.get("basicQualification"));
-        if (basicQual != null && !basicQual.isBlank()) {
-            profile.setBasicQualification(basicQual);
-        }
-        String highestQual = string(body.get("highestQualification"));
-        if (highestQual != null && !highestQual.isBlank()) {
-            profile.setHighestQualification(highestQual);
-            if (profile.getQualification() == null || profile.getQualification().isBlank()) {
-                profile.setQualification(highestQual);
+        if (body.containsKey("basicQualification")) {
+            String basicQual = string(body.get("basicQualification"));
+            if (basicQual != null && !basicQual.isBlank()) {
+                profile.setBasicQualification(basicQual);
             }
-        } else if (basicQual != null && !basicQual.isBlank() && (profile.getQualification() == null || profile.getQualification().isBlank())) {
-            profile.setQualification(basicQual);
         }
-        profile.setSuperSpeciality(string(body.get("superSpeciality")));
-        profile.setFellowship(string(body.get("fellowship")));
-        profile.setExperienceBand(string(body.get("experienceBand")));
-        profile.setExperienceMonths(integer(body.get("experienceMonths")));
-        profile.setPreferredJobRoles(jsonOrString(body.get("preferredJobRoles")));
-        profile.setPreferredSectors(jsonOrString(body.get("preferredSectors")));
-        profile.setPreferredEmploymentTypes(jsonOrString(body.get("preferredEmploymentTypes")));
-        profile.setLocationPreferenceType(string(body.get("locationPreferenceType")));
-        profile.setPreferredStates(jsonOrString(body.get("preferredStates")));
-        profile.setPreferredCities(jsonOrString(body.get("preferredCities")));
-        profile.setJobAlertSettings(jsonOrString(body.get("jobAlertSettings")));
+        if (body.containsKey("highestQualification")) {
+            String highestQual = string(body.get("highestQualification"));
+            if (highestQual != null && !highestQual.isBlank()) {
+                profile.setHighestQualification(highestQual);
+                if (profile.getQualification() == null || profile.getQualification().isBlank()) {
+                    profile.setQualification(highestQual);
+                }
+            }
+        } else if (profile.getBasicQualification() != null && !profile.getBasicQualification().isBlank() && (profile.getQualification() == null || profile.getQualification().isBlank())) {
+            profile.setQualification(profile.getBasicQualification());
+        }
+
+        if (body.containsKey("superSpeciality")) profile.setSuperSpeciality(string(body.get("superSpeciality")));
+        if (body.containsKey("fellowship")) profile.setFellowship(string(body.get("fellowship")));
+        if (body.containsKey("experienceBand")) profile.setExperienceBand(string(body.get("experienceBand")));
+        if (body.containsKey("experienceMonths")) profile.setExperienceMonths(integer(body.get("experienceMonths")));
+        if (body.containsKey("preferredJobRoles")) profile.setPreferredJobRoles(jsonOrString(body.get("preferredJobRoles")));
+        if (body.containsKey("preferredSectors")) profile.setPreferredSectors(jsonOrString(body.get("preferredSectors")));
+        if (body.containsKey("preferredEmploymentTypes")) profile.setPreferredEmploymentTypes(jsonOrString(body.get("preferredEmploymentTypes")));
+        if (body.containsKey("locationPreferenceType")) profile.setLocationPreferenceType(string(body.get("locationPreferenceType")));
+        if (body.containsKey("preferredStates")) {
+            String statesStr = jsonOrString(body.get("preferredStates"));
+            profile.setPreferredStates(statesStr);
+            if ((profile.getState() == null || profile.getState().isBlank()) && statesStr != null && !statesStr.isBlank()) {
+                Object parsed = parseJsonOrString(statesStr);
+                if (parsed instanceof List<?> list && !list.isEmpty()) {
+                    profile.setState(String.valueOf(list.get(0)));
+                }
+            }
+        }
+        if (body.containsKey("preferredCities")) {
+            String citiesStr = jsonOrString(body.get("preferredCities"));
+            profile.setPreferredCities(citiesStr);
+            if ((profile.getCurrentCity() == null || profile.getCurrentCity().isBlank()) && citiesStr != null && !citiesStr.isBlank()) {
+                Object parsed = parseJsonOrString(citiesStr);
+                if (parsed instanceof List<?> list && !list.isEmpty()) {
+                    profile.setCurrentCity(String.valueOf(list.get(0)));
+                }
+            }
+        }
+        if (body.containsKey("jobAlertSettings")) profile.setJobAlertSettings(jsonOrString(body.get("jobAlertSettings")));
 
         return ResponseEntity.ok(toResponse(repository.save(profile)));
     }

@@ -1,30 +1,30 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
-  CheckCircle,
   CheckCircle2,
   Stethoscope,
   ChevronRight,
   ChevronLeft,
-  ArrowRight,
   Briefcase,
   GraduationCap,
   MapPin,
   Bell,
-  Clock,
   Sparkles,
   Search,
   Building2,
-  SlidersHorizontal,
   Mail,
   Smartphone,
   Save,
   Check,
   X,
-  RotateCcw,
+  HeartPulse,
+  Pill,
+  FlaskConical,
+  Award,
+  Globe,
+  Landmark,
+  ShieldCheck,
+  Activity,
 } from 'lucide-react';
-import { Button } from './ui/button';
-import { Card } from './ui/card';
-import { Badge } from './ui/badge';
 import { toast } from 'sonner';
 import {
   CandidateProfileData,
@@ -41,8 +41,8 @@ import {
   EMPLOYMENT_TYPES,
   ALL_INDIAN_STATES,
   ALERT_TYPE_OPTIONS,
-  ALERT_FREQUENCY_OPTIONS,
 } from '../utils/qualificationHierarchy';
+import '../styles/candidate-stepper.css';
 
 interface StepperProps {
   initialProfile: CandidateProfileData;
@@ -51,6 +51,52 @@ interface StepperProps {
   onCancel?: () => void;
   isModal?: boolean;
 }
+
+// Icon mapping for professional categories
+const CATEGORY_META: Record<string, { icon: React.ReactNode; bg: string; color: string; label: string }> = {
+  Doctor: {
+    icon: <Stethoscope className="w-5 h-5" />,
+    bg: '#eff6ff',
+    color: '#2563eb',
+    label: 'Allopathy / Modern Medicine',
+  },
+  Dentist: {
+    icon: <Activity className="w-5 h-5" />,
+    bg: '#f0fdfa',
+    color: '#0d9488',
+    label: 'Dental Surgery & Specialities',
+  },
+  AYUSH: {
+    icon: <Sparkles className="w-5 h-5" />,
+    bg: '#f0fdf4',
+    color: '#16a34a',
+    label: 'Ayurveda, Homeopathy, Unani, Siddha',
+  },
+  Nursing: {
+    icon: <HeartPulse className="w-5 h-5" />,
+    bg: '#fff1f2',
+    color: '#e11d48',
+    label: 'Nursing & Midwifery Practice',
+  },
+  Pharmacy: {
+    icon: <Pill className="w-5 h-5" />,
+    bg: '#fffbeb',
+    color: '#d97706',
+    label: 'Clinical & Hospital Pharmacy',
+  },
+  Paramedical: {
+    icon: <FlaskConical className="w-5 h-5" />,
+    bg: '#f5f3ff',
+    color: '#7c3aed',
+    label: 'Allied Health Sciences & Diagnostics',
+  },
+  Other: {
+    icon: <Building2 className="w-5 h-5" />,
+    bg: '#f0f9ff',
+    color: '#0284c7',
+    label: 'Healthcare Administration & Research',
+  },
+};
 
 export function CandidateQualificationStepper({
   initialProfile,
@@ -130,9 +176,6 @@ export function CandidateQualificationStepper({
   const [alertType, setAlertType] = useState<'government' | 'private' | 'both'>(
     initialProfile.jobAlertSettings?.alertType || 'both'
   );
-  const [alertFrequency, setAlertFrequency] = useState<'instant' | 'daily' | 'weekly'>(
-    initialProfile.jobAlertSettings?.frequency || 'instant'
-  );
   const [channelWebsite, setChannelWebsite] = useState(
     initialProfile.jobAlertSettings?.channels?.website ?? true
   );
@@ -140,10 +183,10 @@ export function CandidateQualificationStepper({
     initialProfile.jobAlertSettings?.channels?.email ?? true
   );
   const [channelWhatsapp, setChannelWhatsapp] = useState(
-    initialProfile.jobAlertSettings?.channels?.whatsapp ?? false
+    initialProfile.jobAlertSettings?.channels?.whatsapp ?? true
   );
 
-  // Speciality search filter
+  // Search filters
   const [specialitySearch, setSpecialitySearch] = useState('');
   const [stateSearch, setStateSearch] = useState('');
 
@@ -160,13 +203,17 @@ export function CandidateQualificationStepper({
 
   // Determine if Step 4 (Speciality) is applicable
   const needsSpecialityStep = useMemo(() => {
-    if (highestQualification === 'MBBS Only' || highestQualification === 'BDS Only' || highestQualification === 'No Higher Qualification') {
+    if (
+      highestQualification === 'MBBS Only' ||
+      highestQualification === 'BDS Only' ||
+      highestQualification === 'No Higher Qualification'
+    ) {
       return false;
     }
     if (category === 'Doctor') {
       return Boolean(
         highestQualification &&
-        (QUALIFICATION_SPECIALITIES[highestQualification] || highestQualification === 'Fellowship')
+          (QUALIFICATION_SPECIALITIES[highestQualification] || highestQualification === 'Fellowship')
       );
     }
     if (category === 'Dentist') {
@@ -178,7 +225,7 @@ export function CandidateQualificationStepper({
     return false;
   }, [category, highestQualification]);
 
-  // Total steps: 8 (or 7 if speciality is skipped)
+  // Available specialities for selected qualification
   const availableSpecialities = useMemo(() => {
     if (category === 'Doctor') {
       return QUALIFICATION_SPECIALITIES[highestQualification] || [];
@@ -234,7 +281,6 @@ export function CandidateQualificationStepper({
         toast.error('Please select your qualification level');
         return;
       }
-      // If speciality is needed, go to step 4; otherwise skip directly to step 5 (Experience)
       if (needsSpecialityStep) {
         setCurrentStep(4);
       } else {
@@ -245,7 +291,7 @@ export function CandidateQualificationStepper({
 
     if (currentStep === 4) {
       if (needsSpecialityStep && !speciality) {
-        toast.error('Please select your primary clinical speciality');
+        toast.error('Please select your clinical speciality');
         return;
       }
       setCurrentStep(5);
@@ -332,8 +378,17 @@ export function CandidateQualificationStepper({
         .map((c) => c.trim())
         .filter(Boolean);
 
+      const resolvedState =
+        initialProfile.state ||
+        (locationPreferenceType === 'state' && preferredStates.length > 0 ? preferredStates[0] : undefined);
+      const resolvedCity =
+        initialProfile.currentCity ||
+        (locationPreferenceType === 'city' && parsedCities.length > 0 ? parsedCities[0] : undefined);
+
       const payload: CandidateProfileData = {
         ...initialProfile,
+        state: resolvedState,
+        currentCity: resolvedCity,
         professionalCategory: category,
         medicalCategory: category,
         basicQualification: basicQualification,
@@ -363,7 +418,7 @@ export function CandidateQualificationStepper({
         jobAlertSettings: {
           enabled: true,
           alertType: alertType,
-          frequency: alertFrequency,
+          frequency: 'instant',
           channels: {
             website: channelWebsite,
             email: channelEmail,
@@ -393,110 +448,136 @@ export function CandidateQualificationStepper({
   const progressPercent = Math.round((currentStep / 8) * 100);
 
   return (
-    <div className={`bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden ${isModal ? 'p-0' : 'p-4 sm:p-7'}`}>
-
-      {/* STEPPER TOP HEADER */}
-      <div className="border-b border-slate-100 pb-5 mb-6">
-        <div className="flex items-center justify-between gap-3 mb-3">
+    <div className={`cqs-wrapper ${isModal ? 'cqs-modal-dialog' : ''}`}>
+      {/* 1. STICKY HEADER */}
+      <div className="cqs-header">
+        <div className="cqs-header-top">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md">
-              Step {currentStep} of 8
-            </span>
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1">
+            <div className="cqs-step-indicator">
+              <span className="cqs-step-dot" />
+              <span>Step {currentStep} of 8</span>
+            </div>
+            <h2 className="cqs-title">
               {currentStep === 1 && 'What best describes your professional role?'}
-              {currentStep === 2 && `Select your basic qualification in ${category}`}
-              {currentStep === 3 && 'Select your highest / post-graduate qualification'}
-              {currentStep === 4 && `Select your clinical speciality in ${highestQualification}`}
-              {currentStep === 5 && 'Clinical Experience'}
-              {currentStep === 6 && 'Target Job Roles'}
-              {currentStep === 7 && 'Job Type & Preferred Location'}
+              {currentStep === 2 && `Select your foundational degree in ${category}`}
+              {currentStep === 3 && 'Select your highest qualification level'}
+              {currentStep === 4 && `Clinical speciality in ${highestQualification}`}
+              {currentStep === 5 && 'Clinical Experience & Practice Background'}
+              {currentStep === 6 && 'Target Job Roles for AI Matching'}
+              {currentStep === 7 && 'Job Type & Preferred Practice Location'}
               {currentStep === 8 && 'Review & Job Alert Preferences'}
             </h2>
           </div>
+
+          {/* EXACTLY ONE SLEEK CLOSE BUTTON */}
           {onCancel && (
             <button
               type="button"
               onClick={onCancel}
-              className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-              aria-label="Close"
+              className="cqs-close-btn"
+              aria-label="Close dialog"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           )}
         </div>
 
         {/* Progress Bar */}
-        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+        <div className="cqs-progress-track">
           <div
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 h-full transition-all duration-300 rounded-full"
+            className="cqs-progress-fill"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
 
-        {/* Breadcrumb pills of selection */}
-        <div className="flex items-center gap-1.5 flex-wrap mt-3 text-xs text-slate-500 font-medium">
-          <span className="text-blue-600 font-bold">{category}</span>
-          {basicQualification && (
+        {/* Dynamic Breadcrumbs - only shows completed selections */}
+        <div className="cqs-breadcrumbs">
+          <button
+            type="button"
+            onClick={() => setCurrentStep(1)}
+            className={`cqs-crumb ${currentStep === 1 ? 'is-current' : ''}`}
+          >
+            {category}
+          </button>
+          {currentStep > 1 && basicQualification && (
             <>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-              <span className="text-slate-700">{basicQualification}</span>
+              <ChevronRight className="w-3 h-3 text-slate-300" />
+              <button
+                type="button"
+                onClick={() => setCurrentStep(2)}
+                className={`cqs-crumb ${currentStep === 2 ? 'is-current' : ''}`}
+              >
+                {basicQualification}
+              </button>
             </>
           )}
-          {highestQualification && highestQualification !== 'MBBS Only' && highestQualification !== 'None / Basic Only' && (
+          {currentStep > 2 && highestQualification && highestQualification !== 'MBBS Only' && (
             <>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-              <span className="text-slate-700 font-semibold">{highestQualification}</span>
+              <ChevronRight className="w-3 h-3 text-slate-300" />
+              <button
+                type="button"
+                onClick={() => setCurrentStep(3)}
+                className={`cqs-crumb ${currentStep === 3 ? 'is-current' : ''}`}
+              >
+                {highestQualification}
+              </button>
             </>
           )}
-          {speciality && (
+          {currentStep > 3 && speciality && (
             <>
-              <ChevronRight className="w-3.5 h-3.5 text-slate-300" />
-              <span className="text-teal-700 font-semibold bg-teal-50 px-2 py-0.5 rounded">
+              <ChevronRight className="w-3 h-3 text-slate-300" />
+              <button
+                type="button"
+                onClick={() => setCurrentStep(4)}
+                className={`cqs-crumb ${currentStep === 4 ? 'is-current' : ''}`}
+              >
                 {speciality}
-              </span>
+              </button>
             </>
           )}
         </div>
       </div>
 
-      {/* STEP CONTENT BODY */}
-      <div className="min-h-[360px] pb-4">
-
-        {/* STEP 1: PROFESSIONAL CATEGORY SELECTION CARDS */}
+      {/* 2. SCROLLABLE BODY */}
+      <div className="cqs-body">
+        {/* STEP 1: PROFESSIONAL CATEGORY */}
         {currentStep === 1 && (
-          <div className="space-y-4">
-            <p className="text-sm text-slate-600">
-              Select your primary healthcare domain to customize your qualifications and relevant job matching:
+          <div>
+            <p className="cqs-section-hint">
+              Select your primary healthcare domain to customize qualification tiers and job alert matching:
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            <div className="cqs-category-grid">
               {PROFESSIONAL_CATEGORIES.map((cat) => {
                 const isSelected = category === cat.id;
+                const meta = CATEGORY_META[cat.id] || {
+                  icon: <Stethoscope className="w-5 h-5" />,
+                  bg: '#eff6ff',
+                  color: '#2563eb',
+                  label: cat.label,
+                };
                 return (
                   <div
                     key={cat.id}
                     onClick={() => handleCategorySelect(cat.id)}
-                    className={`relative p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between ${
-                      isSelected
-                        ? 'border-blue-600 bg-blue-50/50 shadow-sm ring-2 ring-blue-500/20'
-                        : 'border-slate-200 hover:border-blue-300 hover:bg-slate-50/50'
-                    }`}
+                    className={`cqs-cat-card ${isSelected ? 'is-selected' : ''}`}
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="text-3xl mb-2">{cat.icon}</div>
-                      {isSelected && (
-                        <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                          <Check className="w-3.5 h-3.5 stroke-[3]" />
-                        </div>
-                      )}
-                    </div>
                     <div>
-                      <h3 className="font-bold text-slate-900 text-base leading-tight">
-                        {cat.label}
-                      </h3>
-                      <p className="text-xs text-slate-500 mt-1 leading-snug">
-                        {cat.description}
-                      </p>
+                      <div className="cqs-cat-header">
+                        <div
+                          className="cqs-cat-icon"
+                          style={{ backgroundColor: meta.bg, color: meta.color }}
+                        >
+                          {meta.icon}
+                        </div>
+                        {isSelected && (
+                          <div className="cqs-check-badge">
+                            <Check className="w-3.5 h-3.5 stroke-[3]" />
+                          </div>
+                        )}
+                      </div>
+                      <h3 className="cqs-cat-label">{cat.label}</h3>
                     </div>
+                    <p className="cqs-cat-desc">{cat.description}</p>
                   </div>
                 );
               })}
@@ -504,34 +585,33 @@ export function CandidateQualificationStepper({
           </div>
         )}
 
-        {/* STEP 2: BASIC QUALIFICATION */}
+        {/* STEP 2: FOUNDATIONAL DEGREE */}
         {currentStep === 2 && (
-          <div className="space-y-4">
-            <p className="text-sm text-slate-600">
-              Select your foundational degree or qualification in <strong className="text-slate-900">{category}</strong>:
+          <div>
+            <p className="cqs-section-hint">
+              Select your foundational medical / healthcare qualification in <strong className="text-slate-900">{category}</strong>:
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="cqs-qual-grid">
               {(BASIC_QUALIFICATIONS[category] || []).map((qual) => {
                 const isSelected = basicQualification === qual;
                 return (
                   <div
                     key={qual}
                     onClick={() => setBasicQualification(qual)}
-                    className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between ${
-                      isSelected
-                        ? 'border-blue-600 bg-blue-50/60 shadow-sm'
-                        : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                    }`}
+                    className={`cqs-qual-card ${isSelected ? 'is-selected' : ''}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-blue-100/60 text-blue-700 flex items-center justify-center font-bold text-sm">
-                        🎓
+                    <div className="cqs-qual-info">
+                      <div className="cqs-qual-icon-badge">
+                        <GraduationCap className="w-4 h-4" />
                       </div>
-                      <span className="font-bold text-slate-900 text-sm">{qual}</span>
+                      <div>
+                        <span className="cqs-qual-name">{qual}</span>
+                        <span className="cqs-qual-sub">Foundational Degree</span>
+                      </div>
                     </div>
                     {isSelected && (
-                      <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0">
-                        <Check className="w-3 h-3 stroke-[3]" />
+                      <div className="cqs-check-badge">
+                        <Check className="w-3.5 h-3.5 stroke-[3]" />
                       </div>
                     )}
                   </div>
@@ -543,13 +623,18 @@ export function CandidateQualificationStepper({
 
         {/* STEP 3: HIGHEST / POST-GRADUATE QUALIFICATION */}
         {currentStep === 3 && (
-          <div className="space-y-4">
-            <p className="text-sm text-slate-600">
+          <div>
+            <p className="cqs-section-hint">
               Select your highest qualification achieved or currently pursuing:
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="cqs-qual-grid">
               {(HIGHEST_QUALIFICATIONS[category] || []).map((hQual) => {
                 const isSelected = highestQualification === hQual;
+                const isUgOnly =
+                  hQual === 'MBBS Only' ||
+                  hQual === 'BDS Only' ||
+                  hQual === 'No Higher Qualification' ||
+                  hQual === 'None / Basic Only';
                 return (
                   <div
                     key={hQual}
@@ -557,30 +642,26 @@ export function CandidateQualificationStepper({
                       setHighestQualification(hQual);
                       setSpeciality('');
                     }}
-                    className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between ${
-                      isSelected
-                        ? 'border-blue-600 bg-blue-50/60 shadow-sm'
-                        : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                    }`}
+                    className={`cqs-qual-card ${isSelected ? 'is-selected' : ''}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-indigo-100/60 text-indigo-700 flex items-center justify-center font-bold text-sm">
-                        ⭐
+                    <div className="cqs-qual-info">
+                      <div className="cqs-qual-icon-badge">
+                        {isUgOnly ? (
+                          <GraduationCap className="w-4 h-4" />
+                        ) : (
+                          <Award className="w-4 h-4 text-indigo-600" />
+                        )}
                       </div>
                       <div>
-                        <span className="font-bold text-slate-900 text-sm block">
-                          {hQual}
-                        </span>
-                        <span className="text-[11px] text-slate-400">
-                          {hQual === 'MBBS Only' || hQual === 'BDS Only' || hQual === 'No Higher Qualification'
-                            ? 'Undergraduate / Primary degree'
-                            : 'Post-Graduate / Specialist Degree'}
+                        <span className="cqs-qual-name">{hQual}</span>
+                        <span className="cqs-qual-sub">
+                          {isUgOnly ? 'Undergraduate Degree' : 'Specialist / Post-Graduate'}
                         </span>
                       </div>
                     </div>
                     {isSelected && (
-                      <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0">
-                        <Check className="w-3 h-3 stroke-[3]" />
+                      <div className="cqs-check-badge">
+                        <Check className="w-3.5 h-3.5 stroke-[3]" />
                       </div>
                     )}
                   </div>
@@ -590,36 +671,45 @@ export function CandidateQualificationStepper({
           </div>
         )}
 
-        {/* STEP 4: SPECIALITY (CONDITIONAL) */}
+        {/* STEP 4: CLINICAL SPECIALITY */}
         {currentStep === 4 && (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <p className="text-sm text-slate-600">
-                Choose your specific clinical speciality in <strong className="text-blue-700">{highestQualification}</strong>:
-              </p>
-              {/* Quick Search */}
-              <div className="relative w-full sm:w-64">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={specialitySearch}
-                  onChange={(e) => setSpecialitySearch(e.target.value)}
-                  placeholder="Search speciality..."
-                  className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
+          <div>
+            <p className="cqs-section-hint">
+              Choose your clinical speciality in <strong className="text-blue-700">{highestQualification}</strong>:
+            </p>
+
+            <div className="cqs-search-bar">
+              <Search className="w-4 h-4 text-slate-400 shrink-0" />
+              <input
+                type="text"
+                value={specialitySearch}
+                onChange={(e) => setSpecialitySearch(e.target.value)}
+                placeholder="Search speciality (e.g. General Medicine, Paediatrics, Cardiology)..."
+                className="cqs-search-input"
+              />
+              {specialitySearch && (
+                <button
+                  type="button"
+                  onClick={() => setSpecialitySearch('')}
+                  className="text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-[380px] overflow-y-auto p-1">
+            <div className="cqs-spec-grid">
               {filteredSpecialities.length === 0 ? (
-                <div className="col-span-3 py-8 text-center text-slate-400">
-                  <p className="text-sm font-semibold text-slate-600">No speciality matches &quot;{specialitySearch}&quot;</p>
+                <div className="col-span-full py-8 text-center text-slate-400">
+                  <p className="text-xs font-semibold text-slate-600">
+                    No speciality matches &quot;{specialitySearch}&quot;
+                  </p>
                   <button
                     type="button"
                     onClick={() => setSpeciality(specialitySearch)}
-                    className="text-xs text-blue-600 font-bold mt-2 hover:underline"
+                    className="text-xs text-blue-600 font-bold mt-2 hover:underline cursor-pointer"
                   >
-                    Use &quot;{specialitySearch}&quot; as custom speciality
+                    Select &quot;{specialitySearch}&quot; as custom speciality
                   </button>
                 </div>
               ) : (
@@ -629,23 +719,19 @@ export function CandidateQualificationStepper({
                     <div
                       key={spec}
                       onClick={() => setSpeciality(spec)}
-                      className={`p-3 rounded-lg border transition-all cursor-pointer flex items-center justify-between ${
-                        isSelected
-                          ? 'border-blue-600 bg-blue-50 text-blue-900 font-bold shadow-xs'
-                          : 'border-slate-200 text-slate-700 hover:bg-slate-50 font-medium'
-                      }`}
+                      className={`cqs-spec-item ${isSelected ? 'is-selected' : ''}`}
                     >
-                      <span className="text-xs sm:text-sm truncate">{spec}</span>
-                      {isSelected && <Check className="w-4 h-4 text-blue-600 shrink-0" />}
+                      <span className="truncate">{spec}</span>
+                      {isSelected && <Check className="w-4 h-4 text-blue-600 shrink-0 ml-1" />}
                     </div>
                   );
                 })
               )}
             </div>
 
-            {/* Optional Super Speciality / Fellowship area */}
-            <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row gap-3">
-              <div className="flex-1">
+            {/* Optional Super-Speciality & Fellowship Inputs */}
+            <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Super Speciality / Sub-speciality (Optional)
                 </label>
@@ -657,7 +743,7 @@ export function CandidateQualificationStepper({
                   className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
-              <div className="flex-1">
+              <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Fellowship / Additional Credentials (Optional)
                 </label>
@@ -673,60 +759,61 @@ export function CandidateQualificationStepper({
           </div>
         )}
 
-        {/* STEP 5: EXPERIENCE */}
+        {/* STEP 5: CLINICAL EXPERIENCE */}
         {currentStep === 5 && (
-          <div className="space-y-5">
-            <div>
-              <p className="text-sm font-semibold text-slate-900 mb-2">
-                1. Select your Experience Band:
-              </p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                {EXPERIENCE_BANDS.map((band) => {
-                  const isSelected = experienceBand === band;
-                  return (
-                    <div
-                      key={band}
-                      onClick={() => setExperienceBand(band)}
-                      className={`p-3 rounded-xl border-2 transition-all cursor-pointer text-center ${
-                        isSelected
-                          ? 'border-blue-600 bg-blue-50/70 text-blue-900 font-bold'
-                          : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      <span className="text-xs sm:text-sm">{band}</span>
-                    </div>
-                  );
-                })}
-              </div>
+          <div>
+            <p className="cqs-section-hint">
+              Define your clinical experience level so employers and AI filters match you accurately:
+            </p>
+
+            <label className="block text-xs font-bold text-slate-900 mb-2">
+              1. Experience Band
+            </label>
+            <div className="cqs-band-grid">
+              {EXPERIENCE_BANDS.map((band) => {
+                const isSelected = experienceBand === band;
+                return (
+                  <div
+                    key={band}
+                    onClick={() => setExperienceBand(band)}
+                    className={`cqs-band-pill ${isSelected ? 'is-selected' : ''}`}
+                  >
+                    {band}
+                  </div>
+                );
+              })}
             </div>
 
-            <div className="pt-2 border-t border-slate-100">
-              <p className="text-sm font-semibold text-slate-900 mb-2">
-                2. Exact Total Clinical Experience:
-              </p>
-              <div className="grid grid-cols-2 gap-4 max-w-sm">
-                <div>
-                  <label className="block text-xs text-slate-500 mb-1 font-medium">Years</label>
+            <div className="cqs-exp-card mt-3">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold text-slate-900">
+                  2. Exact Total Clinical Experience
+                </span>
+                <span className="text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-full">
+                  Total: {experienceYears} Years {experienceMonths} Months
+                </span>
+              </div>
+              <div className="cqs-exp-inputs">
+                <div className="cqs-exp-field">
+                  <label>Completed Years</label>
                   <input
                     type="number"
                     min="0"
-                    max="60"
+                    max="50"
                     value={experienceYears}
                     onChange={(e) => setExperienceYears(Math.max(0, parseInt(e.target.value) || 0))}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                    placeholder="Years"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs text-slate-500 mb-1 font-medium">Months</label>
+                <div className="cqs-exp-field">
+                  <label>Additional Months</label>
                   <input
                     type="number"
                     min="0"
                     max="11"
                     value={experienceMonths}
-                    onChange={(e) => setExperienceMonths(Math.min(11, Math.max(0, parseInt(e.target.value) || 0)))}
-                    className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                    placeholder="Months"
+                    onChange={(e) =>
+                      setExperienceMonths(Math.min(11, Math.max(0, parseInt(e.target.value) || 0)))
+                    }
                   />
                 </div>
               </div>
@@ -734,31 +821,46 @@ export function CandidateQualificationStepper({
           </div>
         )}
 
-        {/* STEP 6: JOB ROLES (CATEGORY-DEPENDENT) */}
+        {/* STEP 6: TARGET JOB ROLES */}
         {currentStep === 6 && (
-          <div className="space-y-4">
-            <p className="text-sm text-slate-600">
-              Select the positions you are interested in applying for (multiple selections allowed):
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-[380px] overflow-y-auto p-1">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="cqs-section-hint mb-0">
+                Select target positions for AI matching ({preferredJobRoles.length} selected):
+              </p>
+              <div className="flex items-center gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const allRoles = CATEGORY_JOB_ROLES[category] || CATEGORY_JOB_ROLES.Doctor;
+                    setPreferredJobRoles(allRoles);
+                  }}
+                  className="text-blue-600 font-bold hover:underline cursor-pointer"
+                >
+                  Select All
+                </button>
+                <span className="text-slate-300">|</span>
+                <button
+                  type="button"
+                  onClick={() => setPreferredJobRoles([])}
+                  className="text-slate-500 font-medium hover:underline cursor-pointer"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            <div className="cqs-roles-grid">
               {(CATEGORY_JOB_ROLES[category] || CATEGORY_JOB_ROLES.Doctor).map((role) => {
                 const isSelected = preferredJobRoles.includes(role);
                 return (
                   <div
                     key={role}
                     onClick={() => toggleRole(role)}
-                    className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
-                      isSelected
-                        ? 'border-blue-600 bg-blue-50/80 text-blue-900 font-bold'
-                        : 'border-slate-200 text-slate-700 hover:bg-slate-50 font-medium'
-                    }`}
+                    className={`cqs-role-card ${isSelected ? 'is-selected' : ''}`}
                   >
-                    <span className="text-xs sm:text-sm">{role}</span>
-                    <div
-                      className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                        isSelected ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300'
-                      }`}
-                    >
+                    <span className="cqs-role-title">{role}</span>
+                    <div className="cqs-checkbox-box">
                       {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
                     </div>
                   </div>
@@ -768,304 +870,296 @@ export function CandidateQualificationStepper({
           </div>
         )}
 
-        {/* STEP 7: JOB TYPE & PREFERRED LOCATION */}
+        {/* STEP 7: SECTOR, EMPLOYMENT TYPE, & LOCATION */}
         {currentStep === 7 && (
-          <div className="space-y-5">
-            {/* Sector Preference */}
-            <div>
-              <p className="text-sm font-semibold text-slate-900 mb-2">
-                1. Organization Sector Preference:
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                {SECTOR_OPTIONS.map((sec) => {
-                  const isSelected = preferredSectors.includes(sec.id);
-                  return (
-                    <div
-                      key={sec.id}
-                      onClick={() => toggleSector(sec.id)}
-                      className={`p-3 rounded-xl border-2 transition-all cursor-pointer flex items-center justify-between ${
-                        isSelected
-                          ? 'border-blue-600 bg-blue-50/70 text-blue-900 font-bold'
-                          : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      <span className="text-xs font-medium">{sec.label}</span>
-                      {isSelected && <Check className="w-4 h-4 text-blue-600 shrink-0" />}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+          <div>
+            <p className="cqs-section-hint">
+              Configure sector preferences, work modes, and practice locations:
+            </p>
 
-            {/* Employment Type */}
-            <div className="pt-2 border-t border-slate-100">
-              <p className="text-sm font-semibold text-slate-900 mb-2">
-                2. Employment Type (Select all that apply):
-              </p>
-              <div className="flex items-center gap-2 flex-wrap">
-                {EMPLOYMENT_TYPES.map((emp) => {
-                  const isSelected = preferredEmploymentTypes.includes(emp);
-                  return (
-                    <button
-                      key={emp}
-                      type="button"
-                      onClick={() => toggleEmploymentType(emp)}
-                      className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
-                        isSelected
-                          ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                      }`}
-                    >
-                      {emp}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Location Preference */}
-            <div className="pt-2 border-t border-slate-100">
-              <p className="text-sm font-semibold text-slate-900 mb-2">
-                3. Work Location Preference:
-              </p>
-              <div className="grid grid-cols-3 gap-2.5 mb-3">
-                <button
-                  type="button"
-                  onClick={() => setLocationPreferenceType('anywhere')}
-                  className={`p-2.5 rounded-lg border text-xs font-semibold text-center transition-all ${
-                    locationPreferenceType === 'anywhere'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  Anywhere in India
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLocationPreferenceType('state')}
-                  className={`p-2.5 rounded-lg border text-xs font-semibold text-center transition-all ${
-                    locationPreferenceType === 'state'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  Specific States
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setLocationPreferenceType('city')}
-                  className={`p-2.5 rounded-lg border text-xs font-semibold text-center transition-all ${
-                    locationPreferenceType === 'city'
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  Specific Cities
-                </button>
-              </div>
-
-              {locationPreferenceType === 'state' && (
-                <div className="space-y-2">
-                  <div className="relative">
-                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      value={stateSearch}
-                      onChange={(e) => setStateSearch(e.target.value)}
-                      placeholder="Search state..."
-                      className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg"
-                    />
+            <label className="block text-xs font-bold text-slate-900 mb-2">
+              1. Organization Sector
+            </label>
+            <div className="cqs-sector-grid">
+              {SECTOR_OPTIONS.map((sec) => {
+                const isSelected = preferredSectors.includes(sec.id);
+                return (
+                  <div
+                    key={sec.id}
+                    onClick={() => toggleSector(sec.id)}
+                    className={`cqs-sector-pill ${isSelected ? 'is-selected' : ''}`}
+                  >
+                    <span className="cqs-sector-label">{sec.label}</span>
+                    {isSelected && <Check className="w-4 h-4 text-blue-600" />}
                   </div>
-                  <div className="flex items-center gap-1.5 flex-wrap max-h-36 overflow-y-auto p-1">
-                    {filteredStates.map((st) => {
-                      const isSelected = preferredStates.includes(st);
-                      return (
-                        <button
-                          key={st}
-                          type="button"
-                          onClick={() => toggleState(st)}
-                          className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                            isSelected
-                              ? 'bg-blue-50 text-blue-700 border-blue-300 font-bold'
-                              : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-                          }`}
-                        >
-                          {st} {isSelected && '✓'}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {locationPreferenceType === 'city' && (
-                <div>
-                  <input
-                    type="text"
-                    value={preferredCitiesInput}
-                    onChange={(e) => setPreferredCitiesInput(e.target.value)}
-                    placeholder="Enter preferred cities separated by commas (e.g. New Delhi, Mumbai, Bengaluru)"
-                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-              )}
+                );
+              })}
             </div>
+
+            <label className="block text-xs font-bold text-slate-900 mt-4 mb-2">
+              2. Employment Type
+            </label>
+            <div className="flex items-center gap-2 flex-wrap mb-4">
+              {EMPLOYMENT_TYPES.map((emp) => {
+                const isSelected = preferredEmploymentTypes.includes(emp);
+                return (
+                  <button
+                    key={emp}
+                    type="button"
+                    onClick={() => toggleEmploymentType(emp)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                      isSelected
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    {emp}
+                  </button>
+                );
+              })}
+            </div>
+
+            <label className="block text-xs font-bold text-slate-900 mt-4 mb-2">
+              3. Work Location Preference
+            </label>
+            <div className="cqs-loc-tabs">
+              <button
+                type="button"
+                onClick={() => setLocationPreferenceType('anywhere')}
+                className={`cqs-loc-tab ${locationPreferenceType === 'anywhere' ? 'is-active' : ''}`}
+              >
+                Anywhere in India (Pan-India)
+              </button>
+              <button
+                type="button"
+                onClick={() => setLocationPreferenceType('state')}
+                className={`cqs-loc-tab ${locationPreferenceType === 'state' ? 'is-active' : ''}`}
+              >
+                By State ({preferredStates.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setLocationPreferenceType('city')}
+                className={`cqs-loc-tab ${locationPreferenceType === 'city' ? 'is-active' : ''}`}
+              >
+                By City
+              </button>
+            </div>
+
+            {locationPreferenceType === 'state' && (
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <input
+                  type="text"
+                  value={stateSearch}
+                  onChange={(e) => setStateSearch(e.target.value)}
+                  placeholder="Search Indian States / UTs..."
+                  className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg mb-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+                  {filteredStates.map((st) => {
+                    const isSelected = preferredStates.includes(st);
+                    return (
+                      <button
+                        key={st}
+                        type="button"
+                        onClick={() => toggleState(st)}
+                        className={`px-2 py-1 rounded-md text-xs font-medium border transition-colors ${
+                          isSelected
+                            ? 'bg-blue-600 text-white border-blue-600 font-bold'
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        {st} {isSelected && '✓'}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {locationPreferenceType === 'city' && (
+              <div>
+                <input
+                  type="text"
+                  value={preferredCitiesInput}
+                  onChange={(e) => setPreferredCitiesInput(e.target.value)}
+                  placeholder="Enter preferred cities separated by commas (e.g. New Delhi, Mumbai, Bengaluru)"
+                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+            )}
           </div>
         )}
 
-        {/* STEP 8: JOB ALERT PREFERENCES & FINAL REVIEW */}
+        {/* STEP 8: REVIEW & JOB ALERTS */}
         {currentStep === 8 && (
-          <div className="space-y-5">
-            {/* Structured Profile Summary Card */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 sm:p-5">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-blue-800 uppercase tracking-wide flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5" /> Structured Qualification Profile
-                </span>
-                <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
-                  Ready to Match
+          <div>
+            <p className="cqs-section-hint">
+              Review your structured clinical profile and activate instant job matching alerts:
+            </p>
+
+            {/* Profile Summary Card */}
+            <div className="cqs-review-box">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-blue-900 uppercase tracking-wide">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  Structured Qualification Profile
+                </div>
+                <span className="cqs-review-badge">
+                  ✓ Ready for Matching
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-                <div>
-                  <span className="text-slate-500 block">Professional Category</span>
-                  <strong className="text-slate-900 text-sm">{category}</strong>
+              <div className="cqs-review-meta-grid">
+                <div className="cqs-review-item">
+                  <label>Professional Domain</label>
+                  <strong>{category}</strong>
                 </div>
-                <div>
-                  <span className="text-slate-500 block">Basic Qualification</span>
-                  <strong className="text-slate-900 text-sm">{basicQualification}</strong>
+                <div className="cqs-review-item">
+                  <label>Basic Degree</label>
+                  <strong>{basicQualification}</strong>
                 </div>
-                <div>
-                  <span className="text-slate-500 block">Highest Qualification</span>
-                  <strong className="text-slate-900 text-sm">{highestQualification || basicQualification}</strong>
+                <div className="cqs-review-item">
+                  <label>Highest Qualification</label>
+                  <strong>{highestQualification || basicQualification}</strong>
                 </div>
                 {speciality && (
-                  <div>
-                    <span className="text-slate-500 block">Clinical Speciality</span>
-                    <strong className="text-teal-700 text-sm">{speciality}</strong>
+                  <div className="cqs-review-item">
+                    <label>Clinical Speciality</label>
+                    <strong className="text-blue-700">{speciality}</strong>
                   </div>
                 )}
-                <div>
-                  <span className="text-slate-500 block">Clinical Experience</span>
-                  <strong className="text-slate-900 text-sm">{experienceBand} ({experienceYears}y {experienceMonths}m)</strong>
+                <div className="cqs-review-item">
+                  <label>Clinical Experience</label>
+                  <strong>{experienceBand} ({experienceYears}y {experienceMonths}m)</strong>
                 </div>
-                <div>
-                  <span className="text-slate-500 block">Target Job Roles</span>
-                  <strong className="text-slate-900 text-sm line-clamp-1">
-                    {preferredJobRoles.length > 0 ? preferredJobRoles.join(', ') : 'All Relevant'}
+                <div className="cqs-review-item">
+                  <label>Target Roles</label>
+                  <strong>
+                    {preferredJobRoles.length > 0 ? preferredJobRoles.slice(0, 2).join(', ') : 'All Relevant'}
                   </strong>
                 </div>
               </div>
             </div>
 
-            {/* Alert Preferences */}
-            <div>
-              <h3 className="font-bold text-slate-900 text-sm mb-3">
-                Job Alert Preferences:
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-4">
-                {ALERT_TYPE_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => setAlertType(opt.id as any)}
-                    className={`p-3 rounded-xl border text-left text-xs transition-all ${
-                      alertType === opt.id
-                        ? 'border-blue-600 bg-blue-50 font-bold text-blue-900'
-                        : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+            {/* Job Alert Type Preferences */}
+            <label className="block text-xs font-bold text-slate-900 mb-2">
+              Job Alert Type Preference:
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-4">
+              {ALERT_TYPE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setAlertType(opt.id as any)}
+                  className={`p-3 rounded-xl border text-left text-xs transition-all ${
+                    alertType === opt.id
+                      ? 'border-blue-600 bg-blue-50 font-bold text-blue-900'
+                      : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Notification Channels */}
+            <label className="block text-xs font-bold text-slate-900 mb-2">
+              Active Notification Channels:
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div
+                onClick={() => setChannelWebsite(!channelWebsite)}
+                className={`cqs-channel-card ${channelWebsite ? 'is-active' : ''}`}
+              >
+                <div className="flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-blue-600" />
+                  <span className="text-xs font-semibold text-slate-800">Website Alerts</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={channelWebsite}
+                  onChange={(e) => setChannelWebsite(e.target.checked)}
+                  className="rounded text-blue-600"
+                />
               </div>
 
-              {/* Notification Channels */}
-              <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3">
-                <span className="text-xs font-bold text-slate-700 block">
-                  Notification Channels:
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-800 font-medium">
-                    <input
-                      type="checkbox"
-                      checked={channelWebsite}
-                      onChange={(e) => setChannelWebsite(e.target.checked)}
-                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <Bell className="w-3.5 h-3.5 text-blue-600" />
-                    Website Notification
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-800 font-medium">
-                    <input
-                      type="checkbox"
-                      checked={channelEmail}
-                      onChange={(e) => setChannelEmail(e.target.checked)}
-                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <Mail className="w-3.5 h-3.5 text-blue-600" />
-                    Email Alerts
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-800 font-medium">
-                    <input
-                      type="checkbox"
-                      checked={channelWhatsapp}
-                      onChange={(e) => setChannelWhatsapp(e.target.checked)}
-                      className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                    />
-                    <Smartphone className="w-3.5 h-3.5 text-emerald-600" />
-                    WhatsApp Alerts
-                  </label>
+              <div
+                onClick={() => setChannelEmail(!channelEmail)}
+                className={`cqs-channel-card ${channelEmail ? 'is-active' : ''}`}
+              >
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-indigo-600" />
+                  <span className="text-xs font-semibold text-slate-800">Email Alerts</span>
                 </div>
+                <input
+                  type="checkbox"
+                  checked={channelEmail}
+                  onChange={(e) => setChannelEmail(e.target.checked)}
+                  className="rounded text-indigo-600"
+                />
+              </div>
+
+              <div
+                onClick={() => setChannelWhatsapp(!channelWhatsapp)}
+                className={`cqs-channel-card ${channelWhatsapp ? 'is-active' : ''}`}
+              >
+                <div className="flex items-center gap-2">
+                  <Smartphone className="w-4 h-4 text-emerald-600" />
+                  <span className="text-xs font-semibold text-slate-800">WhatsApp Alerts</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={channelWhatsapp}
+                  onChange={(e) => setChannelWhatsapp(e.target.checked)}
+                  className="rounded text-emerald-600"
+                />
               </div>
             </div>
           </div>
         )}
-
       </div>
 
-      {/* STEPPER FOOTER BUTTONS */}
-      <div className="flex items-center justify-between border-t border-slate-100 pt-5 mt-4">
+      {/* 3. STICKY FOOTER (ALWAYS VISIBLE ON MOBILE & LAPTOP) */}
+      <div className="cqs-footer">
         {currentStep > 1 ? (
-          <Button
+          <button
             type="button"
-            variant="outline"
             onClick={handleBack}
-            className="flex items-center gap-1.5 text-xs sm:text-sm"
+            className="cqs-btn-back"
           >
             <ChevronLeft className="w-4 h-4" /> Back
-          </Button>
+          </button>
         ) : (
           <div />
         )}
 
         {currentStep < 8 ? (
-          <Button
+          <button
             type="button"
             onClick={handleNext}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold flex items-center gap-1.5 text-xs sm:text-sm px-5"
+            className="cqs-btn-continue"
           >
             Continue <ChevronRight className="w-4 h-4" />
-          </Button>
+          </button>
         ) : (
-          <Button
+          /* HIGH-CONTRAST EMERALD SUBMIT BUTTON - BULLETPROOF STYLING */
+          <button
             type="button"
             disabled={saving}
             onClick={handleSave}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-2 text-xs sm:text-sm px-6 shadow-md"
+            className="cqs-btn-submit"
           >
             {saving ? (
               'Saving Profile...'
             ) : (
               <>
-                <Save className="w-4 h-4" /> Save & Activate Job Alerts
+                <CheckCircle2 className="w-4 h-4" /> Save Profile & Activate Job Alerts
               </>
             )}
-          </Button>
+          </button>
         )}
       </div>
-
     </div>
   );
 }

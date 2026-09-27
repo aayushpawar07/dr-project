@@ -275,16 +275,20 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
     });
   }, [applications, searchTerm, statusFilter]);
 
-  const profileFields = [
-    profile?.speciality,
-    profile?.qualification,
-    profile?.yearsExperience != null,
-    profile?.registrationNumber,
-    profile?.currentCity || profile?.state,
-    profile?.profileSummary,
+  const profileCriteria = [
+    Boolean(profile?.professionalCategory || profile?.medicalCategory),
+    Boolean(profile?.basicQualification || profile?.qualification),
+    Boolean(profile?.highestQualification || profile?.qualification),
+    Boolean(profile?.speciality || profile?.basicQualification),
+    profile?.yearsExperience != null || Boolean(profile?.experienceBand),
+    (Array.isArray(profile?.preferredJobRoles) && profile.preferredJobRoles.length > 0) || Boolean(profile?.preferredJobRole),
+    Boolean(profile?.preferredLocation) || Boolean(profile?.currentCity) || Boolean(profile?.state) || (Array.isArray(profile?.preferredStates) && profile.preferredStates.length > 0),
+    Boolean(profile?.jobAlertSettings?.enabled) || (Array.isArray(profile?.preferredSectors) && profile.preferredSectors.length > 0),
+    Boolean(profile?.registrationNumber),
+    Boolean(profile?.profileSummary || profile?.resumeUrl),
   ];
-  const profileFilled = profileFields.filter(Boolean).length;
-  const profilePercent = Math.round((profileFilled / profileFields.length) * 100);
+  const profileFilled = profileCriteria.filter(Boolean).length;
+  const profilePercent = Math.min(100, Math.round((profileFilled / profileCriteria.length) * 100));
 
   const interviewCount = applications.filter((application) => application.status === 'interview' || application.interviewDate).length;
   const shortlistedCount = applications.filter((application) => application.status === 'shortlisted').length;
@@ -603,7 +607,7 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
                     <div className="mx-avatar mx-avatar--teal">{getInitials(user?.name)}</div>
                     <div className="mx-profile__identity">
                       <strong>{user?.name || 'Candidate'}</strong>
-                      <span>{profile?.speciality || 'Speciality not added'}{profile?.subSpeciality ? ` · ${profile.subSpeciality}` : ''}</span>
+                      <span>{profile?.speciality || profile?.highestQualification || profile?.basicQualification || profile?.professionalCategory || 'Clinical Professional'}{profile?.subSpeciality ? ` · ${profile.subSpeciality}` : ''}</span>
                     </div>
                     <div className="mx-progress">
                       <div className="mx-progress__label">
@@ -665,19 +669,31 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
                   <div className="mx-profile__grid">
                     <article>
                       <div className="mx-attribute-icon mx-attribute-icon--blue"><Stethoscope size={16} /></div>
-                      <div><span>Qualification</span><strong>{profile?.qualification || 'Not added'}</strong></div>
+                      <div>
+                        <span>Qualification</span>
+                        <strong>{profile?.highestQualification || profile?.qualification || profile?.basicQualification || 'Not added'}</strong>
+                      </div>
                     </article>
                     <article>
                       <div className="mx-attribute-icon mx-attribute-icon--teal"><Briefcase size={16} /></div>
-                      <div><span>Experience</span><strong>{profile?.yearsExperience != null ? `${profile.yearsExperience} years` : 'Not added'}</strong></div>
+                      <div>
+                        <span>Experience</span>
+                        <strong>{profile?.experienceBand ? `${profile.experienceBand} (${profile?.yearsExperience ?? 0}y)` : profile?.yearsExperience != null ? `${profile.yearsExperience} years` : 'Not added'}</strong>
+                      </div>
                     </article>
                     <article>
                       <div className="mx-attribute-icon mx-attribute-icon--purple"><FileText size={16} /></div>
-                      <div><span>Registration</span><strong>{profile?.registrationNumber || 'Not added'}</strong></div>
+                      <div>
+                        <span>Target Roles</span>
+                        <strong className="line-clamp-1">{Array.isArray(profile?.preferredJobRoles) && profile.preferredJobRoles.length > 0 ? profile.preferredJobRoles.slice(0, 2).join(', ') : profile?.preferredJobRole || (profile?.registrationNumber ? `Reg: ${profile.registrationNumber}` : 'All Relevant')}</strong>
+                      </div>
                     </article>
                     <article>
                       <div className="mx-attribute-icon mx-attribute-icon--green"><MapPin size={16} /></div>
-                      <div><span>Location</span><strong>{[profile?.currentCity, profile?.state].filter(Boolean).join(', ') || 'Not added'}</strong></div>
+                      <div>
+                        <span>Location</span>
+                        <strong className="line-clamp-1">{profile?.preferredLocation || [profile?.currentCity, profile?.state].filter(Boolean).join(', ') || (Array.isArray(profile?.preferredStates) && profile.preferredStates.length > 0 ? profile.preferredStates.join(', ') : 'Anywhere in India')}</strong>
+                      </div>
                     </article>
                   </div>
 
@@ -956,7 +972,10 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
 
       {/* Modern Step-by-Step Qualification Stepper Modal */}
       <Dialog open={isStepperOpen} onOpenChange={setIsStepperOpen}>
-        <DialogContent className="sm:max-w-[780px] p-0 overflow-hidden rounded-2xl border-none">
+        <DialogContent
+          hideCloseButton
+          className="sm:max-w-[820px] w-[95vw] p-0 overflow-hidden rounded-2xl border border-slate-200/90 shadow-2xl"
+        >
           <CandidateQualificationStepper
             initialProfile={profile || {}}
             token={token || ''}

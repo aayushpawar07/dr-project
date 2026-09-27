@@ -1053,13 +1053,14 @@ export function RecruitmentExplorerView({
   );
 
   const explorerTotalVacancies = useMemo(() => {
+    const baseTotal = Math.max(
+      Number(recruitment.totalVacancies || 0),
+      (recruitment.vacancies || []).reduce((sum, row) => sum + Number(row.numberOfVacancies || 0), 0)
+    );
     if (!selectedPosition || selectedPosition === 'All Positions') {
-      return (
-        recruitment.totalVacancies ||
-        (recruitment.vacancies || []).reduce((sum, row) => sum + Number(row.numberOfVacancies || 0), 0)
-      );
+      return baseTotal;
     }
-    return visibleVacancies.reduce((sum, row) => sum + Number(row.displayCount || 0), 0);
+    return visibleVacancies.reduce((sum, row) => sum + Number(row.displayCount || 0), 0) || baseTotal;
   }, [recruitment, selectedPosition, visibleVacancies]);
 
   const isGovernment = recruitment.sector === 'government';

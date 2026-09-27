@@ -53,11 +53,14 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
 
   const { filteredTotalVacancies, filteredSpecialtiesCount } = useMemo(() => {
     if (!recruitment?.vacancies) return { filteredTotalVacancies: 0, filteredSpecialtiesCount: 0 };
+    const authoritativeTotal = Math.max(
+      Number(job?.numberOfPosts || 0),
+      Number(recruitment.totalVacancies || 0),
+      recruitment.vacancies.reduce((sum, v) => sum + Number(v.numberOfVacancies || 0), 0)
+    );
     if (!selectedPosition || selectedPosition === 'All Positions') {
       return {
-        filteredTotalVacancies:
-          recruitment.totalVacancies ||
-          recruitment.vacancies.reduce((sum, v) => sum + Number(v.numberOfVacancies || 0), 0),
+        filteredTotalVacancies: authoritativeTotal,
         filteredSpecialtiesCount: recruitment.vacancies.length,
       };
     }
@@ -71,10 +74,10 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
       }
     }
     return {
-      filteredTotalVacancies: total,
-      filteredSpecialtiesCount: specCount,
+      filteredTotalVacancies: total || authoritativeTotal,
+      filteredSpecialtiesCount: specCount || recruitment.vacancies.length,
     };
-  }, [recruitment, selectedPosition, breakdownMap]);
+  }, [recruitment, job, selectedPosition, breakdownMap]);
 
   useEffect(() => {
     let active = true;
@@ -101,17 +104,24 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
           return;
         }
 
-        // Check if description has multi-department table or multiple job roles
+        // Check if description has multi-department table
         const parsed = parseRawVacancyNotice(data?.description || '');
         let depts = parsed.departmentsList || [];
-        if (depts.length < 2 && Array.isArray(data?.jobRoles) && data.jobRoles.length >= 2) {
-          depts = data.jobRoles.map((role: string) => ({
-            department: role,
-            numberOfVacancies: 1,
-            postName: data.title,
-          }));
+
+        // Determine true authoritative total vacancies directly from job.numberOfPosts
+        const totalCalculatedFromDepts = depts.reduce((s, d) => s + (Number(d.numberOfVacancies) || 0), 0);
+        const authoritativeTotal = Math.max(
+          Number(data?.numberOfPosts || 0),
+          totalCalculatedFromDepts,
+          1
+        );
+
+        // If a single department was parsed from the table, ensure its vacancies match authoritativeTotal
+        if (depts.length === 1 && (!depts[0].numberOfVacancies || depts[0].numberOfVacancies < authoritativeTotal)) {
+          depts[0].numberOfVacancies = authoritativeTotal;
         }
 
+        // Only synthesize multi-department view if there are genuinely 2 or more real departments
         if (depts.length >= 2) {
           const org =
             data.organization ||
@@ -124,6 +134,13 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
           const notificationUrl = data.jobDocumentUrl || data.pdfUrl || data.applyLink;
           const officialWeb = data.officialWebsite || extractOfficialWebsite(data.description);
 
+          // If individual department vacancies were unspecified (or sum is less than authoritativeTotal),
+          // ensure the sum matches authoritativeTotal so there is zero data mismatch
+          if (totalCalculatedFromDepts < authoritativeTotal && depts.length > 0) {
+            const diff = authoritativeTotal - totalCalculatedFromDepts;
+            depts[0].numberOfVacancies = (Number(depts[0].numberOfVacancies) || 1) + diff;
+          }
+
           const synthesized: Recruitment = {
             id: String(data.id),
             slug: String(data.id),
@@ -131,7 +148,7 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
             title: data.title,
             sector: (String(data.sector || '').toLowerCase() === 'private' ? 'private' : 'government'),
             location: loc || 'India',
-            totalVacancies: depts.reduce((s, d) => s + (d.numberOfVacancies || 1), 0) || data.numberOfPosts || 1,
+            totalVacancies: authoritativeTotal,
             applicationLastDate: data.lastDate,
             officialApplicationUrl: data.applyLink || notificationUrl || officialWeb,
             officialNotificationUrl: notificationUrl,
@@ -146,7 +163,7 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
               postName: d.postName || data.title,
               department: d.department,
               speciality: d.department,
-              numberOfVacancies: d.numberOfVacancies || 1,
+              numberOfVacancies: Number(d.numberOfVacancies) || 1,
               category: d.category,
               qualification: cardFieldText(data.qualification) || 'As per official notification',
               experience: cardFieldText(data.experience) || 'As per official notification',

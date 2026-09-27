@@ -488,9 +488,9 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
     }
   }
 
-  if (depts.length >= 2) {
+  if (depts.length >= 1) {
     result.departmentsList = depts;
-    result.isMultiDepartment = true;
+    result.isMultiDepartment = depts.length >= 2;
     const totalCalculated = depts.reduce((sum, d) => sum + d.numberOfVacancies, 0);
     if (!result.numberOfPosts || result.numberOfPosts < totalCalculated) {
       result.numberOfPosts = totalCalculated;

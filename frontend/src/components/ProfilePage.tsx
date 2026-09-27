@@ -33,6 +33,7 @@ import {
   uploadCandidatePhoto,
   uploadCandidateResume,
 } from '../api/candidateProfiles';
+import { CandidateQualificationStepper } from './CandidateQualificationStepper';
 import '../styles/profile-page.css';
 
 interface ProfilePageProps {
@@ -103,6 +104,7 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
   const [candidate, setCandidate] = useState<CandidateProfileData>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showStepper, setShowStepper] = useState(false);
   const [isEditingEmployer, setIsEditingEmployer] = useState(false);
   const [employerForm, setEmployerForm] = useState<EmployerProfileUpdatePayload>({
     companyName: '',
@@ -376,6 +378,107 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
         ) : isCandidate ? (
           <div className="profile-body-grid">
             <main className="profile-main-column space-y-6">
+              {/* Step-by-Step Qualification & Job Alert System Stepper */}
+              {showStepper ? (
+                <div className="mb-6">
+                  <CandidateQualificationStepper
+                    initialProfile={candidate}
+                    token={token || ''}
+                    onSaved={(updated) => {
+                      setCandidate(updated);
+                      setShowStepper(false);
+                    }}
+                    onCancel={() => setShowStepper(false)}
+                  />
+                </div>
+              ) : (
+                <div className="bg-gradient-to-r from-blue-50/90 via-indigo-50/80 to-slate-50 border border-blue-200 rounded-2xl p-5 mb-6 shadow-xs">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-blue-700 uppercase tracking-wider bg-blue-100/70 px-2.5 py-0.5 rounded-md flex items-center gap-1">
+                          <Sparkles className="w-3.5 h-3.5" /> Structured Qualification &amp; Job Alert System
+                        </span>
+                        {candidate.profileComplete && (
+                          <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Active
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-base sm:text-lg font-bold text-slate-900 mt-2">
+                        {candidate.professionalCategory || candidate.medicalCategory || 'Doctor'} Career Progression
+                      </h3>
+
+                      {/* Step-wise path badges: Doctor → MBBS → MS → General Surgery */}
+                      <div className="flex items-center gap-2 flex-wrap mt-2.5">
+                        <span className="bg-blue-600 text-white font-bold text-xs px-3 py-1 rounded-lg shadow-xs">
+                          {candidate.professionalCategory || candidate.medicalCategory || 'Doctor'}
+                        </span>
+                        <span className="text-slate-400 font-bold">→</span>
+                        <span className="bg-indigo-600 text-white font-bold text-xs px-3 py-1 rounded-lg shadow-xs">
+                          {candidate.basicQualification || (candidate.professionalCategory === 'Nursing' ? 'B.Sc Nursing' : 'MBBS')}
+                        </span>
+                        {candidate.highestQualification && candidate.highestQualification !== 'MBBS Only' && candidate.highestQualification !== 'None / Basic Only' && (
+                          <>
+                            <span className="text-slate-400 font-bold">→</span>
+                            <span className="bg-violet-600 text-white font-bold text-xs px-3 py-1 rounded-lg shadow-xs">
+                              {candidate.highestQualification}
+                            </span>
+                          </>
+                        )}
+                        {candidate.speciality && (
+                          <>
+                            <span className="text-slate-400 font-bold">→</span>
+                            <span className="bg-emerald-600 text-white font-bold text-xs px-3 py-1 rounded-lg shadow-xs">
+                              {candidate.speciality}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowStepper(true)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-xs transition-colors shrink-0 cursor-pointer"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                      {candidate.qualification ? 'Update Qualification & Alerts' : 'Complete Step-by-Step Profile'}
+                    </button>
+                  </div>
+
+                  {/* Structured Details Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 pt-4 border-t border-blue-200/60 text-xs">
+                    <div>
+                      <span className="text-slate-500 block">Experience</span>
+                      <strong className="text-slate-800 font-semibold">
+                        {candidate.experienceBand || (candidate.yearsExperience != null ? `${candidate.yearsExperience} Years` : 'Fresher')}
+                      </strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block">Preferred Roles</span>
+                      <strong className="text-slate-800 font-semibold line-clamp-1">
+                        {Array.isArray(candidate.preferredJobRoles) && candidate.preferredJobRoles.length > 0
+                          ? candidate.preferredJobRoles.join(', ')
+                          : candidate.preferredJobRole || 'All Roles'}
+                      </strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block">Sector Preference</span>
+                      <strong className="text-slate-800 font-semibold">
+                        {Array.isArray(candidate.preferredSectors) ? candidate.preferredSectors.join(', ') : 'Government + Private'}
+                      </strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block">Job Alerts</span>
+                      <strong className="text-emerald-700 font-semibold">
+                        {candidate.jobAlertSettings?.enabled !== false ? 'Enabled (Instant / Daily)' : 'Disabled'}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Section 1: Clinical Profile & Domain */}
               <ProfileSection
                 icon={Stethoscope}

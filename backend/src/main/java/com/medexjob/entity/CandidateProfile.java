@@ -84,6 +84,48 @@ public class CandidateProfile {
     @Column(name = "profile_summary", columnDefinition = "TEXT")
     private String profileSummary;
 
+    @Column(name = "professional_category", length = 100)
+    private String professionalCategory;
+
+    @Column(name = "basic_qualification", length = 150)
+    private String basicQualification;
+
+    @Column(name = "highest_qualification", length = 150)
+    private String highestQualification;
+
+    @Column(name = "super_speciality", length = 150)
+    private String superSpeciality;
+
+    @Column(name = "fellowship", length = 150)
+    private String fellowship;
+
+    @Column(name = "experience_band", length = 50)
+    private String experienceBand;
+
+    @Column(name = "experience_months")
+    private Integer experienceMonths;
+
+    @Column(name = "preferred_job_roles", columnDefinition = "TEXT")
+    private String preferredJobRoles;
+
+    @Column(name = "preferred_sectors", length = 100)
+    private String preferredSectors;
+
+    @Column(name = "preferred_employment_types", length = 200)
+    private String preferredEmploymentTypes;
+
+    @Column(name = "location_preference_type", length = 50)
+    private String locationPreferenceType;
+
+    @Column(name = "preferred_states", columnDefinition = "TEXT")
+    private String preferredStates;
+
+    @Column(name = "preferred_cities", columnDefinition = "TEXT")
+    private String preferredCities;
+
+    @Column(name = "job_alert_settings", columnDefinition = "TEXT")
+    private String jobAlertSettings;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -135,6 +177,49 @@ public class CandidateProfile {
     public void setResumeUrl(String resumeUrl) { this.resumeUrl = clean(resumeUrl); }
     public String getResumeFileName() { return resumeFileName; }
     public void setResumeFileName(String resumeFileName) { this.resumeFileName = clean(resumeFileName); }
+
+    public String getProfessionalCategory() { return professionalCategory; }
+    public void setProfessionalCategory(String professionalCategory) { this.professionalCategory = clean(professionalCategory); }
+
+    public String getBasicQualification() { return basicQualification; }
+    public void setBasicQualification(String basicQualification) { this.basicQualification = clean(basicQualification); }
+
+    public String getHighestQualification() { return highestQualification; }
+    public void setHighestQualification(String highestQualification) { this.highestQualification = clean(highestQualification); }
+
+    public String getSuperSpeciality() { return superSpeciality; }
+    public void setSuperSpeciality(String superSpeciality) { this.superSpeciality = clean(superSpeciality); }
+
+    public String getFellowship() { return fellowship; }
+    public void setFellowship(String fellowship) { this.fellowship = clean(fellowship); }
+
+    public String getExperienceBand() { return experienceBand; }
+    public void setExperienceBand(String experienceBand) { this.experienceBand = clean(experienceBand); }
+
+    public Integer getExperienceMonths() { return experienceMonths; }
+    public void setExperienceMonths(Integer experienceMonths) { this.experienceMonths = experienceMonths; }
+
+    public String getPreferredJobRoles() { return preferredJobRoles; }
+    public void setPreferredJobRoles(String preferredJobRoles) { this.preferredJobRoles = clean(preferredJobRoles); }
+
+    public String getPreferredSectors() { return preferredSectors; }
+    public void setPreferredSectors(String preferredSectors) { this.preferredSectors = clean(preferredSectors); }
+
+    public String getPreferredEmploymentTypes() { return preferredEmploymentTypes; }
+    public void setPreferredEmploymentTypes(String preferredEmploymentTypes) { this.preferredEmploymentTypes = clean(preferredEmploymentTypes); }
+
+    public String getLocationPreferenceType() { return locationPreferenceType; }
+    public void setLocationPreferenceType(String locationPreferenceType) { this.locationPreferenceType = clean(locationPreferenceType); }
+
+    public String getPreferredStates() { return preferredStates; }
+    public void setPreferredStates(String preferredStates) { this.preferredStates = clean(preferredStates); }
+
+    public String getPreferredCities() { return preferredCities; }
+    public void setPreferredCities(String preferredCities) { this.preferredCities = clean(preferredCities); }
+
+    public String getJobAlertSettings() { return jobAlertSettings; }
+    public void setJobAlertSettings(String jobAlertSettings) { this.jobAlertSettings = clean(jobAlertSettings); }
+
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }
 

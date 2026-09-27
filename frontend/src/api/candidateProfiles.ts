@@ -1,26 +1,51 @@
 const API_BASE = (import.meta as any).env?.VITE_API_BASE || '/api';
 
+export interface CandidateJobAlertSettings {
+  enabled?: boolean;
+  alertType?: 'government' | 'private' | 'both';
+  frequency?: 'instant' | 'daily' | 'weekly';
+  channels?: {
+    website?: boolean;
+    email?: boolean;
+    whatsapp?: boolean;
+  };
+}
+
 export interface CandidateProfileData {
   id?: string;
   candidateId?: string;
   name?: string;
   email?: string;
   phone?: string;
+  professionalCategory?: string;
+  basicQualification?: string;
+  highestQualification?: string;
   speciality?: string;
   subSpeciality?: string;
+  superSpeciality?: string;
+  fellowship?: string;
   qualification?: string;
+  experienceBand?: string;
+  experienceMonths?: number | null;
   yearsExperience?: number | null;
+  preferredJobRoles?: string[];
+  preferredJobRole?: string;
+  preferredSectors?: string[];
+  employmentPreference?: string;
+  preferredEmploymentTypes?: string[];
+  locationPreferenceType?: 'anywhere' | 'state' | 'city';
+  preferredStates?: string[];
+  preferredCities?: string[];
+  preferredLocation?: string;
+  jobAlertSettings?: CandidateJobAlertSettings;
   registrationCouncil?: string;
   registrationNumber?: string;
   currentCity?: string;
   state?: string;
-  preferredLocation?: string;
-  employmentPreference?: string;
   profileSummary?: string;
   profilePhotoUrl?: string;
   medicalCategory?: string;
   currentOrganization?: string;
-  preferredJobRole?: string;
   skills?: string;
   registrationYear?: string;
   registrationState?: string;

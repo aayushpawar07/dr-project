@@ -5,6 +5,7 @@ import com.medexjob.entity.User;
 import com.medexjob.repository.CandidateProfileRepository;
 import com.medexjob.repository.UserRepository;
 import com.medexjob.service.FileUploadService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -68,6 +69,40 @@ public class CandidateProfileController {
         profile.setRegistrationState(string(body.get("registrationState")));
         profile.setResumeUrl(string(body.get("resumeUrl")));
         profile.setResumeFileName(string(body.get("resumeFileName")));
+
+        // Structured step-by-step qualification fields
+        String profCat = string(body.get("professionalCategory"));
+        if (profCat != null && !profCat.isBlank()) {
+            profile.setProfessionalCategory(profCat);
+            if (profile.getMedicalCategory() == null || profile.getMedicalCategory().isBlank()) {
+                profile.setMedicalCategory(profCat);
+            }
+        }
+        String basicQual = string(body.get("basicQualification"));
+        if (basicQual != null && !basicQual.isBlank()) {
+            profile.setBasicQualification(basicQual);
+        }
+        String highestQual = string(body.get("highestQualification"));
+        if (highestQual != null && !highestQual.isBlank()) {
+            profile.setHighestQualification(highestQual);
+            if (profile.getQualification() == null || profile.getQualification().isBlank()) {
+                profile.setQualification(highestQual);
+            }
+        } else if (basicQual != null && !basicQual.isBlank() && (profile.getQualification() == null || profile.getQualification().isBlank())) {
+            profile.setQualification(basicQual);
+        }
+        profile.setSuperSpeciality(string(body.get("superSpeciality")));
+        profile.setFellowship(string(body.get("fellowship")));
+        profile.setExperienceBand(string(body.get("experienceBand")));
+        profile.setExperienceMonths(integer(body.get("experienceMonths")));
+        profile.setPreferredJobRoles(jsonOrString(body.get("preferredJobRoles")));
+        profile.setPreferredSectors(jsonOrString(body.get("preferredSectors")));
+        profile.setPreferredEmploymentTypes(jsonOrString(body.get("preferredEmploymentTypes")));
+        profile.setLocationPreferenceType(string(body.get("locationPreferenceType")));
+        profile.setPreferredStates(jsonOrString(body.get("preferredStates")));
+        profile.setPreferredCities(jsonOrString(body.get("preferredCities")));
+        profile.setJobAlertSettings(jsonOrString(body.get("jobAlertSettings")));
+
         return ResponseEntity.ok(toResponse(repository.save(profile)));
     }
 
@@ -227,6 +262,8 @@ public class CandidateProfileController {
         return repository.save(profile);
     }
 
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     private Map<String, Object> toResponse(CandidateProfile profile) {
         Map<String, Object> map = new LinkedHashMap<>();
         User candidate = profile.getCandidate();
@@ -255,9 +292,50 @@ public class CandidateProfileController {
         map.put("registrationState", profile.getRegistrationState());
         map.put("resumeUrl", profile.getResumeUrl());
         map.put("resumeFileName", profile.getResumeFileName());
-        map.put("profileComplete", profile.getSpeciality() != null && profile.getQualification() != null && profile.getState() != null);
+
+        // Structured step-by-step qualification & job alert fields
+        map.put("professionalCategory", profile.getProfessionalCategory() != null ? profile.getProfessionalCategory() : profile.getMedicalCategory());
+        map.put("basicQualification", profile.getBasicQualification());
+        map.put("highestQualification", profile.getHighestQualification() != null ? profile.getHighestQualification() : profile.getQualification());
+        map.put("superSpeciality", profile.getSuperSpeciality());
+        map.put("fellowship", profile.getFellowship());
+        map.put("experienceBand", profile.getExperienceBand());
+        map.put("experienceMonths", profile.getExperienceMonths());
+        map.put("preferredJobRoles", parseJsonOrString(profile.getPreferredJobRoles()));
+        map.put("preferredSectors", parseJsonOrString(profile.getPreferredSectors()));
+        map.put("preferredEmploymentTypes", parseJsonOrString(profile.getPreferredEmploymentTypes()));
+        map.put("locationPreferenceType", profile.getLocationPreferenceType());
+        map.put("preferredStates", parseJsonOrString(profile.getPreferredStates()));
+        map.put("preferredCities", parseJsonOrString(profile.getPreferredCities()));
+        map.put("jobAlertSettings", parseJsonOrString(profile.getJobAlertSettings()));
+
+        boolean isComplete = (profile.getSpeciality() != null || profile.getHighestQualification() != null || profile.getQualification() != null)
+                && (profile.getState() != null || profile.getCurrentCity() != null || profile.getPreferredLocation() != null);
+        map.put("profileComplete", isComplete);
         map.put("updatedAt", profile.getUpdatedAt());
         return map;
+    }
+
+    private String jsonOrString(Object value) {
+        if (value == null) return null;
+        if (value instanceof String s) return s.trim();
+        try {
+            return OBJECT_MAPPER.writeValueAsString(value);
+        } catch (Exception e) {
+            return String.valueOf(value);
+        }
+    }
+
+    private Object parseJsonOrString(String value) {
+        if (value == null || value.isBlank()) return null;
+        String trimmed = value.trim();
+        if ((trimmed.startsWith("[") && trimmed.endsWith("]")) || (trimmed.startsWith("{") && trimmed.endsWith("}"))) {
+            try {
+                return OBJECT_MAPPER.readValue(trimmed, Object.class);
+            } catch (Exception ignored) {
+            }
+        }
+        return value;
     }
 
     private Map<String, Long> count(List<CandidateProfile> profiles, Function<CandidateProfile, String> getter) {

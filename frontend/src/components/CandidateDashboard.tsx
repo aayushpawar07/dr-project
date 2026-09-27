@@ -31,6 +31,10 @@ import { fetchJobs } from '../api/jobs';
 import { getSavedJobs, saveJob, unsaveJob } from '../api/savedJobs';
 import { fetchNotifications } from '../api/notifications';
 import { fetchMyCandidateProfile, CandidateProfileData } from '../api/candidateProfiles';
+import { CandidateQualificationStepper } from './CandidateQualificationStepper';
+import { matchCandidateToJob } from '../utils/candidateJobMatcher';
+import { Dialog, DialogContent } from './ui/dialog';
+import { Sparkles } from 'lucide-react';
 import '../styles/candidate-dashboard-modern.css';
 
 interface CandidateDashboardProps {
@@ -164,6 +168,7 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ApplicationStatusFilter>('all');
   const [profile, setProfile] = useState<CandidateProfileData | null>(null);
+  const [isStepperOpen, setIsStepperOpen] = useState(false);
 
   const loadDashboardData = useCallback(async () => {
     if (!user || !token) {
@@ -615,8 +620,45 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
                         <span style={{ width: `${profilePercent}%` }} />
                       </div>
                     </div>
-                    <button type="button" className="mx-btn mx-btn--teal" onClick={() => onNavigate('profile')}>
-                      <User size={16} /> {profilePercent >= 70 ? 'Edit Profile' : 'Complete Profile'}
+                    <button type="button" className="mx-btn mx-btn--teal" onClick={() => setIsStepperOpen(true)}>
+                      <User size={16} /> {profilePercent >= 70 ? 'Update Qualifications' : 'Complete Profile'}
+                    </button>
+                  </div>
+
+                  {/* Structured Qualification Progression */}
+                  <div className="flex items-center gap-1.5 flex-wrap my-3 px-3 py-2 bg-slate-50 border border-slate-200/80 rounded-xl text-xs">
+                    <span className="font-semibold text-slate-500 mr-1 flex items-center gap-1">
+                      <Sparkles size={13} className="text-blue-600" /> Career Path:
+                    </span>
+                    <span className="bg-blue-600 text-white font-bold px-2.5 py-0.5 rounded-md">
+                      {profile?.professionalCategory || profile?.medicalCategory || 'Doctor'}
+                    </span>
+                    <span className="text-slate-400 font-bold">→</span>
+                    <span className="bg-indigo-600 text-white font-bold px-2.5 py-0.5 rounded-md">
+                      {profile?.basicQualification || 'MBBS'}
+                    </span>
+                    {profile?.highestQualification && profile?.highestQualification !== 'MBBS Only' && (
+                      <>
+                        <span className="text-slate-400 font-bold">→</span>
+                        <span className="bg-violet-600 text-white font-bold px-2.5 py-0.5 rounded-md">
+                          {profile?.highestQualification}
+                        </span>
+                      </>
+                    )}
+                    {profile?.speciality && (
+                      <>
+                        <span className="text-slate-400 font-bold">→</span>
+                        <span className="bg-emerald-600 text-white font-bold px-2.5 py-0.5 rounded-md">
+                          {profile?.speciality}
+                        </span>
+                      </>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setIsStepperOpen(true)}
+                      className="ml-auto text-blue-600 hover:text-blue-700 font-bold text-xs underline cursor-pointer"
+                    >
+                      Step-by-Step
                     </button>
                   </div>
 
@@ -911,6 +953,22 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
         <button type="button" className={activeSection === 'applications' ? 'is-active' : ''} onClick={() => openSection('applications')}><Briefcase size={20} /><span>Apps</span>{applications.length > 0 && <em>{applications.length > 9 ? '9+' : applications.length}</em>}</button>
         <button type="button" onClick={() => onNavigate('profile')}><User size={20} /><span>Profile</span></button>
       </nav>
+
+      {/* Modern Step-by-Step Qualification Stepper Modal */}
+      <Dialog open={isStepperOpen} onOpenChange={setIsStepperOpen}>
+        <DialogContent className="sm:max-w-[780px] p-0 overflow-hidden rounded-2xl border-none">
+          <CandidateQualificationStepper
+            initialProfile={profile || {}}
+            token={token || ''}
+            onSaved={(updated) => {
+              setProfile(updated);
+              setIsStepperOpen(false);
+            }}
+            onCancel={() => setIsStepperOpen(false)}
+            isModal={true}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

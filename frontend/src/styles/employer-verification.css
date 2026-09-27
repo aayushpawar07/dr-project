@@ -515,7 +515,7 @@
   font-size: 12.5px;
   font-weight: 700;
   color: #334155;
-  white-space: nowrap;
+  white-space: nowrap !important;
 }
 
 .ev-table-header th.text-center {
@@ -538,6 +538,7 @@
 .ev-table-body td {
   padding: 14px 16px;
   vertical-align: middle;
+  white-space: nowrap;
 }
 
 .ev-table-body td.text-center {
@@ -550,6 +551,7 @@
   font-weight: 600;
   text-align: center;
   width: 44px;
+  white-space: nowrap !important;
 }
 
 .ev-org-name {
@@ -574,15 +576,17 @@
 
 /* Solid Blue Badges for Type */
 .ev-type-badge {
-  display: inline-block;
-  font-size: 11.5px;
-  font-weight: 700;
-  padding: 5px 14px;
-  border-radius: 6px;
+  display: inline-block !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  padding: 5px 14px !important;
+  border-radius: 6px !important;
   color: #ffffff !important;
-  text-align: center;
-  min-width: 82px;
-  line-height: 1.2;
+  text-align: center !important;
+  min-width: 86px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  line-height: 1.2 !important;
 }
 
 .ev-type-badge.hospital {
@@ -607,16 +611,19 @@
 
 /* Status Pill Badges */
 .ev-status-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 5px 14px;
-  border-radius: 9999px;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.2;
-  min-width: 105px;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-direction: row !important;
+  gap: 6px !important;
+  padding: 5px 14px !important;
+  border-radius: 9999px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+  min-width: 108px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
 }
 
 .ev-status-pill.approved {
@@ -642,29 +649,38 @@
   color: #475569;
   font-weight: 500;
   text-align: center;
+  white-space: nowrap !important;
 }
 
 /* Action View Button */
 .ev-actions-cell {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-direction: row !important;
+  gap: 8px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
   position: relative;
 }
 
 .ev-view-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-direction: row !important;
+  gap: 6px !important;
   background-color: #0066cc !important;
   color: #ffffff !important;
   border: none !important;
   border-radius: 6px !important;
   font-size: 12.5px !important;
   font-weight: 700 !important;
-  padding: 6px 14px !important;
+  padding: 6px 16px !important;
+  height: 32px !important;
+  min-width: 80px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 102, 204, 0.3) !important;
   transition: background-color 0.15s ease;

@@ -580,7 +580,13 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
       return (
         <span
           className="ev-type-badge government"
-          style={{ backgroundColor: "#0284c7", color: "#ffffff" }}
+          style={{
+            backgroundColor: "#0284c7",
+            color: "#ffffff",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+            display: "inline-block",
+          }}
         >
           Government
         </span>
@@ -590,7 +596,13 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
       return (
         <span
           className="ev-type-badge college"
-          style={{ backgroundColor: "#1e3a8a", color: "#ffffff" }}
+          style={{
+            backgroundColor: "#1e3a8a",
+            color: "#ffffff",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+            display: "inline-block",
+          }}
         >
           College
         </span>
@@ -600,7 +612,13 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
       return (
         <span
           className="ev-type-badge private"
-          style={{ backgroundColor: "#4338ca", color: "#ffffff" }}
+          style={{
+            backgroundColor: "#4338ca",
+            color: "#ffffff",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+            display: "inline-block",
+          }}
         >
           Private
         </span>
@@ -610,7 +628,13 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
     return (
       <span
         className="ev-type-badge hospital"
-        style={{ backgroundColor: "#0056b3", color: "#ffffff" }}
+        style={{
+          backgroundColor: "#0056b3",
+          color: "#ffffff",
+          whiteSpace: "nowrap",
+          flexShrink: 0,
+          display: "inline-block",
+        }}
       >
         Hospital
       </span>
@@ -627,10 +651,16 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
             backgroundColor: "#dcfce7",
             color: "#15803d",
             border: "1px solid #bbf7d0",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+            display: "inline-flex",
+            alignItems: "center",
+            flexDirection: "row",
+            gap: "5px",
           }}
         >
-          <Check className="w-3.5 h-3.5 stroke-[2.5]" style={{ color: "#16a34a" }} />
-          Approved
+          <Check className="w-3.5 h-3.5 stroke-[2.5]" style={{ color: "#16a34a", flexShrink: 0 }} />
+          <span style={{ whiteSpace: "nowrap", display: "inline" }}>Approved</span>
         </span>
       );
     }
@@ -642,10 +672,16 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
             backgroundColor: "#fee2e2",
             color: "#b91c1c",
             border: "1px solid #fecaca",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+            display: "inline-flex",
+            alignItems: "center",
+            flexDirection: "row",
+            gap: "5px",
           }}
         >
-          <X className="w-3.5 h-3.5 stroke-[2.5]" style={{ color: "#dc2626" }} />
-          Rejected
+          <X className="w-3.5 h-3.5 stroke-[2.5]" style={{ color: "#dc2626", flexShrink: 0 }} />
+          <span style={{ whiteSpace: "nowrap", display: "inline" }}>Rejected</span>
         </span>
       );
     }
@@ -656,10 +692,16 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
           backgroundColor: "#fef3c7",
           color: "#b45309",
           border: "1px solid #fde68a",
+          whiteSpace: "nowrap",
+          flexShrink: 0,
+          display: "inline-flex",
+          alignItems: "center",
+          flexDirection: "row",
+          gap: "5px",
         }}
       >
-        <Clock className="w-3.5 h-3.5 stroke-[2.5]" style={{ color: "#d97706" }} />
-        Pending
+        <Clock className="w-3.5 h-3.5 stroke-[2.5]" style={{ color: "#d97706", flexShrink: 0 }} />
+        <span style={{ whiteSpace: "nowrap", display: "inline" }}>Pending</span>
       </span>
     );
   };
@@ -1073,12 +1115,12 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
             <table className="ev-table">
               <thead className="ev-table-header">
                 <tr>
-                  <th className="text-center" style={{ width: 48 }}>#</th>
-                  <th>Name / Organization</th>
-                  <th className="text-center" style={{ width: 130 }}>Type</th>
-                  <th className="text-center" style={{ width: 130 }}>Status</th>
-                  <th className="text-center" style={{ width: 120 }}>Submitted On</th>
-                  <th className="text-center" style={{ width: 120 }}>Actions</th>
+                  <th className="text-center" style={{ width: "48px", minWidth: "48px", whiteSpace: "nowrap" }}>#</th>
+                  <th style={{ minWidth: "260px" }}>Name / Organization</th>
+                  <th className="text-center" style={{ width: "120px", minWidth: "120px", whiteSpace: "nowrap" }}>Type</th>
+                  <th className="text-center" style={{ width: "140px", minWidth: "140px", whiteSpace: "nowrap" }}>Status</th>
+                  <th className="text-center" style={{ width: "125px", minWidth: "125px", whiteSpace: "nowrap" }}>Submitted On</th>
+                  <th className="text-center" style={{ width: "145px", minWidth: "145px", whiteSpace: "nowrap" }}>Actions</th>
                 </tr>
               </thead>
               <tbody className="ev-table-body">
@@ -1095,12 +1137,12 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
                     return (
                       <tr key={emp.id}>
                         {/* # Row Number */}
-                        <td className="ev-row-index text-center">
+                        <td className="ev-row-index text-center" style={{ width: "48px", minWidth: "48px", whiteSpace: "nowrap" }}>
                           {rowNumber}
                         </td>
 
                         {/* Name / Organization */}
-                        <td style={{ maxWidth: 340 }}>
+                        <td style={{ maxWidth: 360, minWidth: 260 }}>
                           <div>
                             <h3
                               onClick={() => handleOpenDetail(emp)}
@@ -1115,32 +1157,61 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
                         </td>
 
                         {/* Type */}
-                        <td className="text-center">
+                        <td className="text-center" style={{ width: "120px", minWidth: "120px", whiteSpace: "nowrap" }}>
                           {renderTypeBadge(emp.companyType)}
                         </td>
 
                         {/* Status */}
-                        <td className="text-center">
+                        <td className="text-center" style={{ width: "140px", minWidth: "140px", whiteSpace: "nowrap" }}>
                           {renderStatusBadge(emp.verificationStatus)}
                         </td>
 
                         {/* Submitted On */}
-                        <td className="ev-date-cell">
+                        <td className="ev-date-cell" style={{ width: "125px", minWidth: "125px", whiteSpace: "nowrap" }}>
                           {formatDateDisplay(emp.createdAt)}
                         </td>
 
                         {/* Actions */}
-                        <td className="text-center">
-                          <div className="ev-actions-cell">
+                        <td className="text-center" style={{ width: "145px", minWidth: "145px", whiteSpace: "nowrap" }}>
+                          <div
+                            className="ev-actions-cell"
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              flexDirection: "row",
+                              gap: "8px",
+                              whiteSpace: "nowrap",
+                              flexShrink: 0,
+                            }}
+                          >
                             {/* Blue View Button */}
                             <button
                               type="button"
                               onClick={() => handleOpenDetail(emp)}
                               className="ev-view-btn"
-                              style={{ backgroundColor: "#0066cc", color: "#ffffff" }}
+                              style={{
+                                backgroundColor: "#0066cc",
+                                color: "#ffffff",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                flexDirection: "row",
+                                gap: "6px",
+                                height: "32px",
+                                minWidth: "82px",
+                                padding: "6px 14px",
+                                borderRadius: "6px",
+                                fontSize: "12.5px",
+                                fontWeight: 700,
+                                whiteSpace: "nowrap",
+                                flexShrink: 0,
+                                border: "none",
+                                cursor: "pointer",
+                              }}
                             >
-                              <Eye className="w-3.5 h-3.5 stroke-[2.2]" />
-                              View
+                              <Eye className="w-3.5 h-3.5 stroke-[2.2]" style={{ flexShrink: 0 }} />
+                              <span style={{ whiteSpace: "nowrap", display: "inline" }}>View</span>
                             </button>
 
                             {/* 3-dots dropdown toggle */}
@@ -1151,6 +1222,7 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
                                 setActionMenuOpenId(actionMenuOpenId === emp.id ? null : emp.id);
                               }}
                               className="ev-more-btn"
+                              style={{ flexShrink: 0 }}
                               aria-label="More options"
                             >
                               <MoreVertical className="w-4 h-4" />
@@ -1371,82 +1443,7 @@ export function EmployerVerificationPage({ onNavigate }: EmployerVerificationPag
           </div>
         </div>
 
-        {/* 6. BOTTOM FEATURE HIGHLIGHTS STRIP */}
-        <div className="ev-features-card">
-          <div className="ev-features-grid">
 
-            {/* 1. Responsive Design */}
-            <div className="ev-feature-item">
-              <div
-                className="ev-feature-icon-box"
-                style={{ backgroundColor: "#fef2f2", borderColor: "#fecaca", color: "#c81e1e" }}
-              >
-                <Monitor className="w-5 h-5 stroke-[1.8]" />
-              </div>
-              <div className="ev-feature-copy">
-                <h4>Responsive Design</h4>
-                <p>Perfect experience on both desktop & mobile</p>
-              </div>
-            </div>
-
-            {/* 2. Search & Filter */}
-            <div className="ev-feature-item">
-              <div
-                className="ev-feature-icon-box"
-                style={{ backgroundColor: "#fef2f2", borderColor: "#fecaca", color: "#c81e1e" }}
-              >
-                <Search className="w-5 h-5 stroke-[1.8]" />
-              </div>
-              <div className="ev-feature-copy">
-                <h4>Search & Filter</h4>
-                <p>Find records quickly by name, type, status, date</p>
-              </div>
-            </div>
-
-            {/* 3. Clean Table View */}
-            <div className="ev-feature-item">
-              <div
-                className="ev-feature-icon-box"
-                style={{ backgroundColor: "#fef2f2", borderColor: "#fecaca", color: "#c81e1e" }}
-              >
-                <Eye className="w-5 h-5 stroke-[1.8]" />
-              </div>
-              <div className="ev-feature-copy">
-                <h4>Clean Table View</h4>
-                <p>All details in one place (no horizontal scroll)</p>
-              </div>
-            </div>
-
-            {/* 4. Easy Actions */}
-            <div className="ev-feature-item">
-              <div
-                className="ev-feature-icon-box"
-                style={{ backgroundColor: "#fef2f2", borderColor: "#fecaca", color: "#c81e1e" }}
-              >
-                <CheckCircle className="w-5 h-5 stroke-[1.8]" />
-              </div>
-              <div className="ev-feature-copy">
-                <h4>Easy Actions</h4>
-                <p>View details, approve/reject with one click</p>
-              </div>
-            </div>
-
-            {/* 5. Pagination */}
-            <div className="ev-feature-item">
-              <div
-                className="ev-feature-icon-box font-bold text-xs"
-                style={{ backgroundColor: "#fef2f2", borderColor: "#fecaca", color: "#c81e1e" }}
-              >
-                &lt; &gt;
-              </div>
-              <div className="ev-feature-copy">
-                <h4>Pagination</h4>
-                <p>Better performance with large data</p>
-              </div>
-            </div>
-
-          </div>
-        </div>
 
         {/* 7. BOTTOM TELEGRAM JOIN BAR */}
         <div className="ev-telegram-center">

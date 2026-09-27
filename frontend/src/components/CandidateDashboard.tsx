@@ -556,7 +556,6 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
                   <Bell size={20} />
                   {unreadNotifications > 0 && <span>{unreadNotifications > 9 ? '9+' : unreadNotifications}</span>}
                 </button>
-                <button type="button" className="candidate-outline-button" onClick={handleLogout}><LogOut size={16} />Logout</button>
               </div>
             </div>
           )}

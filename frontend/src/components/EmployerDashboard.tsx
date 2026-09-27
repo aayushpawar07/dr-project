@@ -992,10 +992,6 @@ export function EmployerDashboard({ onNavigate }: EmployerDashboardProps) {
                 <Bell size={19} />
                 {unreadNotifications > 0 && <span>{unreadNotifications > 9 ? '9+' : unreadNotifications}</span>}
               </button>
-              <button type="button" className="dashboard-outline-button" onClick={handleLogout}>
-                <LogOut size={16} />
-                Logout
-              </button>
             </div>
           </div>
 

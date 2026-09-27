@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import {
   ArrowLeft,
   Award,
+  Bell,
   Briefcase,
   Building2,
   Camera,
@@ -17,6 +18,7 @@ import {
   Phone,
   Save,
   ShieldCheck,
+  Smartphone,
   Sparkles,
   Stethoscope,
   Upload,
@@ -392,444 +394,498 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
                   />
                 </div>
               ) : (
-                <div className="bg-gradient-to-r from-blue-50/90 via-indigo-50/80 to-slate-50 border border-blue-200 rounded-2xl p-5 mb-6 shadow-xs">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-blue-700 uppercase tracking-wider bg-blue-100/70 px-2.5 py-0.5 rounded-md flex items-center gap-1">
-                          <Sparkles className="w-3.5 h-3.5" /> Structured Qualification &amp; Job Alert System
-                        </span>
-                        {candidate.profileComplete && (
-                          <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3" /> Active
+                <div className="space-y-6">
+                  {/* Hero Career Progression Banner */}
+                  <div className="candidate-hub-hero">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-blue-700 uppercase tracking-wider bg-blue-100/70 px-2.5 py-0.5 rounded-md flex items-center gap-1">
+                            <Sparkles className="w-3.5 h-3.5 text-blue-600" /> Medical Qualifications &amp; Alert System
                           </span>
-                        )}
-                      </div>
-                      <h3 className="text-base sm:text-lg font-bold text-slate-900 mt-2">
-                        {candidate.professionalCategory || candidate.medicalCategory || 'Doctor'} Career Progression
-                      </h3>
+                          <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Active &amp; Verified
+                          </span>
+                        </div>
+                        <h3 className="candidate-hub-title mt-2">
+                          {candidate.professionalCategory || candidate.medicalCategory || 'Doctor'} Career Progression
+                        </h3>
 
-                      {/* Step-wise path badges: Doctor → MBBS → MS → General Surgery */}
-                      <div className="flex items-center gap-2 flex-wrap mt-2.5">
-                        <span className="bg-blue-600 text-white font-bold text-xs px-3 py-1 rounded-lg shadow-xs">
-                          {candidate.professionalCategory || candidate.medicalCategory || 'Doctor'}
-                        </span>
-                        <span className="text-slate-400 font-bold">→</span>
-                        <span className="bg-indigo-600 text-white font-bold text-xs px-3 py-1 rounded-lg shadow-xs">
-                          {candidate.basicQualification || (candidate.professionalCategory === 'Nursing' ? 'B.Sc Nursing' : 'MBBS')}
-                        </span>
-                        {candidate.highestQualification && candidate.highestQualification !== 'MBBS Only' && candidate.highestQualification !== 'None / Basic Only' && (
-                          <>
-                            <span className="text-slate-400 font-bold">→</span>
-                            <span className="bg-violet-600 text-white font-bold text-xs px-3 py-1 rounded-lg shadow-xs">
-                              {candidate.highestQualification}
-                            </span>
-                          </>
-                        )}
-                        {candidate.speciality && (
-                          <>
-                            <span className="text-slate-400 font-bold">→</span>
-                            <span className="bg-emerald-600 text-white font-bold text-xs px-3 py-1 rounded-lg shadow-xs">
-                              {candidate.speciality}
-                            </span>
-                          </>
-                        )}
+                        {/* Step-wise path badges with vibrant colors & icons */}
+                        <div className="flex items-center gap-2 flex-wrap mt-3">
+                          <span className="path-pill path-pill--domain">
+                            <Stethoscope className="w-3.5 h-3.5" />
+                            {candidate.professionalCategory || candidate.medicalCategory || 'Doctor'}
+                          </span>
+                          {(candidate.basicQualification || candidate.qualification) && (
+                            <>
+                              <span className="text-slate-400 font-bold">→</span>
+                              <span className="path-pill path-pill--basic">
+                                <GraduationCap className="w-3.5 h-3.5" />
+                                {candidate.basicQualification || (candidate.professionalCategory === 'Nursing' ? 'B.Sc Nursing' : 'MBBS')}
+                              </span>
+                            </>
+                          )}
+                          {candidate.highestQualification && candidate.highestQualification !== 'MBBS Only' && candidate.highestQualification !== 'BDS Only' && candidate.highestQualification !== 'None / Basic Only' && (
+                            <>
+                              <span className="text-slate-400 font-bold">→</span>
+                              <span className="path-pill path-pill--highest">
+                                <Award className="w-3.5 h-3.5" />
+                                {candidate.highestQualification}
+                              </span>
+                            </>
+                          )}
+                          {candidate.speciality && (
+                            <>
+                              <span className="text-slate-400 font-bold">→</span>
+                              <span className="path-pill path-pill--speciality">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                {candidate.speciality}
+                              </span>
+                            </>
+                          )}
+                        </div>
                       </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowStepper(true)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-md transition-all shrink-0 cursor-pointer"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                        Update via 8-Step System
+                      </button>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setShowStepper(true)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-xs transition-colors shrink-0 cursor-pointer"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                      {candidate.qualification ? 'Update Qualification & Alerts' : 'Complete Step-by-Step Profile'}
-                    </button>
+                    {/* 4 Summary Metrics */}
+                    <div className="candidate-hub-metrics">
+                      <div className="candidate-metric-item">
+                        <span className="candidate-metric-label">
+                          <Briefcase className="w-3.5 h-3.5 text-blue-600" /> Experience
+                        </span>
+                        <strong className="candidate-metric-value">
+                          {candidate.experienceBand || (candidate.yearsExperience != null ? `${candidate.yearsExperience} Years` : 'Fresher')}
+                        </strong>
+                      </div>
+                      <div className="candidate-metric-item">
+                        <span className="candidate-metric-label">
+                          <Stethoscope className="w-3.5 h-3.5 text-indigo-600" /> Target Roles
+                        </span>
+                        <strong className="candidate-metric-value">
+                          {Array.isArray(candidate.preferredJobRoles) && candidate.preferredJobRoles.length > 0
+                            ? candidate.preferredJobRoles.slice(0, 2).join(', ')
+                            : candidate.preferredJobRole || 'All Matching Roles'}
+                        </strong>
+                      </div>
+                      <div className="candidate-metric-item">
+                        <span className="candidate-metric-label">
+                          <Building2 className="w-3.5 h-3.5 text-amber-600" /> Sectors
+                        </span>
+                        <strong className="candidate-metric-value">
+                          {Array.isArray(candidate.preferredSectors) ? candidate.preferredSectors.map(s => s === 'both' ? 'Govt + Private' : s).join(', ') : 'Govt + Private'}
+                        </strong>
+                      </div>
+                      <div className="candidate-metric-item">
+                        <span className="candidate-metric-label">
+                          <Bell className="w-3.5 h-3.5 text-emerald-600" /> Job Alerts
+                        </span>
+                        <strong className="candidate-metric-value text-emerald-700">
+                          {candidate.jobAlertSettings?.enabled !== false ? 'Instant Alerts Active' : 'Disabled'}
+                        </strong>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Structured Details Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 pt-4 border-t border-blue-200/60 text-xs">
-                    <div>
-                      <span className="text-slate-500 block">Experience</span>
-                      <strong className="text-slate-800 font-semibold">
-                        {candidate.experienceBand || (candidate.yearsExperience != null ? `${candidate.yearsExperience} Years` : 'Fresher')}
-                      </strong>
+                  {/* 2-Column Responsive Overview Grid */}
+                  <div className="profile-overview-grid">
+                    {/* CARD 1: Clinical Qualifications & Credentials */}
+                    <div className="profile-card-modern">
+                      <div className="profile-card-modern-header">
+                        <div className="profile-card-modern-title-group">
+                          <div className="profile-card-icon bg-blue-50 text-blue-600 border border-blue-100">
+                            <GraduationCap className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h4 className="profile-card-title">Clinical Qualifications</h4>
+                            <p className="profile-card-sub">Degrees and clinical domain</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowStepper(true)}
+                          className="profile-card-action-btn"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" /> Edit
+                        </button>
+                      </div>
+
+                      <div className="profile-detail-list">
+                        <div className="profile-detail-row">
+                          <span className="profile-detail-label">Professional Domain</span>
+                          <span className="profile-detail-val">
+                            <span className="profile-chip-tag profile-chip-tag--active">
+                              {candidate.professionalCategory || candidate.medicalCategory || 'Doctor'}
+                            </span>
+                          </span>
+                        </div>
+                        <div className="profile-detail-row">
+                          <span className="profile-detail-label">Foundational Degree</span>
+                          <span className="profile-detail-val text-slate-800 font-bold">
+                            {candidate.basicQualification || (candidate.professionalCategory === 'Nursing' ? 'B.Sc Nursing' : 'MBBS')}
+                          </span>
+                        </div>
+                        <div className="profile-detail-row">
+                          <span className="profile-detail-label">Highest Qualification</span>
+                          <span className="profile-detail-val">
+                            <span className="profile-chip-tag">
+                              {candidate.highestQualification || candidate.qualification || 'Undergraduate'}
+                            </span>
+                          </span>
+                        </div>
+                        <div className="profile-detail-row">
+                          <span className="profile-detail-label">Clinical Speciality</span>
+                          <span className="profile-detail-val text-blue-700 font-bold">
+                            {candidate.speciality || 'General Practice'}
+                          </span>
+                        </div>
+                        {candidate.subSpeciality && (
+                          <div className="profile-detail-row">
+                            <span className="profile-detail-label">Sub-Speciality / Fellowship</span>
+                            <span className="profile-detail-val text-slate-800">
+                              {candidate.subSpeciality}
+                            </span>
+                          </div>
+                        )}
+                        <div className="profile-detail-row">
+                          <span className="profile-detail-label">Current / Past Hospital</span>
+                          <span className="profile-detail-val text-slate-700">
+                            {candidate.currentOrganization || 'Not specified'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-slate-500 block">Preferred Roles</span>
-                      <strong className="text-slate-800 font-semibold line-clamp-1">
-                        {Array.isArray(candidate.preferredJobRoles) && candidate.preferredJobRoles.length > 0
-                          ? candidate.preferredJobRoles.join(', ')
-                          : candidate.preferredJobRole || 'All Roles'}
-                      </strong>
+
+                    {/* CARD 2: Career & Location Preferences */}
+                    <div className="profile-card-modern">
+                      <div className="profile-card-modern-header">
+                        <div className="profile-card-modern-title-group">
+                          <div className="profile-card-icon bg-emerald-50 text-emerald-600 border border-emerald-100">
+                            <MapPin className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h4 className="profile-card-title">Practice &amp; Location</h4>
+                            <p className="profile-card-sub">Work locations and target roles</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowStepper(true)}
+                          className="profile-card-action-btn"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" /> Edit
+                        </button>
+                      </div>
+
+                      <div className="profile-detail-list">
+                        <div className="profile-detail-row">
+                          <span className="profile-detail-label">Practice Location</span>
+                          <span className="profile-detail-val text-slate-900 font-bold">
+                            {candidate.preferredLocation || [candidate.currentCity, candidate.state].filter(Boolean).join(', ') || (Array.isArray(candidate.preferredStates) && candidate.preferredStates.length > 0 ? candidate.preferredStates.join(', ') : 'Anywhere in India')}
+                          </span>
+                        </div>
+                        <div className="profile-detail-row">
+                          <span className="profile-detail-label">Sector Preference</span>
+                          <span className="profile-detail-val">
+                            <span className="profile-chip-tag profile-chip-tag--active">
+                              {Array.isArray(candidate.preferredSectors) ? candidate.preferredSectors.map(s => s === 'both' ? 'Govt + Private' : s).join(', ') : 'Both Govt & Private'}
+                            </span>
+                          </span>
+                        </div>
+                        <div className="profile-detail-row">
+                          <span className="profile-detail-label">Employment Type</span>
+                          <span className="profile-detail-val text-slate-800">
+                            {candidate.employmentPreference || (Array.isArray(candidate.preferredEmploymentTypes) ? candidate.preferredEmploymentTypes.join(', ') : 'Full Time')}
+                          </span>
+                        </div>
+                        <div className="profile-detail-row">
+                          <span className="profile-detail-label">Target Job Roles</span>
+                          <span className="profile-detail-val">
+                            <div className="flex flex-wrap gap-1 justify-end max-w-xs">
+                              {Array.isArray(candidate.preferredJobRoles) && candidate.preferredJobRoles.length > 0 ? (
+                                candidate.preferredJobRoles.map((role) => (
+                                  <span key={role} className="profile-chip-tag">
+                                    {role}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="profile-chip-tag">{candidate.preferredJobRole || 'All Matching Roles'}</span>
+                              )}
+                            </div>
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-slate-500 block">Sector Preference</span>
-                      <strong className="text-slate-800 font-semibold">
-                        {Array.isArray(candidate.preferredSectors) ? candidate.preferredSectors.join(', ') : 'Government + Private'}
-                      </strong>
+
+                    {/* CARD 3: Job Alert Settings */}
+                    <div className="profile-card-modern">
+                      <div className="profile-card-modern-header">
+                        <div className="profile-card-modern-title-group">
+                          <div className="profile-card-icon bg-amber-50 text-amber-600 border border-amber-100">
+                            <Bell className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h4 className="profile-card-title">Job Matching Alerts</h4>
+                            <p className="profile-card-sub">Automated notifications for matching jobs</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowStepper(true)}
+                          className="profile-card-action-btn"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" /> Edit
+                        </button>
+                      </div>
+
+                      <div className="profile-detail-list">
+                        <div className="profile-detail-row">
+                          <span className="profile-detail-label">Alert Status</span>
+                          <span className="profile-detail-val">
+                            <span className="profile-chip-tag profile-chip-tag--active">
+                              ✓ Active (Matching Engine Running)
+                            </span>
+                          </span>
+                        </div>
+                        <div className="profile-detail-row">
+                          <span className="profile-detail-label">Website Dashboard</span>
+                          <span className="profile-detail-val text-slate-800 font-semibold flex items-center gap-1.5">
+                            <Bell className="w-3.5 h-3.5 text-blue-600" />
+                            {candidate.jobAlertSettings?.channels?.website !== false ? 'Enabled' : 'Disabled'}
+                          </span>
+                        </div>
+                        <div className="profile-detail-row">
+                          <span className="profile-detail-label">Email Notifications</span>
+                          <span className="profile-detail-val text-slate-800 font-semibold flex items-center gap-1.5">
+                            <Mail className="w-3.5 h-3.5 text-indigo-600" />
+                            {candidate.jobAlertSettings?.channels?.email !== false ? user.email : 'Disabled'}
+                          </span>
+                        </div>
+                        <div className="profile-detail-row">
+                          <span className="profile-detail-label">WhatsApp Alerts</span>
+                          <span className="profile-detail-val text-slate-800 font-semibold flex items-center gap-1.5">
+                            <Smartphone className="w-3.5 h-3.5 text-emerald-600" />
+                            {candidate.jobAlertSettings?.channels?.whatsapp !== false ? (user.phone || 'Configured') : 'Disabled'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-slate-500 block">Job Alerts</span>
-                      <strong className="text-emerald-700 font-semibold">
-                        {candidate.jobAlertSettings?.enabled !== false ? 'Enabled (Instant / Daily)' : 'Disabled'}
-                      </strong>
+
+                    {/* CARD 4: Professional Medical Registration */}
+                    <div className="profile-card-modern">
+                      <div className="profile-card-modern-header">
+                        <div className="profile-card-modern-title-group">
+                          <div className="profile-card-icon bg-indigo-50 text-indigo-600 border border-indigo-100">
+                            <ShieldCheck className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h4 className="profile-card-title">Medical Council Registration</h4>
+                            <p className="profile-card-sub">Official verification credentials</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-600 mb-1">Registration Council</label>
+                            <input
+                              className="profile-input"
+                              value={candidate.registrationCouncil || ''}
+                              onChange={(e) => setCandidate({ ...candidate, registrationCouncil: e.target.value })}
+                              placeholder="e.g. NMC / State Medical Council"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-600 mb-1">Registration Number</label>
+                            <input
+                              className="profile-input"
+                              value={candidate.registrationNumber || ''}
+                              onChange={(e) => setCandidate({ ...candidate, registrationNumber: e.target.value })}
+                              placeholder="e.g. DMC/R/12345"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-600 mb-1">Registration State</label>
+                            <input
+                              className="profile-input"
+                              value={candidate.registrationState || ''}
+                              onChange={(e) => setCandidate({ ...candidate, registrationState: e.target.value })}
+                              placeholder="e.g. Delhi / Maharashtra"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-600 mb-1">Registration Year</label>
+                            <input
+                              className="profile-input"
+                              value={candidate.registrationYear || ''}
+                              onChange={(e) => setCandidate({ ...candidate, registrationYear: e.target.value })}
+                              placeholder="e.g. 2020"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="pt-2 flex justify-end">
+                          <button
+                            type="button"
+                            disabled={saving}
+                            onClick={() => void saveCandidate()}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 transition cursor-pointer shadow-xs"
+                          >
+                            <Save className={`w-3.5 h-3.5 ${saving ? 'animate-spin' : ''}`} />
+                            Save Registration
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* CARD 5: Clinical Skills & CV Summary */}
+                    <div className="profile-card-modern">
+                      <div className="profile-card-modern-header">
+                        <div className="profile-card-modern-title-group">
+                          <div className="profile-card-icon bg-violet-50 text-violet-600 border border-violet-100">
+                            <Sparkles className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h4 className="profile-card-title">Skills &amp; Professional Bio</h4>
+                            <p className="profile-card-sub">Clinical competencies and summary for CV</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-600 mb-1">Clinical Skills &amp; Competencies</label>
+                          <input
+                            className="profile-input"
+                            value={candidate.skills || ''}
+                            onChange={(e) => setCandidate({ ...candidate, skills: e.target.value })}
+                            placeholder="e.g. ICU Management, Laparoscopy, Emergency Medicine, NABH"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-600 mb-1">Professional / CV Summary</label>
+                          <textarea
+                            rows={3}
+                            className="profile-textarea"
+                            value={candidate.profileSummary || ''}
+                            onChange={(e) => setCandidate({ ...candidate, profileSummary: e.target.value })}
+                            placeholder="Brief overview of clinical expertise, case volume, procedures handled, hospital settings…"
+                          />
+                        </div>
+
+                        <div className="pt-1 flex justify-end">
+                          <button
+                            type="button"
+                            disabled={saving}
+                            onClick={() => void saveCandidate()}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 transition cursor-pointer shadow-xs"
+                          >
+                            <Save className={`w-3.5 h-3.5 ${saving ? 'animate-spin' : ''}`} />
+                            Save Bio &amp; Skills
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* CARD 6: Resume / CV Upload */}
+                    <div className="profile-card-modern">
+                      <div className="profile-card-modern-header">
+                        <div className="profile-card-modern-title-group">
+                          <div className="profile-card-icon bg-teal-50 text-teal-600 border border-teal-100">
+                            <FileText className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h4 className="profile-card-title">Resume / CV Document</h4>
+                            <p className="profile-card-sub">Directly accessible to hospital HR</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-teal-100 bg-teal-50/40 p-3.5 space-y-3">
+                        {candidate.resumeUrl ? (
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-lg border border-teal-200">
+                            <div className="flex items-center gap-2.5">
+                              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-600 text-white shrink-0">
+                                <FileText className="h-5 w-5" />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-xs font-bold text-slate-800 truncate">
+                                  {candidate.resumeFileName || 'Candidate_Resume.pdf'}
+                                </div>
+                                <div className="text-[11px] text-teal-700 font-medium">
+                                  ✓ Resume actively uploaded and verified
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              <a
+                                href={candidate.resumeUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 transition"
+                              >
+                                <Download className="h-3.5 w-3.5" />
+                                View / Download
+                              </a>
+                              <button
+                                type="button"
+                                onClick={() => resumeInputRef.current?.click()}
+                                disabled={uploadingResume}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 transition cursor-pointer"
+                              >
+                                <Upload className="h-3.5 w-3.5" />
+                                {uploadingResume ? 'Uploading…' : 'Replace CV'}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-lg border border-dashed border-teal-300 text-center sm:text-left">
+                            <div>
+                              <div className="text-xs font-bold text-slate-800">
+                                No Resume / CV uploaded yet
+                              </div>
+                              <div className="text-[11px] text-slate-500">
+                                Upload PDF, DOC, or DOCX (Max 10 MB) to increase recruiter response rate.
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => resumeInputRef.current?.click()}
+                              disabled={uploadingResume}
+                              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-xs"
+                            >
+                              <Upload className="h-4 w-4" />
+                              {uploadingResume ? 'Uploading CV…' : 'Upload Resume / CV'}
+                            </button>
+                          </div>
+                        )}
+
+                        <input
+                          ref={resumeInputRef}
+                          type="file"
+                          accept="application/pdf,.doc,.docx"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) void handleResumeUpload(file);
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
               )}
-
-              {/* Section 1: Clinical Profile & Domain */}
-              <ProfileSection
-                icon={Stethoscope}
-                title="Clinical Profile & Credentials"
-                subtitle="Qualifications and domain details for HR / Employer visibility."
-                variant="teal"
-              >
-                <div className="profile-fields-grid">
-                  <Field label="Medical / Professional Category">
-                    <select
-                      className="profile-select"
-                      value={candidate.medicalCategory || ''}
-                      onChange={(e) =>
-                        setCandidate({ ...candidate, medicalCategory: e.target.value })
-                      }
-                    >
-                      <option value="">Select category</option>
-                      {MEDICAL_CATEGORIES.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-
-                  <Field label="Highest Qualification *">
-                    <input
-                      className="profile-input"
-                      value={candidate.qualification || ''}
-                      onChange={(e) =>
-                        setCandidate({ ...candidate, qualification: e.target.value })
-                      }
-                      placeholder="e.g. MBBS, MD General Medicine, MS, DNB"
-                    />
-                  </Field>
-
-                  <Field label="Primary Speciality">
-                    <select
-                      className="profile-select"
-                      value={candidate.speciality || ''}
-                      onChange={(e) =>
-                        setCandidate({ ...candidate, speciality: e.target.value })
-                      }
-                    >
-                      <option value="">Select speciality</option>
-                      {SPECIALITIES.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-
-                  <Field label="Sub-speciality / Fellowship">
-                    <input
-                      className="profile-input"
-                      value={candidate.subSpeciality || ''}
-                      onChange={(e) =>
-                        setCandidate({ ...candidate, subSpeciality: e.target.value })
-                      }
-                      placeholder="e.g. Interventional Cardiology, Critical Care"
-                    />
-                  </Field>
-
-                  <Field label="Years of Clinical Experience">
-                    <input
-                      className="profile-input"
-                      type="number"
-                      min="0"
-                      max="80"
-                      value={candidate.yearsExperience ?? ''}
-                      onChange={(e) =>
-                        setCandidate({
-                          ...candidate,
-                          yearsExperience: e.target.value ? Number(e.target.value) : null,
-                        })
-                      }
-                      placeholder="e.g. 5"
-                    />
-                  </Field>
-
-                  <Field label="Current / Previous Organization">
-                    <input
-                      className="profile-input"
-                      value={candidate.currentOrganization || ''}
-                      onChange={(e) =>
-                        setCandidate({ ...candidate, currentOrganization: e.target.value })
-                      }
-                      placeholder="e.g. AIIMS New Delhi / Max Healthcare"
-                    />
-                  </Field>
-                </div>
-              </ProfileSection>
-
-              {/* Section 2: Career & Location Preferences */}
-              <ProfileSection
-                icon={MapPin}
-                title="Career & Location Preferences"
-                subtitle="Allows recruiters to match you with suitable clinical vacancies."
-                variant="green"
-              >
-                <div className="profile-fields-grid">
-                  <Field label="Preferred Job Role">
-                    <select
-                      className="profile-select"
-                      value={candidate.preferredJobRole || ''}
-                      onChange={(e) =>
-                        setCandidate({ ...candidate, preferredJobRole: e.target.value })
-                      }
-                    >
-                      <option value="">Select preferred role</option>
-                      {PREFERRED_ROLES.map((r) => (
-                        <option key={r} value={r}>
-                          {r}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-
-                  <Field label="Preferred Work Location">
-                    <input
-                      className="profile-input"
-                      value={candidate.preferredLocation || ''}
-                      onChange={(e) =>
-                        setCandidate({ ...candidate, preferredLocation: e.target.value })
-                      }
-                      placeholder="e.g. Delhi NCR, Lucknow, or Anywhere"
-                    />
-                  </Field>
-
-                  <Field label="Current City">
-                    <input
-                      className="profile-input"
-                      value={candidate.currentCity || ''}
-                      onChange={(e) =>
-                        setCandidate({ ...candidate, currentCity: e.target.value })
-                      }
-                      placeholder="e.g. New Delhi"
-                    />
-                  </Field>
-
-                  <Field label="Current State">
-                    <select
-                      className="profile-select"
-                      value={candidate.state || ''}
-                      onChange={(e) => setCandidate({ ...candidate, state: e.target.value })}
-                    >
-                      <option value="">Select state</option>
-                      {INDIAN_STATES.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-
-                  <Field label="Employment Preference">
-                    <select
-                      className="profile-select"
-                      value={candidate.employmentPreference || ''}
-                      onChange={(e) =>
-                        setCandidate({ ...candidate, employmentPreference: e.target.value })
-                      }
-                    >
-                      <option value="">Select preference</option>
-                      <option value="Full Time">Full Time</option>
-                      <option value="Part Time">Part Time</option>
-                      <option value="Contract">Contract</option>
-                      <option value="Locum">Locum</option>
-                      <option value="Any">Any</option>
-                    </select>
-                  </Field>
-                </div>
-              </ProfileSection>
-
-              {/* Section 3: Skills & Professional Summary */}
-              <ProfileSection
-                icon={Sparkles}
-                title="Skills & Profile Summary"
-                subtitle="Highlight key clinical competencies and summary for CV."
-                variant="blue"
-              >
-                <div className="space-y-4">
-                  <Field label="Clinical Skills & Competencies">
-                    <input
-                      className="profile-input"
-                      value={candidate.skills || ''}
-                      onChange={(e) => setCandidate({ ...candidate, skills: e.target.value })}
-                      placeholder="e.g. ICU Management, Emergency Intubation, Laparoscopy, NABH Compliance, Echocardiography"
-                    />
-                  </Field>
-
-                  <Field label="Professional / CV Summary">
-                    <textarea
-                      rows={4}
-                      className="profile-textarea"
-                      value={candidate.profileSummary || ''}
-                      onChange={(e) =>
-                        setCandidate({ ...candidate, profileSummary: e.target.value })
-                      }
-                      placeholder="Brief overview of clinical expertise, case volume, procedures handled, hospital settings, and career goals…"
-                    />
-                  </Field>
-                </div>
-              </ProfileSection>
-
-              {/* Section 4: Professional Medical Registration */}
-              <ProfileSection
-                icon={ShieldCheck}
-                title="Professional Registration Details"
-                subtitle="Verification credentials for HR, employers and hospital boards."
-                variant="indigo"
-              >
-                <div className="profile-fields-grid">
-                  <Field label="Registration Council">
-                    <input
-                      className="profile-input"
-                      value={candidate.registrationCouncil || ''}
-                      onChange={(e) =>
-                        setCandidate({ ...candidate, registrationCouncil: e.target.value })
-                      }
-                      placeholder="e.g. National Medical Commission (NMC) / DMC"
-                    />
-                  </Field>
-
-                  <Field label="Registration Number">
-                    <input
-                      className="profile-input"
-                      value={candidate.registrationNumber || ''}
-                      onChange={(e) =>
-                        setCandidate({ ...candidate, registrationNumber: e.target.value })
-                      }
-                      placeholder="e.g. DMC/R/12345"
-                    />
-                  </Field>
-
-                  <Field label="Registration State">
-                    <input
-                      className="profile-input"
-                      value={candidate.registrationState || ''}
-                      onChange={(e) =>
-                        setCandidate({ ...candidate, registrationState: e.target.value })
-                      }
-                      placeholder="e.g. Delhi / Maharashtra / Uttar Pradesh"
-                    />
-                  </Field>
-
-                  <Field label="Registration Year">
-                    <input
-                      className="profile-input"
-                      value={candidate.registrationYear || ''}
-                      onChange={(e) =>
-                        setCandidate({ ...candidate, registrationYear: e.target.value })
-                      }
-                      placeholder="e.g. 2019"
-                    />
-                  </Field>
-                </div>
-              </ProfileSection>
-
-              {/* Section 5: Resume / CV Upload (HR / Employer Friendly) */}
-              <ProfileSection
-                icon={FileText}
-                title="Resume / CV Upload"
-                subtitle="Upload your updated CV for employers and hospital HR to download and review."
-                variant="teal"
-              >
-                <div className="rounded-xl border border-teal-100 bg-teal-50/40 p-4 space-y-3">
-                  {candidate.resumeUrl ? (
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-lg border border-teal-200">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-600 text-white shrink-0">
-                          <FileText className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-xs font-bold text-slate-800 truncate">
-                            {candidate.resumeFileName || 'Candidate_Resume.pdf'}
-                          </div>
-                          <div className="text-[11px] text-teal-700 font-medium">
-                            ✓ Resume actively uploaded and accessible to employers
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0">
-                        <a
-                          href={candidate.resumeUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-600 text-white text-xs font-semibold hover:bg-teal-700 transition"
-                        >
-                          <Download className="h-3.5 w-3.5" />
-                          View / Download CV
-                        </a>
-                        <button
-                          type="button"
-                          onClick={() => resumeInputRef.current?.click()}
-                          disabled={uploadingResume}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 transition cursor-pointer"
-                        >
-                          <Upload className="h-3.5 w-3.5" />
-                          {uploadingResume ? 'Uploading…' : 'Replace CV'}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-lg border border-dashed border-teal-300 text-center sm:text-left">
-                      <div>
-                        <div className="text-xs font-bold text-slate-800">
-                          No Resume / CV uploaded yet
-                        </div>
-                        <div className="text-[11px] text-slate-500">
-                          Upload PDF, DOC, or DOCX (Max 10 MB) to increase recruiter responses by 4x.
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => resumeInputRef.current?.click()}
-                        disabled={uploadingResume}
-                        className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-teal-600 text-white text-xs font-bold hover:bg-teal-700 transition cursor-pointer shadow-sm"
-                      >
-                        <Upload className="h-4 w-4" />
-                        {uploadingResume ? 'Uploading CV…' : 'Upload Resume / CV'}
-                      </button>
-                    </div>
-                  )}
-
-                  <input
-                    ref={resumeInputRef}
-                    type="file"
-                    accept="application/pdf,.doc,.docx"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) void handleResumeUpload(file);
-                    }}
-                  />
-                </div>
-              </ProfileSection>
-
-              <div className="profile-actions-bar">
-                <button
-                  type="button"
-                  disabled={saving}
-                  className="profile-save-btn"
-                  onClick={() => void saveCandidate()}
-                >
-                  <Save className={`h-4.5 w-4.5 ${saving ? 'animate-spin' : ''}`} />
-                  {saving ? 'Saving Medical Profile…' : 'Save Medical Profile'}
-                </button>
-              </div>
             </main>
 
             <aside className="profile-aside-column">

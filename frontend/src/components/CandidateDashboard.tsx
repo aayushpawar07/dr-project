@@ -634,17 +634,21 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
                     <span className="font-semibold text-slate-500 mr-1 flex items-center gap-1">
                       <Sparkles size={13} className="text-blue-600" /> Career Path:
                     </span>
-                    <span className="bg-blue-600 text-white font-bold px-2.5 py-0.5 rounded-md">
+                    <span className="path-pill path-pill--domain">
                       {profile?.professionalCategory || profile?.medicalCategory || 'Doctor'}
                     </span>
-                    <span className="text-slate-400 font-bold">→</span>
-                    <span className="bg-indigo-600 text-white font-bold px-2.5 py-0.5 rounded-md">
-                      {profile?.basicQualification || 'MBBS'}
-                    </span>
-                    {profile?.highestQualification && profile?.highestQualification !== 'MBBS Only' && (
+                    {(profile?.basicQualification || profile?.qualification) && (
                       <>
                         <span className="text-slate-400 font-bold">→</span>
-                        <span className="bg-violet-600 text-white font-bold px-2.5 py-0.5 rounded-md">
+                        <span className="path-pill path-pill--basic">
+                          {profile?.basicQualification || (profile?.professionalCategory === 'Nursing' ? 'B.Sc Nursing' : 'MBBS')}
+                        </span>
+                      </>
+                    )}
+                    {profile?.highestQualification && profile?.highestQualification !== 'MBBS Only' && profile?.highestQualification !== 'BDS Only' && profile?.highestQualification !== 'None / Basic Only' && (
+                      <>
+                        <span className="text-slate-400 font-bold">→</span>
+                        <span className="path-pill path-pill--highest">
                           {profile?.highestQualification}
                         </span>
                       </>
@@ -652,7 +656,7 @@ export function CandidateDashboard({ onNavigate }: CandidateDashboardProps) {
                     {profile?.speciality && (
                       <>
                         <span className="text-slate-400 font-bold">→</span>
-                        <span className="bg-emerald-600 text-white font-bold px-2.5 py-0.5 rounded-md">
+                        <span className="path-pill path-pill--speciality">
                           {profile?.speciality}
                         </span>
                       </>

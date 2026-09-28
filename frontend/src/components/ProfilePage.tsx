@@ -253,12 +253,21 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
 
         <section className="profile-header-card">
           <div className="profile-header-main">
-            <div className="relative group shrink-0">
+            <div className="relative group shrink-0" style={{ width: '64px', height: '64px' }}>
               {isCandidate && candidate.profilePhotoUrl ? (
                 <img
                   src={candidate.profilePhotoUrl}
                   alt={displayName}
-                  className="w-18 h-18 rounded-2xl object-cover border-2 border-teal-500 shadow-md"
+                  className="profile-avatar-img w-16 h-16 rounded-2xl object-cover border-2 border-teal-500 shadow-md block"
+                  style={{
+                    width: '64px',
+                    height: '64px',
+                    maxWidth: '64px',
+                    maxHeight: '64px',
+                    borderRadius: '18px',
+                    objectFit: 'cover',
+                    display: 'block',
+                  }}
                 />
               ) : (
                 <div className="profile-avatar">{initials(displayName)}</div>

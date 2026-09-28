@@ -1,6 +1,5 @@
-// AI assisted development
 import { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, User, Phone, Building2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -18,13 +17,24 @@ interface AuthPageProps {
 
 export function AuthPage({ mode, onNavigate }: AuthPageProps) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login, register, forgotPassword, verifyOtp, resetPasswordWithOtp } = useAuth();
-  const [userRole, setUserRole] = useState<'candidate' | 'employer'>('candidate');
+  const roleParam = searchParams.get('role');
+  const [userRole, setUserRole] = useState<'candidate' | 'employer'>(
+    roleParam === 'employer' ? 'employer' : 'candidate'
+  );
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'login' | 'register'>(mode);
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
+
+  useEffect(() => {
+    const roleFromUrl = searchParams.get('role');
+    if (roleFromUrl === 'employer' || roleFromUrl === 'candidate') {
+      setUserRole(roleFromUrl);
+    }
+  }, [searchParams]);
 
   // Debug: Log state changes
   useEffect(() => {

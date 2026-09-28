@@ -86,6 +86,19 @@
   flex-shrink: 0;
 }
 
+.profile-avatar-img {
+  width: 64px !important;
+  height: 64px !important;
+  max-width: 64px !important;
+  max-height: 64px !important;
+  border-radius: 18px !important;
+  object-fit: cover !important;
+  border: 2px solid #0d9488 !important;
+  box-shadow: 0 4px 14px rgba(13, 148, 136, 0.25) !important;
+  flex-shrink: 0 !important;
+  display: block !important;
+}
+
 .profile-header-info {
   min-width: 0;
 }

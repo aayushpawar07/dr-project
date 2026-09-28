@@ -1,5 +1,20 @@
-// AI assisted development
-import { BarChart3, Bell, Building2, User, LogOut, Menu, X } from 'lucide-react';
+import {
+  BarChart3,
+  Bell,
+  Building2,
+  User,
+  LogOut,
+  Menu,
+  X,
+  ArrowLeft,
+  Home,
+  Landmark,
+  Briefcase,
+  Microscope,
+  HeartPulse,
+  Compass,
+  Search,
+} from 'lucide-react';
 import { Button } from './ui/button';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
@@ -19,7 +34,55 @@ const publicNavItems = [
   { label: 'Private Jobs', page: 'private-jobs' },
   { label: 'News', page: 'news' },
   { label: 'About', page: 'about' },
-  { label: 'Pricing', page: 'pricing' },
+  { label: 'Post a Job', page: 'post-job' },
+];
+
+const mobileQuickCategories = [
+  {
+    label: 'Home',
+    page: 'home',
+    icon: Home,
+    color: '#2563eb', // blue
+    isActive: (page: string) => page === 'home' || page === '',
+  },
+  {
+    label: 'Govt. Jobs',
+    page: 'govt-jobs',
+    icon: Landmark,
+    color: '#dc2626', // red
+    isActive: (page: string) => page === 'govt-jobs',
+  },
+  {
+    label: 'Private Jobs',
+    page: 'private-jobs',
+    icon: Briefcase,
+    color: '#ea580c', // orange
+    isActive: (page: string) => page === 'private-jobs',
+  },
+  {
+    label: 'All Jobs',
+    page: 'jobs',
+    icon: Compass,
+    color: '#0284c7', // sky
+    isActive: (page: string) =>
+      page === 'jobs' &&
+      !window.location.search.includes('paramedical') &&
+      !window.location.search.includes('nursing'),
+  },
+  {
+    label: 'Paramedical',
+    page: 'jobs?category=paramedical',
+    icon: Microscope,
+    color: '#16a34a', // green
+    isActive: (page: string) => page === 'jobs' && window.location.search.includes('paramedical'),
+  },
+  {
+    label: 'Nursing',
+    page: 'jobs?category=nursing',
+    icon: HeartPulse,
+    color: '#9333ea', // purple
+    isActive: (page: string) => page === 'jobs' && window.location.search.includes('nursing'),
+  },
 ];
 
 export function Header({ currentPage, onNavigate, isAuthenticated }: HeaderProps) {
@@ -90,7 +153,19 @@ export function Header({ currentPage, onNavigate, isAuthenticated }: HeaderProps
 
           <nav className="hidden lg:flex items-center gap-3 lg:gap-5 xl:gap-6 min-w-0">
             {publicNavItems.map((item) => (
-              <button key={item.page} onClick={() => onNavigate(item.page)} className={`text-[13px] lg:text-sm font-medium transition-colors whitespace-nowrap ${currentPage === item.page ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'}`}>{item.label}</button>
+              <button
+                key={item.page}
+                onClick={() => onNavigate(item.page)}
+                className={`text-[13px] lg:text-sm font-medium transition-colors whitespace-nowrap ${
+                  item.page === 'post-job'
+                    ? 'font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-600 hover:text-white border border-blue-200 shadow-2xs'
+                    : currentPage === item.page
+                    ? 'text-blue-600 font-semibold'
+                    : 'text-gray-700 hover:text-blue-600'
+                }`}
+              >
+                {item.label}
+              </button>
             ))}
           </nav>
 
@@ -131,17 +206,85 @@ export function Header({ currentPage, onNavigate, isAuthenticated }: HeaderProps
               <div className="hidden sm:flex items-center gap-2"><Button variant="outline" onClick={() => onNavigate('login')} className="h-9 px-3 lg:px-4 text-sm">Login</Button><Button onClick={() => onNavigate('register')} className="bg-blue-600 hover:bg-blue-700 h-9 px-3 lg:px-4 text-sm">Register</Button></div>
             )}
 
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="lg:hidden h-9 w-9 sm:h-10 sm:w-10 text-slate-700 hover:text-blue-600"
+              onClick={() => onNavigate('jobs')}
+              title="Search Jobs"
+              aria-label="Search Jobs"
+            >
+              <Search className="w-5 h-5" />
+            </Button>
             <Button type="button" variant="ghost" size="icon" className="lg:hidden h-9 w-9 sm:h-10 sm:w-10" onClick={() => setMobileMenuOpen((open) => !open)} aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'} aria-expanded={mobileMenuOpen}>{mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}</Button>
           </div>
         </div>
       </div>
+
+      {/* Mobile Quick Category Navigation Bar (visible in mobile view only, non-admin pages) */}
+      {!currentPage.startsWith('admin') && (
+        <div className="lg:hidden w-full border-t border-slate-100 bg-white">
+          <div className="flex items-center justify-between sm:justify-around px-1 py-1.5 overflow-x-auto no-scrollbar gap-0.5">
+            {mobileQuickCategories.map((cat) => {
+              const active = cat.isActive(currentPage);
+              const IconComponent = cat.icon;
+              return (
+                <button
+                  key={cat.label}
+                  type="button"
+                  onClick={() => onNavigate(cat.page)}
+                  className="flex-1 min-w-[54px] max-w-[76px] flex flex-col items-center justify-center py-1 px-0.5 rounded-lg transition-transform active:scale-95 cursor-pointer shrink-0"
+                  aria-label={cat.label}
+                >
+                  <div className="flex items-center justify-center h-5 w-5">
+                    <IconComponent
+                      className="w-4.5 h-4.5 transition-transform"
+                      style={{ color: cat.color }}
+                    />
+                  </div>
+                  <span
+                    className={`text-[10px] sm:text-[11px] mt-0.5 whitespace-nowrap leading-tight transition-colors ${
+                      active ? 'font-bold' : 'font-medium text-slate-600'
+                    }`}
+                    style={active ? { color: cat.color } : {}}
+                  >
+                    {cat.label}
+                  </span>
+                  <span
+                    className="h-[2px] rounded-full mt-0.5 transition-all duration-200"
+                    style={{
+                      width: active ? '24px' : '0px',
+                      backgroundColor: active ? cat.color : 'transparent',
+                    }}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {mobileMenuOpen && (
         <>
           <button className="medex-mobile-nav-overlay fixed inset-x-0 bottom-0 top-14 sm:top-16 bg-slate-950/35 z-[1001] lg:hidden" onClick={() => setMobileMenuOpen(false)} aria-label="Close navigation menu" />
           <div className="medex-mobile-nav absolute left-0 right-0 top-full z-[1002] lg:hidden bg-white border-t border-gray-100 shadow-xl max-h-[calc(100dvh-3.5rem)] sm:max-h-[calc(100dvh-4rem)] overflow-y-auto">
             <nav className="container mx-auto px-3 sm:px-4 py-3 grid grid-cols-1 gap-1">
-              {publicNavItems.map((item) => <button key={item.page} onClick={() => navigateAndClose(item.page)} className={`w-full text-left rounded-lg px-4 py-3 text-sm font-medium transition-colors ${currentPage === item.page ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50 hover:text-blue-700'}`}>{item.label}</button>)}
+              {publicNavItems.map((item) => (
+                <button
+                  key={item.page}
+                  onClick={() => navigateAndClose(item.page)}
+                  className={`w-full text-left rounded-lg px-4 py-3 text-sm font-medium transition-colors ${
+                    item.page === 'post-job'
+                      ? 'font-bold text-blue-700 bg-blue-50/80 border border-blue-200/60'
+                      : currentPage === item.page
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-blue-700'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
               <div className="border-t border-gray-100 mt-2 pt-3 flex flex-col gap-2 sm:hidden">
                 {isAuthenticated ? (
                   <>

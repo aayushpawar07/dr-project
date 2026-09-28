@@ -824,18 +824,18 @@ export function CandidateQualificationStepper({
         {/* STEP 6: TARGET JOB ROLES */}
         {currentStep === 6 && (
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <p className="cqs-section-hint mb-0">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2 mb-2.5">
+              <p className="cqs-section-hint mb-0 min-w-0 text-xs sm:text-sm">
                 Select target positions for AI matching ({preferredJobRoles.length} selected):
               </p>
-              <div className="flex items-center gap-2 text-xs">
+              <div className="flex items-center gap-2 text-xs shrink-0 self-end sm:self-auto whitespace-nowrap">
                 <button
                   type="button"
                   onClick={() => {
                     const allRoles = CATEGORY_JOB_ROLES[category] || CATEGORY_JOB_ROLES.Doctor;
                     setPreferredJobRoles(allRoles);
                   }}
-                  className="text-blue-600 font-bold hover:underline cursor-pointer"
+                  className="px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 font-bold hover:bg-blue-100 transition cursor-pointer shrink-0 whitespace-nowrap"
                 >
                   Select All
                 </button>
@@ -843,9 +843,9 @@ export function CandidateQualificationStepper({
                 <button
                   type="button"
                   onClick={() => setPreferredJobRoles([])}
-                  className="text-slate-500 font-medium hover:underline cursor-pointer"
+                  className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 font-semibold hover:bg-slate-200 transition cursor-pointer shrink-0 whitespace-nowrap"
                 >
-                  Clear
+                  Clear All
                 </button>
               </div>
             </div>

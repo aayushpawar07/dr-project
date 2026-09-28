@@ -7,6 +7,7 @@ import {
   useNavigate,
   useLocation,
   useParams,
+  Navigate,
 } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import {
@@ -115,6 +116,29 @@ function AppContent() {
       return;
     }
 
+    if (page === "post-job") {
+      if (!isAuthenticated || !user) {
+        navigate("/register?role=employer");
+        return;
+      }
+      if (user.role === "employer") {
+        navigate("/employer-post-job");
+        return;
+      }
+      if (user.role === "admin") {
+        navigate("/admin-post-job");
+        return;
+      }
+      toast.info("Please register or login with an Employer account to post jobs.");
+      navigate("/register?role=employer");
+      return;
+    }
+
+    if (page.includes("?")) {
+      navigate(`/${page}`);
+      return;
+    }
+
     const path = entityId ? `/${page}/${entityId}` : `/${page}`;
     navigate(path);
   };
@@ -168,6 +192,18 @@ function AppContent() {
           <Route path="/job-detail/:jobId" element={<SectorAwareJobDetailPage onNavigate={handleNavigate} />} />
           <Route path="/about" element={<AboutPage onNavigate={handleNavigate} />} />
           <Route path="/pricing" element={<PricingPage onNavigate={handleNavigate} />} />
+          <Route
+            path="/post-job"
+            element={
+              isAuthenticated && user?.role === "employer" ? (
+                <Navigate to="/employer-post-job" replace />
+              ) : isAuthenticated && user?.role === "admin" ? (
+                <Navigate to="/admin-post-job" replace />
+              ) : (
+                <Navigate to="/register?role=employer" replace />
+              )
+            }
+          />
           <Route path="/faq" element={<FAQPage onNavigate={handleNavigate} />} />
           <Route path="/privacy-policy" element={<PrivacyPolicyPage onNavigate={handleNavigate} />} />
           <Route path="/terms-conditions" element={<TermsConditionsPage onNavigate={handleNavigate} />} />

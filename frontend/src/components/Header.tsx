@@ -157,9 +157,7 @@ export function Header({ currentPage, onNavigate, isAuthenticated }: HeaderProps
                 key={item.page}
                 onClick={() => onNavigate(item.page)}
                 className={`text-[13px] lg:text-sm font-medium transition-colors whitespace-nowrap ${
-                  item.page === 'post-job'
-                    ? 'font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-600 hover:text-white border border-blue-200 shadow-2xs'
-                    : currentPage === item.page
+                  currentPage === item.page
                     ? 'text-blue-600 font-semibold'
                     : 'text-gray-700 hover:text-blue-600'
                 }`}
@@ -225,7 +223,7 @@ export function Header({ currentPage, onNavigate, isAuthenticated }: HeaderProps
       {/* Mobile Quick Category Navigation Bar (visible in mobile view only, non-admin pages) */}
       {!currentPage.startsWith('admin') && (
         <div className="lg:hidden w-full border-t border-slate-100 bg-white">
-          <div className="flex items-center justify-between sm:justify-around px-1 py-1.5 overflow-x-auto no-scrollbar gap-0.5">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 overflow-x-auto no-scrollbar scroll-smooth">
             {mobileQuickCategories.map((cat) => {
               const active = cat.isActive(currentPage);
               const IconComponent = cat.icon;
@@ -234,27 +232,28 @@ export function Header({ currentPage, onNavigate, isAuthenticated }: HeaderProps
                   key={cat.label}
                   type="button"
                   onClick={() => onNavigate(cat.page)}
-                  className="flex-1 min-w-[54px] max-w-[76px] flex flex-col items-center justify-center py-1 px-0.5 rounded-lg transition-transform active:scale-95 cursor-pointer shrink-0"
+                  className="flex flex-col items-center justify-center py-1 px-3 rounded-lg transition-transform active:scale-95 cursor-pointer shrink-0"
                   aria-label={cat.label}
                 >
-                  <div className="flex items-center justify-center h-5 w-5">
+                  <div className="flex items-center justify-center h-5 w-5 mb-0.5">
                     <IconComponent
                       className="w-4.5 h-4.5 transition-transform"
                       style={{ color: cat.color }}
                     />
                   </div>
                   <span
-                    className={`text-[10px] sm:text-[11px] mt-0.5 whitespace-nowrap leading-tight transition-colors ${
-                      active ? 'font-bold' : 'font-medium text-slate-600'
+                    className={`text-[11px] whitespace-nowrap leading-tight transition-colors ${
+                      active ? 'font-bold' : 'font-medium text-slate-700'
                     }`}
                     style={active ? { color: cat.color } : {}}
                   >
                     {cat.label}
                   </span>
                   <span
-                    className="h-[2px] rounded-full mt-0.5 transition-all duration-200"
+                    className="h-[2.5px] rounded-full mt-1 transition-all duration-200"
                     style={{
-                      width: active ? '24px' : '0px',
+                      width: active ? '100%' : '0px',
+                      maxWidth: '30px',
                       backgroundColor: active ? cat.color : 'transparent',
                     }}
                   />
@@ -275,10 +274,8 @@ export function Header({ currentPage, onNavigate, isAuthenticated }: HeaderProps
                   key={item.page}
                   onClick={() => navigateAndClose(item.page)}
                   className={`w-full text-left rounded-lg px-4 py-3 text-sm font-medium transition-colors ${
-                    item.page === 'post-job'
-                      ? 'font-bold text-blue-700 bg-blue-50/80 border border-blue-200/60'
-                      : currentPage === item.page
-                      ? 'bg-blue-50 text-blue-700'
+                    currentPage === item.page
+                      ? 'bg-blue-50 text-blue-700 font-semibold'
                       : 'text-gray-700 hover:bg-gray-50 hover:text-blue-700'
                   }`}
                 >

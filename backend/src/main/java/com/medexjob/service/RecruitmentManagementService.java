@@ -435,6 +435,19 @@ public class RecruitmentManagementService {
         job.setDescription(buildDescription(r, v));
         job.setSector(r.getSector());
         job.setCategory(mapJobCategory(v.getPostName()));
+
+        List<String> roles = new ArrayList<>();
+        String toScan = (Optional.ofNullable(v.getPostName()).orElse("") + " " + Optional.ofNullable(r.getTitle()).orElse("")).toLowerCase(Locale.ROOT);
+        if (toScan.contains("senior resident") || toScan.contains(" sr ") || toScan.startsWith("sr ") || toScan.endsWith(" sr")) roles.add("Senior Resident");
+        if (toScan.contains("junior resident") || toScan.contains(" jr ") || toScan.startsWith("jr ") || toScan.endsWith(" jr")) roles.add("Junior Resident");
+        if (toScan.contains("professor") && !roles.contains("Faculty")) roles.add("Faculty");
+        if (toScan.contains("medical officer") && !roles.contains("Medical Officer")) roles.add("Medical Officer");
+        if (toScan.contains("specialist") && !roles.contains("Specialist")) roles.add("Specialist");
+        if (toScan.contains("consultant") && !roles.contains("Consultant")) roles.add("Consultant");
+        if (!roles.isEmpty()) {
+            job.setJobRoles(clip(String.join(", ", roles), 1000));
+        }
+
         job.setLocation(clip(nonBlank(v.getLocation(), r.getLocation()), 200));
         job.setQualification(RecruitmentFieldSanitizer.cardValue(v.getQualification(), "As per official notification"));
         job.setExperience(RecruitmentFieldSanitizer.cardValue(v.getExperience(), "As per official notification"));
@@ -576,8 +589,8 @@ public class RecruitmentManagementService {
         if (p.contains("research") || p.contains("scientist") || p.contains("genetic") || p.contains("clinical trial")) return Job.JobCategory.LIFE_SCIENCE_RESEARCH;
         if (p.contains("superintendent") || p.contains("administrator") || p.contains("mha") || p.contains("operations") || p.contains("executive officer")) return Job.JobCategory.HOSPITAL_ADMINISTRATION;
         if (p.contains("public health") || p.contains("epidemiol") || p.contains("health officer") || p.contains("mph")) return Job.JobCategory.PUBLIC_HEALTH;
-        if (p.contains("junior resident") || p.contains(" jr ")) return Job.JobCategory.JUNIOR_RESIDENT;
         if (p.contains("senior resident") || p.contains(" sr ")) return Job.JobCategory.SENIOR_RESIDENT;
+        if (p.contains("junior resident") || p.contains(" jr ")) return Job.JobCategory.JUNIOR_RESIDENT;
         if (p.contains("professor") || p.contains("faculty") || p.contains("tutor") || p.contains("lecturer") || p.contains("principal")) return Job.JobCategory.FACULTY;
         if (p.contains("specialist") || p.contains("consultant") || p.contains("surgeon") || p.contains("physician")) return Job.JobCategory.SPECIALIST;
         return Job.JobCategory.MEDICAL_OFFICER;

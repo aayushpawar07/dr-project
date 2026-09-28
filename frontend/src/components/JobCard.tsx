@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { extractPositionsFromText, sortPositions } from '../utils/recruitmentBreakdown';
 import {
   ArrowUpRight,
   Briefcase,
@@ -64,6 +65,61 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
   const daysLeft = job.lastDate
     ? Math.ceil((new Date(job.lastDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
     : null;
+
+  const roleBadges = useMemo(() => {
+    const roles: string[] = [];
+    const seen = new Set<string>();
+
+    const addRole = (role?: string | null) => {
+      if (!role) return;
+      const clean = String(role).trim();
+      if (!clean || clean.toLowerCase() === 'all' || clean.toLowerCase() === 'multiple roles') return;
+      const key = clean.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        roles.push(clean);
+      }
+    };
+
+    // 1. From job.jobRoles
+    if (Array.isArray(job.jobRoles) && job.jobRoles.length > 0) {
+      job.jobRoles.forEach((r) => {
+        if (typeof r === 'string') {
+          r.split(/[/,]| and /i).forEach((part) => addRole(part));
+        }
+      });
+    } else if (typeof (job as any).jobRoles === 'string' && (job as any).jobRoles.trim()) {
+      (job as any).jobRoles.split(/[/,]| and /i).forEach((part: string) => addRole(part));
+    }
+
+    // 2. From view.postNames
+    if (Array.isArray(view.postNames) && view.postNames.length > 0) {
+      view.postNames.forEach((p: string) => {
+        if (typeof p === 'string') {
+          p.split(/[/,]| and /i).forEach((part) => {
+            const trimmed = part.trim();
+            if (trimmed.length >= 3 && !/recruitment|multiple|departments/i.test(trimmed)) {
+              addRole(trimmed);
+            }
+          });
+        }
+      });
+    }
+
+    // 3. From job.category
+    if (job.category) {
+      job.category.split(/[/,]| and /i).forEach((part) => addRole(part));
+    }
+
+    // 4. From displayTitle or job.title
+    const titleToScan = view.displayTitle || job.title || '';
+    if (titleToScan) {
+      const detected = extractPositionsFromText(titleToScan);
+      detected.forEach((d) => addRole(d));
+    }
+
+    return sortPositions(roles);
+  }, [job, view]);
 
   const openDetails = () => {
     if (grouped && sourceRecruitmentId) {
@@ -136,11 +192,21 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
                 {isGovernment ? 'Government' : 'Private'}
               </span>
 
-              {job.category && (
+              {roleBadges.length > 0 ? (
+                roleBadges.map((role) => (
+                  <Badge
+                    key={role}
+                    variant="outline"
+                    className="px-3 py-1 text-xs font-medium text-gray-600 border-gray-300 bg-white"
+                  >
+                    {role}
+                  </Badge>
+                ))
+              ) : job.category ? (
                 <Badge variant="outline" className="px-3 py-1 text-xs font-medium text-gray-600 border-gray-300 bg-white">
                   {job.category}
                 </Badge>
-              )}
+              ) : null}
 
               {view.featured && (
                 <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200 px-3 py-1 text-xs font-medium" variant="outline">

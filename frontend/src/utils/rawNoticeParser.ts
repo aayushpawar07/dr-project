@@ -1,4 +1,5 @@
 import { JobCategory } from '../types';
+import { standardizePositionName } from './recruitmentBreakdown';
 
 export const INDIAN_STATES = [
   'Andaman and Nicobar Islands',
@@ -362,15 +363,28 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
         const deptCol = rawHeaders.findIndex((h) => /dept|department|speciality|specialty|specialization|discipline|subject|branch|post\s*name|name\s*of\s*post/i.test(h));
         const totalCol = rawHeaders.findIndex((h) => /total|posts?|vacanc/i.test(h));
         let dColIdx = deptCol >= 0 ? deptCol : 0;
+        const posCols = rawHeaders
+          .map((h, i) => ({ name: h, idx: i }))
+          .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && /senior\s*resident|junior\s*resident|\bsr\b|\bjr\b|professor|faculty|tutor|demonstrator|medical\s*officer|specialist|consultant/i.test(c.name));
         const catCols = rawHeaders
           .map((h, i) => ({ name: h, idx: i }))
-          .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && /UR|ST|SC|OBC|EWS|GEN|PWD|PWBD|PH|SEBC|MBC|Unreserved|General|Open/i.test(c.name));
+          .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && !posCols.some((p) => p.idx === c.idx) && /UR|ST|SC|OBC|EWS|GEN|PWD|PWBD|PH|SEBC|MBC|Unreserved|General|Open/i.test(c.name));
 
         for (let r = 1; r < htmlTableRows.length; r++) {
           const cells = htmlTableRows[r];
           const dName = cells[dColIdx];
           if (!dName || /^(total|grand\s*total|sum|s\.?\s*no|#)$/i.test(dName.trim())) continue;
           let count = totalCol >= 0 ? parseInt(cells[totalCol], 10) || 0 : 0;
+          const posParts: string[] = [];
+          let posSum = 0;
+          for (const pos of posCols) {
+            const val = cells[pos.idx];
+            const num = parseInt(val, 10);
+            if (!isNaN(num) && num >= 0) {
+              posParts.push(`${standardizePositionName(pos.name)}: ${num}`);
+              posSum += num;
+            }
+          }
           const catParts: string[] = [];
           let catSum = 0;
           for (const cat of catCols) {
@@ -381,13 +395,14 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
               catSum += num;
             }
           }
-          if (count === 0 && catSum > 0) count = catSum;
+          if (count === 0 && posSum > 0) count = posSum;
+          else if (count === 0 && catSum > 0) count = catSum;
           if (count === 0) count = 1;
 
           depts.push({
             department: dName,
             numberOfVacancies: count,
-            category: catParts.join(', '),
+            category: [...posParts, ...catParts].join(', '),
             postName: result.title,
           });
         }
@@ -410,9 +425,12 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
         dColIdx = rawHeaders.findIndex((h) => !/s\.?\s*no|sr\.?\s*no|sl\.?\s*no|serial|index|#|total|vacanc|posts?|ur|sc|st|obc|ews|gen/i.test(h));
         if (dColIdx < 0) dColIdx = 0;
       }
+      const posCols = rawHeaders
+        .map((h, i) => ({ name: h, idx: i }))
+        .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && /senior\s*resident|junior\s*resident|\bsr\b|\bjr\b|professor|faculty|tutor|demonstrator|medical\s*officer|specialist|consultant/i.test(c.name));
       const catCols = rawHeaders
         .map((h, i) => ({ name: h, idx: i }))
-        .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && /UR|ST|SC|OBC|EWS|GEN|PWD|PWBD|PH|SEBC|MBC|Unreserved|General|Open/i.test(c.name));
+        .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && !posCols.some((p) => p.idx === c.idx) && /UR|ST|SC|OBC|EWS|GEN|PWD|PWBD|PH|SEBC|MBC|Unreserved|General|Open/i.test(c.name));
 
       for (let r = 1; r < tableLines.length; r++) {
         const row = tableLines[r];
@@ -422,6 +440,16 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
         const dName = cells[dColIdx];
         if (!dName || /^(total|grand\s*total|sum|s\.?\s*no|#)$/i.test(dName.trim())) continue;
         let count = totalCol >= 0 ? parseInt(cells[totalCol], 10) || 0 : 0;
+        const posParts: string[] = [];
+        let posSum = 0;
+        for (const pos of posCols) {
+          const val = cells[pos.idx];
+          const num = parseInt(val, 10);
+          if (!isNaN(num) && num >= 0) {
+            posParts.push(`${standardizePositionName(pos.name)}: ${num}`);
+            posSum += num;
+          }
+        }
         const catParts: string[] = [];
         let catSum = 0;
         for (const cat of catCols) {
@@ -432,13 +460,73 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
             catSum += num;
           }
         }
-        if (count === 0 && catSum > 0) count = catSum;
+        if (count === 0 && posSum > 0) count = posSum;
+        else if (count === 0 && catSum > 0) count = catSum;
         if (count === 0) count = 1;
 
         depts.push({
           department: dName,
           numberOfVacancies: count,
-          category: catParts.join(', '),
+          category: [...posParts, ...catParts].join(', '),
+          postName: result.title,
+        });
+      }
+    }
+  }
+
+  // Check Tab-delimited or Multi-space delimited table
+  if (depts.length === 0) {
+    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const tableLines = lines.filter((l) => l.split('\t').length >= 3 || l.split(/\s{2,}/).length >= 3);
+    if (tableLines.length >= 2) {
+      const isTab = tableLines[0].split('\t').length >= 3;
+      const splitFn = (l: string) => isTab ? l.split('\t').map((c) => c.trim()) : l.split(/\s{2,}/).map((c) => c.trim());
+      const rawHeaders = splitFn(tableLines[0]);
+      const deptCol = rawHeaders.findIndex((h) => /dept|department|speciality|specialty|discipline|subject|name\s*of/i.test(h));
+      const totalCol = rawHeaders.findIndex((h) => /total|posts?|vacanc/i.test(h));
+      let dColIdx = deptCol >= 0 ? deptCol : 0;
+      const posCols = rawHeaders
+        .map((h, i) => ({ name: h, idx: i }))
+        .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && /senior\s*resident|junior\s*resident|\bsr\b|\bjr\b|professor|faculty|tutor|demonstrator|medical\s*officer|specialist|consultant/i.test(c.name));
+      const catCols = rawHeaders
+        .map((h, i) => ({ name: h, idx: i }))
+        .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && !posCols.some((p) => p.idx === c.idx) && /UR|ST|SC|OBC|EWS|GEN|PWD|PWBD|PH|SEBC|MBC|Unreserved|General|Open/i.test(c.name));
+
+      for (let r = 1; r < tableLines.length; r++) {
+        const row = tableLines[r];
+        if (/^[|:\-\s]+$/.test(row)) continue;
+        const cells = splitFn(row);
+        const dName = cells[dColIdx];
+        if (!dName || /^(total|grand\s*total|sum|s\.?\s*no|#)$/i.test(dName.trim())) continue;
+        let count = totalCol >= 0 ? parseInt(cells[totalCol], 10) || 0 : 0;
+        const posParts: string[] = [];
+        let posSum = 0;
+        for (const pos of posCols) {
+          const val = cells[pos.idx];
+          const num = parseInt(val, 10);
+          if (!isNaN(num) && num >= 0) {
+            posParts.push(`${standardizePositionName(pos.name)}: ${num}`);
+            posSum += num;
+          }
+        }
+        const catParts: string[] = [];
+        let catSum = 0;
+        for (const cat of catCols) {
+          const val = cells[cat.idx];
+          const num = parseInt(val, 10);
+          if (!isNaN(num) && num > 0) {
+            catParts.push(`${cat.name}: ${num}`);
+            catSum += num;
+          }
+        }
+        if (count === 0 && posSum > 0) count = posSum;
+        else if (count === 0 && catSum > 0) count = catSum;
+        if (count === 0) count = 1;
+
+        depts.push({
+          department: dName,
+          numberOfVacancies: count,
+          category: [...posParts, ...catParts].join(', '),
           postName: result.title,
         });
       }

@@ -116,6 +116,31 @@ export function groupRecruitmentJobs(jobs: any[], query?: string) {
       ...qualifications, ...salaries, ...experiences, ...items.map((item) => item.description),
     ]).join(' ');
 
+    const allRoles = unique(
+      items.flatMap((item) => {
+        const rList: string[] = [];
+        if (Array.isArray(item.jobRoles)) {
+          item.jobRoles.forEach((r: any) => {
+            if (typeof r === 'string') {
+              r.split(/[/,]| and /i).forEach((p) => {
+                if (p.trim()) rList.push(p.trim());
+              });
+            }
+          });
+        } else if (typeof item.jobRoles === 'string') {
+          item.jobRoles.split(/[/,]| and /i).forEach((p: string) => {
+            if (p.trim()) rList.push(p.trim());
+          });
+        }
+        if (item.category && item.category !== 'Multiple Roles') {
+          item.category.split(/[/,]| and /i).forEach((p: string) => {
+            if (p.trim()) rList.push(p.trim());
+          });
+        }
+        return rList;
+      })
+    );
+
     return {
       ...first,
       displayTitle,
@@ -124,6 +149,7 @@ export function groupRecruitmentJobs(jobs: any[], query?: string) {
       recruitmentGrouped: true,
       groupedVacancyRows: items.length,
       postNames,
+      jobRoles: allRoles.length > 0 ? allRoles : (first.jobRoles || (first.category ? [first.category] : undefined)),
       departments,
       specialities,
       departmentCount: departments.length,

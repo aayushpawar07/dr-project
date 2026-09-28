@@ -2312,7 +2312,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                               className="block text-[15px] font-black"
                               style={{ color: '#0f172a' }}
                             >
-                              {cp.qualification || 'MBBS MS'}
+                              {cp.highestQualification || cp.qualification || 'Not Specified'}
                             </span>
                           </div>
                           <div
@@ -2326,7 +2326,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                               className="block text-[15px] font-black"
                               style={{ color: '#0f172a' }}
                             >
-                              {cp.medicalCategory || 'General Medicine'}
+                              {cp.professionalCategory || cp.medicalCategory || 'Doctor'}
                             </span>
                           </div>
                         </div>
@@ -2369,7 +2369,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                             }}
                           >
                             <Briefcase className="w-3.5 h-3.5" style={{ color: '#15803d' }} />
-                            {cp.yearsExperience != null ? `${cp.yearsExperience} Yrs Exp` : '2 Yrs Exp'}
+                            {cp.yearsExperience != null ? `${cp.yearsExperience} Yrs Exp` : 'Fresher'}
                           </span>
                         </div>
 
@@ -2382,7 +2382,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                               className="block text-[15px] font-black"
                               style={{ color: '#0f172a' }}
                             >
-                              {cp.speciality || cp.specialization || 'General Surgery'}
+                              {cp.speciality || cp.specialization || (cp.qualification === 'MBBS' || cp.highestQualification === 'MBBS Only' ? 'General Practice (MBBS)' : 'None')}
                             </span>
                           </div>
                           <div
@@ -2396,7 +2396,7 @@ export function AdminUsersPage({ onNavigate }: AdminUsersPageProps) {
                               className="block text-[15px] font-black"
                               style={{ color: '#0f172a' }}
                             >
-                              {cp.subSpeciality || 'Gastro surgeon'}
+                              {cp.subSpeciality || 'None'}
                             </span>
                           </div>
                         </div>

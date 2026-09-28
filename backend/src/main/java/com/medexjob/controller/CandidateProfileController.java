@@ -373,7 +373,11 @@ public class CandidateProfileController {
         if (auth == null || !auth.isAuthenticated()) return Optional.empty();
         return userRepository.findByEmail(auth.getName());
     }
-    private String string(Object value) { return value == null ? null : String.valueOf(value).trim(); }
+    private String string(Object value) {
+        if (value == null) return null;
+        String s = String.valueOf(value).trim();
+        return s.isEmpty() ? null : s;
+    }
     private Integer integer(Object value) {
         if (value == null || String.valueOf(value).isBlank()) return null;
         try { return Integer.parseInt(String.valueOf(value)); } catch (NumberFormatException ignored) { return null; }

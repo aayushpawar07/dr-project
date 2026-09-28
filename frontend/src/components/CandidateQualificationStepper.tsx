@@ -119,14 +119,20 @@ export function CandidateQualificationStepper({
   const [highestQualification, setHighestQualification] = useState<string>(
     initialProfile.highestQualification || initialProfile.qualification || ''
   );
+  const isInitialUgOnly =
+    (initialProfile.highestQualification || initialProfile.qualification) === 'MBBS Only' ||
+    (initialProfile.highestQualification || initialProfile.qualification) === 'BDS Only' ||
+    (initialProfile.highestQualification || initialProfile.qualification) === 'No Higher Qualification' ||
+    (initialProfile.highestQualification || initialProfile.qualification) === 'None / Basic Only';
+
   const [speciality, setSpeciality] = useState<string>(
-    initialProfile.speciality || ''
+    isInitialUgOnly ? '' : (initialProfile.speciality || '')
   );
   const [superSpeciality, setSuperSpeciality] = useState<string>(
-    initialProfile.superSpeciality || initialProfile.subSpeciality || ''
+    isInitialUgOnly ? '' : (initialProfile.superSpeciality || initialProfile.subSpeciality || '')
   );
   const [fellowship, setFellowship] = useState<string>(
-    initialProfile.fellowship || ''
+    isInitialUgOnly ? '' : (initialProfile.fellowship || '')
   );
 
   // Experience
@@ -394,10 +400,10 @@ export function CandidateQualificationStepper({
         basicQualification: basicQualification,
         highestQualification: highestQualification || basicQualification,
         qualification: highestQualification || basicQualification,
-        speciality: speciality || undefined,
-        subSpeciality: superSpeciality || fellowship || undefined,
-        superSpeciality: superSpeciality || undefined,
-        fellowship: fellowship || undefined,
+        speciality: needsSpecialityStep ? (speciality || '') : '',
+        subSpeciality: needsSpecialityStep ? (superSpeciality || fellowship || '') : '',
+        superSpeciality: needsSpecialityStep ? (superSpeciality || '') : '',
+        fellowship: needsSpecialityStep ? (fellowship || '') : '',
         experienceBand: experienceBand,
         experienceMonths: experienceMonths,
         yearsExperience: experienceYears,
@@ -523,7 +529,7 @@ export function CandidateQualificationStepper({
               </button>
             </>
           )}
-          {currentStep > 3 && speciality && (
+          {currentStep > 3 && needsSpecialityStep && speciality && (
             <>
               <ChevronRight className="w-3 h-3 text-slate-300" />
               <button
@@ -597,7 +603,15 @@ export function CandidateQualificationStepper({
                 return (
                   <div
                     key={qual}
-                    onClick={() => setBasicQualification(qual)}
+                    onClick={() => {
+                      setBasicQualification(qual);
+                      if (basicQualification !== qual) {
+                        setHighestQualification('');
+                        setSpeciality('');
+                        setSuperSpeciality('');
+                        setFellowship('');
+                      }
+                    }}
                     className={`cqs-qual-card ${isSelected ? 'is-selected' : ''}`}
                   >
                     <div className="cqs-qual-info">
@@ -641,6 +655,8 @@ export function CandidateQualificationStepper({
                     onClick={() => {
                       setHighestQualification(hQual);
                       setSpeciality('');
+                      setSuperSpeciality('');
+                      setFellowship('');
                     }}
                     className={`cqs-qual-card ${isSelected ? 'is-selected' : ''}`}
                   >

@@ -330,11 +330,16 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
                     🎓 {candidate.qualification}
                   </span>
                 )}
-                {isCandidate && candidate.speciality && (
-                  <span className="text-xs bg-teal-50 text-teal-700 font-semibold px-2 py-0.5 rounded-md inline-flex items-center gap-1">
-                    🩺 {candidate.speciality}
-                  </span>
-                )}
+                {isCandidate &&
+                  candidate.speciality &&
+                  candidate.highestQualification !== 'MBBS Only' &&
+                  candidate.highestQualification !== 'BDS Only' &&
+                  candidate.highestQualification !== 'No Higher Qualification' &&
+                  candidate.highestQualification !== 'None / Basic Only' && (
+                    <span className="text-xs bg-teal-50 text-teal-700 font-semibold px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                      🩺 {candidate.speciality}
+                    </span>
+                  )}
               </div>
             </div>
           </div>
@@ -444,7 +449,11 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
                               </span>
                             </>
                           )}
-                          {candidate.speciality && (
+                          {candidate.speciality &&
+                            candidate.highestQualification !== 'MBBS Only' &&
+                            candidate.highestQualification !== 'BDS Only' &&
+                            candidate.highestQualification !== 'No Higher Qualification' &&
+                            candidate.highestQualification !== 'None / Basic Only' && (
                             <>
                               <span className="text-slate-400 font-bold">→</span>
                               <span className="path-pill path-pill--speciality">
@@ -555,7 +564,9 @@ export function ProfilePage({ onNavigate }: ProfilePageProps) {
                         <div className="profile-detail-row">
                           <span className="profile-detail-label">Clinical Speciality</span>
                           <span className="profile-detail-val text-blue-700 font-bold">
-                            {candidate.speciality || 'General Practice'}
+                            {candidate.highestQualification === 'MBBS Only' || candidate.qualification === 'MBBS Only'
+                              ? 'General Practice (Primary Care)'
+                              : candidate.speciality || 'General Practice'}
                           </span>
                         </div>
                         {candidate.subSpeciality && (

@@ -50,20 +50,7 @@ const mobileQuickCategories = [
   {
     label: 'All Jobs',
     page: 'jobs',
-    isActive: (page: string) =>
-      page === 'jobs' &&
-      !window.location.search.includes('paramedical') &&
-      !window.location.search.includes('nursing'),
-  },
-  {
-    label: 'Paramedical',
-    page: 'jobs?category=paramedical',
-    isActive: (page: string) => page === 'jobs' && window.location.search.includes('paramedical'),
-  },
-  {
-    label: 'Nursing',
-    page: 'jobs?category=nursing',
-    isActive: (page: string) => page === 'jobs' && window.location.search.includes('nursing'),
+    isActive: (page: string) => page === 'jobs',
   },
 ];
 

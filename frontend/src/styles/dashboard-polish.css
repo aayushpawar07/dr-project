@@ -409,15 +409,15 @@
 .candidate-sidebar__scroll {
   flex: 1;
   overflow-y: auto;
-  padding: 14px 12px 18px;
+  padding: 12px 12px 28px;
 }
 
 .candidate-sidebar__group + .candidate-sidebar__group {
-  margin-top: 16px;
+  margin-top: 12px;
 }
 
 .candidate-sidebar__group > p {
-  margin: 0 8px 7px;
+  margin: 0 8px 6px;
   color: #98a3b1;
   font-size: 10px;
   font-weight: 800;
@@ -427,21 +427,21 @@
 
 .candidate-sidebar__group nav {
   display: grid;
-  gap: 4px;
+  gap: 3px;
 }
 
 .candidate-sidebar__group nav button {
-  min-height: 42px;
+  min-height: 38px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
   width: 100%;
   border: 0;
-  border-radius: 10px;
+  border-radius: 9px;
   background: transparent;
   color: #637286;
-  padding: 10px 12px;
+  padding: 8px 12px;
   cursor: pointer;
   transition: 160ms ease;
 }
@@ -488,6 +488,7 @@
   gap: 10px;
   padding: 14px;
   border-top: 1px solid var(--candidate-border);
+  flex-shrink: 0;
 }
 
 .candidate-sidebar__user > div:nth-child(2) {

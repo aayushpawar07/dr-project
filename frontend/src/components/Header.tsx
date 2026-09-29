@@ -7,12 +7,6 @@ import {
   Menu,
   X,
   ArrowLeft,
-  Home,
-  Landmark,
-  Briefcase,
-  Microscope,
-  HeartPulse,
-  Compass,
   Search,
 } from 'lucide-react';
 import { Button } from './ui/button';
@@ -41,29 +35,21 @@ const mobileQuickCategories = [
   {
     label: 'Home',
     page: 'home',
-    icon: Home,
-    color: '#2563eb', // blue
     isActive: (page: string) => page === 'home' || page === '',
   },
   {
     label: 'Govt. Jobs',
     page: 'govt-jobs',
-    icon: Landmark,
-    color: '#dc2626', // red
     isActive: (page: string) => page === 'govt-jobs',
   },
   {
     label: 'Private Jobs',
     page: 'private-jobs',
-    icon: Briefcase,
-    color: '#ea580c', // orange
     isActive: (page: string) => page === 'private-jobs',
   },
   {
     label: 'All Jobs',
     page: 'jobs',
-    icon: Compass,
-    color: '#0284c7', // sky
     isActive: (page: string) =>
       page === 'jobs' &&
       !window.location.search.includes('paramedical') &&
@@ -72,15 +58,11 @@ const mobileQuickCategories = [
   {
     label: 'Paramedical',
     page: 'jobs?category=paramedical',
-    icon: Microscope,
-    color: '#16a34a', // green
     isActive: (page: string) => page === 'jobs' && window.location.search.includes('paramedical'),
   },
   {
     label: 'Nursing',
     page: 'jobs?category=nursing',
-    icon: HeartPulse,
-    color: '#9333ea', // purple
     isActive: (page: string) => page === 'jobs' && window.location.search.includes('nursing'),
   },
 ];
@@ -151,7 +133,7 @@ export function Header({ currentPage, onNavigate, isAuthenticated }: HeaderProps
             </h1>
           </div>
 
-          <nav className="hidden lg:flex items-center gap-3 lg:gap-5 xl:gap-6 min-w-0">
+          <nav className="hidden md:flex items-center gap-2 md:gap-3 lg:gap-5 xl:gap-6 min-w-0">
             {publicNavItems.map((item) => (
               <button
                 key={item.page}
@@ -172,10 +154,10 @@ export function Header({ currentPage, onNavigate, isAuthenticated }: HeaderProps
               <>
                 {user?.role === 'admin' && (
                   <>
-                    <Button variant="ghost" size="icon" className="hidden lg:inline-flex h-9 w-9 sm:h-10 sm:w-10 text-blue-600 hover:bg-blue-50" onClick={() => onNavigate('admin-employer-insights')} title="Employer Insights" aria-label="Employer Insights">
+                    <Button variant="ghost" size="icon" className="hidden md:inline-flex h-9 w-9 sm:h-10 sm:w-10 text-blue-600 hover:bg-blue-50" onClick={() => onNavigate('admin-employer-insights')} title="Employer Insights" aria-label="Employer Insights">
                       <Building2 className="w-5 h-5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="hidden lg:inline-flex h-9 w-9 sm:h-10 sm:w-10 text-violet-600 hover:bg-violet-50" onClick={() => onNavigate('admin-candidate-insights')} title="Candidate Insights" aria-label="Candidate Insights">
+                    <Button variant="ghost" size="icon" className="hidden md:inline-flex h-9 w-9 sm:h-10 sm:w-10 text-violet-600 hover:bg-violet-50" onClick={() => onNavigate('admin-candidate-insights')} title="Candidate Insights" aria-label="Candidate Insights">
                       <BarChart3 className="w-5 h-5" />
                     </Button>
                   </>
@@ -194,10 +176,10 @@ export function Header({ currentPage, onNavigate, isAuthenticated }: HeaderProps
                     title="Exit view and return to admin"
                   >
                     <LogOut className="w-4 h-4 text-amber-700" />
-                    <span className="hidden lg:inline">Exit User View</span>
+                    <span className="hidden md:inline">Exit User View</span>
                   </Button>
                 ) : (
-                  <Button variant="outline" size="sm" onClick={handleLogout} className="hidden sm:inline-flex text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 h-9 px-3 gap-1.5" title="Logout"><LogOut className="w-4 h-4" /><span className="hidden lg:inline">Logout</span></Button>
+                  <Button variant="outline" size="sm" onClick={handleLogout} className="hidden sm:inline-flex text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 h-9 px-3 gap-1.5" title="Logout"><LogOut className="w-4 h-4" /><span className="hidden md:inline">Logout</span></Button>
                 )}
               </>
             ) : (
@@ -208,55 +190,37 @@ export function Header({ currentPage, onNavigate, isAuthenticated }: HeaderProps
               type="button"
               variant="ghost"
               size="icon"
-              className="lg:hidden h-9 w-9 sm:h-10 sm:w-10 text-slate-700 hover:text-blue-600"
+              className="md:hidden h-9 w-9 sm:h-10 sm:w-10 text-slate-700 hover:text-blue-600"
               onClick={() => onNavigate('jobs')}
               title="Search Jobs"
               aria-label="Search Jobs"
             >
               <Search className="w-5 h-5" />
             </Button>
-            <Button type="button" variant="ghost" size="icon" className="lg:hidden h-9 w-9 sm:h-10 sm:w-10" onClick={() => setMobileMenuOpen((open) => !open)} aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'} aria-expanded={mobileMenuOpen}>{mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}</Button>
+            <Button type="button" variant="ghost" size="icon" className="md:hidden h-9 w-9 sm:h-10 sm:w-10" onClick={() => setMobileMenuOpen((open) => !open)} aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'} aria-expanded={mobileMenuOpen}>{mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}</Button>
           </div>
         </div>
       </div>
 
       {/* Mobile Quick Category Navigation Bar (visible in mobile view only, non-admin pages) */}
       {!currentPage.startsWith('admin') && (
-        <div className="lg:hidden w-full border-t border-slate-100 bg-white">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 overflow-x-auto no-scrollbar scroll-smooth">
+        <div className="md:hidden w-full border-t border-slate-100 bg-white">
+          <div className="flex items-center gap-2 px-3 py-2 overflow-x-auto no-scrollbar scroll-smooth">
             {mobileQuickCategories.map((cat) => {
               const active = cat.isActive(currentPage);
-              const IconComponent = cat.icon;
               return (
                 <button
                   key={cat.label}
                   type="button"
                   onClick={() => onNavigate(cat.page)}
-                  className="flex flex-col items-center justify-center py-1 px-3 rounded-lg transition-transform active:scale-95 cursor-pointer shrink-0"
+                  className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap transition-all shrink-0 cursor-pointer font-medium ${
+                    active
+                      ? 'bg-blue-600 text-white font-semibold shadow-xs'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
                   aria-label={cat.label}
                 >
-                  <div className="flex items-center justify-center h-5 w-5 mb-0.5">
-                    <IconComponent
-                      className="w-4.5 h-4.5 transition-transform"
-                      style={{ color: cat.color }}
-                    />
-                  </div>
-                  <span
-                    className={`text-[11px] whitespace-nowrap leading-tight transition-colors ${
-                      active ? 'font-bold' : 'font-medium text-slate-700'
-                    }`}
-                    style={active ? { color: cat.color } : {}}
-                  >
-                    {cat.label}
-                  </span>
-                  <span
-                    className="h-[2.5px] rounded-full mt-1 transition-all duration-200"
-                    style={{
-                      width: active ? '100%' : '0px',
-                      maxWidth: '30px',
-                      backgroundColor: active ? cat.color : 'transparent',
-                    }}
-                  />
+                  {cat.label}
                 </button>
               );
             })}
@@ -266,8 +230,8 @@ export function Header({ currentPage, onNavigate, isAuthenticated }: HeaderProps
 
       {mobileMenuOpen && (
         <>
-          <button className="medex-mobile-nav-overlay fixed inset-x-0 bottom-0 top-14 sm:top-16 bg-slate-950/35 z-[1001] lg:hidden" onClick={() => setMobileMenuOpen(false)} aria-label="Close navigation menu" />
-          <div className="medex-mobile-nav absolute left-0 right-0 top-full z-[1002] lg:hidden bg-white border-t border-gray-100 shadow-xl max-h-[calc(100dvh-3.5rem)] sm:max-h-[calc(100dvh-4rem)] overflow-y-auto">
+          <button className="medex-mobile-nav-overlay fixed inset-x-0 bottom-0 top-14 sm:top-16 bg-slate-950/35 z-[1001] md:hidden" onClick={() => setMobileMenuOpen(false)} aria-label="Close navigation menu" />
+          <div className="medex-mobile-nav absolute left-0 right-0 top-full z-[1002] md:hidden bg-white border-t border-gray-100 shadow-xl max-h-[calc(100dvh-3.5rem)] sm:max-h-[calc(100dvh-4rem)] overflow-y-auto">
             <nav className="container mx-auto px-3 sm:px-4 py-3 grid grid-cols-1 gap-1">
               {publicNavItems.map((item) => (
                 <button

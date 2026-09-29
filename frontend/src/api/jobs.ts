@@ -109,6 +109,7 @@ export async function fetchJobsMeta(sector?: 'government' | 'private') {
     return {
       categories: Array.isArray(data?.categories) ? data.categories : [],
       locations: Array.isArray(data?.locations) ? data.locations : [],
+      locationCounts: (data?.locationCounts && typeof data.locationCounts === 'object') ? data.locationCounts : {},
       specialities: Array.isArray(data?.specialities) ? data.specialities : [],
       departments: Array.isArray(data?.departments) ? data.departments : [],
       jobTypes: Array.isArray(data?.jobTypes) ? data.jobTypes : [],
@@ -117,7 +118,7 @@ export async function fetchJobsMeta(sector?: 'government' | 'private') {
       cities: Array.isArray(data?.cities) ? data.cities : [],
     };
   } catch {
-    return { categories: [], locations: [], specialities: [], departments: [], jobTypes: [], qualifications: [], states: [], cities: [] };
+    return { categories: [], locations: [], locationCounts: {}, specialities: [], departments: [], jobTypes: [], qualifications: [], states: [], cities: [] };
   }
 }
 

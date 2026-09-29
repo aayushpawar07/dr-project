@@ -205,7 +205,7 @@
     0 0 0 1px rgba(0, 0, 0, 0.05);
   padding: 8px 0;
   z-index: 9999;
-  max-height: 340px;
+  max-height: 280px;
   overflow-y: auto;
   list-style: none;
   margin: 0;
@@ -280,6 +280,116 @@
   font-weight: 600;
 }
 
+/* State and City Location Dropdown Details */
+.search-bar__loc-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-bar__loc-icon--state {
+  color: #2563eb;
+}
+
+.search-bar__loc-icon--city {
+  color: #64748b;
+}
+
+.search-bar__loc-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.search-bar__loc-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.search-bar__loc-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.search-bar__loc-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.search-bar__loc-tag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.search-bar__loc-tag--state {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+
+.search-bar__loc-tag--city {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.search-bar__loc-bullet {
+  color: #94a3b8;
+}
+
+.search-bar__loc-count {
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.search-bar__dropdown-item--state {
+  background-color: #fafcff !important;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.search-bar__dropdown-item--state:hover,
+.search-bar__dropdown-item--state.search-bar__dropdown-item--active {
+  background-color: #eff6ff !important;
+}
+
+.search-bar__dropdown-more {
+  padding: 8px 16px;
+  border-top: 1px solid #f1f5f9;
+  background: #f8fafc;
+  text-align: center;
+  list-style: none;
+}
+
+.search-bar__more-btn {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2563eb;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.search-bar__more-btn:hover {
+  text-decoration: underline;
+  background: #eff6ff;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .search-bar {
@@ -330,36 +440,38 @@
 
   .search-bar__button {
     width: 100%;
-    margin-top: 12px;
+    margin-top: 10px;
     border-radius: 16px;
-    padding: 16px 24px;
+    padding: 14px 24px;
     position: relative;
     z-index: 1;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .search-bar--compact .search-bar__button span {
     display: inline;
   }
 
-  .search-bar.is-job-dropdown-open .search-bar__divider,
-  .search-bar.is-job-dropdown-open .search-bar__field--location,
-  .search-bar__container--job-open .search-bar__divider,
-  .search-bar__container--job-open .search-bar__field--location {
-    display: none !important;
-  }
-
+  /* Render dropdowns statically on mobile so they push the search button down instead of obscuring it */
   .search-bar__dropdown {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: calc(100% + 4px);
-    border-radius: 16px;
-    z-index: 99999 !important;
+    position: static !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    margin-top: 6px !important;
+    margin-bottom: 6px !important;
+    border-radius: 14px !important;
+    z-index: 100 !important;
     background: #ffffff !important;
     background-color: #ffffff !important;
-    opacity: 1 !important;
-    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.22);
-    isolation: isolate;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+    border: 1px solid #e2e8f0 !important;
+    max-height: 220px !important;
+    overflow-y: auto !important;
   }
 }
 

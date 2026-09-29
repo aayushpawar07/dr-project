@@ -25,6 +25,23 @@ function replaceActiveRole(value: string, suggestion: string) {
   return parts.map((part) => part.trim()).filter(Boolean).join(', ');
 }
 
+export interface StructuredLocationSuggestion {
+  type: 'state' | 'city';
+  value: string;
+  name: string;
+  count: number;
+}
+
+const INDIAN_STATES = [
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chandigarh',
+  'Chhattisgarh', 'Delhi', 'Goa', 'Gujarat', 'Haryana',
+  'Himachal Pradesh', 'Jammu & Kashmir', 'Jharkhand', 'Karnataka', 'Kerala',
+  'Ladakh', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya',
+  'Mizoram', 'Nagaland', 'Odisha', 'Puducherry', 'Punjab', 'Rajasthan',
+  'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh',
+  'Uttarakhand', 'West Bengal'
+];
+
 const SearchBar: React.FC<SearchBarProps> = ({
   initialQuery = '',
   initialLocation = '',
@@ -38,8 +55,11 @@ const SearchBar: React.FC<SearchBarProps> = ({
   const [jobQuery, setJobQuery] = useState(initialQuery || searchParams.get('search') || '');
   const [locationQuery, setLocationQuery] = useState(initialLocation || searchParams.get('location') || '');
   const [jobSuggestions, setJobSuggestions] = useState<string[]>([]);
-  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
+  const [locationSuggestions, setLocationSuggestions] = useState<StructuredLocationSuggestion[]>([]);
   const [locations, setLocations] = useState<string[]>([]);
+  const [locationCounts, setLocationCounts] = useState<Record<string, number>>({});
+  const [showAllCities, setShowAllCities] = useState(false);
+  const [matchedStateForCities, setMatchedStateForCities] = useState<string>('');
   const [showJobDropdown, setShowJobDropdown] = useState(false);
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
@@ -50,7 +70,15 @@ const SearchBar: React.FC<SearchBarProps> = ({
   useEffect(() => setJobQuery(initialQuery || searchParams.get('search') || ''), [initialQuery, searchParams]);
   useEffect(() => setLocationQuery(initialLocation || searchParams.get('location') || ''), [initialLocation, searchParams]);
   useEffect(() => {
-    fetchJobsMeta(sector).then((meta) => setLocations(meta.locations || [])).catch(() => setLocations([]));
+    fetchJobsMeta(sector)
+      .then((meta) => {
+        setLocations(meta.locations || []);
+        setLocationCounts(meta.locationCounts || {});
+      })
+      .catch(() => {
+        setLocations([]);
+        setLocationCounts({});
+      });
   }, [sector]);
   useEffect(() => () => timerRef.current && clearTimeout(timerRef.current), []);
 
@@ -91,9 +119,114 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
   const requestLocationSuggestions = useCallback((value: string) => {
     const q = value.trim().toLowerCase();
-    setLocationSuggestions(q ? locations.filter((item) => item.toLowerCase().includes(q)).slice(0, 8) : []);
-    setShowLocationDropdown(Boolean(q));
-  }, [locations]);
+    if (!q) {
+      setLocationSuggestions([]);
+      setShowLocationDropdown(false);
+      setShowAllCities(false);
+      setMatchedStateForCities('');
+      return;
+    }
+
+    // 1. Identify matching states
+    const matchedStates = INDIAN_STATES.filter((st) => st.toLowerCase().includes(q));
+
+    // Also check if any database location contains this query as state
+    const statesFromLocations = new Set<string>();
+    locations.forEach((loc) => {
+      const parts = loc.split(',');
+      if (parts.length >= 2) {
+        const st = parts[parts.length - 1].trim();
+        if (st.toLowerCase().includes(q)) statesFromLocations.add(st);
+      }
+    });
+
+    const candidateStates = Array.from(new Set([...matchedStates, ...statesFromLocations]));
+
+    const stateSuggestions: StructuredLocationSuggestion[] = [];
+    candidateStates.forEach((stateName) => {
+      // Calculate total jobs in this state across all cities
+      let stateJobCount = 0;
+      locations.forEach((loc) => {
+        if (loc.toLowerCase().includes(stateName.toLowerCase())) {
+          stateJobCount += (locationCounts[loc] || 1);
+        }
+      });
+      stateSuggestions.push({
+        type: 'state',
+        value: stateName,
+        name: stateName,
+        count: stateJobCount,
+      });
+    });
+
+    // 2. Identify matching cities
+    let targetCities: string[] = [];
+    let stateForCities = '';
+
+    if (candidateStates.length > 0) {
+      const primaryState = candidateStates[0];
+      stateForCities = primaryState;
+      // All cities in this state
+      targetCities = locations.filter((loc) => loc.toLowerCase().includes(primaryState.toLowerCase()));
+      // Also include any other location matching q directly if not already included
+      locations.forEach((loc) => {
+        if (loc.toLowerCase().includes(q) && !targetCities.includes(loc)) {
+          targetCities.push(loc);
+        }
+      });
+    } else {
+      // Query is city-specific (e.g. "Ajmer", "Bhopal", "South")
+      targetCities = locations.filter((loc) => loc.toLowerCase().includes(q));
+      // If any of these cities have a parent state, find that state to also offer state option
+      targetCities.forEach((loc) => {
+        const parts = loc.split(',');
+        if (parts.length >= 2) {
+          const parentState = parts[parts.length - 1].trim();
+          if (parentState && !stateSuggestions.some((s) => s.value.toLowerCase() === parentState.toLowerCase())) {
+            let parentStateCount = 0;
+            locations.forEach((l) => {
+              if (l.toLowerCase().includes(parentState.toLowerCase())) {
+                parentStateCount += (locationCounts[l] || 1);
+              }
+            });
+            stateSuggestions.push({
+              type: 'state',
+              value: parentState,
+              name: parentState,
+              count: parentStateCount,
+            });
+          }
+        }
+      });
+    }
+
+    // Sort cities by job count descending
+    targetCities.sort((a, b) => {
+      const cntA = locationCounts[a] || 1;
+      const cntB = locationCounts[b] || 1;
+      return cntB - cntA;
+    });
+
+    const citySuggestions: StructuredLocationSuggestion[] = targetCities.map((loc) => ({
+      type: 'city',
+      value: loc,
+      name: loc,
+      count: locationCounts[loc] || 1,
+    }));
+
+    // Put State first if query matched a state, or Cities first if query was a specific city
+    let combined: StructuredLocationSuggestion[] = [];
+    if (candidateStates.length > 0 && candidateStates.some(st => st.toLowerCase().startsWith(q) || q.includes(st.toLowerCase()))) {
+      combined = [...stateSuggestions, ...citySuggestions];
+    } else {
+      combined = [...citySuggestions, ...stateSuggestions];
+    }
+
+    setMatchedStateForCities(stateForCities);
+    setShowAllCities(false);
+    setLocationSuggestions(combined);
+    setShowLocationDropdown(combined.length > 0);
+  }, [locations, locationCounts]);
 
   const submit = useCallback(() => {
     setShowJobDropdown(false);
@@ -123,6 +256,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
     setLocationQuery(suggestion);
     setLocationSuggestions([]);
     setShowLocationDropdown(false);
+    setShowAllCities(false);
     onLiveSearch?.(jobQuery, suggestion);
   };
 
@@ -131,6 +265,13 @@ const SearchBar: React.FC<SearchBarProps> = ({
     () => `search-bar ${compact ? 'search-bar--compact' : ''} ${isJobDropdownOpen ? 'is-job-dropdown-open' : ''}`.trim(),
     [compact, isJobDropdownOpen]
   );
+
+  // Separate state and city suggestions for rendering with limits
+  const stateItems = locationSuggestions.filter((s) => s.type === 'state');
+  const cityItems = locationSuggestions.filter((s) => s.type === 'city');
+  const visibleCityItems = showAllCities ? cityItems : cityItems.slice(0, 5);
+  const hasMoreCities = cityItems.length > 5;
+  const displayedLocationSuggestions = [...stateItems, ...visibleCityItems];
 
   return (
     <div className={containerClass} ref={containerRef}>
@@ -178,14 +319,14 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
         <div className="search-bar__divider" aria-hidden="true" />
 
-        <div className={`search-bar__field search-bar__field--location ${showLocationDropdown && locationSuggestions.length > 0 ? 'search-bar__field--active' : ''}`}>
+        <div className={`search-bar__field search-bar__field--location ${showLocationDropdown && displayedLocationSuggestions.length > 0 ? 'search-bar__field--active' : ''}`}>
           <div className="search-bar__field-inner">
             <div className="search-bar__icon"><MapPin size={20} /></div>
             <div className="search-bar__input-group">
               <input
                 type="text"
                 className="search-bar__input"
-                placeholder="City or state (optional)"
+                placeholder="State or City"
                 value={locationQuery}
                 onChange={(event) => {
                   const value = event.target.value;
@@ -194,8 +335,13 @@ const SearchBar: React.FC<SearchBarProps> = ({
                   onLiveSearch?.(jobQuery, value);
                 }}
                 onKeyDown={(event) => event.key === 'Enter' && submit()}
+                onFocus={() => {
+                  if (locationQuery.trim()) {
+                    requestLocationSuggestions(locationQuery);
+                  }
+                }}
                 autoComplete="off"
-                aria-label="Search by city or state"
+                aria-label="State or City"
               />
             </div>
             {locationQuery && (
@@ -207,6 +353,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
                   setLocationQuery('');
                   setLocationSuggestions([]);
                   setShowLocationDropdown(false);
+                  setShowAllCities(false);
                   onLiveSearch?.(jobQuery, '');
                 }}
               >
@@ -214,19 +361,53 @@ const SearchBar: React.FC<SearchBarProps> = ({
               </button>
             )}
           </div>
-          {showLocationDropdown && locationSuggestions.length > 0 && (
-            <ul className="search-bar__dropdown" role="listbox">
-              {locationSuggestions.map((suggestion) => (
-                <li key={suggestion} className="search-bar__dropdown-item" onMouseDown={(event) => event.preventDefault()} onClick={() => chooseLocation(suggestion)} role="option">
-                  <MapPin size={16} /><span>{suggestion}</span>
+          {showLocationDropdown && displayedLocationSuggestions.length > 0 && (
+            <ul className="search-bar__dropdown search-bar__dropdown--location" role="listbox">
+              {displayedLocationSuggestions.map((item) => (
+                <li
+                  key={`${item.type}-${item.value}`}
+                  className={`search-bar__dropdown-item search-bar__dropdown-item--${item.type}`}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => chooseLocation(item.value)}
+                  role="option"
+                >
+                  <div className={`search-bar__loc-icon search-bar__loc-icon--${item.type}`}>
+                    <MapPin size={item.type === 'state' ? 18 : 16} />
+                  </div>
+                  <div className="search-bar__loc-details">
+                    <div className="search-bar__loc-line">
+                      <span className="search-bar__loc-name">{item.name}</span>
+                    </div>
+                    <div className="search-bar__loc-sub">
+                      <span className={`search-bar__loc-tag search-bar__loc-tag--${item.type}`}>
+                        {item.type === 'state' ? 'State' : 'City'}
+                      </span>
+                      <span className="search-bar__loc-bullet">•</span>
+                      <span className="search-bar__loc-count">
+                        {item.count} {item.count === 1 ? 'Job' : 'Jobs'}
+                      </span>
+                    </div>
+                  </div>
                 </li>
               ))}
+              {hasMoreCities && !showAllCities && (
+                <li className="search-bar__dropdown-more">
+                  <button
+                    type="button"
+                    className="search-bar__more-btn"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => setShowAllCities(true)}
+                  >
+                    View all cities in {matchedStateForCities || 'this state'} ({cityItems.length}) →
+                  </button>
+                </li>
+              )}
             </ul>
           )}
         </div>
 
         <button className="search-bar__button" onClick={submit} type="button" aria-label="Search jobs">
-          <Search size={18} />{!compact && <span>Search</span>}
+          <Search size={18} />{!compact && <span>Search Jobs</span>}
         </button>
       </div>
     </div>

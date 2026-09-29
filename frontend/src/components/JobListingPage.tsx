@@ -241,6 +241,7 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
     if (keyword && count > 0 && acrossAllLocations) return `Found ${count} ${jobWord} matching “${keyword}” across all locations`;
     if (keyword && count > 0 && requestedLocation) return `Found ${count} ${jobWord} matching “${keyword}” in “${requestedLocation}”`;
     if (count > 0 && acrossAllLocations) return `Showing ${count} ${jobWord} across all locations`;
+    if (count > 0 && requestedLocation) return `Showing ${count} ${jobWord} in “${requestedLocation}”`;
     if (count > 0) return `Showing ${count} ${jobWord}`;
     if (keyword) return `No job titles found matching “${keyword}”`;
     return "No jobs available";

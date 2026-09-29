@@ -152,6 +152,14 @@ public interface JobRepository extends JpaRepository<Job, UUID>, JpaSpecificatio
             @Param("status") Job.JobStatus status,
             @Param("sector") Job.JobSector sector);
 
+    @Query("SELECT j.location, COUNT(j) FROM Job j " +
+            "WHERE j.status = :status AND j.deletedAt IS NULL AND j.location IS NOT NULL AND j.location <> '' " +
+            "AND (:sector IS NULL OR j.sector = :sector) " +
+            "GROUP BY j.location")
+    List<Object[]> findLocationsWithCountsForPublic(
+            @Param("status") Job.JobStatus status,
+            @Param("sector") Job.JobSector sector);
+
     @Query("SELECT DISTINCT j.speciality FROM Job j " +
             "WHERE j.status = :status AND j.deletedAt IS NULL AND j.speciality IS NOT NULL AND j.speciality <> '' " +
             "AND (:sector IS NULL OR j.sector = :sector)")

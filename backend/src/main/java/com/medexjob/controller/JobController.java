@@ -281,9 +281,23 @@ public class JobController {
             }
         }
 
+        List<Object[]> locationCountsRaw = jobRepository
+                .findLocationsWithCountsForPublic(Job.JobStatus.ACTIVE, sectorFilter);
+        Map<String, Long> locationCounts = new LinkedHashMap<>();
+        for (Object[] row : locationCountsRaw) {
+            if (row != null && row.length >= 2 && row[0] != null) {
+                String loc = row[0].toString().trim();
+                Long count = row[1] instanceof Number ? ((Number) row[1]).longValue() : 0L;
+                if (!loc.isEmpty()) {
+                    locationCounts.put(loc, count);
+                }
+            }
+        }
+
         Map<String, Object> body = new HashMap<>();
         body.put("categories", categories);
         body.put("locations", locations);
+        body.put("locationCounts", locationCounts);
         body.put("specialities", distinctStrings(jobRepository.findDistinctSpecialitiesForPublic(Job.JobStatus.ACTIVE, sectorFilter)));
         body.put("departments", distinctStrings(jobRepository.findDistinctDepartmentsForPublic(Job.JobStatus.ACTIVE, sectorFilter)));
         body.put("jobTypes", distinctStrings(jobRepository.findDistinctJobTypesForPublic(Job.JobStatus.ACTIVE, sectorFilter)));

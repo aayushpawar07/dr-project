@@ -54,14 +54,11 @@ body:has(.admin-ui-shell) {
 .candidate-sidebar__scroll,
 .employer-sidebar__scroll {
   min-height: 0;
-  overflow: hidden !important;
-  overscroll-behavior: none;
-  scrollbar-width: none;
-}
-
-.candidate-sidebar__scroll::-webkit-scrollbar,
-.employer-sidebar__scroll::-webkit-scrollbar {
-  display: none;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding-bottom: 28px !important;
 }
 
 /* Only the right dashboard content scrolls. */

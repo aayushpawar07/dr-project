@@ -198,6 +198,21 @@ const SearchBar: React.FC<SearchBarProps> = ({
                 aria-label="Search by city or state"
               />
             </div>
+            {locationQuery && (
+              <button
+                type="button"
+                className="mr-1 text-slate-400 hover:text-slate-700 cursor-pointer"
+                aria-label="Clear location search"
+                onClick={() => {
+                  setLocationQuery('');
+                  setLocationSuggestions([]);
+                  setShowLocationDropdown(false);
+                  onLiveSearch?.(jobQuery, '');
+                }}
+              >
+                <X size={16} />
+              </button>
+            )}
           </div>
           {showLocationDropdown && locationSuggestions.length > 0 && (
             <ul className="search-bar__dropdown" role="listbox">

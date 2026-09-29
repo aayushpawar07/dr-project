@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, MapPin, BriefcaseBusiness, Loader2, X } from 'lucide-react';
+import { Search, MapPin, BriefcaseBusiness, Loader2, X, ChevronDown } from 'lucide-react';
 import { fetchJobSuggestions, fetchJobsMeta } from '../api/jobs';
 import './SearchBar.css';
 
@@ -344,7 +344,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
                 aria-label="State or City"
               />
             </div>
-            {locationQuery && (
+            {locationQuery ? (
               <button
                 type="button"
                 className="mr-1 text-slate-400 hover:text-slate-700 cursor-pointer"
@@ -359,6 +359,8 @@ const SearchBar: React.FC<SearchBarProps> = ({
               >
                 <X size={16} />
               </button>
+            ) : (
+              <ChevronDown size={18} className="mr-1 text-slate-400 pointer-events-none shrink-0" />
             )}
           </div>
           {showLocationDropdown && displayedLocationSuggestions.length > 0 && (

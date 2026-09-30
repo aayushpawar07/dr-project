@@ -49,11 +49,14 @@ export function detailFieldText(...values: unknown[]) {
 
 export function cardSalaryText(value: unknown) {
   if (isNotMentioned(value)) return '';
-  const raw = text(value);
+  let raw = text(value)
+    .replace(/^[*•\-\s]+/, '')
+    .replace(/^[^:]*:\s*/, '')
+    .trim();
   if (!raw || isRegulatoryDump(raw)) return '';
   const paren = raw.indexOf('(');
   const short = paren > 18 && raw.length > 42 ? raw.slice(0, paren).trim() : raw;
-  return short.length > 80 ? `${short.slice(0, 77).trim()}...` : short;
+  return short.length > 45 ? `${short.slice(0, 42).trim()}...` : short;
 }
 
 export function formatCardQualification(value: unknown): string {
@@ -124,19 +127,45 @@ export function formatCardSalary(value: unknown): string {
     return `Level ${levelMatch[1]} Pay Matrix`;
   }
 
-  const rangeMatch = raw.match(/₹?\s*(\d[\d,]*)\s*(?:-|to)\s*₹?\s*(\d[\d,]*)/i);
+  // Extract all currency numbers (₹, Rs, INR) >= 5000
+  const numbers: number[] = [];
+  const regex = /(?:₹|Rs\.?|INR)\s*(\d[\d,]{3,})/gi;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(raw)) !== null) {
+    const val = parseInt(match[1].replace(/,/g, ''), 10);
+    if (!isNaN(val) && val >= 5000) {
+      numbers.push(val);
+    }
+  }
+
+  if (numbers.length >= 2) {
+    const min = Math.min(...numbers);
+    const max = Math.max(...numbers);
+    const fmt = (n: number) => `₹${n.toLocaleString('en-IN')}`;
+    if (min !== max) {
+      return `${fmt(min)} – ${fmt(max)}${raw.includes('+') ? '+' : ''}/mo`;
+    } else {
+      return `${fmt(min)}/month`;
+    }
+  } else if (numbers.length === 1) {
+    return `₹${numbers[0].toLocaleString('en-IN')}${raw.includes('+') ? '+' : ''}/month`;
+  }
+
+  const rangeMatch = raw.match(/₹?\s*(\d[\d,]{3,})\s*(?:-|to)\s*₹?\s*(\d[\d,]{3,})/i);
   if (rangeMatch) {
     const num1 = parseInt(rangeMatch[1].replace(/,/g, ''), 10);
     const num2 = parseInt(rangeMatch[2].replace(/,/g, ''), 10);
     if (!isNaN(num1) && !isNaN(num2)) {
-      const fmt = (n: number) => (n >= 100000 ? `₹${(n / 100000).toFixed(n % 100000 === 0 ? 0 : 1)}L` : `₹${Math.round(n / 1000)}K`);
-      return `${fmt(num1)} – ${fmt(num2)}/mo`;
+      return `₹${num1.toLocaleString('en-IN')} – ₹${num2.toLocaleString('en-IN')}/mo`;
     }
   }
 
-  const singleMatch = raw.match(/₹\s*(\d[\d,]{3,})/);
+  const singleMatch = raw.match(/(?:₹|Rs\.?|INR)?\s*(\d[\d,]{4,})/i);
   if (singleMatch) {
-    return `${singleMatch[0]}/month`;
+    const num = parseInt(singleMatch[1].replace(/,/g, ''), 10);
+    if (!isNaN(num) && num >= 5000) {
+      return `₹${num.toLocaleString('en-IN')}/month`;
+    }
   }
 
   return cardSalaryText(raw);

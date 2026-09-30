@@ -341,10 +341,11 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
                   <p className="text-gray-500 text-base sm:text-lg">Searching for jobs...</p>
                 </div>
               ) : jobs.length > 0 ? (
-                jobs.map((job: any) => (
+                jobs.map((job: any, index: number) => (
                   <div key={job.id} className="w-full max-w-[420px] h-full justify-self-center">
                     <JobCard
                       job={job}
+                      index={index}
                       onViewDetails={(jobId) => onNavigate("job-detail", job.slug || jobId)}
                     />
                   </div>

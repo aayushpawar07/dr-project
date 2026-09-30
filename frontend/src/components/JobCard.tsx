@@ -2,19 +2,21 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { extractPositionsFromText, sortPositions } from '../utils/recruitmentBreakdown';
 import {
-  ArrowUpRight,
+  ArrowRight,
   Briefcase,
   Building2,
   Calendar,
   Check,
   ChevronRight,
+  GraduationCap,
+  HeartPulse,
   MapPin,
   Share2,
-  Shield,
+  ShieldCheck,
   Star,
-  BriefcaseIcon,
-  Gift,
+  Stethoscope,
   User,
+  UserCheck,
   Users,
 } from 'lucide-react';
 import { Card } from './ui/card';
@@ -23,12 +25,8 @@ import { Button } from './ui/button';
 import { Job } from '../types';
 import { buildJobShareText, getJobShareUrl, shareTextWithoutUrl } from '../utils/shareContent';
 import {
-  cardFieldText,
-  cardSalaryText,
   formatCardQualification,
-  formatCardExperience,
   formatCardSalary,
-  isNotMentioned,
 } from '../utils/extractedFieldDisplay';
 import { cleanLocation } from '../utils/locationCleaner';
 
@@ -37,9 +35,79 @@ interface JobCardProps {
   onViewDetails: (jobId: string) => void;
   onSaveJob?: (jobId: string) => void;
   isSaved?: boolean;
+  index?: number;
 }
 
-export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps) {
+const CARD_THEMES = [
+  {
+    name: 'blue',
+    borderClass: 'border-l-blue-500',
+    iconBg: 'bg-blue-600',
+    Icon: UserCheck,
+    calendarColor: 'text-blue-500',
+    watermark: 'pulse',
+    watermarkColor: 'text-blue-400/25',
+  },
+  {
+    name: 'purple',
+    borderClass: 'border-l-purple-500',
+    iconBg: 'bg-purple-600',
+    Icon: Briefcase,
+    calendarColor: 'text-purple-500',
+    watermark: 'cross',
+    watermarkColor: 'text-purple-400/25',
+  },
+  {
+    name: 'emerald',
+    borderClass: 'border-l-emerald-500',
+    iconBg: 'bg-emerald-600',
+    Icon: User,
+    calendarColor: 'text-emerald-500',
+    watermark: 'pulse',
+    watermarkColor: 'text-emerald-400/25',
+  },
+  {
+    name: 'emerald-stethoscope',
+    borderClass: 'border-l-emerald-500',
+    iconBg: 'bg-emerald-600',
+    Icon: Stethoscope,
+    calendarColor: 'text-emerald-500',
+    watermark: 'hospital',
+    watermarkColor: 'text-emerald-400/25',
+  },
+  {
+    name: 'indigo-cross',
+    borderClass: 'border-l-indigo-500',
+    iconBg: 'bg-indigo-600',
+    Icon: ShieldCheck,
+    calendarColor: 'text-indigo-500',
+    watermark: 'ambulance',
+    watermarkColor: 'text-indigo-400/25',
+  },
+  {
+    name: 'rose',
+    borderClass: 'border-l-rose-500',
+    iconBg: 'bg-rose-500',
+    Icon: HeartPulse,
+    calendarColor: 'text-rose-500',
+    watermark: 'heart',
+    watermarkColor: 'text-rose-400/25',
+  },
+];
+
+function getCardTheme(job: any, index?: number) {
+  if (typeof index === 'number') {
+    return CARD_THEMES[Math.abs(index) % CARD_THEMES.length];
+  }
+  const idStr = String(job.id || job.title || '');
+  let hash = 0;
+  for (let i = 0; i < idStr.length; i++) {
+    hash = (hash * 31 + idStr.charCodeAt(i)) >>> 0;
+  }
+  return CARD_THEMES[hash % CARD_THEMES.length];
+}
+
+export function JobCard({ job, onViewDetails, onSaveJob, isSaved, index }: JobCardProps) {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [expandedRoles, setExpandedRoles] = useState(false);
@@ -62,13 +130,9 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
   const fallbackCityState = [view.city, view.state].filter(Boolean).join(', ');
   const locationText = cleanLocation(rawLocation, organizationName, fallbackCityState);
   const qualificationText = formatCardQualification(job.qualification);
-  const experienceText = formatCardExperience(job.experience);
   const salaryText = formatCardSalary(job.salary || view.salaryRange);
-  const isEmployerVerified = Boolean(view.employer?.isVerified || view.isEmployerVerified || view.employerVerified);
-  const roleCount = Array.isArray(view.postNames) ? view.postNames.length : 0;
-  const daysLeft = job.lastDate
-    ? Math.ceil((new Date(job.lastDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-    : null;
+
+  const theme = useMemo(() => getCardTheme(job, index), [job, index]);
 
   const roleBadges = useMemo(() => {
     const roles: string[] = [];
@@ -85,7 +149,6 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
       }
     };
 
-    // 1. From job.jobRoles
     if (Array.isArray(job.jobRoles) && job.jobRoles.length > 0) {
       job.jobRoles.forEach((r) => {
         if (typeof r === 'string') {
@@ -96,7 +159,6 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
       (job as any).jobRoles.split(/[/,]| and /i).forEach((part: string) => addRole(part));
     }
 
-    // 2. From view.postNames
     if (Array.isArray(view.postNames) && view.postNames.length > 0) {
       view.postNames.forEach((p: string) => {
         if (typeof p === 'string') {
@@ -110,12 +172,10 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
       });
     }
 
-    // 3. From job.category
     if (job.category) {
       job.category.split(/[/,]| and /i).forEach((part) => addRole(part));
     }
 
-    // 4. From displayTitle or job.title
     const titleToScan = view.displayTitle || job.title || '';
     if (titleToScan) {
       const detected = extractPositionsFromText(titleToScan);
@@ -148,7 +208,7 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
         category: job.category,
         numberOfPosts: job.numberOfPosts,
         qualification: qualificationText,
-        experience: experienceText,
+        experience: job.experience,
         salary: salaryText,
         lastDate: job.lastDate,
       },
@@ -165,7 +225,7 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
         await navigator.share(shareData);
         return;
       } catch {
-        // User cancelled or the device does not support this share target.
+        // User cancelled or unsupported
       }
     }
 
@@ -179,53 +239,34 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
   };
 
   return (
-    <Card className="medex-job-card relative cursor-pointer overflow-hidden rounded-2xl border border-gray-200 bg-white p-5 md:p-6 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-md group h-full flex flex-col">
-      <div className="flex flex-col h-full justify-between gap-3 flex-1">
-        <div className="flex flex-col gap-3">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span
-                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-white shadow-sm"
-                style={{
-                  background: isGovernment
-                    ? 'linear-gradient(to right, #3b82f6, #2563eb)'
-                    : 'linear-gradient(to right, #10b981, #059669)',
-                }}
-              >
-                {isGovernment ? <Shield className="w-3.5 h-3.5" /> : <BriefcaseIcon className="w-3.5 h-3.5" />}
-                {isGovernment ? 'Government' : 'Private'}
-              </span>
-
-              {roleBadges.length >= 2 ? (
-                <div className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50/90 px-2.5 py-1 text-xs shadow-2xs">
-                  <Users className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                  <div className="flex flex-col text-left leading-none">
-                    <span className="font-bold text-blue-900 text-xs">Multiple Roles</span>
-                    <span className="text-[10px] text-blue-600 font-medium mt-0.5">{roleBadges.length} Categories</span>
-                  </div>
-                </div>
-              ) : roleBadges.length === 1 ? (
-                <Badge
-                  variant="outline"
-                  className="px-3 py-1 text-xs font-medium text-gray-600 border-gray-300 bg-white"
-                >
-                  {roleBadges[0]}
-                </Badge>
-              ) : job.category ? (
-                <Badge variant="outline" className="px-3 py-1 text-xs font-medium text-gray-600 border-gray-300 bg-white">
-                  {job.category}
-                </Badge>
-              ) : null}
-
-              {view.featured && (
-                <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200 px-3 py-1 text-xs font-medium" variant="outline">
-                  <Star className="w-3 h-3 mr-1 fill-yellow-500 text-yellow-500" />
-                  Featured
-                </Badge>
-              )}
+    <Card className={`medex-job-card relative cursor-pointer overflow-hidden rounded-2xl md:rounded-3xl border border-gray-100 bg-white p-5 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg group h-full flex flex-col justify-between border-l-4 ${theme.borderClass}`}>
+      <div className="flex flex-col h-full justify-between flex-1">
+        <div className="flex flex-col">
+          {/* Top Row: Squircle Category Icon on Left, Badges + Share on Right */}
+          <div className="flex items-center justify-between gap-2">
+            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${theme.iconBg}`}>
+              <theme.Icon className="w-5 h-5 text-white" strokeWidth={2.2} />
             </div>
 
-            <div className="flex items-center gap-1.5 shrink-0">
+            <div className="flex items-center gap-1.5 ml-auto flex-wrap justify-end">
+              {isGovernment ? (
+                <span className="inline-flex items-center rounded-full bg-blue-50 text-blue-600 border border-blue-200/80 px-3 py-1 text-xs font-semibold">
+                  Government
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 px-2.5 py-1 text-xs font-semibold">
+                  <User className="w-3 h-3 text-emerald-600" />
+                  Private
+                </span>
+              )}
+
+              {view.featured && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200/80 px-2.5 py-1 text-xs font-semibold">
+                  <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                  Featured
+                </span>
+              )}
+
               <Button
                 variant="ghost"
                 size="icon"
@@ -233,161 +274,163 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
                 className={`h-8 w-8 rounded-full border transition-all ${
                   copied
                     ? 'text-green-600 bg-green-50 border-green-200 shadow-sm'
-                    : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50 border-gray-200 shadow-sm'
+                    : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50 border-gray-200 shadow-sm'
                 }`}
                 onClick={handleShare}
               >
-                {copied ? <Check className="w-4 h-4 text-green-600" /> : <Share2 className="w-4 h-4" />}
+                {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Share2 className="w-3.5 h-3.5" />}
               </Button>
-              {onSaveJob && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  title={isSaved ? 'Saved' : 'Save Job'}
-                  className={`h-8 w-8 rounded-full border transition-all ${
-                    isSaved
-                      ? 'text-yellow-600 bg-yellow-50 border-yellow-200 shadow-sm'
-                      : 'text-gray-400 hover:text-yellow-500 hover:bg-yellow-50 border-gray-200 shadow-sm'
-                  }`}
-                  onClick={(e) => { e.stopPropagation(); onSaveJob(job.id); }}
-                >
-                  <Star className={`w-4 h-4 ${isSaved ? 'fill-yellow-500 text-yellow-500' : ''}`} />
-                </Button>
-              )}
             </div>
           </div>
 
-          <div>
+          {/* Job Title */}
+          <div className="mt-3.5">
             <h3
-              className="text-lg font-semibold text-gray-900 leading-snug hover:text-blue-700 transition-colors cursor-pointer line-clamp-2"
+              className="text-base md:text-[17px] font-bold text-gray-900 leading-snug hover:text-blue-600 transition-colors cursor-pointer line-clamp-2"
               onClick={openDetails}
             >
               {displayTitle}
             </h3>
+
+            {/* Hospital / Organization Name */}
             {organizationName && (
-              <div className="flex items-start gap-1.5 mt-2 min-w-0">
-                <Building2 className="w-4 h-4 shrink-0 text-red-600 mt-0.5" />
-                <div className="flex items-center gap-1.5 min-w-0 flex-wrap flex-1">
-                  <span className="text-sm font-semibold text-red-600 break-words" title={organizationName}>
-                    {organizationName}
-                  </span>
-                  {isEmployerVerified && (
-                    <Badge variant="outline" className="border-emerald-300 bg-emerald-50 text-emerald-800 text-[10px] font-bold px-1.5 py-0 inline-flex items-center gap-1 shrink-0">
-                      <Check className="w-3 h-3 text-emerald-600 stroke-[3]" /> Verified Employer
-                    </Badge>
-                  )}
-                </div>
+              <div className="flex items-center gap-1.5 mt-2 min-w-0">
+                <Building2 className="w-4 h-4 shrink-0 text-red-500" />
+                <span className="text-sm font-semibold text-red-500 truncate" title={organizationName}>
+                  {organizationName}
+                </span>
               </div>
             )}
           </div>
 
-          <div className="flex flex-col items-start gap-2 text-sm">
+          {/* Metadata Row: Location | Posts | Qualification */}
+          <div className="flex items-center gap-3.5 text-xs font-medium text-gray-600 mt-3 flex-wrap">
             {locationText && (
-              <span className="inline-flex items-center gap-1.5 text-blue-700 font-medium">
-                <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <span className="inline-flex items-center gap-1 text-gray-700">
+                <MapPin className="w-3.5 h-3.5 text-blue-500 shrink-0" />
                 <span className="truncate">{locationText}</span>
               </span>
             )}
             {job.numberOfPosts != null && (
-              <span className="inline-flex items-center gap-1.5 text-purple-700 font-medium">
+              <span className="inline-flex items-center gap-1 text-gray-700">
                 <Briefcase className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                <span>{job.numberOfPosts} Post{job.numberOfPosts > 1 ? 's' : ''}</span>
+                <span>{job.numberOfPosts} Posts</span>
               </span>
             )}
-            {grouped && roleCount > 1 && roleBadges.length < 2 && (
-              <span className="inline-flex items-center gap-1.5 text-indigo-700 font-medium">
-                <Briefcase className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                <span>{roleCount} roles in this recruitment</span>
+            {qualificationText && (
+              <span className="inline-flex items-center gap-1 text-gray-700 truncate" title={qualificationText}>
+                <GraduationCap className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                <span className="truncate">{qualificationText}</span>
               </span>
             )}
           </div>
 
-          {qualificationText && (
-            <div>
-              <span className="inline-flex items-center gap-1.5 text-sm text-gray-600">
-                <Gift className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                <span className="truncate">Qualification: {qualificationText}</span>
-              </span>
-            </div>
-          )}
-
+          {/* Salary Pill Badge */}
           {salaryText && (
-            <div className="w-full">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-3 py-1 text-sm text-green-700 font-medium">
-                💰 {salaryText}
+            <div className="mt-3">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50/90 border border-emerald-200/80 px-3 py-1 text-xs font-semibold text-emerald-800">
+                <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] shrink-0 font-bold">
+                  ₹
+                </span>
+                <span className="truncate">{salaryText}</span>
               </span>
-            </div>
-          )}
-
-          {experienceText && (
-            <div className="w-full">
-              <span className="inline-flex items-center gap-1.5 text-sm text-gray-600 font-medium">
-                📊 Experience: {experienceText}
-              </span>
-            </div>
-          )}
-
-          {roleBadges.length >= 2 && (
-            <div className="w-full pt-1" onClick={(e) => e.stopPropagation()}>
-              <button
-                type="button"
-                onClick={() => setExpandedRoles((prev) => !prev)}
-                className="group/btn inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 hover:text-blue-900 transition-colors py-1 px-2 rounded-lg hover:bg-blue-50/80 border border-transparent hover:border-blue-100"
-              >
-                <Users className="w-3.5 h-3.5 text-blue-600" />
-                <span>Roles & Categories ({roleBadges.length})</span>
-                <ChevronRight
-                  className={`w-3.5 h-3.5 text-blue-600 transition-transform duration-200 ${
-                    expandedRoles ? 'rotate-90' : ''
-                  }`}
-                />
-              </button>
-
-              {expandedRoles && (
-                <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-gray-100">
-                  {roleBadges.map((role) => (
-                    <Badge
-                      key={role}
-                      variant="outline"
-                      className="px-2.5 py-0.5 text-xs font-medium text-gray-700 border-gray-200 bg-gray-50/80 hover:bg-gray-100 transition-colors"
-                    >
-                      {role}
-                    </Badge>
-                  ))}
-                </div>
-              )}
             </div>
           )}
         </div>
 
-        <div className="flex items-center justify-between border-t border-gray-100 pt-3 mt-auto gap-3">
-          <div className="flex flex-col gap-1 text-xs text-gray-500 min-w-0">
-            {job.lastDate && (
-              <div className="flex items-center gap-1 text-orange-700 font-medium">
-                <Calendar className="w-3.5 h-3.5 text-orange-600 shrink-0" />
+        {/* Bottom Section: Date & Roles, Watermark, Action Button */}
+        <div className="flex flex-col mt-auto">
+          {/* Date & Expandable Categories */}
+          <div className="flex items-center justify-between text-xs text-gray-500 mt-4 pt-3 border-t border-gray-100">
+            {job.lastDate ? (
+              <div className="flex items-center gap-1.5 text-gray-600 font-medium">
+                <Calendar className={`w-3.5 h-3.5 ${theme.calendarColor}`} />
                 <span>Apply by {new Date(job.lastDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
               </div>
+            ) : (
+              <div className="text-gray-400">Open Vacancy</div>
             )}
-            <div className="flex items-center gap-2 text-gray-400 flex-wrap">
-              <span>{view.views ?? 0} views</span>
-              <span>•</span>
-              <span>{view.applications ?? 0} applications</span>
-              {daysLeft != null && daysLeft > 0 && daysLeft <= 7 && (
-                <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
-                  {daysLeft}d left
+
+            {roleBadges.length >= 2 && (
+              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                <span className="text-gray-200">|</span>
+                <button
+                  type="button"
+                  onClick={() => setExpandedRoles((prev) => !prev)}
+                  className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium transition-colors cursor-pointer"
+                >
+                  <Users className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Roles & Categories ({roleBadges.length})</span>
+                  <ChevronRight
+                    className={`w-3.5 h-3.5 text-blue-600 transition-transform duration-200 ${
+                      expandedRoles ? 'rotate-90' : ''
+                    }`}
+                  />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Expanded Role Badges */}
+          {expandedRoles && roleBadges.length >= 2 && (
+            <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
+              {roleBadges.map((role) => (
+                <Badge
+                  key={role}
+                  variant="outline"
+                  className="px-2.5 py-0.5 text-xs font-medium text-gray-700 border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors"
+                >
+                  {role}
                 </Badge>
+              ))}
+            </div>
+          )}
+
+          {/* Action Row with Watermark Background & View Details / Apply Now Button */}
+          <div className="relative mt-3 pt-1 flex items-center justify-between min-h-[44px]">
+            {/* Subtle Watermark Illustration */}
+            <div className="absolute left-0 bottom-0 pointer-events-none select-none">
+              {theme.watermark === 'pulse' && (
+                <svg className={`w-20 h-10 ${theme.watermarkColor}`} viewBox="0 0 100 40" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M0 20 L25 20 L35 5 L45 35 L55 10 L65 25 L75 20 L100 20" />
+                </svg>
+              )}
+              {theme.watermark === 'cross' && (
+                <svg className={`w-10 h-10 ${theme.watermarkColor}`} viewBox="0 0 48 48" fill="currentColor">
+                  <path d="M18 6h12v12h12v12H30v12H18V30H6V18h12V6z" />
+                </svg>
+              )}
+              {theme.watermark === 'hospital' && (
+                <svg className={`w-11 h-11 ${theme.watermarkColor}`} viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <rect x="10" y="8" width="28" height="34" rx="2" />
+                  <path d="M24 16v10M19 21h10M18 42v-6h12v6" />
+                </svg>
+              )}
+              {theme.watermark === 'ambulance' && (
+                <svg className={`w-14 h-9 ${theme.watermarkColor}`} viewBox="0 0 56 36" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 10h30v20H4zM34 16h10l6 7v7H34z" />
+                  <circle cx="14" cy="30" r="4" fill="currentColor" />
+                  <circle cx="42" cy="30" r="4" fill="currentColor" />
+                  <path d="M19 15v8M15 19h8" />
+                </svg>
+              )}
+              {theme.watermark === 'heart' && (
+                <svg className={`w-10 h-10 ${theme.watermarkColor}`} viewBox="0 0 48 48" fill="currentColor">
+                  <path d="M24 40s-14-8.8-18-18c-3.6-8.2 2-16 10-16 5 0 8 4 8 4s3-4 8-4c8 0 13.6 7.8 10 16-4 9.2-18 18-18 18z" />
+                </svg>
               )}
             </div>
+
+            {/* Right button: View Details / Apply Now */}
+            <Button
+              size="sm"
+              onClick={openDetails}
+              className="ml-auto inline-flex items-center gap-1.5 rounded-full text-white text-xs md:text-sm font-semibold px-5 py-2 shadow-sm hover:shadow-md transition-all shrink-0 bg-blue-600 hover:bg-blue-700"
+            >
+              {isGovernment ? 'View Details' : 'Apply Now'}
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Button>
           </div>
-          <Button
-            size="sm"
-            onClick={openDetails}
-            className="inline-flex items-center gap-1.5 rounded-full text-white text-sm font-semibold px-5 py-2 shadow hover:shadow-md transition-all shrink-0"
-            style={{ background: 'linear-gradient(to right, #2563eb, #1d4ed8)' }}
-          >
-            {isGovernment ? 'View Details' : 'Apply Now'}
-            <ArrowUpRight className="w-3.5 h-3.5" />
-          </Button>
         </div>
       </div>
     </Card>

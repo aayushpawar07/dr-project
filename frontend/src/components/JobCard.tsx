@@ -7,12 +7,15 @@ import {
   Building2,
   Calendar,
   Check,
+  ChevronRight,
   MapPin,
   Share2,
   Shield,
   Star,
   BriefcaseIcon,
   Gift,
+  User,
+  Users,
 } from 'lucide-react';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
@@ -39,6 +42,7 @@ interface JobCardProps {
 export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps) {
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const [expandedRoles, setExpandedRoles] = useState(false);
   const view = job as any;
   const sector = job.sector || 'private';
   const isGovernment = sector === 'government';
@@ -192,16 +196,21 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
                 {isGovernment ? 'Government' : 'Private'}
               </span>
 
-              {roleBadges.length > 0 ? (
-                roleBadges.map((role) => (
-                  <Badge
-                    key={role}
-                    variant="outline"
-                    className="px-3 py-1 text-xs font-medium text-gray-600 border-gray-300 bg-white"
-                  >
-                    {role}
-                  </Badge>
-                ))
+              {roleBadges.length >= 2 ? (
+                <div className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50/90 px-2.5 py-1 text-xs shadow-2xs">
+                  <Users className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                  <div className="flex flex-col text-left leading-none">
+                    <span className="font-bold text-blue-900 text-xs">Multiple Roles</span>
+                    <span className="text-[10px] text-blue-600 font-medium mt-0.5">{roleBadges.length} Categories</span>
+                  </div>
+                </div>
+              ) : roleBadges.length === 1 ? (
+                <Badge
+                  variant="outline"
+                  className="px-3 py-1 text-xs font-medium text-gray-600 border-gray-300 bg-white"
+                >
+                  {roleBadges[0]}
+                </Badge>
               ) : job.category ? (
                 <Badge variant="outline" className="px-3 py-1 text-xs font-medium text-gray-600 border-gray-300 bg-white">
                   {job.category}
@@ -285,7 +294,7 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
                 <span>{job.numberOfPosts} Post{job.numberOfPosts > 1 ? 's' : ''}</span>
               </span>
             )}
-            {grouped && roleCount > 1 && (
+            {grouped && roleCount > 1 && roleBadges.length < 2 && (
               <span className="inline-flex items-center gap-1.5 text-indigo-700 font-medium">
                 <Briefcase className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                 <span>{roleCount} roles in this recruitment</span>
@@ -315,6 +324,38 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved }: JobCardProps
               <span className="inline-flex items-center gap-1.5 text-sm text-gray-600 font-medium">
                 📊 Experience: {experienceText}
               </span>
+            </div>
+          )}
+
+          {roleBadges.length >= 2 && (
+            <div className="w-full pt-1" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                onClick={() => setExpandedRoles((prev) => !prev)}
+                className="group/btn inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 hover:text-blue-900 transition-colors py-1 px-2 rounded-lg hover:bg-blue-50/80 border border-transparent hover:border-blue-100"
+              >
+                <Users className="w-3.5 h-3.5 text-blue-600" />
+                <span>Roles & Categories ({roleBadges.length})</span>
+                <ChevronRight
+                  className={`w-3.5 h-3.5 text-blue-600 transition-transform duration-200 ${
+                    expandedRoles ? 'rotate-90' : ''
+                  }`}
+                />
+              </button>
+
+              {expandedRoles && (
+                <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-gray-100">
+                  {roleBadges.map((role) => (
+                    <Badge
+                      key={role}
+                      variant="outline"
+                      className="px-2.5 py-0.5 text-xs font-medium text-gray-700 border-gray-200 bg-gray-50/80 hover:bg-gray-100 transition-colors"
+                    >
+                      {role}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

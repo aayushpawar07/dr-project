@@ -1313,7 +1313,11 @@ function VacancyPanel({
         <div className="vacancy-chips">
           <span className="tiny-chip chip-green">
             <Users size={11} />
-            {selectedPosition && selectedPosition !== 'All Positions' ? selectedPosition : vacancy.postName} Role
+            {selectedPosition && selectedPosition !== 'All Positions'
+              ? `${selectedPosition} Role`
+              : vacancy.postName && !/[/&]|(?:\band\b)|multiple|various/i.test(vacancy.postName)
+              ? `${vacancy.postName} Role`
+              : 'Medical / Healthcare Role'}
           </span>
           <span className="tiny-chip chip-purple"><Stethoscope size={11} />Clinical Department</span>
           {vacancy.jobType && <span className="tiny-chip chip-orange"><BriefcaseBusiness size={11} />{vacancy.jobType}</span>}

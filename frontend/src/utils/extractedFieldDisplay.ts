@@ -151,8 +151,15 @@ export function departmentSubtitle(vacancy: {
   const name = cleanExtractedName(vacancy?.department || vacancy?.speciality || vacancy?.postName);
   const speciality = cleanExtractedName(vacancy?.speciality);
   const postName = cleanExtractedName(vacancy?.postName);
-  if (speciality && speciality.toLowerCase() !== name.toLowerCase()) return speciality;
-  if (postName && postName.toLowerCase() !== name.toLowerCase()) return postName;
+
+  const isCompositeOrMulti = (val: string) => /[/&,]|(?:\band\b)|multiple|various/i.test(val);
+
+  if (speciality && speciality.toLowerCase() !== name.toLowerCase() && !isCompositeOrMulti(speciality)) {
+    return speciality;
+  }
+  if (postName && postName.toLowerCase() !== name.toLowerCase() && !isCompositeOrMulti(postName)) {
+    return postName;
+  }
   return '';
 }
 

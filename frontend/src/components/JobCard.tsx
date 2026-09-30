@@ -21,7 +21,6 @@ import {
 } from 'lucide-react';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
-import { Button } from './ui/button';
 import { Job } from '../types';
 import { buildJobShareText, getJobShareUrl, shareTextWithoutUrl } from '../utils/shareContent';
 import {
@@ -40,58 +39,52 @@ interface JobCardProps {
 
 const CARD_THEMES = [
   {
-    name: 'blue',
-    borderClass: 'border-l-blue-500',
-    iconBg: 'bg-blue-600',
+    themeClass: 'theme-blue',
+    iconBg: '#1463ff',
     Icon: UserCheck,
-    calendarColor: 'text-blue-500',
+    calendarColor: '#3b82f6',
     watermark: 'pulse',
-    watermarkColor: 'text-blue-400/25',
+    watermarkColor: '#60a5fa',
   },
   {
-    name: 'purple',
-    borderClass: 'border-l-purple-500',
-    iconBg: 'bg-purple-600',
+    themeClass: 'theme-purple',
+    iconBg: '#8b5cf6',
     Icon: Briefcase,
-    calendarColor: 'text-purple-500',
+    calendarColor: '#8b5cf6',
     watermark: 'cross',
-    watermarkColor: 'text-purple-400/25',
+    watermarkColor: '#c4b5fd',
   },
   {
-    name: 'emerald',
-    borderClass: 'border-l-emerald-500',
-    iconBg: 'bg-emerald-600',
+    themeClass: 'theme-emerald',
+    iconBg: '#10b981',
     Icon: User,
-    calendarColor: 'text-emerald-500',
+    calendarColor: '#10b981',
     watermark: 'pulse',
-    watermarkColor: 'text-emerald-400/25',
+    watermarkColor: '#86efac',
   },
   {
-    name: 'emerald-stethoscope',
-    borderClass: 'border-l-emerald-500',
-    iconBg: 'bg-emerald-600',
+    themeClass: 'theme-emerald-stethoscope',
+    iconBg: '#059669',
     Icon: Stethoscope,
-    calendarColor: 'text-emerald-500',
+    calendarColor: '#059669',
     watermark: 'hospital',
-    watermarkColor: 'text-emerald-400/25',
+    watermarkColor: '#86efac',
   },
   {
-    name: 'indigo-cross',
-    borderClass: 'border-l-indigo-500',
-    iconBg: 'bg-indigo-600',
+    themeClass: 'theme-indigo',
+    iconBg: '#6366f1',
     Icon: ShieldCheck,
-    calendarColor: 'text-indigo-500',
+    calendarColor: '#6366f1',
     watermark: 'ambulance',
-    watermarkColor: 'text-indigo-400/25',
+    watermarkColor: '#a5b4fc',
   },
   {
-    name: 'rose',
-    borderClass: 'border-l-rose-500',
-    iconBg: 'bg-rose-500',
+    themeClass: 'theme-rose',
+    iconBg: '#f43f5e',
     Icon: HeartPulse,
-    calendarColor: 'text-rose-500',
+    calendarColor: '#f43f5e',
     watermark: 'heart',
-    watermarkColor: 'text-rose-400/25',
+    watermarkColor: '#fda4af',
   },
 ];
 
@@ -239,132 +232,123 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved, index }: JobCa
   };
 
   return (
-    <Card className={`medex-job-card relative cursor-pointer overflow-hidden rounded-2xl md:rounded-3xl border border-gray-100 bg-white p-5 shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg group h-full flex flex-col justify-between border-l-4 ${theme.borderClass}`}>
-      <div className="flex flex-col h-full justify-between flex-1">
-        <div className="flex flex-col">
+    <Card className={`medex-job-card ${theme.themeClass}`} onClick={openDetails}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between', flex: 1 }}>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
           {/* Top Row: Squircle Category Icon on Left, Badges + Share on Right */}
-          <div className="flex items-center justify-between gap-2">
-            <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${theme.iconBg}`}>
-              <theme.Icon className="w-5 h-5 text-white" strokeWidth={2.2} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+            <div className="medex-card-icon-box" style={{ backgroundColor: theme.iconBg }}>
+              <theme.Icon size={22} color="#ffffff" strokeWidth={2.2} />
             </div>
 
-            <div className="flex items-center gap-1.5 ml-auto flex-wrap justify-end">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 'auto', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
               {isGovernment ? (
-                <span className="inline-flex items-center rounded-full bg-blue-50 text-blue-600 border border-blue-200/80 px-3 py-1 text-xs font-semibold">
+                <span className="medex-pill-badge badge-gov">
                   Government
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 px-2.5 py-1 text-xs font-semibold">
-                  <User className="w-3 h-3 text-emerald-600" />
+                <span className="medex-pill-badge badge-private">
+                  <User size={12} color="#047857" />
                   Private
                 </span>
               )}
 
               {view.featured && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200/80 px-2.5 py-1 text-xs font-semibold">
-                  <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                <span className="medex-pill-badge badge-featured">
+                  <Star size={12} fill="#b45309" color="#b45309" />
                   Featured
                 </span>
               )}
 
-              <Button
-                variant="ghost"
-                size="icon"
+              <button
+                type="button"
                 title={copied ? 'Share Content Copied!' : 'Share Job'}
-                className={`h-8 w-8 rounded-full border transition-all ${
-                  copied
-                    ? 'text-green-600 bg-green-50 border-green-200 shadow-sm'
-                    : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50 border-gray-200 shadow-sm'
-                }`}
+                className="medex-share-btn"
                 onClick={handleShare}
               >
-                {copied ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Share2 className="w-3.5 h-3.5" />}
-              </Button>
+                {copied ? <Check size={14} color="#16a34a" /> : <Share2 size={14} />}
+              </button>
             </div>
           </div>
 
           {/* Job Title */}
-          <div className="mt-3.5">
-            <h3
-              className="text-base md:text-[17px] font-bold text-gray-900 leading-snug hover:text-blue-600 transition-colors cursor-pointer line-clamp-2"
-              onClick={openDetails}
-            >
-              {displayTitle}
-            </h3>
-
-            {/* Hospital / Organization Name */}
-            {organizationName && (
-              <div className="flex items-center gap-1.5 mt-2 min-w-0">
-                <Building2 className="w-4 h-4 shrink-0 text-red-500" />
-                <span className="text-sm font-semibold text-red-500 truncate" title={organizationName}>
-                  {organizationName}
-                </span>
-              </div>
-            )}
+          <div className="medex-card-title">
+            {displayTitle}
           </div>
 
+          {/* Hospital / Organization Name */}
+          {organizationName && (
+            <div className="medex-card-hospital">
+              <Building2 size={15} color="#ef4444" />
+              <span title={organizationName}>
+                {organizationName}
+              </span>
+            </div>
+          )}
+
           {/* Metadata Row: Location | Posts | Qualification */}
-          <div className="flex items-center gap-3.5 text-xs font-medium text-gray-600 mt-3 flex-wrap">
+          <div className="medex-card-meta-row">
             {locationText && (
-              <span className="inline-flex items-center gap-1 text-gray-700">
-                <MapPin className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                <span className="truncate">{locationText}</span>
+              <span className="medex-meta-item location">
+                <MapPin size={14} color="#3b82f6" />
+                <span>{locationText}</span>
               </span>
             )}
             {job.numberOfPosts != null && (
-              <span className="inline-flex items-center gap-1 text-gray-700">
-                <Briefcase className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+              <span className="medex-meta-item posts">
+                <Briefcase size={14} color="#7c3aed" />
                 <span>{job.numberOfPosts} Posts</span>
               </span>
             )}
             {qualificationText && (
-              <span className="inline-flex items-center gap-1 text-gray-700 truncate" title={qualificationText}>
-                <GraduationCap className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                <span className="truncate">{qualificationText}</span>
+              <span className="medex-meta-item qualification" title={qualificationText}>
+                <GraduationCap size={14} color="#64748b" />
+                <span>{qualificationText}</span>
               </span>
             )}
           </div>
 
           {/* Salary Pill Badge */}
           {salaryText && (
-            <div className="mt-3">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50/90 border border-emerald-200/80 px-3 py-1 text-xs font-semibold text-emerald-800">
-                <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] shrink-0 font-bold">
-                  ₹
-                </span>
-                <span className="truncate">{salaryText}</span>
+            <div>
+              <span className="medex-salary-pill">
+                <span className="medex-salary-icon">₹</span>
+                <span>{salaryText}</span>
               </span>
             </div>
           )}
         </div>
 
         {/* Bottom Section: Date & Roles, Watermark, Action Button */}
-        <div className="flex flex-col mt-auto">
+        <div style={{ display: 'flex', flexDirection: 'column', marginTop: 'auto' }}>
           {/* Date & Expandable Categories */}
-          <div className="flex items-center justify-between text-xs text-gray-500 mt-4 pt-3 border-t border-gray-100">
+          <div className="medex-card-footer-info">
             {job.lastDate ? (
-              <div className="flex items-center gap-1.5 text-gray-600 font-medium">
-                <Calendar className={`w-3.5 h-3.5 ${theme.calendarColor}`} />
+              <div className="medex-footer-date">
+                <Calendar size={14} color={theme.calendarColor} />
                 <span>Apply by {new Date(job.lastDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
               </div>
             ) : (
-              <div className="text-gray-400">Open Vacancy</div>
+              <div style={{ color: '#94a3b8' }}>Open Vacancy</div>
             )}
 
             {roleBadges.length >= 2 && (
-              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                <span className="text-gray-200">|</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }} onClick={(e) => e.stopPropagation()}>
+                <span style={{ color: '#e2e8f0' }}>|</span>
                 <button
                   type="button"
                   onClick={() => setExpandedRoles((prev) => !prev)}
-                  className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium transition-colors cursor-pointer"
+                  className="medex-footer-roles-btn"
                 >
-                  <Users className="w-3.5 h-3.5 text-blue-600" />
+                  <Users size={14} color="#1463ff" />
                   <span>Roles & Categories ({roleBadges.length})</span>
                   <ChevronRight
-                    className={`w-3.5 h-3.5 text-blue-600 transition-transform duration-200 ${
-                      expandedRoles ? 'rotate-90' : ''
-                    }`}
+                    size={14}
+                    color="#1463ff"
+                    style={{
+                      transform: expandedRoles ? 'rotate(90deg)' : 'none',
+                      transition: 'transform 0.2s',
+                    }}
                   />
                 </button>
               </div>
@@ -373,7 +357,10 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved, index }: JobCa
 
           {/* Expanded Role Badges */}
           {expandedRoles && roleBadges.length >= 2 && (
-            <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
+            <div
+              style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}
+              onClick={(e) => e.stopPropagation()}
+            >
               {roleBadges.map((role) => (
                 <Badge
                   key={role}
@@ -387,49 +374,50 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved, index }: JobCa
           )}
 
           {/* Action Row with Watermark Background & View Details / Apply Now Button */}
-          <div className="relative mt-3 pt-1 flex items-center justify-between min-h-[44px]">
+          <div className="medex-card-action-row">
             {/* Subtle Watermark Illustration */}
-            <div className="absolute left-0 bottom-0 pointer-events-none select-none">
+            <div className="medex-watermark-wrap">
               {theme.watermark === 'pulse' && (
-                <svg className={`w-20 h-10 ${theme.watermarkColor}`} viewBox="0 0 100 40" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="72" height="30" viewBox="0 0 100 40" fill="none" stroke={theme.watermarkColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.65 }}>
                   <path d="M0 20 L25 20 L35 5 L45 35 L55 10 L65 25 L75 20 L100 20" />
                 </svg>
               )}
               {theme.watermark === 'cross' && (
-                <svg className={`w-10 h-10 ${theme.watermarkColor}`} viewBox="0 0 48 48" fill="currentColor">
-                  <path d="M18 6h12v12h12v12H30v12H18V30H6V18h12V6z" />
+                <svg width="34" height="34" viewBox="0 0 48 48" fill={theme.watermarkColor} style={{ opacity: 0.65 }}>
+                  <rect x="18" y="6" width="12" height="36" rx="3" />
+                  <rect x="6" y="18" width="36" height="12" rx="3" />
                 </svg>
               )}
               {theme.watermark === 'hospital' && (
-                <svg className={`w-11 h-11 ${theme.watermarkColor}`} viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <rect x="10" y="8" width="28" height="34" rx="2" />
+                <svg width="36" height="36" viewBox="0 0 48 48" fill="none" stroke={theme.watermarkColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.65 }}>
+                  <rect x="10" y="8" width="28" height="34" rx="3" />
                   <path d="M24 16v10M19 21h10M18 42v-6h12v6" />
                 </svg>
               )}
               {theme.watermark === 'ambulance' && (
-                <svg className={`w-14 h-9 ${theme.watermarkColor}`} viewBox="0 0 56 36" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg width="44" height="28" viewBox="0 0 56 36" fill="none" stroke={theme.watermarkColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.65 }}>
                   <path d="M4 10h30v20H4zM34 16h10l6 7v7H34z" />
-                  <circle cx="14" cy="30" r="4" fill="currentColor" />
-                  <circle cx="42" cy="30" r="4" fill="currentColor" />
+                  <circle cx="14" cy="30" r="4" fill={theme.watermarkColor} />
+                  <circle cx="42" cy="30" r="4" fill={theme.watermarkColor} />
                   <path d="M19 15v8M15 19h8" />
                 </svg>
               )}
               {theme.watermark === 'heart' && (
-                <svg className={`w-10 h-10 ${theme.watermarkColor}`} viewBox="0 0 48 48" fill="currentColor">
+                <svg width="34" height="34" viewBox="0 0 48 48" fill={theme.watermarkColor} style={{ opacity: 0.65 }}>
                   <path d="M24 40s-14-8.8-18-18c-3.6-8.2 2-16 10-16 5 0 8 4 8 4s3-4 8-4c8 0 13.6 7.8 10 16-4 9.2-18 18-18 18z" />
                 </svg>
               )}
             </div>
 
             {/* Right button: View Details / Apply Now */}
-            <Button
-              size="sm"
+            <button
+              type="button"
               onClick={openDetails}
-              className="ml-auto inline-flex items-center gap-1.5 rounded-full text-white text-xs md:text-sm font-semibold px-5 py-2 shadow-sm hover:shadow-md transition-all shrink-0 bg-blue-600 hover:bg-blue-700"
+              className="medex-action-btn"
             >
               {isGovernment ? 'View Details' : 'Apply Now'}
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Button>
+              <ArrowRight size={15} color="#ffffff" strokeWidth={2.5} />
+            </button>
           </div>
         </div>
       </div>

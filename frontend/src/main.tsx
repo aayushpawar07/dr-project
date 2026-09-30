@@ -8,6 +8,7 @@ import "./styles/medex-brand-overrides.css";
 import "./styles/dashboard-navigation.css";
 import "./styles/dashboard-fixed-layout.css";
 import "./styles/job-listing-card-size.css";
+import "./styles/medex-job-card-theme.css";
 import "./styles/device-responsive.css";
 import "./styles/job-detail-responsive.css";
 import "./styles/job-detail-presentation.css";

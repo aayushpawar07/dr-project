@@ -1,0 +1,377 @@
+/* ==========================================================================
+   MEDEX JOB CARD THEME (Matches Reference Image Exactly)
+   ========================================================================== */
+
+.medex-job-card {
+  position: relative !important;
+  background: #ffffff !important;
+  border-radius: 20px !important;
+  border: 1px solid #eef2f6 !important;
+  padding: 22px 24px !important;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04) !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+}
+
+.medex-job-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.09) !important;
+}
+
+/* --- THEME VARIATIONS (Borders & Bottom-Left Gradient Washes) --- */
+
+/* 1. Blue Theme */
+.medex-job-card.theme-blue {
+  border-left: 4px solid #1463ff !important;
+  background: radial-gradient(circle at 5% 95%, rgba(20, 99, 255, 0.08) 0%, rgba(20, 99, 255, 0) 55%), #ffffff !important;
+}
+.medex-job-card.theme-blue .medex-card-icon-box {
+  background: #1463ff !important;
+}
+.medex-job-card.theme-blue .medex-watermark {
+  color: #60a5fa !important;
+  opacity: 0.55 !important;
+}
+
+/* 2. Purple Theme */
+.medex-job-card.theme-purple {
+  border-left: 4px solid #8b5cf6 !important;
+  background: radial-gradient(circle at 5% 95%, rgba(139, 92, 246, 0.09) 0%, rgba(139, 92, 246, 0) 55%), #ffffff !important;
+}
+.medex-job-card.theme-purple .medex-card-icon-box {
+  background: #8b5cf6 !important;
+}
+.medex-job-card.theme-purple .medex-watermark {
+  color: #c4b5fd !important;
+  opacity: 0.65 !important;
+}
+
+/* 3. Emerald Theme */
+.medex-job-card.theme-emerald {
+  border-left: 4px solid #10b981 !important;
+  background: radial-gradient(circle at 5% 95%, rgba(16, 185, 129, 0.09) 0%, rgba(16, 185, 129, 0) 55%), #ffffff !important;
+}
+.medex-job-card.theme-emerald .medex-card-icon-box {
+  background: #10b981 !important;
+}
+.medex-job-card.theme-emerald .medex-watermark {
+  color: #86efac !important;
+  opacity: 0.65 !important;
+}
+
+/* 4. Emerald Stethoscope Theme */
+.medex-job-card.theme-emerald-stethoscope {
+  border-left: 4px solid #059669 !important;
+  background: radial-gradient(circle at 5% 95%, rgba(5, 150, 105, 0.09) 0%, rgba(5, 150, 105, 0) 55%), #ffffff !important;
+}
+.medex-job-card.theme-emerald-stethoscope .medex-card-icon-box {
+  background: #059669 !important;
+}
+.medex-job-card.theme-emerald-stethoscope .medex-watermark {
+  color: #86efac !important;
+  opacity: 0.65 !important;
+}
+
+/* 5. Indigo Theme */
+.medex-job-card.theme-indigo {
+  border-left: 4px solid #6366f1 !important;
+  background: radial-gradient(circle at 5% 95%, rgba(99, 102, 241, 0.09) 0%, rgba(99, 102, 241, 0) 55%), #ffffff !important;
+}
+.medex-job-card.theme-indigo .medex-card-icon-box {
+  background: #6366f1 !important;
+}
+.medex-job-card.theme-indigo .medex-watermark {
+  color: #a5b4fc !important;
+  opacity: 0.65 !important;
+}
+
+/* 6. Rose Theme */
+.medex-job-card.theme-rose {
+  border-left: 4px solid #f43f5e !important;
+  background: radial-gradient(circle at 5% 95%, rgba(244, 63, 94, 0.09) 0%, rgba(244, 63, 94, 0) 55%), #ffffff !important;
+}
+.medex-job-card.theme-rose .medex-card-icon-box {
+  background: #f43f5e !important;
+}
+.medex-job-card.theme-rose .medex-watermark {
+  color: #fda4af !important;
+  opacity: 0.65 !important;
+}
+
+/* --- CARD ELEMENTS --- */
+
+/* Squircle Icon Container */
+.medex-card-icon-box {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #ffffff !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.07) !important;
+}
+.medex-card-icon-box svg {
+  width: 22px !important;
+  height: 22px !important;
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+/* Top Badge Pills */
+.medex-pill-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  border-radius: 9999px !important;
+  padding: 4px 12px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+}
+.medex-pill-badge.badge-gov {
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+  border: 1px solid #bfdbfe !important;
+}
+.medex-pill-badge.badge-private {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1px solid #a7f3d0 !important;
+}
+.medex-pill-badge.badge-featured {
+  background: #fffbeb !important;
+  color: #b45309 !important;
+  border: 1px solid #fde68a !important;
+}
+
+/* Share Button */
+.medex-share-btn {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 9999px !important;
+  border: 1px solid #e2e8f0 !important;
+  background: #ffffff !important;
+  color: #94a3b8 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+}
+.medex-share-btn:hover {
+  color: #1463ff !important;
+  background: #eff6ff !important;
+  border-color: #bfdbfe !important;
+}
+
+/* Title & Hospital */
+.medex-card-title {
+  font-size: 16.5px !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  line-height: 1.35 !important;
+  margin-top: 14px !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+  transition: color 0.15s ease !important;
+}
+.medex-card-title:hover {
+  color: #1463ff !important;
+}
+
+.medex-card-hospital {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  margin-top: 8px !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  color: #ef4444 !important;
+  min-width: 0 !important;
+}
+.medex-card-hospital svg {
+  color: #ef4444 !important;
+  stroke: #ef4444 !important;
+  flex-shrink: 0 !important;
+  width: 15px !important;
+  height: 15px !important;
+}
+
+/* Metadata Row (Location, Posts, Qualification) */
+.medex-card-meta-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 16px !important;
+  margin-top: 12px !important;
+  font-size: 12.5px !important;
+  font-weight: 500 !important;
+  color: #475569 !important;
+  flex-wrap: wrap !important;
+}
+.medex-meta-item {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+.medex-meta-item.location {
+  color: #1e293b !important;
+}
+.medex-meta-item.location svg {
+  color: #3b82f6 !important;
+  stroke: #3b82f6 !important;
+  width: 14px !important;
+  height: 14px !important;
+  flex-shrink: 0 !important;
+}
+.medex-meta-item.posts {
+  color: #7c3aed !important;
+  font-weight: 600 !important;
+}
+.medex-meta-item.posts svg {
+  color: #7c3aed !important;
+  stroke: #7c3aed !important;
+  width: 14px !important;
+  height: 14px !important;
+  flex-shrink: 0 !important;
+}
+.medex-meta-item.qualification {
+  color: #475569 !important;
+}
+.medex-meta-item.qualification svg {
+  color: #64748b !important;
+  stroke: #64748b !important;
+  width: 14px !important;
+  height: 14px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Salary Capsule */
+.medex-salary-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: #ecfdf5 !important;
+  border: 1px solid #d1fae5 !important;
+  color: #047857 !important;
+  border-radius: 9999px !important;
+  padding: 4px 12px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  margin-top: 12px !important;
+  max-width: 100% !important;
+}
+.medex-salary-icon {
+  width: 16px !important;
+  height: 16px !important;
+  border-radius: 9999px !important;
+  background: #059669 !important;
+  color: #ffffff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  flex-shrink: 0 !important;
+}
+
+/* Date & Roles Row */
+.medex-card-footer-info {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  border-top: 1px solid #f1f5f9 !important;
+  padding-top: 12px !important;
+  margin-top: 16px !important;
+  font-size: 12px !important;
+  color: #64748b !important;
+}
+.medex-footer-date {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  color: #64748b !important;
+  font-weight: 500 !important;
+}
+.medex-footer-date svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+.medex-footer-roles-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  color: #1463ff !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  transition: color 0.15s ease !important;
+}
+.medex-footer-roles-btn:hover {
+  color: #0b45b8 !important;
+}
+
+/* Bottom Action Row (Watermark on left, Action Button on right) */
+.medex-card-action-row {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  min-height: 44px !important;
+  margin-top: 10px !important;
+}
+
+.medex-watermark-wrap {
+  position: absolute !important;
+  left: -2px !important;
+  bottom: -2px !important;
+  pointer-events: none !important;
+  user-select: none !important;
+  z-index: 1 !important;
+}
+
+/* Action Button */
+.medex-action-btn {
+  margin-left: auto !important;
+  position: relative !important;
+  z-index: 2 !important;
+  background: #1463ff !important;
+  color: #ffffff !important;
+  border-radius: 9999px !important;
+  padding: 8px 20px !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  border: none !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 12px rgba(20, 99, 255, 0.25) !important;
+  transition: all 0.2s ease !important;
+}
+.medex-action-btn:hover {
+  background: #0b4fdb !important;
+  box-shadow: 0 6px 16px rgba(20, 99, 255, 0.35) !important;
+  transform: translateY(-1px) !important;
+}
+.medex-action-btn svg {
+  width: 15px !important;
+  height: 15px !important;
+  stroke: #ffffff !important;
+  stroke-width: 2.5 !important;
+  transition: transform 0.2s ease !important;
+}
+.medex-action-btn:hover svg {
+  transform: translateX(2px) !important;
+}

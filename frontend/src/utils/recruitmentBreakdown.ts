@@ -32,6 +32,9 @@ const STANDARD_ACADEMIC_ORDER = [
   'tutor',
   'demonstrator',
   'specialist',
+  'general physician',
+  'chest physician',
+  'neuro physician',
   'medical officer',
   'emergency medical officer',
   'lady medical officer',
@@ -101,6 +104,7 @@ export const KNOWN_DESIGNATIONS: Array<{ regex: RegExp; name: string }> = [
   { regex: /\b(lady\s*medical\s*officer|lmo)\b/i, name: 'Lady Medical Officer' },
   { regex: /\bgeneral\s*physician\b/i, name: 'General Physician' },
   { regex: /\bchest\s*physician\b/i, name: 'Chest Physician' },
+  { regex: /\bneuro\s*physician\b/i, name: 'Neuro Physician' },
   { regex: /\b(emergency\s*medical\s*officer|medical\s*officer\s*\(?emo\)?|emo)\b/i, name: 'Emergency Medical Officer' },
   { regex: /(?<!female\s+|lady\s+|emergency\s+|casualty\s+|dental\s+|chief\s+|ayush\s+)\b(medical\s*officer|mo)\b/i, name: 'Medical Officer' },
   { regex: /\bconsultant\b/i, name: 'Consultant' },
@@ -131,6 +135,9 @@ export function standardizePositionName(raw: string): string {
   }
   if (/^chest\s*physician$/i.test(clean)) {
     return 'Chest Physician';
+  }
+  if (/^neuro\s*physician$/i.test(clean)) {
+    return 'Neuro Physician';
   }
   if (/^(emergency\s*medical\s*officer|medical\s*officer\s*\(?emo\)?|emo)$/i.test(clean)) {
     return 'Emergency Medical Officer';
@@ -246,6 +253,10 @@ export function matchesPositionName(targetText: string, selectedPosition: string
     return /\bchest\s*physician\b/i.test(normText);
   }
 
+  if (normSel === 'neuro physician') {
+    return /\bneuro\s*physician\b/i.test(normText);
+  }
+
   if (normSel === 'emergency medical officer') {
     return /\b(emergency\s*medical\s*officer|medical\s*officer\s*\(?emo\)?|emo)\b/i.test(normText);
   }
@@ -307,6 +318,8 @@ export function extractPositionCountFromText(text: string, selectedPosition: str
     patterns.push(/(?:general\s*physician)\s*[:\-–—]?\s*(\d+)/i);
   } else if (selLower === 'chest physician') {
     patterns.push(/(?:chest\s*physician)\s*[:\-–—]?\s*(\d+)/i);
+  } else if (selLower === 'neuro physician') {
+    patterns.push(/(?:neuro\s*physician)\s*[:\-–—]?\s*(\d+)/i);
   } else if (selLower === 'emergency medical officer') {
     patterns.push(/(?:emergency\s*medical\s*officer|medical\s*officer\s*\(?emo\)?|(?<!\w)emo(?!\w))\s*[:\-–—]?\s*(\d+)/i);
   } else if (selLower === 'medical officer') {

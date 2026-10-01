@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "./ui/button";
 import { JobCard } from "./JobCard";
 import { FilterSidebar, FilterOptions, emptyJobFilters } from "./FilterSidebar";
@@ -93,7 +93,10 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
   const [hasSearched, setHasSearched] = useState(false);
   const [showingFallback, setShowingFallback] = useState(false);
   const [fallbackReason, setFallbackReason] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 12;
 
+  const resultsRef = useRef<HTMLDivElement>(null);
   const isInitialMount = useRef(true);
   const lastSearchParams = useRef<string>("");
   const effectiveSector = sector || (filters.sector || undefined);
@@ -211,6 +214,7 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
 
         setJobs(normalizedJobs);
         setTotal(normalizedJobs.length);
+        setCurrentPage(1);
 
         if (keyword) {
           setHasSearched(true);
@@ -220,6 +224,7 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
         console.error("Error fetching jobs:", error);
         setJobs([]);
         setTotal(0);
+        setCurrentPage(1);
       } finally {
         setLoading(false);
       }
@@ -229,6 +234,34 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
   }, [selectedJobOption, locationQuery, filters, effectiveSector]);
 
   const title = sector === "government" ? "Government Jobs" : sector === "private" ? "Private Jobs" : "All Jobs";
+  const totalPages = Math.max(1, Math.ceil(jobs.length / pageSize));
+  const paginatedJobs = jobs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages) return;
+    setCurrentPage(newPage);
+    if (resultsRef.current) {
+      resultsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      window.scrollTo({ top: 180, behavior: "smooth" });
+    }
+  };
+
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (currentPage > 3) pages.push("...");
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+      for (let i = start; i <= end; i++) pages.push(i);
+      if (currentPage < totalPages - 2) pages.push("...");
+      pages.push(totalPages);
+    }
+    return pages;
+  };
 
   const getCountLabel = () => {
     if (loading) return "Searching...";
@@ -237,12 +270,13 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
     const keyword = selectedJobOption.trim();
     const requestedLocation = locationQuery.trim() || filters.locations[0]?.trim() || "";
     const acrossAllLocations = showingFallback || isGlobalLocation(requestedLocation) || !requestedLocation;
+    const pageSuffix = totalPages > 1 ? ` (Page ${currentPage} of ${totalPages})` : "";
 
-    if (keyword && count > 0 && acrossAllLocations) return `Found ${count} ${jobWord} matching “${keyword}” across all locations`;
-    if (keyword && count > 0 && requestedLocation) return `Found ${count} ${jobWord} matching “${keyword}” in “${requestedLocation}”`;
-    if (count > 0 && acrossAllLocations) return `Showing ${count} ${jobWord} across all locations`;
-    if (count > 0 && requestedLocation) return `Showing ${count} ${jobWord} in “${requestedLocation}”`;
-    if (count > 0) return `Showing ${count} ${jobWord}`;
+    if (keyword && count > 0 && acrossAllLocations) return `Found ${count} ${jobWord} matching “${keyword}” across all locations${pageSuffix}`;
+    if (keyword && count > 0 && requestedLocation) return `Found ${count} ${jobWord} matching “${keyword}” in “${requestedLocation}”${pageSuffix}`;
+    if (count > 0 && acrossAllLocations) return `Showing ${count} ${jobWord} across all locations${pageSuffix}`;
+    if (count > 0 && requestedLocation) return `Showing ${count} ${jobWord} in “${requestedLocation}”${pageSuffix}`;
+    if (count > 0) return `Showing ${count} ${jobWord}${pageSuffix}`;
     if (keyword) return `No job titles found matching “${keyword}”`;
     return "No jobs available";
   };
@@ -324,7 +358,7 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
             />
           </div>
 
-          <div className="job-listing-results col-span-1 lg:col-span-3 min-w-0">
+          <div ref={resultsRef} className="job-listing-results col-span-1 lg:col-span-3 min-w-0">
             <div className="mb-4 sm:mb-6">
               <p className="text-gray-700 font-medium text-sm sm:text-base">{getCountLabel()}</p>
               {showingFallback && fallbackReason && (
@@ -340,12 +374,12 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
                   <Loader2 className="w-10 h-10 sm:w-12 sm:h-12 animate-spin text-blue-600 mx-auto mb-4" />
                   <p className="text-gray-500 text-base sm:text-lg">Searching for jobs...</p>
                 </div>
-              ) : jobs.length > 0 ? (
-                jobs.map((job: any, index: number) => (
+              ) : paginatedJobs.length > 0 ? (
+                paginatedJobs.map((job: any, index: number) => (
                   <div key={job.id} className="w-full max-w-[420px] h-full justify-self-center">
                     <JobCard
                       job={job}
-                      index={index}
+                      index={(currentPage - 1) * pageSize + index}
                       onViewDetails={(jobId) => onNavigate("job-detail", job.slug || jobId)}
                     />
                   </div>
@@ -365,6 +399,61 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
                 </div>
               )}
             </div>
+
+            {/* Numbered Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="mt-8 sm:mt-12 flex flex-wrap items-center justify-center gap-2 pt-6 border-t border-gray-200">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="rounded-lg px-3 py-2 text-sm font-semibold flex items-center gap-1.5 border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </Button>
+
+                <div className="flex items-center gap-1.5">
+                  {getPageNumbers().map((p, idx) => {
+                    if (p === "...") {
+                      return (
+                        <span key={`dots-${idx}`} className="px-2 text-gray-400 font-bold select-none">
+                          ...
+                        </span>
+                      );
+                    }
+                    const pageNum = Number(p);
+                    const isActive = pageNum === currentPage;
+                    return (
+                      <button
+                        key={pageNum}
+                        type="button"
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`w-9 h-9 rounded-lg font-bold text-sm transition-all flex items-center justify-center cursor-pointer ${
+                          isActive
+                            ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-600 ring-offset-1"
+                            : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-100 hover:border-gray-300"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="rounded-lg px-3 py-2 text-sm font-semibold flex items-center gap-1.5 border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 transition-colors"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -1,6 +1,5 @@
 import apiClient from './apiClient';
 import { groupRecruitmentJobs } from '../utils/jobGrouping';
-import { TEST_FACULTY_JOB } from '../utils/testJobsData';
 
 export interface JobsQuery {
   search?: string;
@@ -43,20 +42,11 @@ export async function fetchJobs(params: JobsQuery = {}) {
     const data = res.data;
     const rawContent = Array.isArray(data?.content) ? [...data.content] : [];
 
-    // Ensure the test faculty job is available for testing if sector is government or all
-    if (params.sector !== 'private') {
-      const alreadyHas = rawContent.some((j: any) => j.id === TEST_FACULTY_JOB.id || j.title === TEST_FACULTY_JOB.title);
-      if (!alreadyHas) {
-        rawContent.unshift(TEST_FACULTY_JOB);
-      }
-    }
-
     const grouped = groupRecruitmentJobs(rawContent, params.search).slice(0, requestedSize);
     return { content: grouped, totalElements: grouped.length, totalPages: grouped.length > 0 ? 1 : 0, number: Number(data?.page ?? params.page ?? 0), size: requestedSize };
   } catch (err) {
-    console.error('Fetch jobs error, providing test jobs fallback:', err);
-    const fallbackList = params.sector === 'private' ? [] : [TEST_FACULTY_JOB];
-    return { content: fallbackList, totalElements: fallbackList.length, totalPages: fallbackList.length > 0 ? 1 : 0, number: params.page ?? 0, size: params.size ?? 20 };
+    console.error('Fetch jobs error:', err);
+    return { content: [], totalElements: 0, totalPages: 0, number: params.page ?? 0, size: params.size ?? 20 };
   }
 }
 

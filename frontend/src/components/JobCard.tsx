@@ -110,7 +110,7 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved, index }: JobCa
   const displayTitle = view.displayTitle || job.title;
   const sourceRecruitmentId = view.sourceRecruitmentId;
   const grouped = Boolean(view.recruitmentGrouped && sourceRecruitmentId);
-  const organizationName = [
+  const rawOrg = [
     job.organization,
     view.organisationName,
     view.organisation,
@@ -119,11 +119,31 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved, index }: JobCa
     view.employerName,
     view.hospitalName,
   ].map((value) => String(value ?? '').trim()).find(Boolean) || '';
+
+  const organizationName = /^(relative\s*clinic|referral\s*clinic|local\s*clinic|private\s*clinic|any\s*clinic)/i.test(rawOrg)
+    ? 'Medical Institution'
+    : rawOrg;
+
   const rawLocation = job.location || [view.city, view.state].filter(Boolean).join(', ');
   const fallbackCityState = [view.city, view.state].filter(Boolean).join(', ');
   const locationText = cleanLocation(rawLocation, organizationName, fallbackCityState);
   const qualificationText = formatCardQualification(job.qualification);
   const salaryText = formatCardSalary(job.salary || view.salaryRange);
+
+  const displayOrganizationWithLocation = useMemo(() => {
+    if (!organizationName) return '';
+    if (!locationText) return organizationName;
+    const orgLower = organizationName.toLowerCase();
+    const locLower = locationText.toLowerCase();
+    if (orgLower === locLower || orgLower.endsWith(locLower)) return organizationName;
+
+    const locParts = locationText.split(',').map((p) => p.trim()).filter(Boolean);
+    const missing = locParts.filter((p) => !orgLower.includes(p.toLowerCase()));
+    if (missing.length > 0) {
+      return `${organizationName}, ${missing.join(', ')}`;
+    }
+    return organizationName;
+  }, [organizationName, locationText]);
 
   const theme = useMemo(() => getCardTheme(job, index), [job, index]);
 
@@ -244,18 +264,19 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved, index }: JobCa
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 'auto', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
               {isGovernment ? (
                 <span className="medex-pill-badge badge-gov">
+                  <ShieldCheck size={15} color="#1d4ed8" />
                   Government
                 </span>
               ) : (
                 <span className="medex-pill-badge badge-private">
-                  <User size={12} color="#047857" />
+                  <User size={15} color="#047857" />
                   Private
                 </span>
               )}
 
               {view.featured && (
                 <span className="medex-pill-badge badge-featured">
-                  <Star size={12} fill="#b45309" color="#b45309" />
+                  <Star size={13} fill="#b45309" color="#b45309" />
                   Featured
                 </span>
               )}
@@ -276,12 +297,12 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved, index }: JobCa
             {displayTitle}
           </div>
 
-          {/* Hospital / Organization Name */}
-          {organizationName && (
+          {/* Hospital / Organization Name with Location */}
+          {displayOrganizationWithLocation && (
             <div className="medex-card-hospital">
               <Building2 size={15} color="#ef4444" />
-              <span title={organizationName}>
-                {organizationName}
+              <span title={displayOrganizationWithLocation}>
+                {displayOrganizationWithLocation}
               </span>
             </div>
           )}

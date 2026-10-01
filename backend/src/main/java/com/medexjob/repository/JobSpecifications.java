@@ -140,6 +140,8 @@ public final class JobSpecifications {
                 Predicate exactDepartmentPhrase = like(cb, root.get("department"), searchQuery);
                 Predicate exactQualificationPhrase = like(cb, root.get("qualification"), searchQuery);
                 Predicate exactLocationPhrase = like(cb, root.get("location"), searchQuery);
+                Predicate exactJobRolesPhrase = like(cb, root.get("jobRoles"), searchQuery);
+                Predicate exactCategoryPhrase = cb.like(cb.lower(root.get("category").as(String.class)), "%" + searchQuery.trim().toLowerCase(Locale.ROOT).replace(' ', '_') + "%");
 
                 Predicate anyExactPhrase = cb.or(
                         exactTitlePhrase,
@@ -147,7 +149,9 @@ public final class JobSpecifications {
                         exactSpecialityPhrase,
                         exactDepartmentPhrase,
                         exactQualificationPhrase,
-                        exactLocationPhrase
+                        exactLocationPhrase,
+                        exactJobRolesPhrase,
+                        exactCategoryPhrase
                 );
 
                 List<Predicate> perTokenPredicates = new ArrayList<>();
@@ -165,6 +169,9 @@ public final class JobSpecifications {
                     tokenMatches.add(like(cb, root.get("qualification"), token));
                     tokenMatches.add(like(cb, root.get("location"), token));
                     tokenMatches.add(like(cb, root.get("jobType"), token));
+                    tokenMatches.add(like(cb, root.get("jobRoles"), token));
+                    tokenMatches.add(like(cb, root.get("description"), token));
+                    tokenMatches.add(cb.like(cb.lower(root.get("category").as(String.class)), "%" + token + "%"));
 
                     if (token.equals("government") || token.equals("govt") || token.equals("public")) {
                         tokenMatches.add(cb.equal(root.get("sector"), Job.JobSector.GOVERNMENT));

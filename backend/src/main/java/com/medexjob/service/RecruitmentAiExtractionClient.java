@@ -298,8 +298,18 @@ public class RecruitmentAiExtractionClient {
                 CRITICAL MULTI-JOB INSTRUCTION:
                 If the notification lists multiple posts/jobs, multiple departments, or multiple vacancy rows (e.g. Senior Resident across different departments like Obs & Gynae, Surgery, Paediatrics; or distinct posts like GDMO, Medical Officer, Specialist, Manager), YOU MUST EXTRACT EVERY SINGLE JOB/POST AS A SEPARATE OBJECT in the "vacancies" array. Never combine different jobs or departments into one vacancy.
                 
-                CRITICAL BILINGUAL & HINDI INSTRUCTION:
-                The document may be in English, Hindi, or bilingual. Understand common Indian recruitment terms:
+                CRITICAL ORGANISATION & STATE INSTRUCTION:
+                - For organisationName, extract the actual official institute/organisation name (e.g. "Office of the Chief Medical Officer", "AIIMS Gorakhpur", "Mahamaya Rajkiya Allopathic Medical College", "Northern Railway", "District Hospital Aligarh"). NEVER extract junk text like "Relative Clinic" or unrelated clinic words.
+                - Include the Location/City and State with the organisation name if available (e.g. "AIIMS Gorakhpur, Gorakhpur, Uttar Pradesh").
+                - State is MANDATORY for all vacancies and recruitment. Infer the Indian State from the city/district (e.g. Aligarh -> Uttar Pradesh, Ghaziabad -> Uttar Pradesh, Hathras -> Uttar Pradesh, Mahoba -> Uttar Pradesh, Moradabad -> Uttar Pradesh). Never leave state missing or null if a known Indian district/city is mentioned.
+                
+                CRITICAL CATEGORY STANDARDIZATION:
+                Map GDMO, Lady Medical Officer, Female Medical Officer, Emergency Medical Officer, Casualty Medical Officer, Factory Medical Officer, and AYUSH Medical Officer to the unified category "Medical Officer".
+                Preserve specific titles (e.g. "Emergency Medical Officer", "GDMO") in postName, but assign "Medical Officer" as their category.
+                
+                CRITICAL ENGLISH-ONLY & TRANSLATION INSTRUCTION:
+                All extracted content must be in clean, professional English. Never leave Hindi or Devanagari text in the output.
+                Translate common Hindi circular terms into English while preserving proper names:
                 - "कार्यालय" = Office, "जिला स्वास्थ्य समिति" = District Health Society, "राष्ट्रीय स्वास्थ्य मिशन" = National Health Mission
                 - "पदनाम" / "पद का नाम" = postName (translate/transliterate into standard English, e.g. "Medical Officer", "Senior Resident", "Specialist", "Manager")
                 - "पदों की संख्या" = numberOfVacancies (extract the integer number, e.g. 03 -> 3)
@@ -310,7 +320,11 @@ public class RecruitmentAiExtractionClient {
                 - "संविदा" = jobType ("Contractual")
                 - "आयु सीमा" = ageLimit (e.g. "Below 45 years" or "Maximum 65 years")
                 - "आरक्षण श्रेणी" / "श्रेणी" = category ("UR", "OBC", "SC", "ST", "EWS")
-                - For organisationName, provide clean, readable English (e.g. "District Health Society, Hardoi (National Health Mission)", "MOIL Limited", "Sardar Vallabh Bhai Patel Hospital"). Do NOT copy phone numbers, fax, or garbled font glyphs into the organisation name.
+                - "प्रत्येक बुधवार" = "Every Wednesday"
+                
+                CRITICAL STRUCTURE: JOB DESCRIPTION VS SELECTION PROCESS:
+                - Put selection procedure, interview dates, walk-in interview schedule, written test, and document verification EXCLUSIVELY into "selectionProcess".
+                - Put job duties, responsibilities, department summary, eligibility requirements, and application instructions EXCLUSIVELY into "jobDescription".
                 
                 Required JSON shape:
                 {
@@ -333,7 +347,7 @@ public class RecruitmentAiExtractionClient {
                 }
                 
                 Card-field rules:
-                - sector: must be "government" for any central/state government, PSU (like MOIL, SAIL, etc.), government hospital, AIIMS, NHM, district health society, or government authority. Use "private" ONLY for private companies or private hospitals.
+                - sector: must be "government" for any central/state government, PSU, government hospital, AIIMS, NHM, district health society, railway, or government authority. Use "private" ONLY for private companies or private hospitals.
                 - qualification: degree/diploma only (e.g. "MD/MS/DNB", "MBBS"). 3-80 characters.
                 - experience: years or specific requirement only (e.g. "1 year post internship in a hospital").
                 - salary: pay figure, pay scale or pay level (e.g. "Rs. 1,00,000 per month" or "Rs. 50,000 - 1,60,000/-" or "Pay Matrix Level 11").
@@ -341,10 +355,9 @@ public class RecruitmentAiExtractionClient {
                 - applicationFee: extract fee amount and category exemptions (e.g. "Rs. 590/- (Exempt for SC/ST/PwD)" or "Exempted / Nil / No Fee").
                 - applicationLastDate: extract in YYYY-MM-DD format. If this is a Walk-in-Interview notice, set applicationLastDate to the last interview date.
                 - officialWebsite, officialNotificationUrl, officialApplicationUrl: extract valid URLs (e.g. "https://www.moil.nic.in", "http://hardoi.nic.in", "https://health.delhi.gov.in"). Add https:// or http:// if missing.
-                - Put NMC norms, long eligibility notes, and general conditions into importantInstructions and jobDescription only.
                 
                 Description rules:
-                Generate recruitment.jobDescription using these section headings separated by blank lines:
+                Generate recruitment.jobDescription in English using these section headings separated by blank lines:
                 JOB DETAILS
                 Post: ...
                 Organisation: ...
@@ -365,9 +378,6 @@ public class RecruitmentAiExtractionClient {
                 Application Start Date: YYYY-MM-DD
                 Last Date to Apply: YYYY-MM-DD
                 Application Fee: ...
-
-                SELECTION PROCESS
-                - ...
 
                 DOCUMENTS REQUIRED
                 - ...

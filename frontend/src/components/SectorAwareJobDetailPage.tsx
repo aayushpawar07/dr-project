@@ -6,6 +6,7 @@ import {
   Building2,
   Calendar,
   Check,
+  CheckCircle2,
   ExternalLink,
   FileText,
   GraduationCap,
@@ -33,6 +34,7 @@ import { Separator } from './ui/separator';
 import { cardFieldText, cardSalaryText, displayJobDescription, isNotMentioned } from '../utils/extractedFieldDisplay';
 import { cleanLocation } from '../utils/locationCleaner';
 import { buildJobShareText, getJobShareUrl, shareTextWithoutUrl } from '../utils/shareContent';
+import { resolveNotificationPdfUrl } from '../utils/pdfUrlHelper';
 
 interface Props {
   onNavigate: (page: string, entityId?: string) => void;
@@ -131,7 +133,7 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
             parsed.organization ||
             'Government Organisation';
           const loc = cleanLocation(data.location || [data.city, data.state].filter(Boolean).join(', '), org, '');
-          const notificationUrl = data.jobDocumentUrl || data.pdfUrl || data.applyLink;
+          const notificationUrl = resolveNotificationPdfUrl(data.jobDocumentUrl || data.pdfUrl || data.applyLink);
           const officialWeb = data.officialWebsite || extractOfficialWebsite(data.description);
 
           // If individual department vacancies were unspecified (or sum is less than authoritativeTotal),
@@ -268,11 +270,39 @@ export function GovernmentJobDetail({
   const fallbackCityState = [job.city, job.state].filter(Boolean).join(', ');
   const locationText = cleanLocation(rawLocation, organization, fallbackCityState);
 
-  const notificationUrl = job.jobDocumentUrl || job.pdfUrl;
+  const notificationUrl = resolveNotificationPdfUrl(job.jobDocumentUrl || job.pdfUrl || job.officialNotificationUrl);
   const officialWebsite = extractOfficialWebsite(job.description) || job.officialWebsite;
   const daysLeft = job.lastDate
     ? Math.ceil((new Date(job.lastDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
+
+  const displayOrgName = useMemo(() => {
+    if (!organization) return '';
+    if (!locationText) return organization;
+    const orgLower = organization.toLowerCase();
+    const locLower = locationText.toLowerCase();
+    if (orgLower === locLower || orgLower.endsWith(locLower)) return organization;
+    const parts = locationText.split(',').map((p) => p.trim()).filter(Boolean);
+    const missing = parts.filter((p) => !orgLower.includes(p.toLowerCase()));
+    if (missing.length > 0) {
+      return `${organization}, ${missing.join(', ')}`;
+    }
+    return organization;
+  }, [organization, locationText]);
+
+  const selectionProcessText = useMemo(() => {
+    if (job.selectionProcess && !isNotMentioned(job.selectionProcess)) {
+      return job.selectionProcess;
+    }
+    if ((job as any).selection_process && !isNotMentioned((job as any).selection_process)) {
+      return (job as any).selection_process;
+    }
+    if (job.description) {
+      const match = job.description.match(/(?:SELECTION PROCESS|Selection Process:?|Walk-in Interview Date:?)\s*([^\n\r]+(?:\n[^\n\r]+){0,4})/i);
+      if (match) return match[0].trim();
+    }
+    return null;
+  }, [job]);
 
   const handleShare = async () => {
     const shareUrl = getJobShareUrl(job.id);
@@ -464,6 +494,26 @@ export function GovernmentJobDetail({
               </p>
             </Card>
 
+            {selectionProcessText && (
+              <Card className="p-4 sm:p-6 job-detail-selection border-blue-200 bg-blue-50/20">
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                  <CheckCircle2 className="h-5 w-5 text-blue-600 shrink-0" />
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">Selection Process</h2>
+                </div>
+                <p
+                  className="whitespace-pre-wrap text-gray-700 leading-relaxed text-sm sm:text-base"
+                  style={{
+                    whiteSpace: 'pre-wrap',
+                    overflowWrap: 'anywhere',
+                    wordBreak: 'normal',
+                    lineHeight: 1.75,
+                  }}
+                >
+                  {selectionProcessText}
+                </p>
+              </Card>
+            )}
+
           </div>
 
           {/* Same right-column composition as Private jobs */}
@@ -509,7 +559,7 @@ export function GovernmentJobDetail({
               <div className="space-y-3 text-sm text-slate-600">
                 <div className="flex items-start gap-2 min-w-0">
                   <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-                  <span className="medex-org-highlight flex-1 min-w-0 break-words">{organization}</span>
+                  <span className="medex-org-highlight flex-1 min-w-0 break-words">{displayOrgName}</span>
                 </div>
                 {locationText && (
                   <div className="flex items-start gap-2">

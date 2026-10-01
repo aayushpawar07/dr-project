@@ -65,6 +65,26 @@ public class DemoJobShowcaseService {
         return result;
     }
 
+    @Transactional
+    public void cleanShowcase() {
+        try {
+            List<String> slugs = List.of(SINGLE_GOVT_SLUG, SINGLE_PRIVATE_SLUG, MULTI_SLUG, FACULTY_MULTI_SLUG);
+            for (String s : slugs) {
+                jobRepository.findBySlug(s).ifPresent(jobRepository::delete);
+            }
+            List<String> fingerprints = List.of(MULTI_FINGERPRINT, FACULTY_MULTI_FINGERPRINT);
+            for (String fp : fingerprints) {
+                recruitmentRepository.findFirstByPdfFingerprintOrderByCreatedAtDesc(fp).ifPresent(r -> {
+                    jobRepository.findBySourceRecruitmentId(r.getId()).forEach(jobRepository::delete);
+                    recruitmentRepository.delete(r);
+                });
+            }
+            logger.info("Cleaned up old demo showcase vacancies");
+        } catch (Exception ex) {
+            logger.warn("Could not clean old showcase jobs: {}", ex.getMessage());
+        }
+    }
+
     private Map<String, Object> publishSingleJob(SingleJobSpec spec) {
         Job existing = jobRepository.findBySlug(spec.slug()).orElse(null);
         if (existing != null && !existing.isDeleted()) {

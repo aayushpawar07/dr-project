@@ -17,8 +17,11 @@ import org.springframework.stereotype.Component;
 public class DemoJobShowcaseSeeder implements CommandLineRunner {
     private static final Logger logger = LoggerFactory.getLogger(DemoJobShowcaseSeeder.class);
 
-    @Value("${SEED_SHOWCASE_JOBS:true}")
+    @Value("${SEED_SHOWCASE_JOBS:false}")
     private boolean enabled;
+
+    @Value("${CLEAN_SHOWCASE_JOBS:true}")
+    private boolean cleanEnabled;
 
     private final DemoJobShowcaseService demoJobShowcaseService;
 
@@ -28,6 +31,13 @@ public class DemoJobShowcaseSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        if (cleanEnabled) {
+            try {
+                demoJobShowcaseService.cleanShowcase();
+            } catch (Exception ex) {
+                logger.warn("Cleaning showcase jobs skipped: {}", ex.getMessage());
+            }
+        }
         if (!enabled) {
             return;
         }

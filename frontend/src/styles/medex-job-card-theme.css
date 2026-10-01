@@ -7,8 +7,9 @@
   background: #ffffff !important;
   border-radius: 20px !important;
   border: 1px solid #eef2f6 !important;
-  padding: 22px 24px !important;
-  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04) !important;
+  padding: 24px 26px !important;
+  margin-bottom: 8px !important;
+  box-shadow: 0 2px 14px rgba(15, 23, 42, 0.05) !important;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
   overflow: hidden !important;
   display: flex !important;
@@ -16,6 +17,7 @@
   justify-content: space-between !important;
   cursor: pointer !important;
   box-sizing: border-box !important;
+  min-height: 290px !important;
 }
 
 .medex-job-card:hover {
@@ -107,8 +109,8 @@
 
 /* Squircle Icon Container */
 .medex-card-icon-box {
-  width: 44px !important;
-  height: 44px !important;
+  width: 46px !important;
+  height: 46px !important;
   border-radius: 14px !important;
   display: flex !important;
   align-items: center !important;
@@ -118,37 +120,45 @@
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.07) !important;
 }
 .medex-card-icon-box svg {
-  width: 22px !important;
-  height: 22px !important;
+  width: 24px !important;
+  height: 24px !important;
   color: #ffffff !important;
   stroke: #ffffff !important;
 }
 
-/* Top Badge Pills */
+/* Top Badge Pills - Prominent, High-Visibility Government / Private Tags */
 .medex-pill-badge {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 4px !important;
+  gap: 5px !important;
   border-radius: 9999px !important;
-  padding: 4px 12px !important;
-  font-size: 12px !important;
-  font-weight: 600 !important;
+  padding: 6px 14px !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em !important;
   line-height: 1 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+  white-space: nowrap !important;
+}
+.medex-pill-badge svg {
+  width: 15px !important;
+  height: 15px !important;
+  flex-shrink: 0 !important;
 }
 .medex-pill-badge.badge-gov {
   background: #eff6ff !important;
   color: #1d4ed8 !important;
-  border: 1px solid #bfdbfe !important;
+  border: 1.5px solid #93c5fd !important;
 }
 .medex-pill-badge.badge-private {
   background: #ecfdf5 !important;
   color: #047857 !important;
-  border: 1px solid #a7f3d0 !important;
+  border: 1.5px solid #6ee7b7 !important;
 }
 .medex-pill-badge.badge-featured {
   background: #fffbeb !important;
   color: #b45309 !important;
-  border: 1px solid #fde68a !important;
+  border: 1.5px solid #fde68a !important;
 }
 
 /* Share Button */

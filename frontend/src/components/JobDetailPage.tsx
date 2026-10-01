@@ -21,6 +21,7 @@ import {
   MessageCircle,
   Send,
   Edit,
+  CheckCircle2,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -48,6 +49,7 @@ import { ResumeUploadSection } from "./ResumeUploadSection";
 import { cardFieldText, cardSalaryText, displayJobDescription, isNotMentioned } from "../utils/extractedFieldDisplay";
 import { cleanLocation } from "../utils/locationCleaner";
 import { buildJobShareText, getJobShareUrl, shareTextWithoutUrl } from "../utils/shareContent";
+import { resolveNotificationPdfUrl } from "../utils/pdfUrlHelper";
 
 interface JobDetailPageProps {
   onNavigate: (page: string, entityId?: string) => void;
@@ -704,6 +706,18 @@ export function JobDetailPage({
               <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Job Description</h2>
               <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-sm sm:text-base">{displayJobDescription(job)}</p>
             </Card>
+
+            {job.selectionProcess && !isNotMentioned(job.selectionProcess) && (
+              <Card className="p-4 sm:p-6 job-detail-selection border-blue-200 bg-blue-50/20">
+                <div className="flex items-center gap-2 mb-3 sm:mb-4">
+                  <CheckCircle2 className="h-5 w-5 text-blue-600 shrink-0" />
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">Selection Process</h2>
+                </div>
+                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-sm sm:text-base">
+                  {job.selectionProcess}
+                </p>
+              </Card>
+            )}
 
           </div>
 
@@ -1604,41 +1618,45 @@ export function JobDetailPage({
               </div>
             </Card>
 
-            {(job.pdfUrl || job.officialWebsite) && (
-              <Card className="p-6 job-detail-docs">
-                <h3 className="mb-4 text-lg font-semibold text-gray-900">Official Documents</h3>
-                <div className="space-y-3">
-                  {job.pdfUrl && (
-                    <a
-                      href={job.pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-between rounded-lg border border-blue-300 bg-blue-50 px-3 py-3 text-sm font-semibold text-blue-800 transition-colors hover:bg-blue-100"
-                    >
-                      <span className="inline-flex items-center gap-2">
-                        <FileText className="h-4 w-4" />
-                        Notification PDF
-                      </span>
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  )}
-                  {job.officialWebsite && (
-                    <a
-                      href={job.officialWebsite}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-between rounded-lg border border-blue-300 bg-blue-50 px-3 py-3 text-sm font-semibold text-blue-800 transition-colors hover:bg-blue-100 hover:border-blue-400"
-                    >
-                      <span className="inline-flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-blue-600" />
-                        Official Website
-                      </span>
-                      <ExternalLink className="h-4 w-4 text-blue-600" />
-                    </a>
-                  )}
-                </div>
-              </Card>
-            )}
+            {(() => {
+              const resolvedPdf = resolveNotificationPdfUrl(job.pdfUrl || job.jobDocumentUrl || (job as any).officialNotificationUrl);
+              if (!resolvedPdf && !job.officialWebsite) return null;
+              return (
+                <Card className="p-6 job-detail-docs">
+                  <h3 className="mb-4 text-lg font-semibold text-gray-900">Official Documents</h3>
+                  <div className="space-y-3">
+                    {resolvedPdf && (
+                      <a
+                        href={resolvedPdf}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between rounded-lg border border-blue-300 bg-blue-50 px-3 py-3 text-sm font-semibold text-blue-800 transition-colors hover:bg-blue-100"
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          Notification PDF
+                        </span>
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    )}
+                    {job.officialWebsite && (
+                      <a
+                        href={job.officialWebsite}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between rounded-lg border border-blue-300 bg-blue-50 px-3 py-3 text-sm font-semibold text-blue-800 transition-colors hover:bg-blue-100 hover:border-blue-400"
+                      >
+                        <span className="inline-flex items-center gap-2">
+                          <Building2 className="h-4 w-4 text-blue-600" />
+                          Official Website
+                        </span>
+                        <ExternalLink className="h-4 w-4 text-blue-600" />
+                      </a>
+                    )}
+                  </div>
+                </Card>
+              );
+            })()}
 
             {/* Job Document Section - Direct PDF and Image attachments */}
             <Card className="p-6">

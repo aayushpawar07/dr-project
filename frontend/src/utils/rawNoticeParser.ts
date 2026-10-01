@@ -40,17 +40,340 @@ export const INDIAN_STATES = [
   'West Bengal',
 ];
 
+export const CITY_TO_STATE_MAP: Record<string, string> = {
+  // Uttar Pradesh (All prominent districts & medical recruitment locations)
+  'mahoba': 'Uttar Pradesh',
+  'ambedkar nagar': 'Uttar Pradesh',
+  'moradabad': 'Uttar Pradesh',
+  'hathras': 'Uttar Pradesh',
+  'aligarh': 'Uttar Pradesh',
+  'ghaziabad': 'Uttar Pradesh',
+  'gorakhpur': 'Uttar Pradesh',
+  'varanasi': 'Uttar Pradesh',
+  'lucknow': 'Uttar Pradesh',
+  'kanpur': 'Uttar Pradesh',
+  'kanpur nagar': 'Uttar Pradesh',
+  'kanpur dehat': 'Uttar Pradesh',
+  'agra': 'Uttar Pradesh',
+  'meerut': 'Uttar Pradesh',
+  'bareilly': 'Uttar Pradesh',
+  'jhansi': 'Uttar Pradesh',
+  'prayagraj': 'Uttar Pradesh',
+  'allahabad': 'Uttar Pradesh',
+  'noida': 'Uttar Pradesh',
+  'greater noida': 'Uttar Pradesh',
+  'ayodhya': 'Uttar Pradesh',
+  'faizabad': 'Uttar Pradesh',
+  'basti': 'Uttar Pradesh',
+  'sultanpur': 'Uttar Pradesh',
+  'mathura': 'Uttar Pradesh',
+  'muzaffarnagar': 'Uttar Pradesh',
+  'saharanpur': 'Uttar Pradesh',
+  'firozabad': 'Uttar Pradesh',
+  'mirzapur': 'Uttar Pradesh',
+  'budaun': 'Uttar Pradesh',
+  'rampur': 'Uttar Pradesh',
+  'shahjahanpur': 'Uttar Pradesh',
+  'farrukhabad': 'Uttar Pradesh',
+  'hardoi': 'Uttar Pradesh',
+  'sitapur': 'Uttar Pradesh',
+  'lakhimpur': 'Uttar Pradesh',
+  'lakhimpur kheri': 'Uttar Pradesh',
+  'bahraich': 'Uttar Pradesh',
+  'gonda': 'Uttar Pradesh',
+  'barabanki': 'Uttar Pradesh',
+  'unnao': 'Uttar Pradesh',
+  'rae bareli': 'Uttar Pradesh',
+  'raebareli': 'Uttar Pradesh',
+  'amethi': 'Uttar Pradesh',
+  'pratapgarh': 'Uttar Pradesh',
+  'fatehpur': 'Uttar Pradesh',
+  'kaushambi': 'Uttar Pradesh',
+  'banda': 'Uttar Pradesh',
+  'hamirpur': 'Uttar Pradesh',
+  'chitrakoot': 'Uttar Pradesh',
+  'jalaun': 'Uttar Pradesh',
+  'orai': 'Uttar Pradesh',
+  'lalitpur': 'Uttar Pradesh',
+  'deoria': 'Uttar Pradesh',
+  'kushinagar': 'Uttar Pradesh',
+  'maharajganj': 'Uttar Pradesh',
+  'azamgarh': 'Uttar Pradesh',
+  'mau': 'Uttar Pradesh',
+  'ballia': 'Uttar Pradesh',
+  'jaunpur': 'Uttar Pradesh',
+  'ghazipur': 'Uttar Pradesh',
+  'chandauli': 'Uttar Pradesh',
+  'sonbhadra': 'Uttar Pradesh',
+  'bhadohi': 'Uttar Pradesh',
+  'kasganj': 'Uttar Pradesh',
+  'sambhal': 'Uttar Pradesh',
+  'amroha': 'Uttar Pradesh',
+  'bijnor': 'Uttar Pradesh',
+  'shamli': 'Uttar Pradesh',
+  'hapur': 'Uttar Pradesh',
+  'baghpat': 'Uttar Pradesh',
+  'mainpuri': 'Uttar Pradesh',
+  'etawah': 'Uttar Pradesh',
+  'kannauj': 'Uttar Pradesh',
+  'auraiya': 'Uttar Pradesh',
+  'etah': 'Uttar Pradesh',
+  'pilibhit': 'Uttar Pradesh',
+  'balrampur': 'Uttar Pradesh',
+  'shravasti': 'Uttar Pradesh',
+  'siddharthnagar': 'Uttar Pradesh',
+  'sant kabir nagar': 'Uttar Pradesh',
+
+  // Delhi & NCR
+  'delhi': 'Delhi',
+  'new delhi': 'Delhi',
+  'gurugram': 'Haryana',
+  'gurgaon': 'Haryana',
+  'faridabad': 'Haryana',
+  'panipat': 'Haryana',
+  'sonipat': 'Haryana',
+  'rohtak': 'Haryana',
+  'karnal': 'Haryana',
+  'ambala': 'Haryana',
+  'hisar': 'Haryana',
+  'panchkula': 'Haryana',
+
+  // Bihar
+  'patna': 'Bihar',
+  'gaya': 'Bihar',
+  'bhagalpur': 'Bihar',
+  'muzaffarpur': 'Bihar',
+  'darbhanga': 'Bihar',
+  'purnia': 'Bihar',
+  'bihar sharif': 'Bihar',
+  'arrah': 'Bihar',
+  'begusarai': 'Bihar',
+  'katihar': 'Bihar',
+  'munger': 'Bihar',
+  'chhapra': 'Bihar',
+  'bettiah': 'Bihar',
+
+  // Madhya Pradesh
+  'bhopal': 'Madhya Pradesh',
+  'indore': 'Madhya Pradesh',
+  'gwalior': 'Madhya Pradesh',
+  'jabalpur': 'Madhya Pradesh',
+  'ujjain': 'Madhya Pradesh',
+  'sagar': 'Madhya Pradesh',
+  'dewas': 'Madhya Pradesh',
+  'satna': 'Madhya Pradesh',
+  'ratlam': 'Madhya Pradesh',
+  'rewa': 'Madhya Pradesh',
+  'datia': 'Madhya Pradesh',
+  'shivpuri': 'Madhya Pradesh',
+  'vidisha': 'Madhya Pradesh',
+  'chhindwara': 'Madhya Pradesh',
+  'khandwa': 'Madhya Pradesh',
+
+  // Rajasthan
+  'jaipur': 'Rajasthan',
+  'jodhpur': 'Rajasthan',
+  'kota': 'Rajasthan',
+  'bikaner': 'Rajasthan',
+  'ajmer': 'Rajasthan',
+  'udaipur': 'Rajasthan',
+  'bhilwara': 'Rajasthan',
+  'alwar': 'Rajasthan',
+  'bharatpur': 'Rajasthan',
+  'sikar': 'Rajasthan',
+  'pali': 'Rajasthan',
+  'sri ganganagar': 'Rajasthan',
+
+  // Maharashtra
+  'mumbai': 'Maharashtra',
+  'pune': 'Maharashtra',
+  'nagpur': 'Maharashtra',
+  'thane': 'Maharashtra',
+  'nashik': 'Maharashtra',
+  'aurangabad': 'Maharashtra',
+  'chhatrapati sambhajinagar': 'Maharashtra',
+  'navi mumbai': 'Maharashtra',
+  'solapur': 'Maharashtra',
+  'kolhapur': 'Maharashtra',
+  'amravati': 'Maharashtra',
+  'nanded': 'Maharashtra',
+  'sangli': 'Maharashtra',
+  'jalgaon': 'Maharashtra',
+  'akola': 'Maharashtra',
+  'latur': 'Maharashtra',
+  'dhule': 'Maharashtra',
+  'ahmednagar': 'Maharashtra',
+
+  // Karnataka
+  'bengaluru': 'Karnataka',
+  'bangalore': 'Karnataka',
+  'mysuru': 'Karnataka',
+  'mysore': 'Karnataka',
+  'hubballi': 'Karnataka',
+  'mangaluru': 'Karnataka',
+  'mangalore': 'Karnataka',
+  'belagavi': 'Karnataka',
+  'belgaum': 'Karnataka',
+  'kalaburagi': 'Karnataka',
+  'gulbarga': 'Karnataka',
+  'davanagere': 'Karnataka',
+  'ballari': 'Karnataka',
+  'bellary': 'Karnataka',
+  'shivamogga': 'Karnataka',
+  'shimoga': 'Karnataka',
+
+  // Tamil Nadu
+  'chennai': 'Tamil Nadu',
+  'coimbatore': 'Tamil Nadu',
+  'madurai': 'Tamil Nadu',
+  'tiruchirappalli': 'Tamil Nadu',
+  'trichy': 'Tamil Nadu',
+  'salem': 'Tamil Nadu',
+  'tirunelveli': 'Tamil Nadu',
+  'tiruppur': 'Tamil Nadu',
+  'erode': 'Tamil Nadu',
+  'vellore': 'Tamil Nadu',
+  'thoothukudi': 'Tamil Nadu',
+  'thanjavur': 'Tamil Nadu',
+  'nagercoil': 'Tamil Nadu',
+
+  // Telangana
+  'hyderabad': 'Telangana',
+  'secunderabad': 'Telangana',
+  'warangal': 'Telangana',
+  'nizamabad': 'Telangana',
+  'karimnagar': 'Telangana',
+  'khammam': 'Telangana',
+
+  // Andhra Pradesh
+  'visakhapatnam': 'Andhra Pradesh',
+  'vizag': 'Andhra Pradesh',
+  'vijayawada': 'Andhra Pradesh',
+  'guntur': 'Andhra Pradesh',
+  'nellore': 'Andhra Pradesh',
+  'kurnool': 'Andhra Pradesh',
+  'kakinada': 'Andhra Pradesh',
+  'rajahmundry': 'Andhra Pradesh',
+  'tirupati': 'Andhra Pradesh',
+  'kadapa': 'Andhra Pradesh',
+  'anantapur': 'Andhra Pradesh',
+
+  // West Bengal
+  'kolkata': 'West Bengal',
+  'howrah': 'West Bengal',
+  'asansol': 'West Bengal',
+  'siliguri': 'West Bengal',
+  'durgapur': 'West Bengal',
+  'bardhaman': 'West Bengal',
+  'malda': 'West Bengal',
+  'kharagpur': 'West Bengal',
+
+  // Punjab
+  'ludhiana': 'Punjab',
+  'amritsar': 'Punjab',
+  'jalandhar': 'Punjab',
+  'patiala': 'Punjab',
+  'bathinda': 'Punjab',
+  'mohali': 'Punjab',
+
+  // Uttarakhand
+  'dehradun': 'Uttarakhand',
+  'haridwar': 'Uttarakhand',
+  'roorkee': 'Uttarakhand',
+  'haldwani': 'Uttarakhand',
+  'rishikesh': 'Uttarakhand',
+  'rudrapur': 'Uttarakhand',
+  'kashipur': 'Uttarakhand',
+  'nainital': 'Uttarakhand',
+  'almora': 'Uttarakhand',
+  'srinagar garhwal': 'Uttarakhand',
+
+  // Himachal Pradesh
+  'shimla': 'Himachal Pradesh',
+  'dharamshala': 'Himachal Pradesh',
+  'solan': 'Himachal Pradesh',
+  'mandi': 'Himachal Pradesh',
+  'kullu': 'Himachal Pradesh',
+  'kangra': 'Himachal Pradesh',
+
+  // Chhattisgarh
+  'raipur': 'Chhattisgarh',
+  'bhilai': 'Chhattisgarh',
+  'bilaspur': 'Chhattisgarh',
+  'korba': 'Chhattisgarh',
+  'durg': 'Chhattisgarh',
+
+  // Jharkhand
+  'ranchi': 'Jharkhand',
+  'jamshedpur': 'Jharkhand',
+  'dhanbad': 'Jharkhand',
+  'bokaro': 'Jharkhand',
+  'deoghar': 'Jharkhand',
+  'hazaribagh': 'Jharkhand',
+
+  // Odisha
+  'bhubaneswar': 'Odisha',
+  'cuttack': 'Odisha',
+  'rourkela': 'Odisha',
+  'berhampur': 'Odisha',
+  'sambalpur': 'Odisha',
+  'puri': 'Odisha',
+
+  // Assam & North East
+  'guwahati': 'Assam',
+  'silchar': 'Assam',
+  'dibrugarh': 'Assam',
+  'jorhat': 'Assam',
+
+  // Jammu & Kashmir
+  'srinagar': 'Jammu and Kashmir',
+  'jammu': 'Jammu and Kashmir',
+  'anantnag': 'Jammu and Kashmir',
+  'udhampur': 'Jammu and Kashmir',
+
+  // Chandigarh & Goa
+  'chandigarh': 'Chandigarh',
+  'panaji': 'Goa',
+  'margao': 'Goa',
+
+  // Kerala
+  'thiruvananthapuram': 'Kerala',
+  'trivandrum': 'Kerala',
+  'kochi': 'Kerala',
+  'cochin': 'Kerala',
+  'kozhikode': 'Kerala',
+  'calicut': 'Kerala',
+  'kollam': 'Kerala',
+  'thrissur': 'Kerala',
+  'kannur': 'Kerala',
+  'alappuzha': 'Kerala',
+  'kottayam': 'Kerala',
+  'palakkad': 'Kerala',
+};
+
 const trim = (value?: string | null) => value?.trim() || '';
 
+/**
+ * Standardize Medical Officer variants into a single unified category.
+ * Maps GDMO, Lady MO, Emergency MO, Casualty MO, Factory MO, AYUSH MO to 'Medical Officer'.
+ */
 export function inferCategory(value?: string | null): JobCategory {
   const t = trim(value).toLowerCase();
-  if (/junior resident/.test(t)) return 'Junior Resident';
-  if (/senior resident/.test(t)) return 'Senior Resident';
-  if (/medical officer|gdm[o]?/.test(t)) return 'Medical Officer';
-  if (/professor|faculty|lecturer|tutor/.test(t)) return 'Faculty';
-  if (/specialist|consultant/.test(t)) return 'Specialist';
+  if (
+    /medical\s*officer|gdm[o]?|casualty\s*medical|emergency\s*medical|\bemo\b|\blmo\b|\bfmo\b|lady\s*medical|female\s*medical|factory\s*medical|ayush\s*medical|general\s*duty\s*medical/.test(
+      t
+    )
+  ) {
+    return 'Medical Officer';
+  }
+  if (/junior\s*resident|\bjr\b/.test(t)) return 'Junior Resident';
+  if (/senior\s*resident|\bsr\b/.test(t)) return 'Senior Resident';
+  if (/professor|faculty|lecturer|tutor|demonstrator/.test(t)) return 'Faculty';
+  if (/specialist|super\s*specialist|consultant|general\s*physician|chest\s*physician|neuro\s*physician/.test(t)) {
+    return 'Specialist';
+  }
   if (/dental|dentist|bds|mds/.test(t)) return 'Dental';
-  if (/ayush|bams|bhms|unani|ayurveda/.test(t)) return 'AYUSH';
+  if (/ayush|bams|bhms|unani|ayurveda|siddha|homeopath/.test(t)) return 'AYUSH';
   if (/nurs/.test(t)) return 'Nursing';
   if (/pharmac/.test(t)) return 'Pharmacy';
   if (/psych/.test(t)) return 'Psychology & Mental Health';
@@ -71,9 +394,91 @@ export function inferDutyType(value?: string | null): 'full_time' | 'part_time' 
     : 'full_time';
 }
 
-export function inferState(location?: string | null): string {
-  const t = trim(location).toLowerCase();
-  return INDIAN_STATES.find((state) => t.includes(state.toLowerCase())) || '';
+/**
+ * Identify Indian state from location string or full notice text.
+ * Never leaves state blank when a known Indian district/city is mentioned.
+ */
+export function inferState(location?: string | null, fullNoticeText?: string | null): string {
+  const loc = trim(location).toLowerCase();
+  if (loc) {
+    // 1. Direct state match
+    const directState = INDIAN_STATES.find((s) => loc.includes(s.toLowerCase()));
+    if (directState) return directState;
+
+    // 2. City lookup in location string
+    for (const [city, state] of Object.entries(CITY_TO_STATE_MAP)) {
+      const reg = new RegExp(`\\b${city}\\b`, 'i');
+      if (reg.test(loc)) {
+        return state;
+      }
+    }
+  }
+
+  // 3. Fallback search across full notice text
+  if (fullNoticeText) {
+    const textLower = fullNoticeText.toLowerCase();
+    for (const state of INDIAN_STATES) {
+      if (new RegExp(`\\b${state.toLowerCase()}\\b`, 'i').test(textLower)) {
+        return state;
+      }
+    }
+    for (const [city, state] of Object.entries(CITY_TO_STATE_MAP)) {
+      if (new RegExp(`\\b${city}\\b`, 'i').test(textLower)) {
+        return state;
+      }
+    }
+  }
+
+  return '';
+}
+
+/**
+ * Translates common Hindi circular phrases to English and converts Devanagari numerals.
+ */
+export function translateHindiToEnglish(text: string): string {
+  if (!text) return '';
+
+  let res = text;
+
+  // Convert Devanagari numerals ०-९ to 0-9
+  const devanagariDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
+  for (let i = 0; i < 10; i++) {
+    res = res.replace(new RegExp(devanagariDigits[i], 'g'), String(i));
+  }
+
+  const translations: Array<[RegExp, string]> = [
+    [/कार्यालय\s+मुख्य\s+चिकित्सा\s+अधिकारी/gi, 'Office of the Chief Medical Officer'],
+    [/मुख्य\s+चिकित्सा\s+अधिकारी/gi, 'Chief Medical Officer'],
+    [/जिला\s+स्वास्थ्य\s+समिति/gi, 'District Health Society'],
+    [/राष्ट्रीय\s+स्वास्थ्य\s+मिशन/gi, 'National Health Mission'],
+    [/राजकीय\s+मेडिकल\s+कॉलेज/gi, 'Government Medical College'],
+    [/महिला\s+चिकित्सा\s+अधिकारी/gi, 'Female Medical Officer'],
+    [/आपातकालीन\s+चिकित्सा\s+अधिकारी/gi, 'Emergency Medical Officer'],
+    [/चिकित्सा\s+अधिकारी/gi, 'Medical Officer'],
+    [/वरिष्ठ\s+रेजिडेंट/gi, 'Senior Resident'],
+    [/कनिष्ठ\s+रेजिडेंट/gi, 'Junior Resident'],
+    [/साक्षात्कार\s+की\s+तिथि|साक्षात्कार\s+तिथि/gi, 'Date of Interview'],
+    [/वाक[- ]?इन\s+इंटरव्यू|साक्षात्कार/gi, 'Walk-in Interview'],
+    [/आवेदन\s+की\s+अंतिम\s+तिथि|अंतिम\s+तिथि/gi, 'Last Date of Application'],
+    [/प्रत्येक\s+बुधवार/gi, 'Every Wednesday'],
+    [/प्रत्येक\s+कार्यदिवस/gi, 'Every Working Day'],
+    [/पदों\s+की\s+संख्या|कुल\s+पद/gi, 'Total Posts'],
+    [/मानदेय|वेतन/gi, 'Salary / Remuneration'],
+    [/अनिवार्य\s+अर्हता|शैक्षणिक\s+अर्हता|योग्यता/gi, 'Educational Qualification'],
+    [/आयु\s+सीमा/gi, 'Age Limit'],
+    [/दस्तावेज\s+सत्यापन/gi, 'Document Verification'],
+    [/संविदात्मक|संविदा/gi, 'Contractual'],
+    [/चयन\s+प्रक्रिया/gi, 'Selection Process'],
+    [/पंजीकरण/gi, 'Registration'],
+    [/विस्तृत\s+विज्ञापन/gi, 'Detailed Circular'],
+    [/नियम\s+एवं\s+शर्तें/gi, 'Terms and Conditions'],
+  ];
+
+  for (const [re, eng] of translations) {
+    res = res.replace(re, eng);
+  }
+
+  return res;
 }
 
 export interface ParsedDepartmentVacancy {
@@ -101,6 +506,7 @@ export interface ParsedNoticeResult {
   contactEmail?: string;
   contactPhone?: string;
   applyLink?: string;
+  officialWebsite?: string;
   ageLimit?: string;
   selectionProcess?: string;
   description?: string;
@@ -109,53 +515,230 @@ export interface ParsedNoticeResult {
   isMultiDepartment?: boolean;
 }
 
+/**
+ * Filter out junk/accidental match strings for organization names
+ */
+function isJunkOrganization(org: string): boolean {
+  const o = org.trim().toLowerCase();
+  return (
+    /^(relative\s*clinic|referral\s*clinic|local\s*clinic|private\s*clinic|any\s*clinic|nearest\s*clinic|the\s*hospital|clinic|hospital)$/i.test(
+      o
+    ) ||
+    o.length < 3 ||
+    /^[\d\s.,\-#/]+$/.test(o)
+  );
+}
+
 export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
-  const text = rawText.trim();
+  const normalizedText = translateHindiToEnglish(rawText.trim());
+  const lines = normalizedText
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+
   const result: ParsedNoticeResult = {
-    description: text,
+    description: '',
   };
 
-  // 1. Post Title detection (Prioritize exact key match, never capture "Number of Posts")
-  const titleKeyMatch = text.match(/(?:^|\n)\s*(?:\*\s*)?(?:Post\s+Job\s+Title|Job\s+Title|Post\s+Name|Name\s+of\s+(?:the\s+)?Post|Designation|Position|Job\s+Role|Role|Post(?!\s+(?:No|Code|Count|Number|of\s+Vacanc)))\s*[:\-]\s*([^\n\r]+)/i);
-  if (titleKeyMatch) {
-    result.title = titleKeyMatch[1].trim();
+  // ==========================================
+  // 1. Organization & Location / State detection
+  // ==========================================
+  // Strip emojis and bullets from the first non-empty lines
+  for (let i = 0; i < Math.min(lines.length, 5); i++) {
+    const rawLine = lines[i];
+    const cleanLine = rawLine.replace(/^[🟩🟥⬛⬜🟧🟨*#•\->\s]+/, '').trim();
+
+    // Check for explicit Organization: ...
+    const orgKeyMatch = cleanLine.match(
+      /^(?:Organization(?:\s*\/\s*Hospital\s*Name)?|Hospital(?:\s*Name)?|Institute(?:\s*Name)?|College(?:\s*Name)?|Employer(?:\s*Name)?|Authority)\s*[:\-]\s*(.+)$/i
+    );
+    if (orgKeyMatch) {
+      result.organization = orgKeyMatch[1].trim();
+      break;
+    }
+
+    // Check for prominent official headers (CMO, GMC, Railway, AIIMS, ESIC, District Health Society, Hospital)
+    if (
+      /^(?:OFFICE OF THE CHIEF MEDICAL OFFICER|CHIEF MEDICAL OFFICER|MAHAMAYA RAJKIYA ALLOPATHIC MEDICAL COLLEGE|RAJKIYA ALLOPATHIC MEDICAL COLLEGE|GOVERNMENT MEDICAL COLLEGE|NORTHERN RAILWAY|SOUTHERN RAILWAY|WESTERN RAILWAY|EASTERN RAILWAY|CENTRAL RAILWAY|INDIAN RAILWAYS|DISTRICT HEALTH SOCIETY|DISTRICT HOSPITAL|CIVIL HOSPITAL|ALL INDIA INSTITUTE OF MEDICAL SCIENCES|AIIMS|ESIC|NATIONAL HEALTH MISSION|DIRECTORATE OF HEALTH)/i.test(
+        cleanLine
+      ) ||
+      /\b(?:CHIEF MEDICAL OFFICER|MEDICAL COLLEGE|RAILWAY|DISTRICT HOSPITAL|AIIMS|ESIC)\b/i.test(cleanLine)
+    ) {
+      // If line is not a post listing line (does not end with posts/vacancies)
+      if (!/–|-|:|\b\d+\s*posts?\b/i.test(cleanLine) || cleanLine.includes('OFFICE') || cleanLine.includes('RAILWAY') || cleanLine.includes('COLLEGE')) {
+        result.organization = cleanLine;
+        break;
+      }
+    }
   }
 
-  // 2. Organization detection
-  const orgKeyMatch = text.match(/(?:^|\n)\s*(?:\*\s*)?(?:Organization(?:\s*\/\s*Hospital\s*Name)?|Hospital(?:\s*Name)?|Institute(?:\s*Name)?|College(?:\s*Name)?|Employer(?:\s*Name)?|Institution|Authority|Trust|Centre)\s*[:\-]\s*([^\n\r]+)/i);
-  if (orgKeyMatch) {
-    result.organization = orgKeyMatch[1].trim();
-  } else {
+  // Fallback organization regexes if not yet found
+  if (!result.organization) {
     const orgMatch =
-      text.match(/\b(AIIMS\s+[A-Za-z]+(?:\s*\([^)]+\))?)/i)
-      || text.match(/\b((?:AIIMS|ESIC|PGIMER|NIMHANS|JIPMER|SGPGI|BHU|AMU)\s+[A-Za-z]+)\b/i)
-      || text.match(/\b(All\s+India\s+Institute\s+of\s+Medical\s+Sciences(?:\s*,?\s*[A-Za-z]+)?)/i)
-      || text.match(/(?:at|in|by|for)\s+([A-Z][A-Za-z0-9&., ]{3,55}(?:Hospital|Institute|AIIMS|Medical College|Health Centre|Clinic|Healthcare|Infirmary|Trust|Foundation|Council|University|Directorate))/i)
-      || text.match(/([A-Z][A-Za-z0-9&., ]{2,50}(?:Hospital|Medical College|AIIMS|PGIMER|ESIC|Health City|Heart Institute))/i);
-    if (orgMatch) {
+      normalizedText.match(/\b(AIIMS\s+[A-Za-z]+(?:\s*\([^)]+\))?)/i) ||
+      normalizedText.match(/\b((?:AIIMS|ESIC|PGIMER|NIMHANS|JIPMER|SGPGI|BHU|AMU)\s+[A-Za-z]+)\b/i) ||
+      normalizedText.match(/\b(All\s+India\s+Institute\s+of\s+Medical\s+Sciences(?:\s*,?\s*[A-Za-z]+)?)/i) ||
+      normalizedText.match(/([A-Z][A-Za-z0-9&., ]{3,50}(?:Medical College|AIIMS|PGIMER|ESIC|Health City|Heart Institute))/i);
+
+    if (orgMatch && !isJunkOrganization(orgMatch[1])) {
       result.organization = orgMatch[1].trim();
     }
   }
 
-  // 3. Sector detection
-  const sectorKeyMatch = text.match(/(?:^|\n)\s*(?:\*\s*)?Job\s*Sector\s*[:\-]\s*([^\n\r]+)/i);
+  // Clean junk organisation
+  if (result.organization && isJunkOrganization(result.organization)) {
+    result.organization = undefined;
+  }
+
+  // If organization has city like "OFFICE OF THE CHIEF MEDICAL OFFICER, MAHOBA"
+  if (result.organization && result.organization.includes(',')) {
+    const parts = result.organization.split(',').map((p) => p.trim());
+    const possibleCity = parts[parts.length - 1];
+    const matchedState = inferState(possibleCity);
+    if (matchedState) {
+      result.location = possibleCity;
+      result.state = matchedState;
+    }
+  }
+
+  // ==========================================
+  // 2. State & City / Location detection
+  // ==========================================
+  const cityKeyMatch = normalizedText.match(
+    /(?:^|\n)\s*(?:\*\s*)?(?:Location\s*(?:\(City\))?|City)\s*[:\-]\s*([^\n\r,]+)/i
+  );
+  const stateKeyMatch = normalizedText.match(/(?:^|\n)\s*(?:\*\s*)?State\s*[:\-]\s*([^\n\r]+)/i);
+
+  if (cityKeyMatch) {
+    result.location = cityKeyMatch[1].trim();
+  }
+  if (stateKeyMatch) {
+    result.state = stateKeyMatch[1].trim();
+  }
+
+  // Infer location from known city dictionary if still missing
+  if (!result.location) {
+    for (const city of Object.keys(CITY_TO_STATE_MAP)) {
+      const reg = new RegExp(`\\b${city}\\b`, 'i');
+      if (reg.test(normalizedText)) {
+        // Format to Title Case e.g. "Mahoba", "Ambedkar Nagar"
+        result.location = city
+          .split(' ')
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(' ');
+        result.state = CITY_TO_STATE_MAP[city];
+        break;
+      }
+    }
+  }
+
+  // Ensure State is mandatory & identified
+  if (!result.state && result.location) {
+    result.state = inferState(result.location, normalizedText);
+  }
+  if (!result.state) {
+    result.state = inferState(undefined, normalizedText);
+  }
+
+  // ==========================================
+  // 3. Post Items Detection (Line by line circular breakdown)
+  // E.g.
+  // Female Medical Officer – 1 Post
+  // Medical Officer – 6 Posts
+  // Emergency Medical Officer – 2 Posts
+  // Senior Resident – 24 Posts
+  // Junior Resident – 4Post
+  // ==========================================
+  const parsedVacancies: ParsedDepartmentVacancy[] = [];
+  let totalPostsSum = 0;
+  const detectedPostTitles: string[] = [];
+
+  for (const rawLine of lines) {
+    const cleanLine = rawLine.replace(/^[🟩🟥⬛⬜🟧🟨*#•\->\s]+/, '').trim();
+    if (!cleanLine) continue;
+
+    // Skip header lines or meta lines
+    if (/^(LAST DATE|DATE OF INTERVIEW|WEBSITE|WALK-IN|SELECTION|AGE LIMIT|SALARY|PAY|EXPERIENCE|ELIGIBILITY)\b/i.test(cleanLine)) {
+      continue;
+    }
+
+    // Match "Post Title – X Posts" or "Post Title: X Vacancies" or "Junior Resident - 4Post"
+    const postLineMatch =
+      cleanLine.match(/^([A-Za-z0-9&/,\.\(\) ]+?)\s*[:\-–—=]\s*([0-9]{1,4})\s*(?:posts?|vacanc(?:y|ies))?\s*$/i) ||
+      cleanLine.match(/^([A-Za-z0-9&/,\.\(\) ]+?)\s+([0-9]{1,4})\s*(?:posts?|vacanc(?:y|ies))\s*$/i);
+
+    if (postLineMatch) {
+      const pName = postLineMatch[1].trim();
+      const count = parseInt(postLineMatch[2], 10);
+      if (
+        pName.length >= 2 &&
+        !/^(last date|date of|website|contact|email|phone|interview|selection|salary|experience)/i.test(pName) &&
+        !isNaN(count) &&
+        count > 0 &&
+        count < 10000
+      ) {
+        totalPostsSum += count;
+        detectedPostTitles.push(pName);
+        parsedVacancies.push({
+          department: pName,
+          numberOfVacancies: count,
+          postName: pName,
+          category: inferCategory(pName),
+        });
+      }
+    }
+  }
+
+  if (parsedVacancies.length > 0) {
+    result.departmentsList = parsedVacancies;
+    result.isMultiDepartment = parsedVacancies.length >= 2;
+    result.numberOfPosts = totalPostsSum;
+
+    // Map title from detected post titles
+    result.title = detectedPostTitles.slice(0, 3).join(' / ');
+
+    // Standardize category: if any post is MO/GDMO/EMO/Lady MO, category = 'Medical Officer'
+    const hasMO = detectedPostTitles.some((p) =>
+      /medical officer|gdmo|emo|lmo|fmo|casualty|emergency|lady/i.test(p)
+    );
+    if (hasMO) {
+      result.category = 'Medical Officer';
+    } else {
+      result.category = inferCategory(detectedPostTitles[0]);
+    }
+  }
+
+  // ==========================================
+  // 4. Sector detection
+  // ==========================================
+  const sectorKeyMatch = normalizedText.match(/(?:^|\n)\s*(?:\*\s*)?Job\s*Sector\s*[:\-]\s*([^\n\r]+)/i);
   if (sectorKeyMatch && /govt|government|admin|public/i.test(sectorKeyMatch[1])) {
     result.sector = 'government';
-  } else if (/government|govt\.|ministry|nhm|national health mission|aiims|esic|railway|psc|upsc|sams|state health/i.test(text)) {
+  } else if (
+    /government|govt\.|ministry|nhm|national health mission|aiims|esic|railway|psc|upsc|sams|state health|chief medical officer|cmo office|rajkiya|gmc|district hospital/i.test(
+      normalizedText
+    )
+  ) {
     result.sector = 'government';
   } else {
     result.sector = 'private';
   }
 
-  // 4. Job Roles detection (Multi-role support)
+  // ==========================================
+  // 5. Job Roles detection & Title Fallback
+  // ==========================================
   const detectedRoles: string[] = [];
   const roleKeywords: Array<{ role: JobCategory; regex: RegExp }> = [
-    { role: 'Consultant', regex: /\b(consultant|sr\.\s*consultant)\b/i },
-    { role: 'GDMO', regex: /\b(gdmo|general\s+duty\s+medical\s+officer)\b/i },
+    {
+      role: 'Medical Officer',
+      regex: /\b(medical\s+officer|gdmo|general\s+duty\s+medical\s+officer|lady\s+medical\s+officer|female\s+medical\s+officer|emergency\s+medical\s+officer|casualty\s+medical\s+officer|factory\s+medical\s+officer|ayush\s+medical\s+officer|\bmo\b|\bemo\b|\blmo\b|\bfmo\b)\b/i,
+    },
     { role: 'Senior Resident', regex: /\b(senior\s+resident|sr\b|sr\.)/i },
     { role: 'Junior Resident', regex: /\b(junior\s+resident|jr\b|jr\.)/i },
-    { role: 'Medical Officer', regex: /\b(medical\s+officer|mo\b)/i },
-    { role: 'Specialist', regex: /\b(specialist|super\s*specialist)\b/i },
+    {
+      role: 'Specialist',
+      regex: /\b(specialist|super\s*specialist|consultant|sr\.\s*consultant|general\s+physician|chest\s+physician|neuro\s+physician)\b/i,
+    },
     { role: 'Faculty', regex: /\b(faculty|professor|assoc\w*\s+professor|asst\w*\s+professor|assistant\s+professor|tutor|lecturer)\b/i },
     { role: 'Dental', regex: /\b(dental|dentist|bds|mds)\b/i },
     { role: 'AYUSH', regex: /\b(ayush|ayurved\w*|homeopath\w*|unani|siddha|bams|bhms)\b/i },
@@ -171,70 +754,106 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
   ];
 
   for (const r of roleKeywords) {
-    if (r.regex.test(text) && !detectedRoles.includes(r.role)) {
+    if (r.regex.test(normalizedText) && !detectedRoles.includes(r.role)) {
       detectedRoles.push(r.role);
     }
   }
 
   if (detectedRoles.length > 0) {
     result.jobRoles = detectedRoles;
-    result.category = detectedRoles[0] as JobCategory;
+    if (!result.category) {
+      result.category = detectedRoles[0] as JobCategory;
+    }
     if (!result.title) {
       result.title = detectedRoles.slice(0, 3).join(' / ');
     }
   }
 
-  // Fallback title detection if not yet found
-  if (!result.title) {
-    const titleMatch = text.match(/(?:(?:recruitment\s+(?:of|for)|walk-in(?:\s+interview)?\s+(?:for)?|applications\s+invited\s+for(?:\s+the\s+post\s+of)?)\s*[:\-]?\s*([A-Za-z0-9&/,\- ]{4,80}))/i);
-    if (titleMatch) {
-      result.title = titleMatch[1].trim().split(/\n|\r/)[0].replace(/^(the\s+post\s+of\s+)/i, '');
+  // Explicit Post Title detection if present
+  const titleKeyMatch = normalizedText.match(
+    /(?:^|\n)\s*(?:\*\s*)?(?:Post\s+Job\s+Title|Job\s+Title|Post\s+Name|Name\s+of\s+(?:the\s+)?Post|Designation|Position|Job\s+Role|Role|Post(?!\s+(?:No|Code|Count|Number|of\s+Vacanc)))\s*[:\-]\s*([^\n\r]+)/i
+  );
+  if (titleKeyMatch) {
+    result.title = titleKeyMatch[1].trim();
+  }
+
+  // ==========================================
+  // 6. Selection Process & Interview Dates
+  // ==========================================
+  const interviewMatch =
+    normalizedText.match(
+      /(?:^|\n)\s*(?:\*\s*)?(?:Date\s+of\s+Interview|Interview\s+Date|Walk-in\s+Interview(?:\s+Date)?|Walk-in\s+Date|Walk-in)\s*[:\-]\s*([^\n\r]+)/i
+    ) ||
+    normalizedText.match(
+      /(?:walk-in\s+interview\s+(?:on|is\s+scheduled\s+on|every))\s*[:\-]?\s*([0-9]{1,2}[./-][0-9]{1,2}[./-][0-9]{2,4}|Every\s+[A-Za-z]+|[0-9]{1,2}(?:st|nd|rd|th)?\s+[A-Za-z]+\s*[0-9]{4})/i
+    );
+
+  if (interviewMatch) {
+    const intInfo = interviewMatch[1].trim();
+    result.selectionProcess = `Walk-in Interview Date: ${intInfo}. Selection is conducted via interview and document verification as per official norms.`;
+
+    // If no explicit lastDate, format interview date as last date
+    const dmy = intInfo.match(/^([0-9]{1,2})[./-]([0-9]{1,2})[./-]([0-9]{4})$/);
+    if (dmy) {
+      result.lastDate = `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`;
     }
   }
 
-  // 5. Location & State detection
-  const cityKeyMatch = text.match(/(?:^|\n)\s*(?:\*\s*)?(?:Location\s*(?:\(City\))?|City)\s*[:\-]\s*([^\n\r,]+)/i);
-  const stateKeyMatch = text.match(/(?:^|\n)\s*(?:\*\s*)?State\s*[:\-]\s*([^\n\r]+)/i);
-
-  if (cityKeyMatch) {
-    result.location = cityKeyMatch[1].trim();
+  const selMatch = normalizedText.match(
+    /(?:^|\n)\s*(?:\*\s*)?(?:Selection(?:\s+Process)?|Selection\s+is\s+conducted\s+via)\s*[:\-]?\s*([^\n\r]+)/i
+  );
+  if (selMatch) {
+    const selText = selMatch[1].trim();
+    result.selectionProcess = result.selectionProcess
+      ? `${result.selectionProcess} | ${selText}`
+      : selText;
   }
-  if (stateKeyMatch) {
-    result.state = stateKeyMatch[1].trim();
-  }
 
-  if (!result.state) {
-    for (const state of INDIAN_STATES) {
-      const reg = new RegExp(`\\b${state}\\b`, 'i');
-      if (reg.test(text)) {
-        result.state = state;
-        break;
-      }
+  // ==========================================
+  // 7. Last Date detection
+  // ==========================================
+  const lastDateKeyMatch = normalizedText.match(
+    /(?:^|\n)\s*(?:\*\s*)?(?:Last\s*Date(?:\s*(?:to\s*Apply|for\s*submission|for\s*application))?|Closing\s*Date|Apply\s*Before)\s*[:\-]\s*([0-9]{4}-[0-9]{2}-[0-9]{2}|[0-9]{1,2}[./-][0-9]{1,2}[./-][0-9]{2,4})/i
+  );
+  if (lastDateKeyMatch) {
+    const rawDate = lastDateKeyMatch[1].trim();
+    const dmy = rawDate.match(/^([0-9]{1,2})[./-]([0-9]{1,2})[./-]([0-9]{4})$/);
+    if (dmy) {
+      result.lastDate = `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`;
+    } else {
+      result.lastDate = rawDate;
     }
   }
 
-  if (!result.location) {
-    const cityKeywords = ['Delhi', 'Mumbai', 'Bengaluru', 'Bangalore', 'Chennai', 'Kolkata', 'Hyderabad', 'Pune', 'Ahmedabad', 'Jaipur', 'Lucknow', 'Kanpur', 'Nagpur', 'Indore', 'Bhopal', 'Patna', 'Vadodara', 'Ghaziabad', 'Ludhiana', 'Agra', 'Nashik', 'Faridabad', 'Meerut', 'Rajkot', 'Varanasi', 'Srinagar', 'Aurangabad', 'Dhanbad', 'Amritsar', 'Navi Mumbai', 'Allahabad', 'Prayagraj', 'Ranchi', 'Howrah', 'Coimbatore', 'Jabalpur', 'Gwalior', 'Vijayawada', 'Jodhpur', 'Madurai', 'Raipur', 'Kota', 'Guwahati', 'Chandigarh', 'Noida', 'Gorakhpur', 'Rishikesh', 'Dehradun', 'Bhubaneswar', 'Gurgaon', 'Gurugram', 'Datia'];
-    for (const city of cityKeywords) {
-      if (new RegExp(`\\b${city}\\b`, 'i').test(text)) {
-        result.location = city;
-        if (!result.state) result.state = inferState(city) || '';
-        break;
-      }
+  // ==========================================
+  // 8. Official Website / Apply Link
+  // ==========================================
+  const webMatch =
+    normalizedText.match(/(?:^|\n)\s*(?:\*\s*)?(?:Website|Official\s*Website|Portal)\s*[:\-]\s*([^\s\n\r]+)/i) ||
+    normalizedText.match(/((?:https?:\/\/|www\.)[a-zA-Z0-9\.\-]+(?:\.[a-zA-Z]{2,})[^\s\)]*)/i);
+
+  if (webMatch) {
+    let url = webMatch[1].trim().replace(/[),.;]+$/, '');
+    if (!/^https?:\/\//i.test(url)) {
+      url = `https://${url}`;
     }
+    result.officialWebsite = url;
+    result.applyLink = url;
   }
 
-  // 6. Qualification detection
-  const qualKeyMatch = text.match(/(?:^|\n)\s*(?:\*\s*)?Qualification\s*[:\-]\s*([^\n\r]+)/i);
+  // ==========================================
+  // 9. Qualification & Experience detection
+  // ==========================================
+  const qualKeyMatch = normalizedText.match(/(?:^|\n)\s*(?:\*\s*)?Qualification\s*[:\-]\s*([^\n\r]+)/i);
   if (qualKeyMatch) {
     result.qualification = qualKeyMatch[1].trim();
   } else {
     const qualMatches: string[] = [];
     const qualRegexes = [
-      /\b(DM|MCh|DNB|MD|MS|MBBS|BDS|MDS|BAMS|BHMS|BUMS|BPT|MPT|B\.?Sc\s+Nursing|M\.?Sc\s+Nursing|GNM|ANM|B\.?Pharm|M\.?Pharm|Pharm\.?D|DMLT|BMLT)\b/gi
+      /\b(DM|MCh|DNB|MD|MS|MBBS|BDS|MDS|BAMS|BHMS|BUMS|BPT|MPT|B\.?Sc\s+Nursing|M\.?Sc\s+Nursing|GNM|ANM|B\.?Pharm|M\.?Pharm|Pharm\.?D|DMLT|BMLT)\b/gi,
     ];
     for (const qr of qualRegexes) {
-      const matches = text.match(qr);
+      const matches = normalizedText.match(qr);
       if (matches) {
         for (const m of matches) {
           const u = m.toUpperCase().replace(/\s+/g, ' ');
@@ -247,350 +866,49 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
     }
   }
 
-  // 7. Experience detection
-  const expKeyMatch = text.match(/(?:^|\n)\s*(?:\*\s*)?Experience(?:\s*Required)?\s*[:\-]\s*([^\n\r]+)/i);
+  const expKeyMatch = normalizedText.match(/(?:^|\n)\s*(?:\*\s*)?Experience(?:\s*Required)?\s*[:\-]\s*([^\n\r]+)/i);
   if (expKeyMatch) {
     result.experience = expKeyMatch[1].trim();
-  } else {
-    const expMatch = text.match(/(?:experience|exp\.)\s*[:\-]?\s*([0-9]+(?:\s*-\s*[0-9]+)?\s*(?:years?|yrs?|months?))/i)
-      || text.match(/([0-9]+\s*(?:to|-)\s*[0-9]+\s*(?:years?|yrs?)\s*(?:of\s*)?experience)/i)
-      || text.match(/\b(freshers?\s*(?:can\s*apply|welcome)?)\b/i);
-    if (expMatch) {
-      result.experience = expMatch[1].trim();
-    }
   }
 
-  // 8. Number of Posts detection
-  const postCountMatch = text.match(/(?:^|\n)\s*(?:\*\s*)?(?:Number\s+of\s+Posts?|Total\s+(?:Posts?|Vacanc(?:y|ies))|Vacanc(?:y|ies))\s*[:\-]\s*([0-9]{1,4})/i)
-    || text.match(/(?:no\.\s*of\s*(?:posts?|vacanc(?:y|ies))|total\s*(?:posts?|vacanc(?:y|ies)))\s*[:\-]?\s*([0-9]{1,4})/i)
-    || text.match(/([0-9]{1,4})\s+(?:posts?|vacanc(?:y|ies))/i);
-  if (postCountMatch) {
-    const n = parseInt(postCountMatch[1], 10);
-    if (!isNaN(n) && n > 0 && n < 100000) {
-      result.numberOfPosts = n;
-    }
-  }
-
-  // 9. Salary detection
-  const salKeyMatch = text.match(/(?:^|\n)\s*(?:\*\s*)?(?:Salary(?:\s*\/\s*Pay)?|Pay(?:\s*\/\s*Salary)?|Stipend|Remuneration|CTC|Package)\s*[:\-]\s*([^\n\r]+)/i);
+  // ==========================================
+  // 10. Salary detection
+  // ==========================================
+  const salKeyMatch = normalizedText.match(
+    /(?:^|\n)\s*(?:\*\s*)?(?:Salary(?:\s*\/\s*Pay)?|Pay(?:\s*\/\s*Salary)?|Stipend|Remuneration|CTC|Package)\s*[:\-]\s*([^\n\r]+)/i
+  );
   if (salKeyMatch) {
     result.salary = salKeyMatch[1].trim();
-  } else {
-    const salMatch = text.match(/(?:salary|pay\s*scale|remuneration|stipend|ctc|package)\s*[:\-]?\s*(₹?\s*[0-9]+(?:,[0-9]+)*(?:\s*-\s*₹?\s*[0-9]+(?:,[0-9]+)*)?(?:\s*(?:\/|\s*per\s*)(?:month|pm|annum|year|lpa))?)/i)
-      || text.match(/(₹\s*[0-9]+(?:,[0-9]+)*(?:\s*-\s*₹?\s*[0-9]+(?:,[0-9]+)*)?)/)
-      || text.match(/([0-9]+(?:[.,][0-9]+)?\s*(?:to|-)\s*[0-9]+(?:[.,][0-9]+)?\s*(?:lpa|lakhs?|lac))/i)
-      || text.match(/(level\s*[- ]\s*[0-9]{1,2}(?:\s*as\s*per\s*7th\s*cpc)?)/i);
-    if (salMatch) {
-      result.salary = salMatch[1].trim();
-    }
   }
 
-  // 10. Last date detection
-  const lastDateKeyMatch = text.match(/(?:^|\n)\s*(?:\*\s*)?(?:Last\s*Date(?:\s*(?:to\s*Apply|for\s*submission|for\s*application))?|Closing\s*Date|Apply\s*Before)\s*[:\-]\s*([0-9]{4}-[0-9]{2}-[0-9]{2}|[0-9]{1,2}[./-][0-9]{1,2}[./-][0-9]{2,4})/i);
-  if (lastDateKeyMatch) {
-    const rawDate = lastDateKeyMatch[1].trim();
-    const dmy = rawDate.match(/^([0-9]{1,2})[./-]([0-9]{1,2})[./-]([0-9]{4})$/);
-    if (dmy) {
-      result.lastDate = `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`;
-    } else {
-      result.lastDate = rawDate;
-    }
-  } else {
-    const lastDateMatch = text.match(/(?:last\s*date(?:\s*for\s*(?:submission|application|apply))?|closing\s*date|apply\s*before|walk-in\s*interview\s*(?:on|date))\s*[:\-]?\s*([0-9]{1,2}[./-][0-9]{1,2}[./-][0-9]{2,4}|[0-9]{1,2}(?:st|nd|rd|th)?\s+(?:Jan\w*|Feb\w*|Mar\w*|Apr\w*|May|Jun\w*|Jul\w*|Aug\w*|Sep\w*|Oct\w*|Nov\w*|Dec\w*)\s*,?\s*[0-9]{4})/i);
-    if (lastDateMatch) {
-      const rawDate = lastDateMatch[1].trim();
-      try {
-        const dmy = rawDate.match(/^([0-9]{1,2})[./-]([0-9]{1,2})[./-]([0-9]{4})$/);
-        if (dmy) {
-          result.lastDate = `${dmy[3]}-${dmy[2].padStart(2, '0')}-${dmy[1].padStart(2, '0')}`;
-        } else {
-          const parsed = new Date(rawDate);
-          if (!isNaN(parsed.getTime())) {
-            result.lastDate = parsed.toISOString().split('T')[0];
-          }
-        }
-      } catch (_) {}
-    }
-  }
+  // ==========================================
+  // 11. Structured Job Description (English Only)
+  // Excludes interview dates so structure remains strictly Job duties & eligibility
+  // ==========================================
+  const orgDisplay = result.organization || 'Medical Institution';
+  const locDisplay = [result.location, result.state].filter(Boolean).join(', ') || 'India';
+  const roleDisplay = result.title || 'Medical Professional';
+  const postCountDisplay = result.numberOfPosts ? `${result.numberOfPosts} Posts` : 'Multiple Posts';
 
-  // 11. Additional Eligibility Requirements & Benefits
-  const reqMatch = text.match(/(?:^|\n)\s*(?:\*\s*)?(?:Additional\s+Eligibility\s*&?\s*Requirements?|Eligibility\s*&?\s*Requirements?|Requirements?)\s*[:\-]\s*([^\n\r]+)/i);
-  if (reqMatch) {
-    result.requirements = reqMatch[1].trim();
-  }
+  result.description = `JOB SUMMARY
+Applications are invited for the recruitment of ${roleDisplay} (${postCountDisplay}) at ${orgDisplay}, located at ${locDisplay}.
 
-  const ageMatch = text.match(/(?:^|\n)\s*(?:\*\s*)?(?:Age\s*Limit|Age)\s*[:\-]\s*([^\n\r]+)/i);
-  if (ageMatch) {
-    result.ageLimit = ageMatch[1].trim();
-  }
-
-  const benMatch = text.match(/(?:^|\n)\s*(?:\*\s*)?(?:Benefits?\s*&?\s*Perks?|Perks?)\s*[:\-]\s*([^\n\r]+)/i);
-  if (benMatch) {
-    result.benefits = benMatch[1].trim();
-  }
-
-  const selMatch = text.match(/(?:^|\n)\s*(?:\*\s*)?(?:Selection(?:\s+Process)?|Selection\s+is\s+conducted\s+via)\s*[:\-]?\s*([^\n\r]+)/i);
-  if (selMatch) {
-    result.selectionProcess = selMatch[1].trim();
-  }
-
-  // 12. Contact Email & Phone & Links
-  const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-  if (emailMatch) result.contactEmail = emailMatch[0];
-
-  const phoneMatch = text.match(/(?:\+91[\s-]?)?[6-9][0-9]{9}/);
-  if (phoneMatch) result.contactPhone = phoneMatch[0];
-
-  const linkMatch = text.match(/https?:\/\/[^\s]+/);
-  if (linkMatch) result.applyLink = linkMatch[0];
-
-  // 13. Multi-Department & Breakdown Table Parsing
-  const depts: ParsedDepartmentVacancy[] = [];
-
-  // Check HTML table first
-  if (/<table[\s>]/i.test(text) || /<tr[\s>]/i.test(text)) {
-    const rowMatches = text.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi);
-    if (rowMatches && rowMatches.length >= 2) {
-      const htmlTableRows: string[][] = [];
-      for (const rm of rowMatches) {
-        const cellMatches = rm.match(/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi);
-        if (cellMatches) {
-          htmlTableRows.push(cellMatches.map((c) => c.replace(/<[^>]+>/g, '').trim()));
-        }
-      }
-      if (htmlTableRows.length >= 2) {
-        const rawHeaders = htmlTableRows[0];
-        const deptCol = rawHeaders.findIndex((h) => /dept|department|speciality|specialty|specialization|discipline|subject|branch|post\s*name|name\s*of\s*post/i.test(h));
-        const totalCol = rawHeaders.findIndex((h) => /total|posts?|vacanc/i.test(h));
-        let dColIdx = deptCol >= 0 ? deptCol : 0;
-        const posCols = rawHeaders
-          .map((h, i) => ({ name: h, idx: i }))
-          .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && /senior\s*resident|junior\s*resident|\bsr\b|\bjr\b|professor|faculty|tutor|demonstrator|medical\s*officer|specialist|consultant|\blmo\b|\bemo\b|\bfmo\b|lady\s*medical\s*officer|female\s*medical\s*officer|general\s*physician|chest\s*physician|neuro\s*physician/i.test(c.name));
-        const catCols = rawHeaders
-          .map((h, i) => ({ name: h, idx: i }))
-          .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && !posCols.some((p) => p.idx === c.idx) && /UR|ST|SC|OBC|EWS|GEN|PWD|PWBD|PH|SEBC|MBC|Unreserved|General|Open/i.test(c.name));
-
-        for (let r = 1; r < htmlTableRows.length; r++) {
-          const cells = htmlTableRows[r];
-          const dName = cells[dColIdx];
-          if (!dName || /^(total|grand\s*total|sum|s\.?\s*no|#)$/i.test(dName.trim())) continue;
-          let count = totalCol >= 0 ? parseInt(cells[totalCol], 10) || 0 : 0;
-          const posParts: string[] = [];
-          let posSum = 0;
-          for (const pos of posCols) {
-            const val = cells[pos.idx];
-            const num = parseInt(val, 10);
-            if (!isNaN(num) && num > 0) {
-              posParts.push(`${standardizePositionName(pos.name)}: ${num}`);
-              posSum += num;
-            }
-          }
-          const catParts: string[] = [];
-          let catSum = 0;
-          for (const cat of catCols) {
-            const val = cells[cat.idx];
-            const num = parseInt(val, 10);
-            if (!isNaN(num) && num > 0) {
-              catParts.push(`${cat.name}: ${num}`);
-              catSum += num;
-            }
-          }
-          if (count === 0 && posSum > 0) count = posSum;
-          else if (count === 0 && catSum > 0) count = catSum;
-          if (count === 0) count = 1;
-
-          depts.push({
-            department: dName,
-            numberOfVacancies: count,
-            category: [...posParts, ...catParts].join(', '),
-            postName: result.title,
-          });
-        }
-      }
-    }
-  }
-
-  // Check Markdown / Pipe separated table
-  if (depts.length === 0) {
-    const lines = text.split(/\r?\n/).map((l) => l.trim());
-    const tableLines = lines.filter((l) => l.includes('|') && l.split('|').length >= 3);
-
-    if (tableLines.length >= 2) {
-      const firstLine = tableLines[0].replace(/^\|/, '').replace(/\|$/, '');
-      const rawHeaders = firstLine.split('|').map((h) => h.trim());
-      const deptCol = rawHeaders.findIndex((h) => /dept|department|speciality|specialty|specialization|discipline|subject|branch|post\s*name|name\s*of\s*post/i.test(h));
-      const totalCol = rawHeaders.findIndex((h) => /total|posts?|vacanc/i.test(h));
-      let dColIdx = deptCol;
-      if (dColIdx < 0) {
-        dColIdx = rawHeaders.findIndex((h) => !/s\.?\s*no|sr\.?\s*no|sl\.?\s*no|serial|index|#|total|vacanc|posts?|ur|sc|st|obc|ews|gen/i.test(h));
-        if (dColIdx < 0) dColIdx = 0;
-      }
-      const posCols = rawHeaders
-        .map((h, i) => ({ name: h, idx: i }))
-        .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && /senior\s*resident|junior\s*resident|\bsr\b|\bjr\b|professor|faculty|tutor|demonstrator|medical\s*officer|specialist|consultant|\blmo\b|\bemo\b|\bfmo\b|lady\s*medical\s*officer|female\s*medical\s*officer|general\s*physician|chest\s*physician|neuro\s*physician/i.test(c.name));
-      const catCols = rawHeaders
-        .map((h, i) => ({ name: h, idx: i }))
-        .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && !posCols.some((p) => p.idx === c.idx) && /UR|ST|SC|OBC|EWS|GEN|PWD|PWBD|PH|SEBC|MBC|Unreserved|General|Open/i.test(c.name));
-
-      for (let r = 1; r < tableLines.length; r++) {
-        const row = tableLines[r];
-        if (/^[|:\-\s]+$/.test(row)) continue;
-        const cleanRow = row.replace(/^\|/, '').replace(/\|$/, '');
-        const cells = cleanRow.split('|').map((c) => c.trim());
-        const dName = cells[dColIdx];
-        if (!dName || /^(total|grand\s*total|sum|s\.?\s*no|#)$/i.test(dName.trim())) continue;
-        let count = totalCol >= 0 ? parseInt(cells[totalCol], 10) || 0 : 0;
-        const posParts: string[] = [];
-        let posSum = 0;
-        for (const pos of posCols) {
-          const val = cells[pos.idx];
-          const num = parseInt(val, 10);
-          if (!isNaN(num) && num > 0) {
-            posParts.push(`${standardizePositionName(pos.name)}: ${num}`);
-            posSum += num;
-          }
-        }
-        const catParts: string[] = [];
-        let catSum = 0;
-        for (const cat of catCols) {
-          const val = cells[cat.idx];
-          const num = parseInt(val, 10);
-          if (!isNaN(num) && num > 0) {
-            catParts.push(`${cat.name}: ${num}`);
-            catSum += num;
-          }
-        }
-        if (count === 0 && posSum > 0) count = posSum;
-        else if (count === 0 && catSum > 0) count = catSum;
-        if (count === 0) count = 1;
-
-        depts.push({
-          department: dName,
-          numberOfVacancies: count,
-          category: [...posParts, ...catParts].join(', '),
-          postName: result.title,
-        });
-      }
-    }
-  }
-
-  // Check Tab-delimited or Multi-space delimited table
-  if (depts.length === 0) {
-    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-    const tableLines = lines.filter((l) => l.split('\t').length >= 3 || l.split(/\s{2,}/).length >= 3);
-    if (tableLines.length >= 2) {
-      const isTab = tableLines[0].split('\t').length >= 3;
-      const splitFn = (l: string) => isTab ? l.split('\t').map((c) => c.trim()) : l.split(/\s{2,}/).map((c) => c.trim());
-      const rawHeaders = splitFn(tableLines[0]);
-      const deptCol = rawHeaders.findIndex((h) => /dept|department|speciality|specialty|discipline|subject|name\s*of/i.test(h));
-      const totalCol = rawHeaders.findIndex((h) => /total|posts?|vacanc/i.test(h));
-      let dColIdx = deptCol >= 0 ? deptCol : 0;
-      const posCols = rawHeaders
-        .map((h, i) => ({ name: h, idx: i }))
-        .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && /senior\s*resident|junior\s*resident|\bsr\b|\bjr\b|professor|faculty|tutor|demonstrator|medical\s*officer|specialist|consultant|\blmo\b|\bemo\b|\bfmo\b|lady\s*medical\s*officer|female\s*medical\s*officer|general\s*physician|chest\s*physician|neuro\s*physician/i.test(c.name));
-      const catCols = rawHeaders
-        .map((h, i) => ({ name: h, idx: i }))
-        .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && !posCols.some((p) => p.idx === c.idx) && /UR|ST|SC|OBC|EWS|GEN|PWD|PWBD|PH|SEBC|MBC|Unreserved|General|Open/i.test(c.name));
-
-      for (let r = 1; r < tableLines.length; r++) {
-        const row = tableLines[r];
-        if (/^[|:\-\s]+$/.test(row)) continue;
-        const cells = splitFn(row);
-        const dName = cells[dColIdx];
-        if (!dName || /^(total|grand\s*total|sum|s\.?\s*no|#)$/i.test(dName.trim())) continue;
-        let count = totalCol >= 0 ? parseInt(cells[totalCol], 10) || 0 : 0;
-        const posParts: string[] = [];
-        let posSum = 0;
-        for (const pos of posCols) {
-          const val = cells[pos.idx];
-          const num = parseInt(val, 10);
-          if (!isNaN(num) && num > 0) {
-            posParts.push(`${standardizePositionName(pos.name)}: ${num}`);
-            posSum += num;
-          }
-        }
-        const catParts: string[] = [];
-        let catSum = 0;
-        for (const cat of catCols) {
-          const val = cells[cat.idx];
-          const num = parseInt(val, 10);
-          if (!isNaN(num) && num > 0) {
-            catParts.push(`${cat.name}: ${num}`);
-            catSum += num;
-          }
-        }
-        if (count === 0 && posSum > 0) count = posSum;
-        else if (count === 0 && catSum > 0) count = catSum;
-        if (count === 0) count = 1;
-
-        depts.push({
-          department: dName,
-          numberOfVacancies: count,
-          category: [...posParts, ...catParts].join(', '),
-          postName: result.title,
-        });
-      }
-    }
-  }
-
-  // Fallback 1: Comma-separated departments under "Speciality / Department:"
-  if (depts.length === 0) {
-    const deptListMatch = text.match(/(?:^|\n)\s*(?:\*\s*)?(?:Speciality\s*\/\s*Department|Department\s*\/\s*Speciality|Department|Speciality|Specialty|Discipline|Subject)\s*[:\-]\s*([^\n\r]+)/i);
-    if (deptListMatch) {
-      const deptNames = deptListMatch[1]
-        .split(/[,;/]/)
-        .map((d) => d.trim())
-        .filter((d) => d.length > 2);
-      if (deptNames.length >= 2) {
-        for (const dn of deptNames) {
-          depts.push({
-            department: dn,
-            numberOfVacancies: 1,
-            postName: result.title,
-          });
-        }
-      }
-    }
-  }
-
-  // Fallback 2: Bulleted or numbered department list under "Departments:" or "Specialities:"
-  if (depts.length === 0) {
-    const deptSectionMatch = text.match(/(?:^|\n)\s*(?:\*\s*)?(?:Departments?|Specialit(?:y|ies)|Disciplines?|Vacanc(?:y|ies)\s+Breakdown|Post\s+Details?)\s*[:\-]?\s*\n((?:[ \t]*[-*•0-9.)]\s*[^\n\r]+\n?)+)/i);
-    if (deptSectionMatch) {
-      const bulletLines = deptSectionMatch[1].split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-      for (const bl of bulletLines) {
-        const cleanLine = bl.replace(/^[-*•0-9.)\s]+/, '').trim();
-        if (!cleanLine || cleanLine.length < 2) continue;
-        const countMatch = cleanLine.match(/[:\-–—(]\s*([0-9]{1,3})\s*(?:posts?|vacanc(?:y|ies))?\)?$/i)
-          || cleanLine.match(/\b([0-9]{1,3})\s*(?:posts?|vacanc(?:y|ies))\b/i);
-        const count = countMatch ? parseInt(countMatch[1], 10) : 1;
-        const dName = cleanLine.replace(/[:\-–—(]\s*[0-9]{1,3}\s*(?:posts?|vacanc(?:y|ies))?\)?$/i, '').trim();
-        if (dName.length >= 2) {
-          depts.push({
-            department: dName,
-            numberOfVacancies: count || 1,
-            postName: result.title,
-          });
-        }
-      }
-    }
-  }
-
-  if (depts.length >= 1) {
-    result.departmentsList = depts;
-    result.isMultiDepartment = depts.length >= 2;
-    const totalCalculated = depts.reduce((sum, d) => sum + d.numberOfVacancies, 0);
-    if (!result.numberOfPosts || result.numberOfPosts < totalCalculated) {
-      result.numberOfPosts = totalCalculated;
-    }
-  }
+VACANCY DETAILS
+- Organization: ${orgDisplay}
+- Position: ${roleDisplay}
+- Total Vacancies: ${result.numberOfPosts || 1}
+- Category: ${result.category || 'Medical Officer'}
+- Location: ${locDisplay}
+- Sector: ${result.sector === 'government' ? 'Government' : 'Private'}
+${result.salary ? `- Pay/Salary: ${result.salary}\n` : ''}${result.qualification ? `- Minimum Qualification: ${result.qualification}\n` : ''}${result.experience ? `- Experience: ${result.experience}\n` : ''}
+APPLICATION INSTRUCTIONS
+Candidates meeting the required eligibility criteria are advised to review the official circular and appear as per the schedule with all original documents, credentials, and testimonials.`;
 
   if (result.title && result.title.length > 195) result.title = result.title.slice(0, 195);
   if (result.organization && result.organization.length > 195) result.organization = result.organization.slice(0, 195);
   if (result.location && result.location.length > 195) result.location = result.location.slice(0, 195);
   if (result.experience && result.experience.length > 95) result.experience = result.experience.slice(0, 95);
   if (result.salary && result.salary.length > 95) result.salary = result.salary.slice(0, 95);
-  if (result.speciality && result.speciality.length > 250) result.speciality = result.speciality.slice(0, 250);
 
   return result;
 }

@@ -380,7 +380,7 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
           for (const pos of posCols) {
             const val = cells[pos.idx];
             const num = parseInt(val, 10);
-            if (!isNaN(num) && num >= 0) {
+            if (!isNaN(num) && num > 0) {
               posParts.push(`${standardizePositionName(pos.name)}: ${num}`);
               posSum += num;
             }
@@ -445,7 +445,7 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
         for (const pos of posCols) {
           const val = cells[pos.idx];
           const num = parseInt(val, 10);
-          if (!isNaN(num) && num >= 0) {
+          if (!isNaN(num) && num > 0) {
             posParts.push(`${standardizePositionName(pos.name)}: ${num}`);
             posSum += num;
           }
@@ -504,7 +504,7 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
         for (const pos of posCols) {
           const val = cells[pos.idx];
           const num = parseInt(val, 10);
-          if (!isNaN(num) && num >= 0) {
+          if (!isNaN(num) && num > 0) {
             posParts.push(`${standardizePositionName(pos.name)}: ${num}`);
             posSum += num;
           }

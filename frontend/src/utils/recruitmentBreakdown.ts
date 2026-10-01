@@ -13,10 +13,13 @@ export interface ParsedBreakdownResult {
 }
 
 const RESERVED_COLUMN_PATTERNS = [
-  /^(s\.?\s*no\.?|sl\.?\s*no\.?|sr\.?\s*no\.?|#)$/i,
-  /^(department|dept\.?|speciality|specialty|discipline|subject|name\s*of\s*(post|dept|department|speciality)?)$/i,
+  /^(s\.?\s*no\.?|sl\.?\s*no\.?|sr\.?\s*no\.?|#|serial(\s*no\.?)?)$/i,
+  /^(department|dept\.?|speciality|specialty|specialization|discipline|subject|branch|name\s*of\s*(post|dept|department|speciality)?)$/i,
   /^(total|grand\s*total|total\s*(posts?|vacanc(y|ies))|sum)$/i,
-  /^(ur|unreserved|gen|general|sc|st|obc|ews|pwd|pwbd|ph)$/i,
+  /^(ur|unreserved|gen|general|sc|st|obc|ews|pwd|pwbd|ph|sebc|mbc|open)$/i,
+  /^(remuneration|salary|pay|stipend|honorarium|ctc|package|scale|pay\s*scale|monthly(\s*remuneration|\s*salary)?|emoluments?)$/i,
+  /^(place\s*of\s*posting|posting|location|station|unit|facility|hospital|centre|center)$/i,
+  /^(qualification|eligibility|education|experience|exp\.?|age|age\s*limit|remarks?|notes?)$/i,
 ];
 
 const STANDARD_ACADEMIC_ORDER = [
@@ -30,6 +33,8 @@ const STANDARD_ACADEMIC_ORDER = [
   'demonstrator',
   'specialist',
   'medical officer',
+  'female medical officer',
+  'emergency medical officer',
   'consultant',
   'gdmo',
 ];
@@ -77,7 +82,7 @@ function convertHtmlTablesToMarkdown(text: string): string {
 
 function isReservedColumn(header: string): boolean {
   const clean = header.trim();
-  if (/^(sr|jr|mo|prof|tutor|faculty|specialist)$/i.test(clean)) return false;
+  if (/^(sr|jr|mo|prof|tutor|faculty|specialist|emo|fmo)$/i.test(clean)) return false;
   return RESERVED_COLUMN_PATTERNS.some((pattern) => pattern.test(clean));
 }
 
@@ -91,7 +96,9 @@ export const KNOWN_DESIGNATIONS: Array<{ regex: RegExp; name: string }> = [
   { regex: /\btutor\b/i, name: 'Tutor' },
   { regex: /\bdemonstrator\b/i, name: 'Demonstrator' },
   { regex: /\bspecialist\b/i, name: 'Specialist' },
-  { regex: /\b(medical\s*officer|mo)\b/i, name: 'Medical Officer' },
+  { regex: /\b(female\s*medical\s*officer|fmo)\b/i, name: 'Female Medical Officer' },
+  { regex: /\b(emergency\s*medical\s*officer|emo)\b/i, name: 'Emergency Medical Officer' },
+  { regex: /(?<!female\s+|emergency\s+|casualty\s+|dental\s+|chief\s+|ayush\s+)\b(medical\s*officer|mo)\b/i, name: 'Medical Officer' },
   { regex: /\bconsultant\b/i, name: 'Consultant' },
   { regex: /\bgdmo\b/i, name: 'GDMO' },
 ];
@@ -109,6 +116,12 @@ export function extractPositionsFromText(text?: string): string[] {
 
 export function standardizePositionName(raw: string): string {
   const clean = raw.trim();
+  if (/^(female\s*medical\s*officer|fmo)$/i.test(clean)) {
+    return 'Female Medical Officer';
+  }
+  if (/^(emergency\s*medical\s*officer|emo)$/i.test(clean)) {
+    return 'Emergency Medical Officer';
+  }
   if (/^(senior\s*resident|sr\.?\s*resident|sr\.?)$/i.test(clean)) {
     return 'Senior Resident';
   }
@@ -204,6 +217,21 @@ export function matchesPositionName(targetText: string, selectedPosition: string
 
   if (normText === normSel) return true;
 
+  if (normSel === 'female medical officer') {
+    return /\b(female\s*medical\s*officer|fmo)\b/i.test(normText);
+  }
+
+  if (normSel === 'emergency medical officer') {
+    return /\b(emergency\s*medical\s*officer|emo)\b/i.test(normText);
+  }
+
+  if (normSel === 'medical officer') {
+    if (/(female|emergency|casualty|dental|ayush)\s*medical\s*officer/i.test(normText)) {
+      return false;
+    }
+    return /\b(medical\s*officer|mo|gdmo)\b/i.test(normText);
+  }
+
   if (normSel === 'professor') {
     const profRegex = /(?<!assistant\s+|asst\.?\s*|associate\s+|assoc\.?\s*|additional\s+|addl\.?\s*)\bprof(essor)?\b/i;
     return profRegex.test(normText);
@@ -246,6 +274,12 @@ export function extractPositionCountFromText(text: string, selectedPosition: str
     patterns.push(/(?:senior\s*resident|sr\.?\s*resident|(?<!\w)sr(?!\w))\s*[:\-–—]?\s*(\d+)/i);
   } else if (selLower === 'junior resident') {
     patterns.push(/(?:junior\s*resident|jr\.?\s*resident|(?<!\w)jr(?!\w))\s*[:\-–—]?\s*(\d+)/i);
+  } else if (selLower === 'female medical officer') {
+    patterns.push(/(?:female\s*medical\s*officer|fmo)\s*[:\-–—]?\s*(\d+)/i);
+  } else if (selLower === 'emergency medical officer') {
+    patterns.push(/(?:emergency\s*medical\s*officer|emo)\s*[:\-–—]?\s*(\d+)/i);
+  } else if (selLower === 'medical officer') {
+    patterns.push(/(?<!female\s+|emergency\s+|casualty\s+|dental\s+)(?:medical\s*officer|(?<!\w)mo(?!\w))\s*[:\-–—]?\s*(\d+)/i);
   } else {
     const escaped = selLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     patterns.push(new RegExp(`${escaped}\\s*[:\\-–—]?\\s*(\\d+)`, 'i'));
@@ -391,7 +425,7 @@ export function parseRecruitmentBreakdown(
         const rest = deptMatch[3] || '';
         const posMatches = [
           ...rest.matchAll(
-            /(senior\s*resident|junior\s*resident|\bsr\b|\bjr\b|professor|assistant\s*professor|associate\s*professor|tutor|demonstrator|medical\s*officer|specialist|consultant)\s*[:\-–—\s]?\s*(\d+)/gi
+            /(female\s*medical\s*officer|fmo|emergency\s*medical\s*officer|emo|senior\s*resident|junior\s*resident|\bsr\b|\bjr\b|professor|assistant\s*professor|associate\s*professor|tutor|demonstrator|medical\s*officer|specialist|consultant)\s*[:\-–—\s]?\s*(\d+)/gi
           ),
         ];
         if (posMatches.length > 0) {
@@ -417,7 +451,7 @@ export function parseRecruitmentBreakdown(
     let currentRoleSection = '';
     for (const line of lines) {
       const roleHeaderMatch = line.match(
-        /^(?:#+\s*)?(?:Post\s*[:\-]\s*)?(Senior\s*Resident|Junior\s*Resident|Professor|Associate\s*Professor|Assistant\s*Professor|Tutor|Medical\s*Officer|Specialist)\s*[:\-]?\s*(?:\(\d+\s*posts?\))?$/i
+        /^(?:#+\s*)?(?:Post\s*[:\-]\s*)?(Female\s*Medical\s*Officer|Emergency\s*Medical\s*Officer|Senior\s*Resident|Junior\s*Resident|Professor|Associate\s*Professor|Assistant\s*Professor|Tutor|Medical\s*Officer|Specialist)\s*[:\-]?\s*(?:\(\d+\s*posts?\))?$/i
       );
       if (roleHeaderMatch) {
         currentRoleSection = standardizePositionName(roleHeaderMatch[1]);
@@ -452,11 +486,17 @@ export function parseRecruitmentBreakdown(
       if (!dName) continue;
       const normKey = normalizeDeptKey(dName);
 
+      // Prevent double-counting: If this department was already parsed from the structured table (Step 1, 2, or 3),
+      // do not add or duplicate from vacancy category strings!
+      if (breakdownMap.has(normKey) && Object.keys(breakdownMap.get(normKey)!.positions).length > 0) {
+        continue;
+      }
+
       const toScan = [v.category, v.otherEligibilityRequirements, v.qualification, v.salary].filter(Boolean).join(' ');
       if (toScan) {
         const posMatches = [
           ...toScan.matchAll(
-            /(senior\s*resident|junior\s*resident|\bsr\b|\bjr\b|professor|assistant\s*professor|associate\s*professor|tutor|demonstrator|medical\s*officer|specialist|consultant)\s*[:\-–—\s]?\s*(\d+)/gi
+            /(female\s*medical\s*officer|fmo|emergency\s*medical\s*officer|emo|senior\s*resident|junior\s*resident|\bsr\b|\bjr\b|professor|assistant\s*professor|associate\s*professor|tutor|demonstrator|medical\s*officer|specialist|consultant)\s*[:\-–—\s]?\s*(\d+)/gi
           ),
         ];
         if (posMatches.length > 0) {

@@ -627,6 +627,29 @@ public class JobController {
             logger.info("Saving updated job: {}", existing.getTitle());
             Job saved = jobRepository.save(existing);
             logger.info("Job saved successfully with ID: {}", saved.getId());
+
+            // If this job belongs to a multi-department recruitment circular, sync common fields to sibling jobs
+            if (saved.getSourceRecruitmentId() != null) {
+                try {
+                    List<Job> siblings = jobRepository.findBySourceRecruitmentId(saved.getSourceRecruitmentId());
+                    for (Job sib : siblings) {
+                        if (sib.getId().equals(saved.getId())) continue;
+                        if (employer != null) sib.setEmployer(employer);
+                        if (saved.getLocation() != null) sib.setLocation(saved.getLocation());
+                        if (saved.getLastDate() != null) sib.setLastDate(saved.getLastDate());
+                        if (saved.getPdfUrl() != null) sib.setPdfUrl(saved.getPdfUrl());
+                        if (saved.getJobDocumentUrl() != null) sib.setJobDocumentUrl(saved.getJobDocumentUrl());
+                        if (saved.getApplyLink() != null) sib.setApplyLink(saved.getApplyLink());
+                        if (saved.getOfficialWebsite() != null) sib.setOfficialWebsite(saved.getOfficialWebsite());
+                        if (saved.getContactEmail() != null) sib.setContactEmail(saved.getContactEmail());
+                        if (saved.getContactPhone() != null) sib.setContactPhone(saved.getContactPhone());
+                        if (req.status() != null && !req.status().isBlank()) sib.setStatus(saved.getStatus());
+                        jobRepository.save(sib);
+                    }
+                } catch (Exception syncEx) {
+                    logger.warn("Failed to sync sibling recruitment jobs: {}", syncEx.getMessage());
+                }
+            }
             
             // Notify employer if status changed
             if (saved.getStatus() != oldStatus && employer != null && employer.getUser() != null) {
@@ -661,8 +684,21 @@ public class JobController {
     // Admin: Delete Job
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable("id") UUID id) {
-        if (!jobRepository.existsById(id)) return ResponseEntity.notFound().build();
-        jobRepository.deleteById(id);
+        Optional<Job> jobOpt = jobRepository.findById(id);
+        if (jobOpt.isEmpty()) return ResponseEntity.notFound().build();
+        Job job = jobOpt.get();
+        if (job.getSourceRecruitmentId() != null) {
+            try {
+                List<Job> siblings = jobRepository.findBySourceRecruitmentId(job.getSourceRecruitmentId());
+                for (Job s : siblings) {
+                    jobRepository.delete(s);
+                }
+            } catch (Exception ex) {
+                jobRepository.delete(job);
+            }
+        } else {
+            jobRepository.delete(job);
+        }
         return ResponseEntity.noContent().build();
     }
 

@@ -42,6 +42,9 @@ export function EditJobPage({ onNavigate }: EditJobPageProps) {
 
         // Transform backend response to match form data structure
         setJobData({
+          id: data.id || jobId,
+          sourceRecruitmentId: data.sourceRecruitmentId,
+          sourceVacancyId: data.sourceVacancyId,
           title: data.title || "",
           organization: data.organization || "",
           sector: data.sector || "private",
@@ -53,6 +56,8 @@ export function EditJobPage({ onNavigate }: EditJobPageProps) {
               ? [data.category]
               : ["Medical Officer"],
           location: data.location || "",
+          state: data.state || "",
+          department: data.department || "",
           qualification: data.qualification || "",
           experience: data.experience || "",
           experienceLevel: data.experienceLevel || "entry",
@@ -70,6 +75,7 @@ export function EditJobPage({ onNavigate }: EditJobPageProps) {
           jobDocumentUrl: data.jobDocumentUrl || "",
           jobImageUrl: data.jobImageUrl || "",
           applyLink: data.applyLink || "",
+          officialWebsite: data.officialWebsite || "",
           status: data.status || "pending",
           featured: data.featured || false,
           views: data.views || 0,
@@ -244,6 +250,7 @@ export function EditJobPage({ onNavigate }: EditJobPageProps) {
           onCancel={handleCancel}
           onSave={handleSave}
           initialData={jobData}
+          isEditing={true}
         />
 
         {saving && (

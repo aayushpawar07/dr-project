@@ -242,6 +242,29 @@ public class AdminJobController {
             
             Job saved = jobRepository.save(job);
             logger.info("Job updated successfully: {}", saved.getId());
+
+            // If this job belongs to a multi-department recruitment circular, sync common fields to sibling jobs
+            if (saved.getSourceRecruitmentId() != null) {
+                try {
+                    List<Job> siblings = jobRepository.findBySourceRecruitmentId(saved.getSourceRecruitmentId());
+                    for (Job sib : siblings) {
+                        if (sib.getId().equals(saved.getId())) continue;
+                        if (job.getEmployer() != null) sib.setEmployer(job.getEmployer());
+                        if (saved.getLocation() != null) sib.setLocation(saved.getLocation());
+                        if (saved.getLastDate() != null) sib.setLastDate(saved.getLastDate());
+                        if (saved.getPdfUrl() != null) sib.setPdfUrl(saved.getPdfUrl());
+                        if (saved.getJobDocumentUrl() != null) sib.setJobDocumentUrl(saved.getJobDocumentUrl());
+                        if (saved.getApplyLink() != null) sib.setApplyLink(saved.getApplyLink());
+                        if (saved.getOfficialWebsite() != null) sib.setOfficialWebsite(saved.getOfficialWebsite());
+                        if (saved.getContactEmail() != null) sib.setContactEmail(saved.getContactEmail());
+                        if (saved.getContactPhone() != null) sib.setContactPhone(saved.getContactPhone());
+                        if (req.status() != null && !req.status().isBlank()) sib.setStatus(saved.getStatus());
+                        jobRepository.save(sib);
+                    }
+                } catch (Exception syncEx) {
+                    logger.warn("Failed to sync sibling recruitment jobs in AdminJobController: {}", syncEx.getMessage());
+                }
+            }
             
             return ResponseEntity.ok(toResponse(saved));
             
@@ -396,8 +419,23 @@ public class AdminJobController {
             }
             
             // Soft delete - set deleted_at timestamp
-            job.setDeletedAt(LocalDateTime.now());
+            LocalDateTime now = LocalDateTime.now();
+            job.setDeletedAt(now);
             jobRepository.save(job);
+            
+            if (job.getSourceRecruitmentId() != null) {
+                try {
+                    List<Job> siblings = jobRepository.findBySourceRecruitmentId(job.getSourceRecruitmentId());
+                    for (Job s : siblings) {
+                        if (!s.getId().equals(job.getId())) {
+                            s.setDeletedAt(now);
+                            jobRepository.save(s);
+                        }
+                    }
+                } catch (Exception syncEx) {
+                    logger.warn("Failed to soft-delete sibling recruitment jobs: {}", syncEx.getMessage());
+                }
+            }
             
             logger.info("Job soft deleted successfully: {}", id);
             

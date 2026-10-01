@@ -63,6 +63,7 @@ interface JobPostingFormProps {
   onCancel: () => void;
   onSave: (jobData: JobFormData) => void;
   initialData?: Partial<JobFormData>;
+  isEditing?: boolean;
 }
 
 interface JobFormData {
@@ -88,6 +89,7 @@ interface JobFormData {
   contactPhone: string;
   pdfUrl?: string;
   applyLink?: string;
+  officialWebsite?: string;
   ageLimit?: string;
   selectionProcess?: string;
   pdfFile?: File;
@@ -257,9 +259,11 @@ const defaultData: JobFormData = {
   contactEmail: '',
   contactPhone: '',
   applyLink: '',
+  officialWebsite: '',
 };
 
-export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingFormProps) {
+export function JobPostingForm({ onCancel, onSave, initialData, isEditing = false }: JobPostingFormProps) {
+  const isEditMode = Boolean(isEditing || initialData);
   const navigate = useNavigate();
   const { user } = useAuth();
   const isEmployer = user?.role === 'employer';
@@ -638,7 +642,8 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
   };
 
   const save = async (status?: string) => {
-    if (!status) {
+    // In edit mode, ALWAYS update the existing job via onSave - NEVER create a duplicate recruitment
+    if (!isEditMode && !status) {
       const parsedDesc = parseRawVacancyNotice(formData.description || rawPastedNotice || '');
       const hasMulti =
         (detectedRecruitment && detectedRecruitment.departments.length >= 2) ||
@@ -678,9 +683,13 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
               <Briefcase className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="jpf-header-title">Post a Job / Organization</h1>
+              <h1 className="jpf-header-title">
+                {isEditMode ? 'Edit Job Posting' : 'Post a Job / Organization'}
+              </h1>
               <p className="jpf-header-subtitle">
-                Fill in the details below to post a job and reach the right candidates.
+                {isEditMode
+                  ? 'Update the job details below and save your changes.'
+                  : 'Fill in the details below to post a job and reach the right candidates.'}
               </p>
             </div>
           </div>
@@ -1644,7 +1653,7 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {detectedRecruitment && (
+            {detectedRecruitment && !isEditMode && (
               <button
                 type="button"
                 disabled={publishingRecruitment}
@@ -1702,7 +1711,7 @@ export function JobPostingForm({ onCancel, onSave, initialData }: JobPostingForm
                   <>
                     <CheckCircle2 className="h-4 w-4" />
                     <span>
-                      {initialData
+                      {isEditMode
                         ? 'Update Job'
                         : (detectedRecruitment && detectedRecruitment.departments.length >= 2) ||
                           (parseRawVacancyNotice(formData.description || rawPastedNotice || '').departmentsList?.length || 0) >= 2

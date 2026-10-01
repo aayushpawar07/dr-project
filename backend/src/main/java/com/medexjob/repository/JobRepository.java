@@ -41,6 +41,8 @@ public interface JobRepository extends JpaRepository<Job, UUID>, JpaSpecificatio
 
     Optional<Job> findFirstBySourceRecruitmentIdOrderByCreatedAtDesc(UUID sourceRecruitmentId);
 
+    List<Job> findBySourceRecruitmentId(UUID sourceRecruitmentId);
+
     Optional<Job> findBySlug(String slug);
 
     @Query("SELECT j FROM Job j LEFT JOIN FETCH j.employer WHERE j.id = :id")

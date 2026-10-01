@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Star,
   Stethoscope,
+  Trash2,
   User,
   UserCheck,
   Users,
@@ -28,11 +29,16 @@ import {
   formatCardSalary,
 } from '../utils/extractedFieldDisplay';
 import { cleanLocation } from '../utils/locationCleaner';
+import { useAuth } from '../contexts/AuthContext';
+import { deleteAdminJob, deleteJob } from '../api/jobs';
+import { toast } from 'sonner';
 
 interface JobCardProps {
   job: Job;
   onViewDetails: (jobId: string) => void;
   onSaveJob?: (jobId: string) => void;
+  onDelete?: (jobId: string) => void;
+  showAdminActions?: boolean;
   isSaved?: boolean;
   index?: number;
 }
@@ -100,10 +106,52 @@ function getCardTheme(job: any, index?: number) {
   return CARD_THEMES[hash % CARD_THEMES.length];
 }
 
-export function JobCard({ job, onViewDetails, onSaveJob, isSaved, index }: JobCardProps) {
+export function JobCard({
+  job,
+  onViewDetails,
+  onSaveJob,
+  onDelete,
+  showAdminActions,
+  isSaved,
+  index,
+}: JobCardProps) {
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
+  const isAdmin = Boolean(isAuthenticated && user?.role === 'admin') || Boolean(showAdminActions);
   const [copied, setCopied] = useState(false);
   const [expandedRoles, setExpandedRoles] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isDeleting) return;
+
+    const jobTitle = displayTitle || job.title || 'this vacancy';
+    const orgInfo = organizationName ? `\nOrganization: ${organizationName}` : '';
+    const confirmMessage = `Are you sure you want to delete this vacancy?\n\n"${jobTitle}"${orgInfo}\n\nThis will permanently delete the vacancy from the platform.`;
+
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      try {
+        await deleteAdminJob(job.id);
+      } catch (adminErr: any) {
+        // Fallback to standard delete if needed
+        await deleteJob(job.id);
+      }
+      toast.success('Vacancy deleted successfully!');
+      onDelete?.(job.id);
+    } catch (err: any) {
+      console.error('Failed to delete vacancy:', err);
+      const errMsg = err?.error || err?.message || 'Failed to delete vacancy';
+      toast.error(`Error deleting vacancy: ${errMsg}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
   const view = job as any;
   const sector = job.sector || 'private';
   const isGovernment = sector === 'government';
@@ -289,6 +337,18 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved, index }: JobCa
               >
                 {copied ? <Check size={14} color="#16a34a" /> : <Share2 size={14} />}
               </button>
+
+              {isAdmin && (
+                <button
+                  type="button"
+                  title="Delete Vacancy (Admin)"
+                  className="medex-delete-btn"
+                  onClick={handleDeleteClick}
+                  disabled={isDeleting}
+                >
+                  <Trash2 size={14} color="#ef4444" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -430,15 +490,31 @@ export function JobCard({ job, onViewDetails, onSaveJob, isSaved, index }: JobCa
               )}
             </div>
 
-            {/* Right button: View Details / Apply Now */}
-            <button
-              type="button"
-              onClick={openDetails}
-              className="medex-action-btn"
-            >
-              {isGovernment ? 'View Details' : 'Apply Now'}
-              <ArrowRight size={15} color="#ffffff" strokeWidth={2.5} />
-            </button>
+            {/* Action Group: Admin Delete Button + View Details / Apply Now */}
+            <div className="medex-card-action-group">
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={handleDeleteClick}
+                  disabled={isDeleting}
+                  className="medex-card-delete-btn"
+                  title="Delete Vacancy (Admin)"
+                >
+                  <Trash2 size={13.5} />
+                  <span>{isDeleting ? 'Deleting...' : 'Delete'}</span>
+                </button>
+              )}
+
+              {/* Right button: View Details / Apply Now */}
+              <button
+                type="button"
+                onClick={openDetails}
+                className="medex-action-btn"
+              >
+                {isGovernment ? 'View Details' : 'Apply Now'}
+                <ArrowRight size={15} color="#ffffff" strokeWidth={2.5} />
+              </button>
+            </div>
           </div>
         </div>
       </div>

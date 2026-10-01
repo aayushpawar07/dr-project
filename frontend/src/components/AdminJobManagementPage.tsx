@@ -1129,6 +1129,16 @@ export function AdminJobManagementPage({
                               <span>Edit</span>
                             </button>
 
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteJob(job.id)}
+                              className="admin-jm-btn-delete"
+                              title="Delete Job Posting"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Delete</span>
+                            </button>
+
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <button

@@ -237,6 +237,11 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
   const totalPages = Math.max(1, Math.ceil(jobs.length / pageSize));
   const paginatedJobs = jobs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
+  const handleDeleteJob = useCallback((deletedJobId: string) => {
+    setJobs((prev) => prev.filter((j: any) => j.id !== deletedJobId));
+    setTotal((prev) => Math.max(0, prev - 1));
+  }, []);
+
   const handlePageChange = (newPage: number) => {
     if (newPage < 1 || newPage > totalPages) return;
     setCurrentPage(newPage);
@@ -381,6 +386,7 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
                       job={job}
                       index={(currentPage - 1) * pageSize + index}
                       onViewDetails={(jobId) => onNavigate("job-detail", job.slug || jobId)}
+                      onDelete={handleDeleteJob}
                     />
                   </div>
                 ))

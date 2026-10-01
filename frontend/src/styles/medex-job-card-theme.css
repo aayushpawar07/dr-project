@@ -179,6 +179,31 @@
   border-color: #bfdbfe !important;
 }
 
+/* Admin Quick Delete Icon Button */
+.medex-delete-btn {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 9999px !important;
+  border: 1px solid #fecaca !important;
+  background: #ffffff !important;
+  color: #ef4444 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+}
+.medex-delete-btn:hover {
+  color: #ffffff !important;
+  background: #ef4444 !important;
+  border-color: #ef4444 !important;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25) !important;
+}
+.medex-delete-btn:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
 /* Title & Hospital */
 .medex-card-title {
   font-size: 16.5px !important;
@@ -382,4 +407,42 @@
 }
 .medex-action-btn:hover svg {
   transform: translateX(2px) !important;
+}
+
+/* Action Group Container (when multiple buttons exist) */
+.medex-card-action-group {
+  margin-left: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+/* Admin Card Delete Button in Action Row */
+.medex-card-delete-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 8px 14px !important;
+  border-radius: 9999px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  background: #fff5f5 !important;
+  color: #dc2626 !important;
+  border: 1px solid #fecaca !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  white-space: nowrap !important;
+  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.08) !important;
+}
+.medex-card-delete-btn:hover {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border-color: #dc2626 !important;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.22) !important;
+}
+.medex-card-delete-btn:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
 }

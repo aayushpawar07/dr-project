@@ -92,6 +92,14 @@ export function HomePage({ onNavigate }: HomePageProps) {
   const [copiedNewsId, setCopiedNewsId] = useState<string | null>(null);
   const [stats, setStats] = useState({ totalJobs: 0, totalEmployers: 0, totalUsers: 0, totalApplications: 0 });
 
+  const handleJobDeleted = (deletedId: string) => {
+    setAllJobs((prev) => prev.filter((j) => j.id !== deletedId));
+    setFeaturedJobs((prev) => prev.filter((j) => j.id !== deletedId));
+    setGovernmentJobs((prev) => prev.filter((j) => j.id !== deletedId));
+    setPrivateJobs((prev) => prev.filter((j) => j.id !== deletedId));
+    setStats((prev) => ({ ...prev, totalJobs: Math.max(0, prev.totalJobs - 1) }));
+  };
+
   const handleShareNews = async (e: React.MouseEvent, update: PulseUpdate) => {
     e.stopPropagation();
     const shareUrl = `${window.location.origin}/api/share/news/${update.id}`;
@@ -214,7 +222,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
             <div className="grid md:grid-cols-3 gap-6">
               {allJobs.map((job, index) => (
                 <div key={job.id} className="animate-fade-in-up h-full flex flex-col" style={{ animationDelay: `${index * 0.08}s` }}>
-                  <JobCard job={job} index={index} onViewDetails={(jobId) => onNavigate("job-detail", jobId)} />
+                  <JobCard job={job} index={index} onViewDetails={(jobId) => onNavigate("job-detail", jobId)} onDelete={handleJobDeleted} />
                 </div>
               ))}
             </div>
@@ -246,7 +254,7 @@ export function HomePage({ onNavigate }: HomePageProps) {
             <div className="grid md:grid-cols-3 gap-6">
               {featuredJobs.map((job, index) => (
                 <div key={job.id} className="animate-fade-in-up h-full flex flex-col" style={{ animationDelay: `${index * 0.1}s` }}>
-                  <JobCard job={job} index={index + 3} onViewDetails={(jobId) => onNavigate("job-detail", jobId)} />
+                  <JobCard job={job} index={index + 3} onViewDetails={(jobId) => onNavigate("job-detail", jobId)} onDelete={handleJobDeleted} />
                 </div>
               ))}
             </div>
@@ -261,9 +269,9 @@ export function HomePage({ onNavigate }: HomePageProps) {
         </div>
       </section>
 
-      {governmentJobs.length > 0 && <section className="py-16 bg-gray-50 relative"><div className="container mx-auto px-4"><div className="flex items-center justify-between mb-8"><div><h2 className="text-3xl text-gray-900 mb-2 flex items-center"><span className="w-1.5 h-8 bg-blue-600 rounded-full mr-3 inline-block"></span>Government Jobs</h2><p className="text-gray-600 ml-5">Official government vacancies</p></div><Button variant="outline" onClick={() => onNavigate("govt-jobs")} className="group border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-300">View All<ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" /></Button></div><div className="grid md:grid-cols-3 gap-6">{governmentJobs.map((job, index) => <div key={job.id} className="animate-fade-in-up h-full flex flex-col" style={{ animationDelay: `${index * 0.1}s` }}><JobCard job={job} index={index} onViewDetails={(jobId) => onNavigate("job-detail", jobId)} /></div>)}</div></div></section>}
+      {governmentJobs.length > 0 && <section className="py-16 bg-gray-50 relative"><div className="container mx-auto px-4"><div className="flex items-center justify-between mb-8"><div><h2 className="text-3xl text-gray-900 mb-2 flex items-center"><span className="w-1.5 h-8 bg-blue-600 rounded-full mr-3 inline-block"></span>Government Jobs</h2><p className="text-gray-600 ml-5">Official government vacancies</p></div><Button variant="outline" onClick={() => onNavigate("govt-jobs")} className="group border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-300">View All<ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" /></Button></div><div className="grid md:grid-cols-3 gap-6">{governmentJobs.map((job, index) => <div key={job.id} className="animate-fade-in-up h-full flex flex-col" style={{ animationDelay: `${index * 0.1}s` }}><JobCard job={job} index={index} onViewDetails={(jobId) => onNavigate("job-detail", jobId)} onDelete={handleJobDeleted} /></div>)}</div></div></section>}
 
-      {privateJobs.length > 0 && <section className="py-16 bg-white relative"><div className="container mx-auto px-4"><div className="flex items-center justify-between mb-8"><div><h2 className="text-3xl text-gray-900 mb-2 flex items-center"><span className="w-1.5 h-8 bg-green-600 rounded-full mr-3 inline-block"></span>Private Jobs</h2><p className="text-gray-600 ml-5">Top hospitals & healthcare providers</p></div><Button variant="outline" onClick={() => onNavigate("private-jobs")} className="group border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-all duration-300">View All<ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" /></Button></div><div className="grid md:grid-cols-3 gap-6">{privateJobs.map((job, index) => <div key={job.id} className="animate-fade-in-up h-full flex flex-col" style={{ animationDelay: `${index * 0.1}s` }}><JobCard job={job} index={index} onViewDetails={(jobId) => onNavigate("job-detail", jobId)} /></div>)}</div></div></section>}
+      {privateJobs.length > 0 && <section className="py-16 bg-white relative"><div className="container mx-auto px-4"><div className="flex items-center justify-between mb-8"><div><h2 className="text-3xl text-gray-900 mb-2 flex items-center"><span className="w-1.5 h-8 bg-green-600 rounded-full mr-3 inline-block"></span>Private Jobs</h2><p className="text-gray-600 ml-5">Top hospitals & healthcare providers</p></div><Button variant="outline" onClick={() => onNavigate("private-jobs")} className="group border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-all duration-300">View All<ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" /></Button></div><div className="grid md:grid-cols-3 gap-6">{privateJobs.map((job, index) => <div key={job.id} className="animate-fade-in-up h-full flex flex-col" style={{ animationDelay: `${index * 0.1}s` }}><JobCard job={job} index={index} onViewDetails={(jobId) => onNavigate("job-detail", jobId)} onDelete={handleJobDeleted} /></div>)}</div></div></section>}
 
       {newsUpdates.length > 0 && (
         <section className="relative py-20 bg-gradient-to-br from-white via-gray-50/50 to-white overflow-hidden">

@@ -365,7 +365,7 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
         let dColIdx = deptCol >= 0 ? deptCol : 0;
         const posCols = rawHeaders
           .map((h, i) => ({ name: h, idx: i }))
-          .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && /senior\s*resident|junior\s*resident|\bsr\b|\bjr\b|professor|faculty|tutor|demonstrator|medical\s*officer|specialist|consultant/i.test(c.name));
+          .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && /senior\s*resident|junior\s*resident|\bsr\b|\bjr\b|professor|faculty|tutor|demonstrator|medical\s*officer|specialist|consultant|\blmo\b|\bemo\b|\bfmo\b|lady\s*medical\s*officer/i.test(c.name));
         const catCols = rawHeaders
           .map((h, i) => ({ name: h, idx: i }))
           .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && !posCols.some((p) => p.idx === c.idx) && /UR|ST|SC|OBC|EWS|GEN|PWD|PWBD|PH|SEBC|MBC|Unreserved|General|Open/i.test(c.name));
@@ -427,7 +427,7 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
       }
       const posCols = rawHeaders
         .map((h, i) => ({ name: h, idx: i }))
-        .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && /senior\s*resident|junior\s*resident|\bsr\b|\bjr\b|professor|faculty|tutor|demonstrator|medical\s*officer|specialist|consultant/i.test(c.name));
+        .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && /senior\s*resident|junior\s*resident|\bsr\b|\bjr\b|professor|faculty|tutor|demonstrator|medical\s*officer|specialist|consultant|\blmo\b|\bemo\b|\bfmo\b|lady\s*medical\s*officer/i.test(c.name));
       const catCols = rawHeaders
         .map((h, i) => ({ name: h, idx: i }))
         .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && !posCols.some((p) => p.idx === c.idx) && /UR|ST|SC|OBC|EWS|GEN|PWD|PWBD|PH|SEBC|MBC|Unreserved|General|Open/i.test(c.name));
@@ -487,7 +487,7 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
       let dColIdx = deptCol >= 0 ? deptCol : 0;
       const posCols = rawHeaders
         .map((h, i) => ({ name: h, idx: i }))
-        .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && /senior\s*resident|junior\s*resident|\bsr\b|\bjr\b|professor|faculty|tutor|demonstrator|medical\s*officer|specialist|consultant/i.test(c.name));
+        .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && /senior\s*resident|junior\s*resident|\bsr\b|\bjr\b|professor|faculty|tutor|demonstrator|medical\s*officer|specialist|consultant|\blmo\b|\bemo\b|\bfmo\b|lady\s*medical\s*officer/i.test(c.name));
       const catCols = rawHeaders
         .map((h, i) => ({ name: h, idx: i }))
         .filter((c) => c.idx !== dColIdx && c.idx !== totalCol && !posCols.some((p) => p.idx === c.idx) && /UR|ST|SC|OBC|EWS|GEN|PWD|PWBD|PH|SEBC|MBC|Unreserved|General|Open/i.test(c.name));

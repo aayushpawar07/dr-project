@@ -33,8 +33,9 @@ const STANDARD_ACADEMIC_ORDER = [
   'demonstrator',
   'specialist',
   'medical officer',
-  'female medical officer',
   'emergency medical officer',
+  'lady medical officer',
+  'female medical officer',
   'consultant',
   'gdmo',
 ];
@@ -82,7 +83,7 @@ function convertHtmlTablesToMarkdown(text: string): string {
 
 function isReservedColumn(header: string): boolean {
   const clean = header.trim();
-  if (/^(sr|jr|mo|prof|tutor|faculty|specialist|emo|fmo)$/i.test(clean)) return false;
+  if (/^(sr|jr|mo|prof|tutor|faculty|specialist|emo|fmo|lmo)$/i.test(clean)) return false;
   return RESERVED_COLUMN_PATTERNS.some((pattern) => pattern.test(clean));
 }
 
@@ -96,9 +97,9 @@ export const KNOWN_DESIGNATIONS: Array<{ regex: RegExp; name: string }> = [
   { regex: /\btutor\b/i, name: 'Tutor' },
   { regex: /\bdemonstrator\b/i, name: 'Demonstrator' },
   { regex: /\bspecialist\b/i, name: 'Specialist' },
-  { regex: /\b(female\s*medical\s*officer|fmo)\b/i, name: 'Female Medical Officer' },
-  { regex: /\b(emergency\s*medical\s*officer|emo)\b/i, name: 'Emergency Medical Officer' },
-  { regex: /(?<!female\s+|emergency\s+|casualty\s+|dental\s+|chief\s+|ayush\s+)\b(medical\s*officer|mo)\b/i, name: 'Medical Officer' },
+  { regex: /\b(lady\s*medical\s*officer|female\s*medical\s*officer|lmo|fmo)\b/i, name: 'Lady Medical Officer' },
+  { regex: /\b(emergency\s*medical\s*officer|medical\s*officer\s*\(?emo\)?|emo)\b/i, name: 'Emergency Medical Officer' },
+  { regex: /(?<!female\s+|lady\s+|emergency\s+|casualty\s+|dental\s+|chief\s+|ayush\s+)\b(medical\s*officer|mo)\b/i, name: 'Medical Officer' },
   { regex: /\bconsultant\b/i, name: 'Consultant' },
   { regex: /\bgdmo\b/i, name: 'GDMO' },
 ];
@@ -116,10 +117,10 @@ export function extractPositionsFromText(text?: string): string[] {
 
 export function standardizePositionName(raw: string): string {
   const clean = raw.trim();
-  if (/^(female\s*medical\s*officer|fmo)$/i.test(clean)) {
-    return 'Female Medical Officer';
+  if (/^(lady\s*medical\s*officer|female\s*medical\s*officer|lmo|fmo)$/i.test(clean)) {
+    return 'Lady Medical Officer';
   }
-  if (/^(emergency\s*medical\s*officer|emo)$/i.test(clean)) {
+  if (/^(emergency\s*medical\s*officer|medical\s*officer\s*\(?emo\)?|emo)$/i.test(clean)) {
     return 'Emergency Medical Officer';
   }
   if (/^(senior\s*resident|sr\.?\s*resident|sr\.?)$/i.test(clean)) {
@@ -217,16 +218,16 @@ export function matchesPositionName(targetText: string, selectedPosition: string
 
   if (normText === normSel) return true;
 
-  if (normSel === 'female medical officer') {
-    return /\b(female\s*medical\s*officer|fmo)\b/i.test(normText);
+  if (normSel === 'lady medical officer' || normSel === 'female medical officer') {
+    return /\b(lady\s*medical\s*officer|female\s*medical\s*officer|lmo|fmo)\b/i.test(normText);
   }
 
   if (normSel === 'emergency medical officer') {
-    return /\b(emergency\s*medical\s*officer|emo)\b/i.test(normText);
+    return /\b(emergency\s*medical\s*officer|medical\s*officer\s*\(?emo\)?|emo)\b/i.test(normText);
   }
 
   if (normSel === 'medical officer') {
-    if (/(female|emergency|casualty|dental|ayush)\s*medical\s*officer/i.test(normText)) {
+    if (/(female|lady|emergency|casualty|dental|ayush)\s*medical\s*officer/i.test(normText)) {
       return false;
     }
     return /\b(medical\s*officer|mo|gdmo)\b/i.test(normText);
@@ -274,12 +275,12 @@ export function extractPositionCountFromText(text: string, selectedPosition: str
     patterns.push(/(?:senior\s*resident|sr\.?\s*resident|(?<!\w)sr(?!\w))\s*[:\-–—]?\s*(\d+)/i);
   } else if (selLower === 'junior resident') {
     patterns.push(/(?:junior\s*resident|jr\.?\s*resident|(?<!\w)jr(?!\w))\s*[:\-–—]?\s*(\d+)/i);
-  } else if (selLower === 'female medical officer') {
-    patterns.push(/(?:female\s*medical\s*officer|fmo)\s*[:\-–—]?\s*(\d+)/i);
+  } else if (selLower === 'lady medical officer' || selLower === 'female medical officer') {
+    patterns.push(/(?:lady\s*medical\s*officer|female\s*medical\s*officer|(?<!\w)lmo(?!\w)|(?<!\w)fmo(?!\w))\s*[:\-–—]?\s*(\d+)/i);
   } else if (selLower === 'emergency medical officer') {
-    patterns.push(/(?:emergency\s*medical\s*officer|emo)\s*[:\-–—]?\s*(\d+)/i);
+    patterns.push(/(?:emergency\s*medical\s*officer|medical\s*officer\s*\(?emo\)?|(?<!\w)emo(?!\w))\s*[:\-–—]?\s*(\d+)/i);
   } else if (selLower === 'medical officer') {
-    patterns.push(/(?<!female\s+|emergency\s+|casualty\s+|dental\s+)(?:medical\s*officer|(?<!\w)mo(?!\w))\s*[:\-–—]?\s*(\d+)/i);
+    patterns.push(/(?<!female\s+|lady\s+|emergency\s+|casualty\s+|dental\s+)(?:medical\s*officer|(?<!\w)mo(?!\w))\s*[:\-–—]?\s*(\d+)/i);
   } else {
     const escaped = selLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     patterns.push(new RegExp(`${escaped}\\s*[:\\-–—]?\\s*(\\d+)`, 'i'));

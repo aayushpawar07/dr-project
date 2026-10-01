@@ -21,7 +21,6 @@ import {
   MessageCircle,
   Send,
   Edit,
-  CheckCircle2,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -706,18 +705,6 @@ export function JobDetailPage({
               <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Job Description</h2>
               <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-sm sm:text-base">{displayJobDescription(job)}</p>
             </Card>
-
-            {job.selectionProcess && !isNotMentioned(job.selectionProcess) && (
-              <Card className="p-4 sm:p-6 job-detail-selection border-blue-200 bg-blue-50/20">
-                <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                  <CheckCircle2 className="h-5 w-5 text-blue-600 shrink-0" />
-                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">Selection Process</h2>
-                </div>
-                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-sm sm:text-base">
-                  {job.selectionProcess}
-                </p>
-              </Card>
-            )}
 
           </div>
 

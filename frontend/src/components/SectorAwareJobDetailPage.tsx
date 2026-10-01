@@ -6,7 +6,6 @@ import {
   Building2,
   Calendar,
   Check,
-  CheckCircle2,
   ExternalLink,
   FileText,
   GraduationCap,
@@ -290,20 +289,6 @@ export function GovernmentJobDetail({
     return organization;
   }, [organization, locationText]);
 
-  const selectionProcessText = useMemo(() => {
-    if (job.selectionProcess && !isNotMentioned(job.selectionProcess)) {
-      return job.selectionProcess;
-    }
-    if ((job as any).selection_process && !isNotMentioned((job as any).selection_process)) {
-      return (job as any).selection_process;
-    }
-    if (job.description) {
-      const match = job.description.match(/(?:SELECTION PROCESS|Selection Process:?|Walk-in Interview Date:?)\s*([^\n\r]+(?:\n[^\n\r]+){0,4})/i);
-      if (match) return match[0].trim();
-    }
-    return null;
-  }, [job]);
-
   const handleShare = async () => {
     const shareUrl = getJobShareUrl(job.id);
     const shareText = buildJobShareText(
@@ -493,27 +478,6 @@ export function GovernmentJobDetail({
                   'Refer to the official notification for complete eligibility, selection process and application instructions.'}
               </p>
             </Card>
-
-            {selectionProcessText && (
-              <Card className="p-4 sm:p-6 job-detail-selection border-blue-200 bg-blue-50/20">
-                <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                  <CheckCircle2 className="h-5 w-5 text-blue-600 shrink-0" />
-                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">Selection Process</h2>
-                </div>
-                <p
-                  className="whitespace-pre-wrap text-gray-700 leading-relaxed text-sm sm:text-base"
-                  style={{
-                    whiteSpace: 'pre-wrap',
-                    overflowWrap: 'anywhere',
-                    wordBreak: 'normal',
-                    lineHeight: 1.75,
-                  }}
-                >
-                  {selectionProcessText}
-                </p>
-              </Card>
-            )}
-
           </div>
 
           {/* Same right-column composition as Private jobs */}

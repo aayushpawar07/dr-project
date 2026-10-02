@@ -726,10 +726,10 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
         } else {
           // If formatted like "Forensic Medicine (Professor)" or "Professor - Forensic Medicine"
           let extractedRole = currentCadreRole;
-          const roleInParen = pName.match(/\((Professor|Associate Professor|Assistant Professor|Senior Resident|Junior Resident)\)/i);
+          const roleInParen = pName.match(/\((Professor|Associate Professor|Assistant Professor|Senior Resident|Junior Resident|Part[- ]?Time Specialist|Full[- ]?Time Specialist|Resident Specialist|PT\/FT Specialist|Specialist|Consultant|PGMO|GDMO|Medical Officer|Tutor|Demonstrator)\)/i);
           if (roleInParen) {
             extractedRole = standardizePositionName(roleInParen[1]);
-            pName = pName.replace(/\((Professor|Associate Professor|Assistant Professor|Senior Resident|Junior Resident)\)/i, '').trim();
+            pName = pName.replace(/\((Professor|Associate Professor|Assistant Professor|Senior Resident|Junior Resident|Part[- ]?Time Specialist|Full[- ]?Time Specialist|Resident Specialist|PT\/FT Specialist|Specialist|Consultant|PGMO|GDMO|Medical Officer|Tutor|Demonstrator)\)/i, '').trim();
           }
 
           totalPostsSum += count;

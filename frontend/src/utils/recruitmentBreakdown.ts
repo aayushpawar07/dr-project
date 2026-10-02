@@ -15,12 +15,13 @@ export interface ParsedBreakdownResult {
 const RESERVED_COLUMN_PATTERNS = [
   /^(s\.?\s*no\.?|sl\.?\s*no\.?|sr\.?\s*no\.?|#|serial(\s*no\.?)?)$/i,
   /^(department|dept\.?|speciality|specialty|specialization|discipline|subject|branch|name\s*of\s*(post|dept|department|speciality)?)$/i,
-  /^(total|grand\s*total|total\s*(posts?|vacanc(y|ies))|sum)$/i,
-  /^(ur|unreserved|gen|general|sc|st|obc|ews|pwd|pwbd|ph|sebc|mbc|open)(\s*\([^)]*\))?$/i,
+  /^(total|grand\s*total|total\s*(posts?|vacanc(y|ies))|sum|posts?|vacanc(y|ies)|no\.?\s*of\s*(posts?|vacanc(y|ies))|number\s*of\s*(posts?|vacanc(y|ies)))$/i,
+  /^(ur|unreserved|gen|general|sc|st|obc|ews|pwd|pwbd|ph|sebc|mbc|open|vjnt(\s*\([a-d]\))?|nt(\s*\([a-d]\))?|sbc)(\s*\([^)]*\))?$/i,
+  /^(category|community|caste|social\s*category)(\s*(breakup|bifurcation|distribution|details?|break\s*down))?$/i,
   /^(remuneration|salary|pay|stipend|honorarium|ctc|package|scale|pay\s*scale|monthly(\s*remuneration|\s*salary)?|emoluments?)$/i,
   /^(place\s*of\s*posting|posting|location|station|unit|facility|hospital|centre|center)$/i,
   /^(qualification|eligibility|education|experience|exp\.?|age|age\s*limit|remarks?|notes?)$/i,
-  /^(date(\s*of\s*(interview|walk[- ]?in|exam|test))?|interview(\s*date)?|walk[- ]?in(\s*date)?|time|reporting(\s*time)?|venue|place(\s*(&|and)?\s*reporting\s*time)?|schedule)$/i,
+  /^(date(\s*of\s*(interview|walk[- ]?in|exam|test))?|interview(\s*date)?|walk[- ]?in(\s*date)?|time|reporting(\s*time)?|interview\s*time|venue|place(\s*(&|and)?\s*reporting\s*time)?|schedule)$/i,
 ];
 
 const STANDARD_ACADEMIC_ORDER = [

@@ -24,6 +24,7 @@ import { parseRawVacancyNotice } from '../utils/rawNoticeParser';
 import {
   parseRecruitmentBreakdown,
   getVacancyPositionMatch,
+  augmentRecruitmentWithBreakdown,
 } from '../utils/recruitmentBreakdown';
 import { JobDetailPage } from './JobDetailPage';
 import { Button } from './ui/button';
@@ -52,22 +53,27 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
     return parseRecruitmentBreakdown(desc, recruitment?.vacancies, recruitment?.title || job?.title);
   }, [recruitment, job]);
 
+  const displayRecruitment = useMemo(() => {
+    return augmentRecruitmentWithBreakdown(recruitment, breakdownMap) || recruitment;
+  }, [recruitment, breakdownMap]);
+
   const { filteredTotalVacancies, filteredSpecialtiesCount } = useMemo(() => {
-    if (!recruitment?.vacancies) return { filteredTotalVacancies: 0, filteredSpecialtiesCount: 0 };
+    const vacs = displayRecruitment?.vacancies || recruitment?.vacancies;
+    if (!vacs || vacs.length === 0) return { filteredTotalVacancies: 0, filteredSpecialtiesCount: 0 };
     const authoritativeTotal = Math.max(
       Number(job?.numberOfPosts || 0),
-      Number(recruitment.totalVacancies || 0),
-      recruitment.vacancies.reduce((sum, v) => sum + Number(v.numberOfVacancies || 0), 0)
+      Number(displayRecruitment?.totalVacancies || recruitment?.totalVacancies || 0),
+      vacs.reduce((sum, v) => sum + Number(v.numberOfVacancies || 0), 0)
     );
     if (!selectedPosition || selectedPosition === 'All Positions') {
       return {
         filteredTotalVacancies: authoritativeTotal,
-        filteredSpecialtiesCount: recruitment.vacancies.length,
+        filteredSpecialtiesCount: vacs.length,
       };
     }
     let total = 0;
     let specCount = 0;
-    for (const v of recruitment.vacancies) {
+    for (const v of vacs) {
       const match = getVacancyPositionMatch(v, selectedPosition, breakdownMap);
       if (match.matches && match.count > 0) {
         total += match.count;
@@ -78,7 +84,7 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
       filteredTotalVacancies: total,
       filteredSpecialtiesCount: specCount,
     };
-  }, [recruitment, job, selectedPosition, breakdownMap]);
+  }, [displayRecruitment, recruitment, job, selectedPosition, breakdownMap]);
 
   useEffect(() => {
     let active = true;
@@ -212,7 +218,8 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
   }
 
   // If multi-department recruitment is detected (either synthesized or linked)
-  if (recruitment && recruitment.vacancies && recruitment.vacancies.length >= 2) {
+  const activeRecruitment = displayRecruitment || recruitment;
+  if (activeRecruitment && activeRecruitment.vacancies && activeRecruitment.vacancies.length >= 2) {
     return (
       <div className="min-h-screen bg-gray-50">
         <RecruitmentViewSwitcher
@@ -227,7 +234,7 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
 
         {viewMode === 'explorer' ? (
           <RecruitmentExplorerView
-            recruitment={recruitment}
+            recruitment={activeRecruitment}
             applyByDateOverride={job.lastDate}
             onNavigate={onNavigate}
             onViewStandardDetail={() => setViewMode('standard')}

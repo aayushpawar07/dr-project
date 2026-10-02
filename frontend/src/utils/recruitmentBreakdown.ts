@@ -1,4 +1,4 @@
-import { VacancyRecord } from '../api/recruitments';
+import { VacancyRecord, Recruitment } from '../api/recruitments';
 import { cleanExtractedName } from './extractedFieldDisplay';
 
 export interface DepartmentBreakdown {
@@ -813,4 +813,76 @@ export function getVacancyPositionMatch(
   }
 
   return { matches: false, count: 0 };
+}
+
+/**
+ * Automatically augments a recruitment's vacancy records with departments discovered
+ * in the parsed breakdown map (e.g. from the structured table or specialty vacancy list)
+ * that may not have been explicitly created as separate database rows.
+ * This guarantees multi-department explorer views work seamlessly even if the recruitment
+ * was initially saved with only a partial or single department record.
+ */
+export function augmentRecruitmentWithBreakdown(
+  recruitment: Recruitment | null,
+  breakdownMap: Map<string, DepartmentBreakdown> | null
+): Recruitment | null {
+  if (!recruitment) return null;
+  if (!breakdownMap || breakdownMap.size === 0) return recruitment;
+
+  const existing = [...(recruitment.vacancies || [])];
+  const coveredDepts = new Set<string>();
+
+  for (const v of existing) {
+    const d = v.department || v.speciality || v.postName;
+    if (d) {
+      coveredDepts.add(normalizeDeptKey(d));
+    }
+  }
+
+  const templateVacancy = existing[0];
+  let extraIndex = 0;
+  let added = false;
+
+  for (const [key, bd] of breakdownMap.entries()) {
+    let alreadyCovered = coveredDepts.has(key);
+    if (!alreadyCovered) {
+      for (const covered of coveredDepts) {
+        if (covered.includes(key) || key.includes(covered)) {
+          alreadyCovered = true;
+          break;
+        }
+      }
+    }
+
+    if (!alreadyCovered && bd.department && bd.total > 0) {
+      extraIndex++;
+      added = true;
+      const newVac: VacancyRecord = {
+        id: `${recruitment.id}-auto-dept-${extraIndex}`,
+        postName: bd.department,
+        department: bd.department,
+        speciality: bd.department,
+        numberOfVacancies: bd.total,
+        category: templateVacancy?.category || 'Medical',
+        qualification: templateVacancy?.qualification || 'As per official notification',
+        experience: templateVacancy?.experience || 'As per official notification',
+        salary: templateVacancy?.salary || 'As per official notification',
+        ageLimit: templateVacancy?.ageLimit,
+        location: templateVacancy?.location || recruitment.location,
+        jobType: templateVacancy?.jobType || 'Full Time',
+        status: 'PUBLISHED',
+        publishedJobId: templateVacancy?.publishedJobId,
+        lastDate: templateVacancy?.lastDate || recruitment.applicationLastDate,
+      };
+      existing.push(newVac);
+      coveredDepts.add(key);
+    }
+  }
+
+  if (!added) return recruitment;
+
+  return {
+    ...recruitment,
+    vacancies: existing,
+  };
 }

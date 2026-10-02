@@ -47,6 +47,7 @@ import {
 import {
   parseRecruitmentBreakdown,
   getVacancyPositionMatch,
+  augmentRecruitmentWithBreakdown,
   type DepartmentBreakdown,
 } from '../utils/recruitmentBreakdown';
 
@@ -814,19 +815,25 @@ export function RecruitmentPage() {
     );
   }, [recruitment, effectiveJob]);
 
+  const displayRecruitment = useMemo(() => {
+    return augmentRecruitmentWithBreakdown(recruitment, breakdownMap) || recruitment;
+  }, [recruitment, breakdownMap]);
+
   const { filteredTotalVacancies, filteredSpecialtiesCount } = useMemo(() => {
-    if (!recruitment?.vacancies) return { filteredTotalVacancies: 0, filteredSpecialtiesCount: 0 };
+    const vacs = displayRecruitment?.vacancies || recruitment?.vacancies;
+    if (!vacs || vacs.length === 0) return { filteredTotalVacancies: 0, filteredSpecialtiesCount: 0 };
     if (!selectedPosition || selectedPosition === 'All Positions') {
       return {
         filteredTotalVacancies:
-          recruitment.totalVacancies ||
-          recruitment.vacancies.reduce((sum, v) => sum + Number(v.numberOfVacancies || 0), 0),
-        filteredSpecialtiesCount: recruitment.vacancies.length,
+          displayRecruitment?.totalVacancies ||
+          recruitment?.totalVacancies ||
+          vacs.reduce((sum, v) => sum + Number(v.numberOfVacancies || 0), 0),
+        filteredSpecialtiesCount: vacs.length,
       };
     }
     let total = 0;
     let specCount = 0;
-    for (const v of recruitment.vacancies) {
+    for (const v of vacs) {
       const match = getVacancyPositionMatch(v, selectedPosition, breakdownMap);
       if (match.matches && match.count > 0) {
         total += match.count;
@@ -837,7 +844,7 @@ export function RecruitmentPage() {
       filteredTotalVacancies: total,
       filteredSpecialtiesCount: specCount,
     };
-  }, [recruitment, selectedPosition, breakdownMap]);
+  }, [displayRecruitment, recruitment, selectedPosition, breakdownMap]);
 
   if (loading) {
     return (
@@ -861,7 +868,8 @@ export function RecruitmentPage() {
     );
   }
 
-  const hasMultipleDepartments = (recruitment.vacancies?.length || 0) >= 2;
+  const activeRecruitment = displayRecruitment || recruitment;
+  const hasMultipleDepartments = (activeRecruitment.vacancies?.length || 0) >= 2;
 
   return (
     <div className="min-h-screen bg-[#f7f9fc]">
@@ -879,7 +887,7 @@ export function RecruitmentPage() {
 
       {viewMode === 'explorer' ? (
         <RecruitmentExplorerView
-          recruitment={recruitment}
+          recruitment={activeRecruitment}
           selectedPosition={selectedPosition}
           onPositionChange={setSelectedPosition}
           availablePositions={availablePositions}
@@ -906,7 +914,7 @@ export function RecruitmentPage() {
         />
       ) : (
         <RecruitmentExplorerView
-          recruitment={recruitment}
+          recruitment={activeRecruitment}
           selectedPosition={selectedPosition}
           onPositionChange={setSelectedPosition}
           availablePositions={availablePositions}
@@ -965,41 +973,45 @@ export function RecruitmentExplorerView({
       ? parsedPositions
       : [];
 
+  const effectiveRecruitment = useMemo(() => {
+    return augmentRecruitmentWithBreakdown(recruitment, breakdownMap) || recruitment;
+  }, [recruitment, breakdownMap]);
+
   useEffect(() => {
-    if (recruitment?.vacancies?.length) {
+    if (effectiveRecruitment?.vacancies?.length) {
       setActivePost('');
-      setSelectedVacancyId(recruitment.vacancies[0]?.id || '');
+      setSelectedVacancyId(effectiveRecruitment.vacancies[0]?.id || '');
     }
-  }, [recruitment]);
+  }, [effectiveRecruitment]);
 
   useEffect(() => {
     if (applyByDateOverride) {
       setApplyByDate(applyByDateOverride);
       return;
     }
-    if (!recruitment) {
+    if (!effectiveRecruitment) {
       setApplyByDate('');
       return;
     }
-    const direct = recruitment.applicationLastDate
-      || recruitment.vacancies.find((vacancy) => vacancy.lastDate)?.lastDate
+    const direct = effectiveRecruitment.applicationLastDate
+      || effectiveRecruitment.vacancies.find((vacancy) => vacancy.lastDate)?.lastDate
       || '';
     if (direct) {
       setApplyByDate(direct);
       return;
     }
-    const jobId = recruitment.vacancies.find((vacancy) => vacancy.publishedJobId)?.publishedJobId;
+    const jobId = effectiveRecruitment.vacancies.find((vacancy) => vacancy.publishedJobId)?.publishedJobId;
     if (!jobId) return;
     fetchJob(jobId)
       .then((job) => {
         if (job?.lastDate) setApplyByDate(job.lastDate);
       })
       .catch(() => undefined);
-  }, [recruitment, applyByDateOverride]);
+  }, [effectiveRecruitment, applyByDateOverride]);
 
   const postGroups = useMemo(() => {
     const groups = new Map<string, VacancyRecord[]>();
-    for (const vacancy of recruitment?.vacancies || []) {
+    for (const vacancy of effectiveRecruitment?.vacancies || []) {
       const rows = groups.get(vacancy.postName) || [];
       rows.push(vacancy);
       groups.set(vacancy.postName, rows);
@@ -1008,12 +1020,12 @@ export function RecruitmentExplorerView({
       name,
       total: rows.reduce((sum, row) => sum + Number(row.numberOfVacancies || 0), 0),
     }));
-  }, [recruitment]);
+  }, [effectiveRecruitment]);
 
   const visibleVacancies = useMemo(() => {
-    if (!recruitment) return [];
+    if (!effectiveRecruitment) return [];
     const q = query.trim().toLowerCase();
-    return (recruitment.vacancies || [])
+    return (effectiveRecruitment.vacancies || [])
       .map((vacancy) => {
         const { matches, count } = getVacancyPositionMatch(vacancy, selectedPosition, breakdownMap);
         return {
@@ -1030,7 +1042,7 @@ export function RecruitmentExplorerView({
           .filter(Boolean)
           .some((value) => String(value).toLowerCase().includes(q));
       });
-  }, [recruitment, activePost, query, selectedPosition, breakdownMap, availablePositions]);
+  }, [effectiveRecruitment, activePost, query, selectedPosition, breakdownMap, availablePositions]);
 
   useEffect(() => {
     if (!visibleVacancies.length) {
@@ -1053,20 +1065,20 @@ export function RecruitmentExplorerView({
   );
 
   const totalDepartmentCount = useMemo(
-    () => new Set((recruitment?.vacancies || []).map((v) => v.department || v.speciality).filter(Boolean)).size,
-    [recruitment],
+    () => new Set((effectiveRecruitment?.vacancies || []).map((v) => v.department || v.speciality).filter(Boolean)).size,
+    [effectiveRecruitment],
   );
 
   const explorerTotalVacancies = useMemo(() => {
     const baseTotal = Math.max(
-      Number(recruitment.totalVacancies || 0),
-      (recruitment.vacancies || []).reduce((sum, row) => sum + Number(row.numberOfVacancies || 0), 0)
+      Number(effectiveRecruitment.totalVacancies || 0),
+      (effectiveRecruitment.vacancies || []).reduce((sum, row) => sum + Number(row.numberOfVacancies || 0), 0)
     );
     if (!selectedPosition || selectedPosition === 'All Positions') {
       return baseTotal;
     }
     return visibleVacancies.reduce((sum, row) => sum + Number(row.displayCount || 0), 0);
-  }, [recruitment, selectedPosition, visibleVacancies]);
+  }, [effectiveRecruitment, selectedPosition, visibleVacancies]);
 
   const isGovernment = recruitment.sector === 'government';
   const applyByLabel = applyByDate ? formatDate(applyByDate) : 'See Notification';

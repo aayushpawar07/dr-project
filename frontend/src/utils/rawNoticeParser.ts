@@ -687,8 +687,8 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
 
     // Match "Post Title – X Posts" or "Post Title: X Vacancies" or "Junior Resident - 4Post"
     const postLineMatch =
-      cleanLineWithoutTags.match(/^([A-Za-z0-9&/,\.\(\) ]+?)\s*[:\-–—=]\s*([0-9]{1,4})\s*(?:posts?|vacanc(?:y|ies))?\s*$/i) ||
-      cleanLineWithoutTags.match(/^([A-Za-z0-9&/,\.\(\) ]+?)\s+([0-9]{1,4})\s*(?:posts?|vacanc(?:y|ies))\s*$/i);
+      cleanLineWithoutTags.match(/^([A-Za-z0-9&/,\.\(\)\- ]+?)\s*[:\-–—=]\s*([0-9]{1,4})\s*(?:posts?|vacanc(?:y|ies))?\s*$/i) ||
+      cleanLineWithoutTags.match(/^([A-Za-z0-9&/,\.\(\)\- ]+?)\s+([0-9]{1,4})\s*(?:posts?|vacanc(?:y|ies))\s*$/i);
 
     if (postLineMatch) {
       let pName = postLineMatch[1].trim();

@@ -475,8 +475,8 @@ function createContentBlock(section: DescriptionSection): HTMLElement {
     if (clean.endsWith(':') && !/\d+\s*posts?$/i.test(clean)) return null;
 
     const m =
-      clean.match(/^([A-Za-z0-9&/,\.\(\) ]+?)\s*[:\-–—=]\s*([0-9]{1,4})\s*(?:posts?|vacanc(?:y|ies))\s*$/i) ||
-      clean.match(/^([A-Za-z0-9&/,\.\(\) ]+?)\s+([0-9]{1,4})\s*(?:posts?|vacanc(?:y|ies))\s*$/i);
+      clean.match(/^([A-Za-z0-9&/,\.\(\)\- ]+?)\s*[:\-–—=]\s*([0-9]{1,4})\s*(?:posts?|vacanc(?:y|ies))\s*$/i) ||
+      clean.match(/^([A-Za-z0-9&/,\.\(\)\- ]+?)\s+([0-9]{1,4})\s*(?:posts?|vacanc(?:y|ies))\s*$/i);
     if (m) {
       const name = m[1].trim();
       const count = parseInt(m[2], 10);

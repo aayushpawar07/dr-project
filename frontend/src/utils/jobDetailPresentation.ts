@@ -469,35 +469,105 @@ function createContentBlock(section: DescriptionSection): HTMLElement {
     }
   };
 
+  function parseVacancyLine(line: string): { name: string; count: number; rawCount: string } | null {
+    const clean = stripBullet(line).replace(/^[•●▪·*\-–—\s]+/, '').trim();
+    if (clean.startsWith('|')) return null;
+    if (clean.endsWith(':') && !/\d+\s*posts?$/i.test(clean)) return null;
+
+    const m =
+      clean.match(/^([A-Za-z0-9&/,\.\(\) ]+?)\s*[:\-–—=]\s*([0-9]{1,4})\s*(?:posts?|vacanc(?:y|ies))\s*$/i) ||
+      clean.match(/^([A-Za-z0-9&/,\.\(\) ]+?)\s+([0-9]{1,4})\s*(?:posts?|vacanc(?:y|ies))\s*$/i);
+    if (m) {
+      const name = m[1].trim();
+      const count = parseInt(m[2], 10);
+      if (
+        name.length >= 2 &&
+        !/^(total\s*posts?|total\s*vacanc|grand\s*total|total|salary|pay|qualification|experience|age|last date|date|venue|email|phone|website|apply|selection|instruction)/i.test(name) &&
+        !isNaN(count) &&
+        count > 0 &&
+        count < 10000
+      ) {
+        return { name, count, rawCount: `${count} Posts` };
+      }
+    }
+    return null;
+  }
+
   type LineGroup = { type: 'table'; rows: string[] } | { type: 'line'; line: string };
   const groups: LineGroup[] = [];
   let currentTable: string[] = [];
+  let currentVacancyBlock: Array<{ name: string; count: number; rawCount: string; rawLine: string }> = [];
+
+  const flushPipeTable = () => {
+    if (currentTable.length > 0) {
+      if (currentTable.length >= 2) {
+        groups.push({ type: 'table', rows: currentTable });
+      } else {
+        currentTable.forEach((r) => groups.push({ type: 'line', line: r }));
+      }
+      currentTable = [];
+    }
+  };
+
+  const flushVacancyBlock = () => {
+    if (currentVacancyBlock.length > 0) {
+      if (currentVacancyBlock.length >= 2) {
+        const rows: string[] = [];
+        rows.push('| Specialty / Department | Number of Posts |');
+        rows.push('|---|---|');
+        currentVacancyBlock.forEach((v) => {
+          rows.push(`| ${v.name} | ${v.rawCount} |`);
+        });
+        const total = currentVacancyBlock.reduce((s, v) => s + v.count, 0);
+        rows.push(`| Total | ${total} Posts |`);
+        groups.push({ type: 'table', rows });
+      } else {
+        currentVacancyBlock.forEach((v) => groups.push({ type: 'line', line: v.rawLine }));
+      }
+      currentVacancyBlock = [];
+    }
+  };
 
   section.lines.forEach((rawLine) => {
     const line = rawLine.trim();
+    if (!line) return;
+
     if (line.startsWith('|') && line.endsWith('|')) {
+      flushVacancyBlock();
       currentTable.push(line);
-    } else {
-      if (currentTable.length > 0) {
-        if (currentTable.length >= 2) {
-          groups.push({ type: 'table', rows: currentTable });
-        } else {
-          currentTable.forEach((r) => groups.push({ type: 'line', line: r }));
-        }
-        currentTable = [];
-      }
-      if (line) {
-        groups.push({ type: 'line', line });
-      }
+      return;
     }
+
+    flushPipeTable();
+
+    // Check if line is a Total line following a vacancy block (e.g. "Total: 130 Posts" or "Total – 130 Posts")
+    const totalMatch = line.match(/^(?:TOTAL\s*POSTS?|TOTAL\s*VACANC(?:Y|IES)|GRAND\s*TOTAL|TOTAL)\s*[:\-–—=]\s*([0-9]{1,4})/i);
+    if (totalMatch && currentVacancyBlock.length >= 2) {
+      const explicitTotal = parseInt(totalMatch[1], 10);
+      const rows: string[] = [];
+      rows.push('| Specialty / Department | Number of Posts |');
+      rows.push('|---|---|');
+      currentVacancyBlock.forEach((v) => {
+        rows.push(`| ${v.name} | ${v.rawCount} |`);
+      });
+      rows.push(`| Total | ${explicitTotal} Posts |`);
+      groups.push({ type: 'table', rows });
+      currentVacancyBlock = [];
+      return;
+    }
+
+    const vItem = parseVacancyLine(line);
+    if (vItem) {
+      currentVacancyBlock.push({ ...vItem, rawLine });
+      return;
+    }
+
+    flushVacancyBlock();
+    groups.push({ type: 'line', line });
   });
-  if (currentTable.length > 0) {
-    if (currentTable.length >= 2) {
-      groups.push({ type: 'table', rows: currentTable });
-    } else {
-      currentTable.forEach((r) => groups.push({ type: 'line', line: r }));
-    }
-  }
+
+  flushPipeTable();
+  flushVacancyBlock();
 
   groups.forEach((group) => {
     if (group.type === 'table') {

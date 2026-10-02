@@ -16,7 +16,7 @@ const RESERVED_COLUMN_PATTERNS = [
   /^(s\.?\s*no\.?|sl\.?\s*no\.?|sr\.?\s*no\.?|#|serial(\s*no\.?)?)$/i,
   /^(department|dept\.?|speciality|specialty|specialization|discipline|subject|branch|name\s*of\s*(post|dept|department|speciality)?)$/i,
   /^(total|grand\s*total|total\s*(posts?|vacanc(y|ies))|sum)$/i,
-  /^(ur|unreserved|gen|general|sc|st|obc|ews|pwd|pwbd|ph|sebc|mbc|open)$/i,
+  /^(ur|unreserved|gen|general|sc|st|obc|ews|pwd|pwbd|ph|sebc|mbc|open)(\s*\([^)]*\))?$/i,
   /^(remuneration|salary|pay|stipend|honorarium|ctc|package|scale|pay\s*scale|monthly(\s*remuneration|\s*salary)?|emoluments?)$/i,
   /^(place\s*of\s*posting|posting|location|station|unit|facility|hospital|centre|center)$/i,
   /^(qualification|eligibility|education|experience|exp\.?|age|age\s*limit|remarks?|notes?)$/i,

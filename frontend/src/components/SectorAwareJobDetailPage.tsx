@@ -75,8 +75,8 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
       }
     }
     return {
-      filteredTotalVacancies: total || authoritativeTotal,
-      filteredSpecialtiesCount: specCount || recruitment.vacancies.length,
+      filteredTotalVacancies: total,
+      filteredSpecialtiesCount: specCount,
     };
   }, [recruitment, job, selectedPosition, breakdownMap]);
 

@@ -596,6 +596,32 @@ export function parseRecruitmentBreakdown(
     sortedPositions = ['Professor', 'Associate Professor', 'Assistant Professor'];
   }
 
+  // Filter out any designation that has 0 vacancies across the entire breakdown
+  if (sortedPositions.length > 0) {
+    const activePositions = sortedPositions.filter((pos) => {
+      let count = 0;
+      if (breakdownMap.size > 0) {
+        for (const bd of breakdownMap.values()) {
+          for (const [pName, pCount] of Object.entries(bd.positions)) {
+            if (standardizePositionName(pName).toLowerCase() === pos.toLowerCase()) {
+              count += Number(pCount) || 0;
+            }
+          }
+        }
+      }
+      if (count > 0) return true;
+      if (vacancies && vacancies.length > 0) {
+        return vacancies.some((v) => {
+          const match = getVacancyPositionMatch(v, pos, breakdownMap);
+          return match.matches && match.count > 0;
+        });
+      }
+      return false;
+    });
+
+    sortedPositions = activePositions;
+  }
+
   return {
     breakdownMap,
     availablePositions: sortedPositions,

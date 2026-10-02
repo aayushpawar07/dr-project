@@ -959,11 +959,11 @@ export function RecruitmentExplorerView({
   }, [externalBreakdownMap, externalAvailablePositions, recruitment]);
 
   const availablePositions =
-    externalAvailablePositions && externalAvailablePositions.length > 0
+    externalAvailablePositions !== undefined
       ? externalAvailablePositions
       : parsedPositions && parsedPositions.length > 0
       ? parsedPositions
-      : ['Professor', 'Associate Professor', 'Assistant Professor'];
+      : [];
 
   useEffect(() => {
     if (recruitment?.vacancies?.length) {
@@ -1052,6 +1052,11 @@ export function RecruitmentExplorerView({
     [visibleVacancies],
   );
 
+  const totalDepartmentCount = useMemo(
+    () => new Set((recruitment?.vacancies || []).map((v) => v.department || v.speciality).filter(Boolean)).size,
+    [recruitment],
+  );
+
   const explorerTotalVacancies = useMemo(() => {
     const baseTotal = Math.max(
       Number(recruitment.totalVacancies || 0),
@@ -1060,7 +1065,7 @@ export function RecruitmentExplorerView({
     if (!selectedPosition || selectedPosition === 'All Positions') {
       return baseTotal;
     }
-    return visibleVacancies.reduce((sum, row) => sum + Number(row.displayCount || 0), 0) || baseTotal;
+    return visibleVacancies.reduce((sum, row) => sum + Number(row.displayCount || 0), 0);
   }, [recruitment, selectedPosition, visibleVacancies]);
 
   const isGovernment = recruitment.sector === 'government';
@@ -1146,7 +1151,7 @@ export function RecruitmentExplorerView({
                   }}
                   aria-label="Filter by position"
                 >
-                  <option value="All Positions">All ({departmentCount})</option>
+                  <option value="All Positions">All Positions ({totalDepartmentCount})</option>
                   {availablePositions.map((pos) => (
                     <option key={pos} value={pos}>
                       {pos}
@@ -1165,24 +1170,32 @@ export function RecruitmentExplorerView({
             </div>
 
             <DepartmentScroller>
-              {visibleVacancies.map((vacancy, index) => {
-                const selected = vacancy.id === selectedVacancy?.id;
-                const name = cleanExtractedName(vacancy.department || vacancy.speciality || vacancy.postName);
-                const subtitle = departmentSubtitle(vacancy);
-                const DepartmentIcon = getDepartmentIcon(name);
-                const tone = getDepartmentTone(index);
-                return (
-                  <button key={vacancy.id} className={`department-row ${selected ? 'selected' : ''}`} onClick={() => setSelectedVacancyId(vacancy.id)}>
-                    <span className={`department-icon ${tone}`}><DepartmentIcon size={20} strokeWidth={2} /></span>
-                    <span className="department-text">
-                      <span className="department-name">{name}</span>
-                      {subtitle ? <span className="department-sub">{subtitle}</span> : null}
-                    </span>
-                    <span className="department-count">{vacancy.displayCount}</span>
-                    <ChevronRight size={16} color={selected ? '#1463ff' : '#98a2b3'} />
-                  </button>
-                );
-              })}
+              {visibleVacancies.length === 0 ? (
+                <div style={{ padding: '28px 16px', textAlign: 'center', color: '#667085', fontSize: '0.875rem' }}>
+                  {selectedPosition && selectedPosition !== 'All Positions'
+                    ? `No vacancies found for ${selectedPosition}.`
+                    : 'No department vacancies listed.'}
+                </div>
+              ) : (
+                visibleVacancies.map((vacancy, index) => {
+                  const selected = vacancy.id === selectedVacancy?.id;
+                  const name = cleanExtractedName(vacancy.department || vacancy.speciality || vacancy.postName);
+                  const subtitle = departmentSubtitle(vacancy);
+                  const DepartmentIcon = getDepartmentIcon(name);
+                  const tone = getDepartmentTone(index);
+                  return (
+                    <button key={vacancy.id} className={`department-row ${selected ? 'selected' : ''}`} onClick={() => setSelectedVacancyId(vacancy.id)}>
+                      <span className={`department-icon ${tone}`}><DepartmentIcon size={20} strokeWidth={2} /></span>
+                      <span className="department-text">
+                        <span className="department-name">{name}</span>
+                        {subtitle ? <span className="department-sub">{subtitle}</span> : null}
+                      </span>
+                      <span className="department-count">{vacancy.displayCount}</span>
+                      <ChevronRight size={16} color={selected ? '#1463ff' : '#98a2b3'} />
+                    </button>
+                  );
+                })
+              )}
             </DepartmentScroller>
           </aside>
 
@@ -1197,7 +1210,16 @@ export function RecruitmentExplorerView({
                 selectedPosition={selectedPosition}
               />
             ) : (
-              <div style={{ minHeight: 420, display: 'grid', placeItems: 'center', color: '#667085' }}>Select a department to view details.</div>
+              <div style={{ minHeight: 420, display: 'grid', placeItems: 'center', color: '#667085', textAlign: 'center', padding: '24px' }}>
+                <div>
+                  <p className="font-semibold text-slate-700">No department selected</p>
+                  <p className="text-sm text-slate-500 mt-1">
+                    {selectedPosition && selectedPosition !== 'All Positions'
+                      ? 'Select "All Positions" or another designation to view vacancies.'
+                      : 'Select a department to view details.'}
+                  </p>
+                </div>
+              </div>
             )}
           </main>
         </section>

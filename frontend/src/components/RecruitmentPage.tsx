@@ -460,8 +460,8 @@ const PAGE_STYLES = `
 
   .department-icon { width: 40px; height: 40px; }
   .department-text { min-width: 0; flex: 1; }
-  .department-name { font-size: 12.5px; font-weight: 800; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .department-sub { margin-top: 2px; font-size: 10.5px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .department-name { display: block; font-size: 12.5px; font-weight: 800; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .department-sub { display: block; margin-top: 2px; font-size: 10.5px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .department-count {
     min-width: 25px;
     height: 25px;
@@ -967,10 +967,14 @@ export function RecruitmentExplorerView({
 
   useEffect(() => {
     if (recruitment?.vacancies?.length) {
-      setActivePost(recruitment.vacancies[0]?.postName || '');
+      if (!availablePositions || availablePositions.length === 0) {
+        setActivePost(recruitment.vacancies[0]?.postName || '');
+      } else {
+        setActivePost('');
+      }
       setSelectedVacancyId(recruitment.vacancies[0]?.id || '');
     }
-  }, [recruitment]);
+  }, [recruitment, availablePositions]);
 
   useEffect(() => {
     if (applyByDateOverride) {
@@ -1024,13 +1028,13 @@ export function RecruitmentExplorerView({
       })
       .filter((v) => {
         if (!v.isPositionMatch || v.displayCount <= 0) return false;
-        if (activePost && v.postName !== activePost) return false;
+        if ((!availablePositions || availablePositions.length === 0) && activePost && v.postName !== activePost) return false;
         if (!q) return true;
         return [v.department, v.speciality, v.qualification, v.location]
           .filter(Boolean)
           .some((value) => String(value).toLowerCase().includes(q));
       });
-  }, [recruitment, activePost, query, selectedPosition, breakdownMap]);
+  }, [recruitment, activePost, query, selectedPosition, breakdownMap, availablePositions]);
 
   useEffect(() => {
     if (!visibleVacancies.length) {
@@ -1074,7 +1078,9 @@ export function RecruitmentExplorerView({
     ? Math.ceil((parseRecruitmentDate(applyByDate).getTime() - Date.now()) / 86400000)
     : null;
   const applicationMode = recruitment.officialApplicationUrl ? 'Online' : 'As notified';
-  const primaryPost = activePost || postGroups[0]?.name || 'Multiple Posts';
+  const primaryPost = selectedPosition && selectedPosition !== 'All Positions'
+    ? selectedPosition
+    : activePost || (postGroups.length === 1 ? postGroups[0]?.name : 'Multiple Posts');
 
   const handleShare = async () => {
     const data = {

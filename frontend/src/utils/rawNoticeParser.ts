@@ -652,23 +652,37 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
   const parsedVacancies: ParsedDepartmentVacancy[] = [];
   let totalPostsSum = 0;
   const detectedPostTitles: string[] = [];
+  let currentCadreRole = '';
+  const cadreSummaryList: Array<{ name: string; count: number }> = [];
 
   for (const rawLine of lines) {
     const cleanLine = rawLine.replace(/^[🟩🟥⬛⬜🟧🟨*#•\->\s]+/, '').trim();
     if (!cleanLine) continue;
 
     // Skip header lines or meta lines
-    if (/^(LAST DATE|DATE OF INTERVIEW|WEBSITE|WALK-IN|SELECTION|AGE LIMIT|SALARY|PAY|EXPERIENCE|ELIGIBILITY)\b/i.test(cleanLine)) {
+    if (/^(LAST DATE|DATE OF INTERVIEW|VENUE|WEBSITE|WALK-IN|SELECTION|AGE LIMIT|SALARY|PAY|EXPERIENCE|ELIGIBILITY|CONTRACT|IMPORTANT|DEPARTMENT BREAKDOWN)\b/i.test(cleanLine)) {
       continue;
     }
 
+    // Check if line is a designation header e.g. "Professor:" or "Assistant Professor:"
+    const cadreHeaderMatch = cleanLine.match(/^(Professor|Associate Professor|Assistant Professor|Senior Resident|Junior Resident|Tutor|Medical Officer)\s*[:\-]?\s*$/i);
+    if (cadreHeaderMatch) {
+      currentCadreRole = standardizePositionName(cadreHeaderMatch[1]);
+      continue;
+    }
+
+    // Strip trailing category tags like (GEN), (SC), (OBC: 1, EWS: 1), [EWS]
+    const cleanLineWithoutTags = cleanLine
+      .replace(/\s*(\([A-Za-z0-9\s:,\/–-]+\)|\[[A-Za-z0-9\s:,\/–-]+\])\s*$/, '')
+      .trim();
+
     // Match "Post Title – X Posts" or "Post Title: X Vacancies" or "Junior Resident - 4Post"
     const postLineMatch =
-      cleanLine.match(/^([A-Za-z0-9&/,\.\(\) ]+?)\s*[:\-–—=]\s*([0-9]{1,4})\s*(?:posts?|vacanc(?:y|ies))?\s*$/i) ||
-      cleanLine.match(/^([A-Za-z0-9&/,\.\(\) ]+?)\s+([0-9]{1,4})\s*(?:posts?|vacanc(?:y|ies))\s*$/i);
+      cleanLineWithoutTags.match(/^([A-Za-z0-9&/,\.\(\) ]+?)\s*[:\-–—=]\s*([0-9]{1,4})\s*(?:posts?|vacanc(?:y|ies))?\s*$/i) ||
+      cleanLineWithoutTags.match(/^([A-Za-z0-9&/,\.\(\) ]+?)\s+([0-9]{1,4})\s*(?:posts?|vacanc(?:y|ies))\s*$/i);
 
     if (postLineMatch) {
-      const pName = postLineMatch[1].trim();
+      let pName = postLineMatch[1].trim();
       const count = parseInt(postLineMatch[2], 10);
       if (
         pName.length >= 2 &&
@@ -677,15 +691,42 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
         count > 0 &&
         count < 10000
       ) {
-        totalPostsSum += count;
-        detectedPostTitles.push(pName);
-        parsedVacancies.push({
-          department: pName,
-          numberOfVacancies: count,
-          postName: pName,
-          category: inferCategory(pName),
-        });
+        const isCadreName = /^(professor|associate professor|assistant professor|senior resident|junior resident)$/i.test(pName);
+        if (isCadreName && !currentCadreRole) {
+          cadreSummaryList.push({ name: pName, count });
+        } else {
+          // If formatted like "Forensic Medicine (Professor)" or "Professor - Forensic Medicine"
+          let extractedRole = currentCadreRole;
+          const roleInParen = pName.match(/\((Professor|Associate Professor|Assistant Professor|Senior Resident|Junior Resident)\)/i);
+          if (roleInParen) {
+            extractedRole = standardizePositionName(roleInParen[1]);
+            pName = pName.replace(/\((Professor|Associate Professor|Assistant Professor|Senior Resident|Junior Resident)\)/i, '').trim();
+          }
+
+          totalPostsSum += count;
+          detectedPostTitles.push(pName);
+          parsedVacancies.push({
+            department: pName,
+            numberOfVacancies: count,
+            postName: extractedRole || pName,
+            category: inferCategory(pName),
+          });
+        }
       }
+    }
+  }
+
+  // If specific department lines were not present, fall back to cadre summary lines
+  if (parsedVacancies.length === 0 && cadreSummaryList.length > 0) {
+    for (const c of cadreSummaryList) {
+      totalPostsSum += c.count;
+      detectedPostTitles.push(c.name);
+      parsedVacancies.push({
+        department: c.name,
+        numberOfVacancies: c.count,
+        postName: c.name,
+        category: inferCategory(c.name),
+      });
     }
   }
 

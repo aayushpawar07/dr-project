@@ -967,14 +967,10 @@ export function RecruitmentExplorerView({
 
   useEffect(() => {
     if (recruitment?.vacancies?.length) {
-      if (!availablePositions || availablePositions.length === 0) {
-        setActivePost(recruitment.vacancies[0]?.postName || '');
-      } else {
-        setActivePost('');
-      }
+      setActivePost('');
       setSelectedVacancyId(recruitment.vacancies[0]?.id || '');
     }
-  }, [recruitment, availablePositions]);
+  }, [recruitment]);
 
   useEffect(() => {
     if (applyByDateOverride) {
@@ -1166,6 +1162,7 @@ export function RecruitmentExplorerView({
                 </select>
               ) : postGroups.length > 1 ? (
                 <select className="post-select" value={activePost} onChange={(e) => { setActivePost(e.target.value); setQuery(''); }}>
+                  <option value="">All Departments ({totalDepartmentCount})</option>
                   {postGroups.map((group) => <option key={group.name} value={group.name}>{group.name}</option>)}
                 </select>
               ) : (

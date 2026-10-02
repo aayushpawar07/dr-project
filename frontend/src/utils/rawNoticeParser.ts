@@ -659,8 +659,17 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
     const cleanLine = rawLine.replace(/^[🟩🟥⬛⬜🟧🟨*#•\->\s]+/, '').trim();
     if (!cleanLine) continue;
 
+    // Skip TOTAL POSTS / TOTAL VACANCIES lines from being parsed as departments!
+    const totalLineMatch = cleanLine.match(/^(?:TOTAL\s*POSTS?|TOTAL\s*VACANC(?:Y|IES)|TOTAL\s*VACANT\s*POSTS?|GRAND\s*TOTAL|TOTAL)\s*[:\-–—=]\s*([0-9]{1,4})/i);
+    if (totalLineMatch) {
+      if (!result.numberOfPosts) {
+        result.numberOfPosts = parseInt(totalLineMatch[1], 10);
+      }
+      continue;
+    }
+
     // Skip header lines or meta lines
-    if (/^(LAST DATE|DATE OF INTERVIEW|VENUE|WEBSITE|WALK-IN|SELECTION|AGE LIMIT|SALARY|PAY|EXPERIENCE|ELIGIBILITY|CONTRACT|IMPORTANT|DEPARTMENT BREAKDOWN)\b/i.test(cleanLine)) {
+    if (/^(LAST DATE|DATE OF INTERVIEW|VENUE|WEBSITE|WALK-IN|SELECTION|AGE LIMIT|SALARY|PAY|EXPERIENCE|ELIGIBILITY|CONTRACT|IMPORTANT|DEPARTMENT BREAKDOWN|SPECIALTY-WISE|TITLE|ORGANIZATION|LOCATION|STATE|SECTOR)\b/i.test(cleanLine)) {
       continue;
     }
 
@@ -686,7 +695,8 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
       const count = parseInt(postLineMatch[2], 10);
       if (
         pName.length >= 2 &&
-        !/^(last date|date of|website|contact|email|phone|interview|selection|salary|experience)/i.test(pName) &&
+        !/^(last date|date of|website|contact|email|phone|interview|selection|salary|experience|venue|qualification|eligibility|title|organization|sector)/i.test(pName) &&
+        !/^(total\s*posts?|total\s*vacanc(y|ies)|grand\s*total|total)$/i.test(pName) &&
         !isNaN(count) &&
         count > 0 &&
         count < 10000
@@ -733,10 +743,14 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
   if (parsedVacancies.length > 0) {
     result.departmentsList = parsedVacancies;
     result.isMultiDepartment = parsedVacancies.length >= 2;
-    result.numberOfPosts = totalPostsSum;
+    if (!result.numberOfPosts) {
+      result.numberOfPosts = totalPostsSum;
+    }
 
     // Map title from detected post titles
-    result.title = detectedPostTitles.slice(0, 3).join(' / ');
+    if (!result.title) {
+      result.title = detectedPostTitles.slice(0, 3).join(' / ');
+    }
 
     // Standardize category: if any post is MO/GDMO/EMO/Lady MO, category = 'Medical Officer'
     const hasMO = detectedPostTitles.some((p) =>
@@ -812,7 +826,7 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
 
   // Explicit Post Title detection if present
   const titleKeyMatch = normalizedText.match(
-    /(?:^|\n)\s*(?:\*\s*)?(?:Post\s+Job\s+Title|Job\s+Title|Post\s+Name|Name\s+of\s+(?:the\s+)?Post|Designation|Position|Job\s+Role|Role|Post(?!\s+(?:No|Code|Count|Number|of\s+Vacanc)))\s*[:\-]\s*([^\n\r]+)/i
+    /(?:^|\n)\s*(?:\*\s*)?(?:Title|Job\s+Title|Post\s+Job\s+Title|Post\s+Name|Name\s+of\s+(?:the\s+)?Post|Designation|Position|Job\s+Role|Role|Post(?!\s+(?:No|Code|Count|Number|of\s+Vacanc)))\s*[:\-]\s*([^\n\r]+)/i
   );
   if (titleKeyMatch) {
     result.title = titleKeyMatch[1].trim();

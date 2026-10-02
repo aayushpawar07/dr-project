@@ -20,6 +20,7 @@ const RESERVED_COLUMN_PATTERNS = [
   /^(remuneration|salary|pay|stipend|honorarium|ctc|package|scale|pay\s*scale|monthly(\s*remuneration|\s*salary)?|emoluments?)$/i,
   /^(place\s*of\s*posting|posting|location|station|unit|facility|hospital|centre|center)$/i,
   /^(qualification|eligibility|education|experience|exp\.?|age|age\s*limit|remarks?|notes?)$/i,
+  /^(date(\s*of\s*(interview|walk[- ]?in|exam|test))?|interview(\s*date)?|walk[- ]?in(\s*date)?|time|reporting(\s*time)?|venue|place(\s*(&|and)?\s*reporting\s*time)?|schedule)$/i,
 ];
 
 const STANDARD_ACADEMIC_ORDER = [
@@ -473,7 +474,9 @@ export function parseRecruitmentBreakdown(
 
         posCols.forEach(({ index, name }) => {
           const rawNum = cells[index] || '';
+          if (/\d{1,2}[./-]\d{1,2}[./-]\d{2,4}/.test(rawNum)) return;
           const num = parseInt(rawNum.replace(/[^0-9]/g, ''), 10) || 0;
+          if (num > 1000) return;
           existing.positions[name] = (existing.positions[name] || 0) + num;
         });
 

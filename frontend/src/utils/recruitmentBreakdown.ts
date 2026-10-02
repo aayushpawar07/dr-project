@@ -43,8 +43,32 @@ const STANDARD_ACADEMIC_ORDER = [
   'gdmo',
 ];
 
+export function stripCountSuffix(text: string): string {
+  return String(text || '')
+    .replace(/[-–—:]\s*\d+\s*(?:posts?|vacanc(?:y|ies))?\s*$/i, '')
+    .replace(/\(\s*\d+\s*(?:posts?|vacanc(?:y|ies))?\s*\)\s*$/i, '')
+    .trim();
+}
+
+export function getDeptTokens(name: string): string[] {
+  const stripped = stripCountSuffix(name);
+  return stripped
+    .toLowerCase()
+    .replace(/[&/\\(),:;.\-_–—[\]]/g, ' ')
+    .split(/\s+/)
+    .map((w) => w.trim())
+    .filter((w) => w.length >= 3 && !['and', 'for', 'the', 'dept', 'department'].includes(w));
+}
+
+export function getSortedTokenKey(name: string): string {
+  const tokens = getDeptTokens(name);
+  tokens.sort();
+  return tokens.join('');
+}
+
 export function normalizeDeptKey(name: string): string {
-  return String(name || '')
+  const stripped = stripCountSuffix(name);
+  return String(stripped || '')
     .toLowerCase()
     .replace(/&/g, 'and')
     .replace(/[^a-z0-9]/g, '')
@@ -644,18 +668,70 @@ export function findDepartmentBreakdown(
   departmentName: string
 ): DepartmentBreakdown | null {
   if (!departmentName || breakdownMap.size === 0) return null;
-  const key = normalizeDeptKey(departmentName);
+  const cleanName = stripCountSuffix(departmentName);
+  const key = normalizeDeptKey(cleanName);
 
+  // 1. Direct exact key match
   if (breakdownMap.has(key)) {
     return breakdownMap.get(key)!;
   }
 
+  // 2. Token-set sorted exact match (handles inverted names e.g. "(Psychiatry) Clinical Psychology" vs "Clinical Psychology (Psychiatry)")
+  const deptSortedKey = getSortedTokenKey(cleanName);
+  if (deptSortedKey) {
+    for (const item of breakdownMap.values()) {
+      if (getSortedTokenKey(item.department) === deptSortedKey) {
+        return item;
+      }
+    }
+  }
+
+  // 3. Multi-subspecialty matching & merging:
+  // When the vacancy is a compound specialty (e.g. "Clinical Psychology (Psychiatry)")
+  // and the breakdown map contains individual sub-specialties (e.g. "Psychiatry" and "Clinical Psychology"),
+  // merge their positions into a combined breakdown!
+  const deptTokens = getDeptTokens(cleanName);
+  if (deptTokens.length > 1) {
+    const subSpecialtyMatches: DepartmentBreakdown[] = [];
+    for (const item of breakdownMap.values()) {
+      const itemTokens = getDeptTokens(item.department);
+      if (
+        itemTokens.length > 0 &&
+        itemTokens.length < deptTokens.length &&
+        itemTokens.every((t) => deptTokens.includes(t))
+      ) {
+        subSpecialtyMatches.push(item);
+      }
+    }
+
+    if (subSpecialtyMatches.length > 0) {
+      if (subSpecialtyMatches.length === 1) {
+        return subSpecialtyMatches[0];
+      }
+      const mergedPositions: Record<string, number> = {};
+      let total = 0;
+      for (const it of subSpecialtyMatches) {
+        for (const [pos, count] of Object.entries(it.positions)) {
+          mergedPositions[pos] = (mergedPositions[pos] || 0) + Number(count || 0);
+          total += Number(count || 0);
+        }
+      }
+      return {
+        department: cleanName,
+        positions: mergedPositions,
+        total,
+      };
+    }
+  }
+
+  // 4. Bidirectional substring inclusion fallback
   for (const [mapKey, item] of breakdownMap.entries()) {
-    if (mapKey.includes(key) || key.includes(mapKey)) {
+    if (mapKey.length >= 4 && key.length >= 4 && (mapKey.includes(key) || key.includes(mapKey))) {
       return item;
     }
   }
 
+  // 5. Aliases
   for (const [aliasRoot, aliasList] of Object.entries(ALIASES)) {
     const matchesTarget = aliasList.some((a) => key.includes(a));
     if (matchesTarget) {
@@ -681,7 +757,8 @@ export function getVacancyPositionMatch(
 
   // 1. Table breakdown resolution
   if (breakdownMap && breakdownMap.size > 0) {
-    const deptName = cleanExtractedName(vacancy.department || vacancy.speciality || vacancy.postName);
+    const rawDept = vacancy.department || vacancy.speciality || vacancy.postName;
+    const deptName = stripCountSuffix(cleanExtractedName(rawDept));
     const item = findDepartmentBreakdown(breakdownMap, deptName);
     if (item) {
       let count = 0;
@@ -726,8 +803,11 @@ export function getVacancyPositionMatch(
     return { matches: false, count: 0 };
   }
 
-  // 4. Composite postName (e.g. "Senior Resident / Junior Resident")
-  if (matchesPositionName(pName, selectedPosition)) {
+  // 4. Composite postName (e.g. "Professor / Associate Professor / Assistant Professor" or "Senior Resident / Junior Resident")
+  if (
+    matchesPositionName(pName, selectedPosition) ||
+    designations.some((d) => matchesPositionName(d, selectedPosition))
+  ) {
     const c = Number(vacancy.numberOfVacancies || 0);
     return { matches: c > 0, count: c };
   }

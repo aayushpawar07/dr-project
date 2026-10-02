@@ -653,6 +653,25 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
   let totalPostsSum = 0;
   const detectedPostTitles: string[] = [];
   let currentCadreRole = '';
+
+  // Pre-detect overall cadre role from explicit notice header, category, or title
+  const explicitRoleMatch = normalizedText.match(/(?:^|\n)\s*(?:\*\s*)?(?:Role|Job\s*Role|Category|Cadre)\s*[:\-]\s*([^\n\r]+)/i);
+  if (explicitRoleMatch) {
+    const roleCandidate = standardizePositionName(explicitRoleMatch[1].trim());
+    if (/^(Senior Resident|Junior Resident|Medical Officer|Professor|Associate Professor|Assistant Professor|Tutor|Specialist|Consultant)$/i.test(roleCandidate)) {
+      currentCadreRole = roleCandidate;
+    }
+  }
+  if (!currentCadreRole) {
+    if (/\bsenior\s+resident\b/i.test(normalizedText) && !/\b(junior\s+resident|professor|tutor)\b/i.test(normalizedText)) {
+      currentCadreRole = 'Senior Resident';
+    } else if (/\bjunior\s+resident\b/i.test(normalizedText) && !/\b(senior\s+resident|professor|tutor)\b/i.test(normalizedText)) {
+      currentCadreRole = 'Junior Resident';
+    } else if (/\bmedical\s+officer\b/i.test(normalizedText) && !/\b(resident|professor)\b/i.test(normalizedText)) {
+      currentCadreRole = 'Medical Officer';
+    }
+  }
+
   const cadreSummaryList: Array<{ name: string; count: number }> = [];
 
   for (const rawLine of lines) {
@@ -718,8 +737,8 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
           parsedVacancies.push({
             department: pName,
             numberOfVacancies: count,
-            postName: extractedRole || pName,
-            category: inferCategory(pName),
+            postName: extractedRole || currentCadreRole || pName,
+            category: inferCategory(extractedRole || currentCadreRole || pName),
           });
         }
       }

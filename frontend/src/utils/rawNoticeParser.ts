@@ -546,7 +546,10 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
   // Strip emojis and bullets from the first non-empty lines
   for (let i = 0; i < Math.min(lines.length, 5); i++) {
     const rawLine = lines[i];
-    const cleanLine = rawLine.replace(/^[🟩🟥⬛⬜🟧🟨*#•\->\s]+/, '').trim();
+    const cleanLine = rawLine
+      .replace(/^(?:Post\s*[:\d]*\s*)?[🟩🟥⬛⬜🟧🟨🟪*#•\->\s]+/i, '')
+      .replace(/^[🟩🟥⬛⬜🟧🟨🟪*#•\->\s]+/, '')
+      .trim();
 
     // Check for explicit Organization: ...
     const orgKeyMatch = cleanLine.match(
@@ -557,15 +560,15 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
       break;
     }
 
-    // Check for prominent official headers (CMO, GMC, Railway, AIIMS, ESIC, District Health Society, Hospital)
+    // Check for prominent official headers (CMO, GMC, Railway, AIIMS, ESIC, ESIS, Hospital, Institute)
     if (
-      /^(?:OFFICE OF THE CHIEF MEDICAL OFFICER|CHIEF MEDICAL OFFICER|MAHAMAYA RAJKIYA ALLOPATHIC MEDICAL COLLEGE|RAJKIYA ALLOPATHIC MEDICAL COLLEGE|GOVERNMENT MEDICAL COLLEGE|NORTHERN RAILWAY|SOUTHERN RAILWAY|WESTERN RAILWAY|EASTERN RAILWAY|CENTRAL RAILWAY|INDIAN RAILWAYS|DISTRICT HEALTH SOCIETY|DISTRICT HOSPITAL|CIVIL HOSPITAL|ALL INDIA INSTITUTE OF MEDICAL SCIENCES|AIIMS|ESIC|NATIONAL HEALTH MISSION|DIRECTORATE OF HEALTH)/i.test(
+      /^(?:OFFICE OF THE CHIEF MEDICAL OFFICER|CHIEF MEDICAL OFFICER|MAHAMAYA RAJKIYA ALLOPATHIC MEDICAL COLLEGE|RAJKIYA ALLOPATHIC MEDICAL COLLEGE|GOVERNMENT MEDICAL COLLEGE|NORTHERN RAILWAY|SOUTHERN RAILWAY|WESTERN RAILWAY|EASTERN RAILWAY|CENTRAL RAILWAY|INDIAN RAILWAYS|DISTRICT HEALTH SOCIETY|DISTRICT HOSPITAL|CIVIL HOSPITAL|ALL INDIA INSTITUTE OF MEDICAL SCIENCES|AIIMS|ESIC|ESIS|MAHARASHTRA EMPLOYEES STATE INSURANCE|NATIONAL HEALTH MISSION|DIRECTORATE OF HEALTH)/i.test(
         cleanLine
       ) ||
-      /\b(?:CHIEF MEDICAL OFFICER|MEDICAL COLLEGE|RAILWAY|DISTRICT HOSPITAL|AIIMS|ESIC)\b/i.test(cleanLine)
+      /\b(?:CHIEF MEDICAL OFFICER|MEDICAL COLLEGE|RAILWAY|DISTRICT HOSPITAL|AIIMS|ESIC|ESIS|HOSPITAL|INSTITUTE)\b/i.test(cleanLine)
     ) {
       // If line is not a post listing line (does not end with posts/vacancies)
-      if (!/–|-|:|\b\d+\s*posts?\b/i.test(cleanLine) || cleanLine.includes('OFFICE') || cleanLine.includes('RAILWAY') || cleanLine.includes('COLLEGE')) {
+      if (!/–|-|:|\b\d+\s*posts?\b/i.test(cleanLine) || cleanLine.includes('OFFICE') || cleanLine.includes('RAILWAY') || cleanLine.includes('COLLEGE') || cleanLine.includes('HOSPITAL')) {
         result.organization = cleanLine;
         break;
       }
@@ -658,7 +661,7 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
   const explicitRoleMatch = normalizedText.match(/(?:^|\n)\s*(?:\*\s*)?(?:Role|Job\s*Role|Category|Cadre)\s*[:\-]\s*([^\n\r]+)/i);
   if (explicitRoleMatch) {
     const roleCandidate = standardizePositionName(explicitRoleMatch[1].trim());
-    if (/^(Senior Resident|Junior Resident|Medical Officer|Professor|Associate Professor|Assistant Professor|Tutor|Specialist|Consultant)$/i.test(roleCandidate)) {
+    if (/^(Senior Resident|Junior Resident|Medical Officer|Professor|Associate Professor|Assistant Professor|Additional Professor|Tutor|Demonstrator|Specialist|Consultant|Part[- ]?Time Specialist|Resident Specialist|Full[- ]?Time Specialist|PT\/FT Specialist|PGMO|GDMO)$/i.test(roleCandidate)) {
       currentCadreRole = roleCandidate;
     }
   }
@@ -693,7 +696,7 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
     }
 
     // Check if line is a designation header e.g. "Professor:" or "Assistant Professor:"
-    const cadreHeaderMatch = cleanLine.match(/^(Professor|Associate Professor|Assistant Professor|Senior Resident|Junior Resident|Tutor|Medical Officer)\s*[:\-]?\s*$/i);
+    const cadreHeaderMatch = cleanLine.match(/^(Professor|Associate Professor|Assistant Professor|Additional Professor|Senior Resident|Junior Resident|Part[- ]?Time Specialist|Resident Specialist|Full[- ]?Time Specialist|PT\/FT Specialist|PGMO|GDMO|Tutor|Demonstrator|Medical Officer|Specialist|Consultant)\s*[:\-]?\s*$/i);
     if (cadreHeaderMatch) {
       currentCadreRole = standardizePositionName(cadreHeaderMatch[1]);
       continue;
@@ -720,7 +723,7 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
         count > 0 &&
         count < 10000
       ) {
-        const isCadreName = /^(professor|associate professor|assistant professor|senior resident|junior resident)$/i.test(pName);
+        const isCadreName = /^(professor|associate professor|assistant professor|additional professor|senior resident|junior resident|part[- ]?time\s*specialist|resident\s*specialist|full[- ]?time\s*specialist|pt\/ft\s*(contractual\s*)?specialist|specialist|pgmo|gdmo|medical officer|tutor|demonstrator|consultant)$/i.test(pName);
         if (isCadreName && !currentCadreRole) {
           cadreSummaryList.push({ name: pName, count });
         } else {

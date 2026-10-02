@@ -824,12 +824,29 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
     }
   }
 
+  // Explicit Category / Primary Role detection if present in raw notice
+  const categoryKeyMatch = normalizedText.match(
+    /(?:^|\n)\s*(?:\*\s*)?(?:Category|Primary\s*Category|Cadre)\s*[:\-]\s*([^\n\r]+)/i
+  );
+  if (categoryKeyMatch) {
+    const parsedCat = inferCategory(categoryKeyMatch[1].trim());
+    result.category = parsedCat;
+  }
+
   // Explicit Post Title detection if present
   const titleKeyMatch = normalizedText.match(
     /(?:^|\n)\s*(?:\*\s*)?(?:Title|Job\s+Title|Post\s+Job\s+Title|Post\s+Name|Name\s+of\s+(?:the\s+)?Post|Designation|Position|Job\s+Role|Role|Post(?!\s+(?:No|Code|Count|Number|of\s+Vacanc)))\s*[:\-]\s*([^\n\r]+)/i
   );
   if (titleKeyMatch) {
     result.title = titleKeyMatch[1].trim();
+  }
+
+  // Explicit Speciality / Department detection if present
+  const specKeyMatch = normalizedText.match(
+    /(?:^|\n)\s*(?:\*\s*)?(?:Speciality|Specialty|Department)\s*[:\-]\s*([^\n\r]+)/i
+  );
+  if (specKeyMatch) {
+    result.speciality = specKeyMatch[1].trim();
   }
 
   // ==========================================

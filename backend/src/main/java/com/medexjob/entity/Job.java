@@ -50,11 +50,11 @@ public class Job {
   private String description;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "sector", nullable = false)
+  @Column(name = "sector", length = 50, nullable = false)
   private JobSector sector;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "category", nullable = false)
+  @Column(name = "category", length = 100, nullable = false)
   private JobCategory category;
 
   @Column(name = "job_roles", length = 1000)
@@ -77,7 +77,7 @@ public class Job {
   private String experience;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "experience_level")
+  @Column(name = "experience_level", length = 50)
   private ExperienceLevel experienceLevel;
 
   @Column(name = "speciality")
@@ -96,7 +96,7 @@ public class Job {
   private String slug;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "duty_type")
+  @Column(name = "duty_type", length = 50)
   private DutyType dutyType;
 
   @Column(name = "number_of_posts", nullable = false)
@@ -148,7 +148,7 @@ public class Job {
   private String officialWebsite;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "status", nullable = false)
+  @Column(name = "status", length = 50, nullable = false)
   private JobStatus status = JobStatus.PENDING;
 
   @Column(name = "is_featured", nullable = false)

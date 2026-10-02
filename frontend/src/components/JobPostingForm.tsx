@@ -470,6 +470,10 @@ export function JobPostingForm({ onCancel, onSave, initialData, isEditing = fals
         next.lastDate = parsed.lastDate;
         populated.push('Last Date');
       }
+      if (parsed.speciality) {
+        next.speciality = parsed.speciality;
+        populated.push('Speciality');
+      }
       if (parsed.requirements) {
         next.requirements = parsed.requirements;
         populated.push('Requirements');

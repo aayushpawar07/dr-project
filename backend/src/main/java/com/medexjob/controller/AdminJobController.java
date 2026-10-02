@@ -762,40 +762,40 @@ public class AdminJobController {
 
     private Job.JobCategory mapCategoryFromLabel(String label) {
         if (label == null || label.isBlank()) return Job.JobCategory.MEDICAL_OFFICER;
-        String lowerLabel = label.toLowerCase().trim();
+        String lowerLabel = label.toLowerCase().trim().replace("_", " ");
         if (lowerLabel.equals("junior resident") || lowerLabel.equals("junior_resident")) {
             return Job.JobCategory.JUNIOR_RESIDENT;
         } else if (lowerLabel.equals("senior resident") || lowerLabel.equals("senior_resident")) {
             return Job.JobCategory.SENIOR_RESIDENT;
         } else if (lowerLabel.equals("medical officer") || lowerLabel.equals("medical_officer") || lowerLabel.equals("doctor") || lowerLabel.equals("doctors")) {
             return Job.JobCategory.MEDICAL_OFFICER;
-        } else if (lowerLabel.equals("faculty") || lowerLabel.equals("professor")) {
+        } else if (lowerLabel.equals("faculty") || lowerLabel.equals("professor") || lowerLabel.equals("assistant professor") || lowerLabel.equals("associate professor")) {
             return Job.JobCategory.FACULTY;
         } else if (lowerLabel.equals("specialist") || lowerLabel.equals("consultant")) {
             return Job.JobCategory.SPECIALIST;
-        } else if (lowerLabel.equals("dental") || lowerLabel.equals("bds") || lowerLabel.equals("mds")) {
+        } else if (lowerLabel.equals("dental") || lowerLabel.equals("bds") || lowerLabel.equals("mds") || lowerLabel.equals("dentist")) {
             return Job.JobCategory.DENTAL;
-        } else if (lowerLabel.equals("ayush") || lowerLabel.equals("ayurveda") || lowerLabel.equals("homoeopathy") || lowerLabel.equals("unani") || lowerLabel.equals("bams") || lowerLabel.equals("bhms")) {
+        } else if (lowerLabel.equals("ayush") || lowerLabel.equals("ayurveda") || lowerLabel.equals("homoeopathy") || lowerLabel.equals("unani") || lowerLabel.equals("bams") || lowerLabel.equals("bhms") || lowerLabel.equals("bums")) {
             return Job.JobCategory.AYUSH;
         } else if (lowerLabel.equals("nursing") || lowerLabel.equals("nurse") || lowerLabel.equals("staff nurse") || lowerLabel.equals("gnm") || lowerLabel.equals("anm")) {
             return Job.JobCategory.NURSING;
         } else if (lowerLabel.equals("paramedical") || lowerLabel.equals("lab technician") || lowerLabel.equals("radiographer")) {
             return Job.JobCategory.PARAMEDICAL;
-        } else if (lowerLabel.equals("paramedical / nursing") || lowerLabel.equals("paramedical_nursing")) {
+        } else if (lowerLabel.equals("paramedical / nursing") || lowerLabel.equals("paramedical nursing") || lowerLabel.equals("paramedical_nursing")) {
             return Job.JobCategory.PARAMEDICAL_NURSING;
         } else if (lowerLabel.equals("allied health") || lowerLabel.equals("allied health professionals") || lowerLabel.equals("physiotherapy") || lowerLabel.equals("bpt")) {
             return Job.JobCategory.ALLIED_HEALTH;
         } else if (lowerLabel.equals("pharmacy") || lowerLabel.equals("pharmacist") || lowerLabel.equals("b.pharm") || lowerLabel.equals("d.pharm")) {
             return Job.JobCategory.PHARMACY;
-        } else if (lowerLabel.equals("psychology & mental health") || lowerLabel.equals("psychology")) {
+        } else if (lowerLabel.equals("psychology & mental health") || lowerLabel.equals("psychology mental health") || lowerLabel.equals("psychology") || lowerLabel.equals("mental health")) {
             return Job.JobCategory.PSYCHOLOGY_MENTAL_HEALTH;
-        } else if (lowerLabel.equals("nutrition & dietetics") || lowerLabel.equals("dietetics") || lowerLabel.equals("nutritionist")) {
+        } else if (lowerLabel.equals("nutrition & dietetics") || lowerLabel.equals("nutrition dietetics") || lowerLabel.equals("dietetics") || lowerLabel.equals("nutritionist")) {
             return Job.JobCategory.NUTRITION_DIETETICS;
-        } else if (lowerLabel.equals("life science & research") || lowerLabel.equals("research")) {
+        } else if (lowerLabel.equals("life science & research") || lowerLabel.equals("life science research") || lowerLabel.equals("research") || lowerLabel.equals("life science")) {
             return Job.JobCategory.LIFE_SCIENCE_RESEARCH;
-        } else if (lowerLabel.equals("hospital administration") || lowerLabel.equals("administration") || lowerLabel.equals("mha")) {
+        } else if (lowerLabel.equals("hospital administration") || lowerLabel.equals("administration") || lowerLabel.equals("mha") || lowerLabel.equals("hospital admin")) {
             return Job.JobCategory.HOSPITAL_ADMINISTRATION;
-        } else if (lowerLabel.equals("public health") || lowerLabel.equals("mph")) {
+        } else if (lowerLabel.equals("public health") || lowerLabel.equals("mph") || lowerLabel.equals("epidemiology")) {
             return Job.JobCategory.PUBLIC_HEALTH;
         }
         return Job.JobCategory.MEDICAL_OFFICER;

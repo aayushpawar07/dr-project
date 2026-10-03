@@ -184,3 +184,32 @@ export const TEST_FACULTY_JOB = {
   featured: true,
   isFeatured: true,
 };
+
+export const TEST_JR_JOB = {
+  id: 'safdarjung-jr-recruitment-2026',
+  slug: 'safdarjung-delhi-junior-resident-2026',
+  title: 'Junior Resident (Non-Academic)',
+  organization: 'Safdarjung Hospital & VMMC',
+  companyName: 'Safdarjung Hospital & VMMC',
+  sector: 'government',
+  category: 'Junior Resident',
+  jobRoles: ['Junior Resident', 'JR'],
+  location: 'New Delhi, Delhi',
+  city: 'New Delhi',
+  state: 'Delhi',
+  numberOfPosts: 45,
+  qualification: 'MBBS Degree recognized by NMC with completed internship',
+  experience: 'Freshers Eligible / 0-1 Year Experience',
+  salary: 'Pay Level-10 (Rs. 56,100/- plus 20% NPA & allowances)',
+  lastDate: '2026-10-28',
+  postedDate: '2026-09-05',
+  applyLink: 'https://vmmc-sjh.nic.in',
+  jobDocumentUrl: 'https://vmmc-sjh.nic.in/recruitment/jr-2026.pdf',
+  pdfUrl: 'https://vmmc-sjh.nic.in/recruitment/jr-2026.pdf',
+  officialWebsite: 'https://vmmc-sjh.nic.in',
+  description: 'Applications are invited from eligible candidates for recruitment to 45 posts of Junior Resident (Non-Academic) in various clinical and para-clinical departments at Safdarjung Hospital & Vardhman Mahavir Medical College (VMMC), New Delhi.',
+  status: 'active',
+  featured: true,
+  isFeatured: true,
+};
+

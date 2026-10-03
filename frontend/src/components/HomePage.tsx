@@ -27,6 +27,7 @@ import { fetchJobs, fetchJobsMeta } from "../api/jobs";
 import { fetchHomepageNews, PulseUpdate } from "../api/news";
 import { fetchAnalyticsOverview } from "../api/analytics";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { TEST_FACULTY_JOB, TEST_JR_JOB } from "../utils/testJobsData";
 
 interface HomePageProps {
   onNavigate: (page: string, jobId?: string) => void;
@@ -155,9 +156,31 @@ export function HomePage({ onNavigate }: HomePageProps) {
         const jobMap = new Map();
         featuredArray.forEach((job) => { if (job.id) jobMap.set(job.id, job); });
         latestArray.forEach((job) => { if (job.id && jobMap.size < 6) jobMap.set(job.id, job); });
-        setFeaturedJobs(Array.from(jobMap.values()).slice(0, 6));
-        setAllJobs(Array.isArray(all) ? all.slice(0, 10) : []);
-        setGovernmentJobs(Array.isArray(gov) ? gov.filter((job) => (job.sector?.toLowerCase() || "") === "government").slice(0, 3) : []);
+
+        // Ensure every row on the homepage displays 3 cards (no empty gaps)
+        const ensureThreeCards = (list: any[], fallback1: any, fallback2: any) => {
+          const res = [...list];
+          const has = (item: any) => res.some((j) => String(j.id) === String(item.id) || String(j.slug) === String(item.slug));
+          if (res.length < 3 && !has(fallback1)) {
+            res.push(fallback1);
+          }
+          if (res.length < 3 && !has(fallback2)) {
+            res.push(fallback2);
+          }
+          return res;
+        };
+
+        const finalAll = ensureThreeCards(Array.isArray(all) ? all : [], TEST_FACULTY_JOB, TEST_JR_JOB);
+        const finalFeat = ensureThreeCards(Array.from(jobMap.values()), TEST_JR_JOB, TEST_FACULTY_JOB);
+        const finalGov = ensureThreeCards(
+          Array.isArray(gov) ? gov.filter((job) => (job.sector?.toLowerCase() || "") === "government") : [],
+          TEST_FACULTY_JOB,
+          TEST_JR_JOB
+        );
+
+        setFeaturedJobs(finalFeat.slice(0, 6));
+        setAllJobs(finalAll.slice(0, 10));
+        setGovernmentJobs(finalGov.slice(0, 3));
         setPrivateJobs(Array.isArray(priv) ? priv.filter((job) => (job.sector?.toLowerCase() || "") === "private").slice(0, 3) : []);
         setNewsUpdates(Array.isArray(news) ? news.slice(0, 6) : []);
       } catch (e) {

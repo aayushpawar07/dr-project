@@ -52,6 +52,14 @@ public class DemoJobShowcaseService {
         this.vacancyJobPublisher = vacancyJobPublisher;
     }
 
+    public long countActiveJobs() {
+        try {
+            return jobRepository.countByStatus(Job.JobStatus.ACTIVE);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
     @Transactional
     public Map<String, Object> publishShowcase() {
         List<Map<String, Object>> singles = new ArrayList<>();

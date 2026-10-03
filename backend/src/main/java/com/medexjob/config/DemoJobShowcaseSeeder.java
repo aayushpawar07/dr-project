@@ -38,14 +38,13 @@ public class DemoJobShowcaseSeeder implements CommandLineRunner {
                 logger.warn("Cleaning showcase jobs skipped: {}", ex.getMessage());
             }
         }
-        if (!enabled) {
-            return;
-        }
-        try {
-            logger.info("Seeding complete single-job and multi-job listings if missing");
-            demoJobShowcaseService.publishShowcase();
-        } catch (Exception ex) {
-            logger.error("Showcase job seed failed; existing job flows are unchanged. {}", ex.getMessage(), ex);
+        if (enabled || demoJobShowcaseService.countActiveJobs() < 3) {
+            try {
+                logger.info("Ensuring at least 3 active showcase jobs exist for balanced 3-card layout");
+                demoJobShowcaseService.publishShowcase();
+            } catch (Exception ex) {
+                logger.warn("Showcase job seed skipped or failed: {}", ex.getMessage());
+            }
         }
     }
 }

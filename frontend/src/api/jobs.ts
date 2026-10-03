@@ -74,9 +74,14 @@ export async function fetchJobsByEmployer(employerId: string, params: { status?:
   }
 }
 
+import { TEST_FACULTY_JOB, TEST_JR_JOB } from '../utils/testJobsData';
+
 export async function fetchJob(id: string) {
-  if (id === 'test-faculty-recruitment' || id === 'test-job') {
+  if (id === 'test-faculty-recruitment' || id === 'test-job' || id === 'aiims-faculty-recruitment-2026' || id === 'aiims-delhi-faculty-2026-showcase') {
     return TEST_FACULTY_JOB;
+  }
+  if (id === 'safdarjung-jr-recruitment-2026' || id === 'safdarjung-delhi-junior-resident-2026') {
+    return TEST_JR_JOB;
   }
   try {
     const data = (await apiClient.get(`/jobs/${id}`)).data;

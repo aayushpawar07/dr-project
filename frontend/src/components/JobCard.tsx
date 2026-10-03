@@ -35,7 +35,6 @@ import {
 import { cleanLocation } from '../utils/locationCleaner';
 import { useAuth } from '../contexts/AuthContext';
 import { deleteAdminJob, deleteJob } from '../api/jobs';
-import { ensureAbsoluteUrl } from '../utils/pdfUrlHelper';
 import { toast } from 'sonner';
 
 interface JobCardProps {
@@ -228,10 +227,6 @@ export function JobCard({
     : '';
 
   const salaryText = formatCardSalary(job.salary || view.salaryRange);
-
-  // Official Website / Apply Link (sanitized to prevent relative link 404s)
-  const rawApply = job.applyLink || job.officialWebsite || view.officialApplicationUrl || view.officialWebsite;
-  const officialUrl = ensureAbsoluteUrl(rawApply);
 
   const displayOrganizationWithLocation = useMemo(() => {
     if (!organizationName) return '';
@@ -602,23 +597,8 @@ export function JobCard({
               )}
             </div>
 
-            {/* Action Group: Official Link Button + Admin Delete + View Details / Apply Now */}
+            {/* Action Group: Admin Delete + View Details / Apply Now */}
             <div className="medex-card-action-group">
-              {/* Working, Clickable Official Website / Apply Link (Points 2 & 6) */}
-              {officialUrl && (
-                <a
-                  href={officialUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="medex-card-apply-btn"
-                  title="Open Official Website / Apply Portal"
-                >
-                  <ExternalLink size={13} />
-                  <span>Official Link</span>
-                </a>
-              )}
-
               {isAdmin && (
                 <button
                   type="button"

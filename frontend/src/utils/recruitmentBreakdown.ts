@@ -33,6 +33,9 @@ const STANDARD_ACADEMIC_ORDER = [
   'junior resident',
   'tutor',
   'demonstrator',
+  'super specialist',
+  'full time super specialist',
+  'part time super specialist',
   'part time specialist',
   'full time specialist',
   'resident specialist',
@@ -122,9 +125,9 @@ function isReservedColumn(header: string): boolean {
     .trim();
 
   // Known doctor positions and abbreviations must NEVER be treated as reserved
-  if (/^(sr|jr|mo|prof|tutor|faculty|specialist|emo|fmo|lmo|pgmo|gdmo)$/i.test(clean)) return false;
+  if (/^(sr|jr|mo|prof|tutor|faculty|specialist|emo|fmo|lmo|pgmo|gdmo|ftss|ptss)$/i.test(clean)) return false;
   if (
-    /^(part[- ]?time\s*specialist|full[- ]?time\s*specialist|resident\s*specialist|pt\/ft\s*(contractual\s*)?specialist|senior\s*resident|junior\s*resident|assistant\s*professor|associate\s*professor|additional\s*professor|professor|medical\s*officer|general\s*physician|chest\s*physician|neuro\s*physician|female\s*medical\s*officer|lady\s*medical\s*officer|emergency\s*medical\s*officer|tutor|demonstrator|specialist|consultant|pgmo|gdmo)$/i.test(
+    /^(super\s*specialist|full[- ]?time\s*super\s*specialist|part[- ]?time\s*super\s*specialist|part[- ]?time\s*specialist|full[- ]?time\s*specialist|resident\s*specialist|pt\/ft\s*(contractual\s*)?specialist|senior\s*resident|junior\s*resident|assistant\s*professor|associate\s*professor|additional\s*professor|professor|medical\s*officer|general\s*physician|chest\s*physician|neuro\s*physician|female\s*medical\s*officer|lady\s*medical\s*officer|emergency\s*medical\s*officer|tutor|demonstrator|specialist|consultant|pgmo|gdmo)$/i.test(
       clean
     )
   ) {
@@ -157,11 +160,12 @@ export const KNOWN_DESIGNATIONS: Array<{ regex: RegExp; name: string }> = [
   { regex: /\b(junior\s*resident|jr\.?\s*resident)\b|(?<![a-zA-Z0-9])jr(?![a-zA-Z0-9])/i, name: 'Junior Resident' },
   { regex: /\btutor\b/i, name: 'Tutor' },
   { regex: /\bdemonstrator\b/i, name: 'Demonstrator' },
+  { regex: /\b(super\s*specialist|ftss|ptss)\b/i, name: 'Super Specialist' },
   { regex: /\b(part[- ]?time\s*specialist|pts)\b/i, name: 'Part Time Specialist' },
   { regex: /\b(full[- ]?time\s*specialist|fts)\b/i, name: 'Full Time Specialist' },
   { regex: /\b(resident\s*specialist)\b/i, name: 'Resident Specialist' },
   { regex: /\b(pt\/ft\s*(contractual\s*)?specialist)\b/i, name: 'PT/FT Specialist' },
-  { regex: /(?<!part[- ]?time\s+|full[- ]?time\s+|resident\s+|pt\/ft\s+)\bspecialist\b/i, name: 'Specialist' },
+  { regex: /(?<!part[- ]?time\s+|full[- ]?time\s+|resident\s+|pt\/ft\s+|super\s+)\bspecialist\b/i, name: 'Specialist' },
   { regex: /\b(female\s*medical\s*officer|fmo)\b/i, name: 'Female Medical Officer' },
   { regex: /\b(lady\s*medical\s*officer|lmo)\b/i, name: 'Lady Medical Officer' },
   { regex: /\bgeneral\s*physician\b/i, name: 'General Physician' },
@@ -231,6 +235,15 @@ export function standardizePositionName(raw: string): string {
   }
   if (/^demonstrator\.?$/i.test(clean)) {
     return 'Demonstrator';
+  }
+  if (/^(full[- ]?time\s*super\s*specialist|ftss)$/i.test(clean)) {
+    return 'Full Time Super Specialist';
+  }
+  if (/^(part[- ]?time\s*super\s*specialist|ptss)$/i.test(clean)) {
+    return 'Part Time Super Specialist';
+  }
+  if (/^(super\s*specialist)$/i.test(clean)) {
+    return 'Super Specialist';
   }
   if (/^(part[- ]?time\s*specialist|pts)$/i.test(clean)) {
     return 'Part Time Specialist';
@@ -390,8 +403,20 @@ export function matchesPositionName(targetText: string, selectedPosition: string
     return /\b(pt\/ft\s*(contractual\s*)?specialist)\b/i.test(normText);
   }
 
+  if (normSel === 'super specialist') {
+    return /\b(super\s*specialist|ftss|ptss)\b/i.test(normText);
+  }
+
+  if (normSel === 'full time super specialist') {
+    return /\b(full[- ]?time\s*super\s*specialist|ftss)\b/i.test(normText);
+  }
+
+  if (normSel === 'part time super specialist') {
+    return /\b(part[- ]?time\s*super\s*specialist|ptss)\b/i.test(normText);
+  }
+
   if (normSel === 'specialist') {
-    if (/(part[- ]?time|full[- ]?time|resident|pt\/ft)\s*(contractual\s*)?specialist/i.test(normText)) {
+    if (/(part[- ]?time|full[- ]?time|resident|pt\/ft|super)\s*(contractual\s*)?specialist/i.test(normText)) {
       return false;
     }
     return /\bspecialist\b/i.test(normText);

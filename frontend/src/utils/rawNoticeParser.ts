@@ -696,7 +696,7 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
     }
 
     // Check if line is a designation header e.g. "Professor:" or "Assistant Professor:"
-    const cadreHeaderMatch = cleanLine.match(/^(Professor|Associate Professor|Assistant Professor|Additional Professor|Senior Resident|Junior Resident|Part[- ]?Time Specialist|Resident Specialist|Full[- ]?Time Specialist|PT\/FT Specialist|PGMO|GDMO|Tutor|Demonstrator|Medical Officer|Specialist|Consultant)\s*[:\-]?\s*$/i);
+    const cadreHeaderMatch = cleanLine.match(/^(Professor|Associate Professor|Assistant Professor|Additional Professor|Senior Resident|Junior Resident|Part[- ]?Time Specialist|Resident Specialist|Full[- ]?Time Specialist|PT\/FT Specialist|Super\s*Specialist|Full[- ]?Time\s*Super\s*Specialist|Part[- ]?Time\s*Super\s*Specialist|PGMO|GDMO|Tutor|Demonstrator|Medical Officer|Specialist|Consultant)\s*[:\-]?\s*$/i);
     if (cadreHeaderMatch) {
       currentCadreRole = standardizePositionName(cadreHeaderMatch[1]);
       continue;
@@ -723,16 +723,16 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
         count > 0 &&
         count < 10000
       ) {
-        const isCadreName = /^(professor|associate professor|assistant professor|additional professor|senior resident|junior resident|part[- ]?time\s*specialist|resident\s*specialist|full[- ]?time\s*specialist|pt\/ft\s*(contractual\s*)?specialist|specialist|pgmo|gdmo|medical officer|tutor|demonstrator|consultant)$/i.test(pName);
+        const isCadreName = /^(professor|associate professor|assistant professor|additional professor|senior resident|junior resident|part[- ]?time\s*specialist|resident\s*specialist|full[- ]?time\s*specialist|pt\/ft\s*(contractual\s*)?specialist|super\s*specialist|full[- ]?time\s*super\s*specialist|part[- ]?time\s*super\s*specialist|specialist|pgmo|gdmo|medical officer|tutor|demonstrator|consultant)$/i.test(pName);
         if (isCadreName && !currentCadreRole) {
           cadreSummaryList.push({ name: pName, count });
         } else {
           // If formatted like "Forensic Medicine (Professor)" or "Professor - Forensic Medicine"
           let extractedRole = currentCadreRole;
-          const roleInParen = pName.match(/\((Professor|Associate Professor|Assistant Professor|Senior Resident|Junior Resident|Part[- ]?Time Specialist|Full[- ]?Time Specialist|Resident Specialist|PT\/FT Specialist|Specialist|Consultant|PGMO|GDMO|Medical Officer|Tutor|Demonstrator)\)/i);
+          const roleInParen = pName.match(/\((Professor|Associate Professor|Assistant Professor|Senior Resident|Junior Resident|Part[- ]?Time Specialist|Full[- ]?Time Specialist|Resident Specialist|PT\/FT Specialist|Super\s*Specialist|Full[- ]?Time\s*Super\s*Specialist|Part[- ]?Time\s*Super\s*Specialist|Specialist|Consultant|PGMO|GDMO|Medical Officer|Tutor|Demonstrator)\)/i);
           if (roleInParen) {
             extractedRole = standardizePositionName(roleInParen[1]);
-            pName = pName.replace(/\((Professor|Associate Professor|Assistant Professor|Senior Resident|Junior Resident|Part[- ]?Time Specialist|Full[- ]?Time Specialist|Resident Specialist|PT\/FT Specialist|Specialist|Consultant|PGMO|GDMO|Medical Officer|Tutor|Demonstrator)\)/i, '').trim();
+            pName = pName.replace(/\((Professor|Associate Professor|Assistant Professor|Senior Resident|Junior Resident|Part[- ]?Time Specialist|Full[- ]?Time Specialist|Resident Specialist|PT\/FT Specialist|Super\s*Specialist|Full[- ]?Time\s*Super\s*Specialist|Part[- ]?Time\s*Super\s*Specialist|Specialist|Consultant|PGMO|GDMO|Medical Officer|Tutor|Demonstrator)\)/i, '').trim();
           }
 
           totalPostsSum += count;

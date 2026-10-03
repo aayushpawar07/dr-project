@@ -481,6 +481,33 @@ export function parseRecruitmentBreakdown(
 
   const rawText = descriptionText ? convertHtmlTablesToMarkdown(descriptionText) : '';
 
+  // Pre-detect overall single cadre role if notice/title specifies one (e.g. "Senior Resident – 18 Posts" or "Senior Resident Recruitment")
+  let defaultNoticeRole = '';
+  if (titleText) {
+    const fromTitle = extractPositionsFromText(titleText);
+    if (fromTitle.length === 1) defaultNoticeRole = fromTitle[0];
+  }
+  if (!defaultNoticeRole && descriptionText) {
+    const explicitRoleMatch = descriptionText.match(
+      /(?:^|\n)\s*(?:#+\s*)?(?:(?:Post(?:\s*:\s*\d+)?|Role|Cadre)\s*[:\-–—*#•\s]*)?(Senior Resident|Junior Resident|Medical Officer|Professor|Associate Professor|Assistant Professor|Additional Professor|Tutor|Demonstrator|Part[- ]?Time Specialist|Resident Specialist|Full[- ]?Time Specialist|PT\/FT Specialist|PGMO|GDMO|Specialist|Consultant)\s*[:\-–—]\s*(?:\d+\s*posts?|\d+\s*vacanc(?:y|ies))/i
+    );
+    if (explicitRoleMatch) {
+      defaultNoticeRole = standardizePositionName(explicitRoleMatch[1]);
+    } else {
+      const fromDesc = extractPositionsFromText(descriptionText);
+      if (fromDesc.length === 1) defaultNoticeRole = fromDesc[0];
+    }
+  }
+  if (!defaultNoticeRole && vacancies && vacancies.length > 0) {
+    for (const v of vacancies) {
+      const fromV = extractPositionsFromText(v.postName);
+      if (fromV.length === 1) {
+        defaultNoticeRole = fromV[0];
+        break;
+      }
+    }
+  }
+
   // 1. Process structured tables (Markdown, HTML, Tab-separated, Space-delimited)
   if (rawText) {
     const lines = rawText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
@@ -606,6 +633,56 @@ export function parseRecruitmentBreakdown(
             break;
           }
         }
+      }
+
+      // 3. Orientation C: Single-Cadre Department Table (e.g. Department | No. of Posts | Category)
+      if (deptColIndex !== -1 && posCols.length === 0 && countColIdx !== -1 && defaultNoticeRole) {
+        for (let i = 1; i < rows.length; i++) {
+          const row = rows[i];
+          if (/^[|:\-\s]+$/.test(row)) continue;
+          const cells = splitLineToCells(row);
+          if (cells.length <= Math.max(deptColIndex, countColIdx)) continue;
+
+          const rawDept = cells[deptColIndex]?.replace(/[*#`]/g, '').trim();
+          if (!rawDept) continue;
+
+          // Skip total / summary rows
+          if (/^(total|grand\s*total|all\s*specialt(y|ies)|all\s*departments?)\b/i.test(rawDept)) continue;
+
+          const cleanDept = rawDept
+            .replace(/^[\d]+\.?\s*/, '')
+            .replace(/[*#]/g, '')
+            .trim();
+          if (!cleanDept || cleanDept.length < 2) continue;
+
+          let count = 1;
+          const rawNum = (cells[countColIdx] || '').trim();
+          const isTimeOrDate =
+            /[:\/\-]/.test(rawNum) ||
+            /\b(am|pm|hrs?|hours?)\b/i.test(rawNum) ||
+            /\d{1,2}[./-]\d{1,2}[./-]\d{2,4}/.test(rawNum);
+          if (!isTimeOrDate) {
+            const digits = rawNum.replace(/[^0-9]/g, '');
+            if (digits.length > 0 && digits.length <= 4) {
+              const parsed = parseInt(digits, 10);
+              if (parsed > 0 && parsed <= 500) {
+                count = parsed;
+              }
+            }
+          }
+
+          positionsFound.add(defaultNoticeRole);
+          const normKey = normalizeDeptKey(cleanDept);
+          const existing = breakdownMap.get(normKey) || {
+            department: cleanDept,
+            positions: {},
+            total: 0,
+          };
+          existing.positions[defaultNoticeRole] = (existing.positions[defaultNoticeRole] || 0) + count;
+          existing.total = Object.values(existing.positions).reduce((sum, v) => sum + v, 0);
+          breakdownMap.set(normKey, existing);
+        }
+        return;
       }
 
       if (deptColIndex === -1 || posCols.length === 0) return;

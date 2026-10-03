@@ -685,6 +685,66 @@ export function parseRecruitmentBreakdown(
         return;
       }
 
+      // 4. Orientation D: Single-Cadre Reservation Matrix Table (e.g. Department | UR | OBC | SC | ST | EWS)
+      const catCols: number[] = [];
+      const reservationPattern = /^(ur|unreserved|gen|general|sc|st|obc|ews|pwd|pwbd|ph|vjnt(\s*\([a-d]\))?|nt(\s*\([a-d]\))?|sbc)(\s*\([^)]*\))?$/i;
+
+      headerCells.forEach((rawCell, idx) => {
+        const cell = rawCell.replace(/[*_#`]/g, '').trim();
+        if (reservationPattern.test(cell)) {
+          catCols.push(idx);
+        }
+      });
+
+      if (deptColIndex !== -1 && posCols.length === 0 && catCols.length >= 2 && defaultNoticeRole) {
+        for (let i = 1; i < rows.length; i++) {
+          const row = rows[i];
+          if (/^[|:\-\s]+$/.test(row)) continue;
+          const cells = splitLineToCells(row);
+          if (cells.length <= deptColIndex) continue;
+
+          const rawDept = cells[deptColIndex]?.replace(/[*#`]/g, '').trim();
+          if (!rawDept) continue;
+
+          // Skip total / summary rows
+          if (/^(total|grand\s*total|all\s*specialt(y|ies)|all\s*departments?)\b/i.test(rawDept)) continue;
+
+          const cleanDept = rawDept
+            .replace(/^[\d]+\.?\s*/, '')
+            .replace(/[*#]/g, '')
+            .trim();
+          if (!cleanDept || cleanDept.length < 2) continue;
+
+          let deptSum = 0;
+          catCols.forEach((colIdx) => {
+            if (cells.length > colIdx) {
+              const rawVal = (cells[colIdx] || '').trim();
+              if (!/[:\/\-]/.test(rawVal) && !/\b(am|pm)\b/i.test(rawVal)) {
+                const digits = rawVal.replace(/[^0-9]/g, '');
+                if (digits.length > 0 && digits.length <= 3) {
+                  const n = parseInt(digits, 10);
+                  if (n > 0 && n <= 200) deptSum += n;
+                }
+              }
+            }
+          });
+
+          if (deptSum > 0) {
+            positionsFound.add(defaultNoticeRole);
+            const normKey = normalizeDeptKey(cleanDept);
+            const existing = breakdownMap.get(normKey) || {
+              department: cleanDept,
+              positions: {},
+              total: 0,
+            };
+            existing.positions[defaultNoticeRole] = (existing.positions[defaultNoticeRole] || 0) + deptSum;
+            existing.total = Object.values(existing.positions).reduce((sum, v) => sum + v, 0);
+            breakdownMap.set(normKey, existing);
+          }
+        }
+        return;
+      }
+
       if (deptColIndex === -1 || posCols.length === 0) return;
 
       for (let i = 1; i < rows.length; i++) {

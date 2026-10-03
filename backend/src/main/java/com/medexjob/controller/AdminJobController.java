@@ -3,9 +3,11 @@ package com.medexjob.controller;
 import com.medexjob.entity.Employer;
 import com.medexjob.entity.Job;
 import com.medexjob.entity.User;
+import com.medexjob.entity.VacancyRecord;
 import com.medexjob.repository.EmployerRepository;
 import com.medexjob.repository.JobRepository;
 import com.medexjob.repository.UserRepository;
+import com.medexjob.repository.VacancyRecordRepository;
 import com.medexjob.service.JobSearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +57,9 @@ public class AdminJobController {
     @Autowired
     private JobSearchService jobSearchService;
 
+    @Autowired
+    private VacancyRecordRepository vacancyRecordRepository;
+
     /**
      * Get all jobs for admin (including all statuses: DRAFT, PENDING, ACTIVE, CLOSED)
      */
@@ -71,7 +76,7 @@ public class AdminJobController {
             logger.info("Admin fetching all jobs - search: {}, status: {}, sector: {}", search, status, sector);
 
             int safePage = Math.max(page, 0);
-            int safeSize = Math.min(Math.max(size, 1), 100);
+            int safeSize = Math.min(Math.max(size, 1), 2000);
 
             Job.JobStatus statusFilter = null;
             if (status != null && !status.isBlank() && !status.equalsIgnoreCase("all")) {
@@ -869,6 +874,33 @@ public class AdminJobController {
         m.put("numberOfPosts", j.getNumberOfPosts());
         m.put("salary", j.getSalaryRange());
         m.put("description", j.getDescription());
+        m.put("lastDate", j.getLastDate() != null ? j.getLastDate().toString() : null);
+        m.put("postedDate", j.getCreatedAt() != null ? j.getCreatedAt().toString() : null);
+        m.put("createdAt", j.getCreatedAt() != null ? j.getCreatedAt().toString() : null);
+        m.put("updatedAt", j.getUpdatedAt() != null ? j.getUpdatedAt().toString() : null);
+        m.put("department", j.getDepartment());
+        m.put("jobType", j.getJobType());
+        
+        String vacancyAgeLimit = null;
+        String vacancyPayLevel = null;
+        String vacancyPayScale = null;
+        String vacancyPostName = null;
+        if (j.getSourceVacancyId() != null) {
+            try {
+                VacancyRecord vr = vacancyRecordRepository.findById(j.getSourceVacancyId()).orElse(null);
+                if (vr != null) {
+                    vacancyAgeLimit = vr.getAgeLimit();
+                    vacancyPayLevel = vr.getPayLevel();
+                    vacancyPayScale = vr.getPayScale();
+                    vacancyPostName = vr.getPostName();
+                }
+            } catch (Exception ignored) {}
+        }
+        m.put("ageLimit", vacancyAgeLimit);
+        m.put("payLevel", vacancyPayLevel);
+        m.put("payScale", vacancyPayScale);
+        m.put("postName", vacancyPostName);
+
         String effectivePdf = (j.getPdfUrl() != null && !j.getPdfUrl().isBlank())
                 ? j.getPdfUrl()
                 : (j.getJobDocumentUrl() != null && !j.getJobDocumentUrl().isBlank() ? j.getJobDocumentUrl() : null);

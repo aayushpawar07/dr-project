@@ -259,7 +259,16 @@ export function AdminJobManagementPage({
   // Metric counts for the 4 top summary cards (Jobs View)
   const summaryMetrics = useMemo(() => {
     const total = jobs.length;
-    const active = jobs.filter((j) => j.status === "active").length;
+    const totalPosts = jobs.reduce(
+      (acc, j) => acc + (Number(j.numberOfPosts) > 0 ? Number(j.numberOfPosts) : 1),
+      0
+    );
+    const activeJobs = jobs.filter((j) => j.status === "active");
+    const active = activeJobs.length;
+    const activePosts = activeJobs.reduce(
+      (acc, j) => acc + (Number(j.numberOfPosts) > 0 ? Number(j.numberOfPosts) : 1),
+      0
+    );
     const upcomingOrClosing = jobs.filter(
       (j) => isClosingSoon(j) || j.status === "pending"
     ).length;
@@ -267,7 +276,9 @@ export function AdminJobManagementPage({
 
     return {
       total,
+      totalPosts,
       active,
+      activePosts,
       upcomingOrClosing,
       closedOrExpired,
     };
@@ -493,47 +504,63 @@ export function AdminJobManagementPage({
 
   // Metadata Sub-row extractors for Job
   const getPostName = (job: Job) => {
+    if ((job as any).postName && String((job as any).postName).trim()) return (job as any).postName;
     if (job.jobRoles) {
       if (Array.isArray(job.jobRoles) && job.jobRoles.length > 0) {
-        return job.jobRoles[0];
+        return job.jobRoles.join(", ");
       }
       if (typeof job.jobRoles === "string" && job.jobRoles.trim()) {
-        return job.jobRoles.split(",")[0].trim();
+        return job.jobRoles.trim();
       }
+    }
+    if (job.title.includes("-")) {
+      const parts = job.title.split("-");
+      if (parts[0].trim()) return parts[0].trim();
     }
     if (job.title.includes("(")) {
       return job.title.split("(")[0].trim();
     }
-    return job.category || "Medical Officer";
+    return job.category || "Medical Professional";
   };
 
   const getPayLevel = (job: Job) => {
+    if ((job as any).payLevel && String((job as any).payLevel).trim()) return (job as any).payLevel;
+    if ((job as any).payScale && String((job as any).payScale).trim()) return (job as any).payScale;
     const text = `${job.salary || ""} ${job.description || ""} ${job.requirements || ""}`.toLowerCase();
-    const levelMatch = text.match(/level\s*\d+/i);
+    const levelMatch = text.match(/level[\s-]*\d+/i);
     if (levelMatch) return levelMatch[0].toUpperCase();
+    const pbMatch = text.match(/pb[\s-]*\d+/i);
+    if (pbMatch) return pbMatch[0].toUpperCase();
     if (text.includes("7th cpc")) return "7th CPC";
     if (text.includes("consolidated")) return "Consolidated";
-    if (job.salary && (job.salary.includes("₹") || text.includes("per month") || text.includes("/-"))) {
-      return "Consolidated";
+    if (job.salary && job.salary.trim() && !job.salary.toLowerCase().includes("rules") && !job.salary.toLowerCase().includes("norms")) {
+      return "Fixed / Consolidated";
     }
-    return "As per rules";
+    return "As per norms";
   };
 
   const getAgeLimit = (job: Job) => {
-    const text = `${job.requirements || ""} ${job.description || ""}`.toLowerCase();
+    if ((job as any).ageLimit && String((job as any).ageLimit).trim()) return (job as any).ageLimit;
+    const text = `${job.requirements || ""} ${job.description || ""}`;
     const ageMatch =
+      text.match(/(?:age\s*limit|maximum\s*age|upper\s*age\s*limit|age)[\s:]*([0-9\-\s\w]+(?:years?|yrs?))/i) ||
       text.match(/(\d{2}\s*-\s*\d{2}\s*years?)/i) ||
       text.match(/(up\s*to\s*\d{2}\s*years?)/i) ||
       text.match(/(max\s*\d{2}\s*years?)/i);
-    if (ageMatch) return ageMatch[0];
-    return "As per rules";
+    if (ageMatch) return (ageMatch[1] || ageMatch[0]).trim();
+    return "As per norms";
   };
 
   const getJobMode = (job: Job) => {
-    const text = `${job.title} ${job.description || ""} ${job.requirements || ""}`.toLowerCase();
+    const text = `${job.title} ${job.description || ""} ${job.requirements || ""} ${(job as any).jobType || ""}`.toLowerCase();
     if (text.includes("walk-in") || text.includes("walk in")) return "Walk-in";
     if (text.includes("online")) return "Online";
-    return "Offline";
+    if (text.includes("written test") || text.includes("exam")) return "Written Exam";
+    if (job.dutyType) {
+      if (job.dutyType.toLowerCase().includes("contract")) return "Contractual";
+      if (job.dutyType.toLowerCase().includes("full")) return "Full Time";
+    }
+    return (job as any).jobType || "Direct / Regular";
   };
 
   const getJobChips = (job: Job) => {
@@ -760,6 +787,9 @@ export function AdminJobManagementPage({
                   <span className="admin-jm-stat-value">
                     {summaryMetrics.total}
                   </span>
+                  <span className="text-[11px] font-medium text-slate-500 block mt-0.5">
+                    {summaryMetrics.totalPosts} Total Posts
+                  </span>
                 </div>
               </div>
 
@@ -778,6 +808,9 @@ export function AdminJobManagementPage({
                   <span className="admin-jm-stat-label">Active Jobs</span>
                   <span className="admin-jm-stat-value text-emerald-600">
                     {summaryMetrics.active}
+                  </span>
+                  <span className="text-[11px] font-medium text-emerald-600 block mt-0.5">
+                    {summaryMetrics.activePosts} Active Posts
                   </span>
                 </div>
               </div>
@@ -920,7 +953,22 @@ export function AdminJobManagementPage({
               <div className="admin-jm-meta-count">
                 Showing {filteredAndSortedJobs.length > 0 ? startIndex + 1 : 0} -{" "}
                 {Math.min(startIndex + pageSize, filteredAndSortedJobs.length)} of{" "}
-                {filteredAndSortedJobs.length} active jobs
+                {filteredAndSortedJobs.length} {
+                  filterStatus === "all"
+                    ? "jobs"
+                    : filterStatus === "active"
+                    ? "active jobs"
+                    : filterStatus === "closing_soon"
+                    ? "closing soon jobs"
+                    : filterStatus === "closed"
+                    ? "closed / expired jobs"
+                    : `${filterStatus} jobs`
+                }
+                {filteredAndSortedJobs.length > 0 && (
+                  <span className="ml-1.5 text-slate-500 font-normal">
+                    ({filteredAndSortedJobs.reduce((acc, j) => acc + (Number(j.numberOfPosts) > 0 ? Number(j.numberOfPosts) : 1), 0)} total posts)
+                  </span>
+                )}
               </div>
 
               <div className="admin-jm-meta-sort">

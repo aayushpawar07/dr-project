@@ -651,17 +651,26 @@ public class AdminJobController {
         } else if (job.getContactPhone() == null || job.getContactPhone().isBlank()) {
             job.setContactPhone("0000000000");
         }
-        if (req.pdfUrl() != null) {
-            job.setPdfUrl(clip(req.pdfUrl(), 500));
+        if (req.pdfUrl() != null && !req.pdfUrl().isBlank()) {
+            job.setPdfUrl(clip(req.pdfUrl().trim(), 500));
+            if (job.getJobDocumentUrl() == null || job.getJobDocumentUrl().isBlank()) {
+                job.setJobDocumentUrl(clip(req.pdfUrl().trim(), 500));
+            }
         }
-        if (req.jobDocumentUrl() != null) {
-            job.setJobDocumentUrl(clip(req.jobDocumentUrl(), 500));
+        if (req.jobDocumentUrl() != null && !req.jobDocumentUrl().isBlank()) {
+            job.setJobDocumentUrl(clip(req.jobDocumentUrl().trim(), 500));
+            if (job.getPdfUrl() == null || job.getPdfUrl().isBlank()) {
+                job.setPdfUrl(clip(req.jobDocumentUrl().trim(), 500));
+            }
         }
-        if (req.jobImageUrl() != null) {
+        if (req.jobImageUrl() != null && !req.jobImageUrl().isBlank()) {
             job.setJobImageUrl(clip(req.jobImageUrl(), 500));
         }
         if (req.applyLink() != null) {
-            job.setApplyLink(clip(req.applyLink(), 500));
+            job.setApplyLink(clip(normalizeUrl(req.applyLink()), 500));
+        }
+        if (req.officialWebsite() != null) {
+            job.setOfficialWebsite(clip(normalizeUrl(req.officialWebsite()), 500));
         }
     }
 
@@ -860,10 +869,11 @@ public class AdminJobController {
         m.put("numberOfPosts", j.getNumberOfPosts());
         m.put("salary", j.getSalaryRange());
         m.put("description", j.getDescription());
-        m.put("lastDate", j.getLastDate() != null ? j.getLastDate().toString() : null);
-        m.put("postedDate", j.getCreatedAt() != null ? j.getCreatedAt().toString() : null);
-        m.put("pdfUrl", j.getPdfUrl());
-        m.put("jobDocumentUrl", j.getJobDocumentUrl());
+        String effectivePdf = (j.getPdfUrl() != null && !j.getPdfUrl().isBlank())
+                ? j.getPdfUrl()
+                : (j.getJobDocumentUrl() != null && !j.getJobDocumentUrl().isBlank() ? j.getJobDocumentUrl() : null);
+        m.put("pdfUrl", effectivePdf);
+        m.put("jobDocumentUrl", effectivePdf);
         m.put("jobImageUrl", j.getJobImageUrl());
         m.put("applyLink", j.getApplyLink());
         m.put("officialWebsite", j.getOfficialWebsite());
@@ -933,6 +943,7 @@ public class AdminJobController {
         private String jobDocumentUrl;
         private String jobImageUrl;
         private String applyLink;
+        private String officialWebsite;
         private String status;
         private Boolean featured;
         private String contactEmail;
@@ -962,6 +973,7 @@ public class AdminJobController {
         public String getJobDocumentUrl() { return jobDocumentUrl; }
         public String getJobImageUrl() { return jobImageUrl; }
         public String getApplyLink() { return applyLink; }
+        public String getOfficialWebsite() { return officialWebsite; }
         public String getStatus() { return status; }
         public Boolean getFeatured() { return featured; }
         public String getContactEmail() { return contactEmail; }
@@ -991,6 +1003,7 @@ public class AdminJobController {
         public void setJobDocumentUrl(String jobDocumentUrl) { this.jobDocumentUrl = jobDocumentUrl; }
         public void setJobImageUrl(String jobImageUrl) { this.jobImageUrl = jobImageUrl; }
         public void setApplyLink(String applyLink) { this.applyLink = applyLink; }
+        public void setOfficialWebsite(String officialWebsite) { this.officialWebsite = officialWebsite; }
         public void setStatus(String status) { this.status = status; }
         public void setFeatured(Boolean featured) { this.featured = featured; }
         public void setContactEmail(String contactEmail) { this.contactEmail = contactEmail; }
@@ -1020,11 +1033,26 @@ public class AdminJobController {
         public String jobDocumentUrl() { return jobDocumentUrl; }
         public String jobImageUrl() { return jobImageUrl; }
         public String applyLink() { return applyLink; }
+        public String officialWebsite() { return officialWebsite; }
         public String status() { return status; }
         public Boolean featured() { return featured; }
         public String contactEmail() { return contactEmail; }
         public String contactPhone() { return contactPhone; }
         public String type() { return type; }
+    }
+
+    private String normalizeUrl(String value) {
+        if (value == null || value.isBlank()) return null;
+        String trimmed = value.trim()
+                .replaceAll("^[\"\'(\\[]+|[\"\')\\].,;:]+$", "")
+                .replaceAll("\\s+", "");
+        if (trimmed.isBlank() || trimmed.equalsIgnoreCase("null") || trimmed.equalsIgnoreCase("undefined") || trimmed.equals("#")) {
+            return null;
+        }
+        if (!trimmed.matches("^(?i)https?://.*") && !trimmed.startsWith("/")) {
+            trimmed = "https://" + trimmed;
+        }
+        return trimmed;
     }
 
     private static class StatusRequest {

@@ -170,6 +170,53 @@ export function HomePage({ onNavigate }: HomePageProps) {
     })();
   }, []);
 
+  // Point 9: Auto-scroll to exact job card when returning from View Details to Home
+  useEffect(() => {
+    let targetJobId: string | null = null;
+    let targetJobSlug: string | null = null;
+    try {
+      targetJobId = sessionStorage.getItem("medex_last_viewed_job_id");
+      targetJobSlug = sessionStorage.getItem("medex_last_viewed_job_slug");
+    } catch {}
+
+    if (!targetJobId && !targetJobSlug) return;
+
+    let attempts = 0;
+    const interval = setInterval(() => {
+      attempts++;
+      const cardElem =
+        document.getElementById(`job-card-${targetJobId}`) ||
+        (targetJobSlug ? document.getElementById(`job-card-${targetJobSlug}`) : null);
+
+      if (cardElem) {
+        clearInterval(interval);
+        cardElem.scrollIntoView({ behavior: "smooth", block: "center" });
+        cardElem.classList.add("ring-4", "ring-blue-500", "ring-offset-4", "transition-all", "duration-500");
+        setTimeout(() => {
+          cardElem.classList.remove("ring-4", "ring-blue-500", "ring-offset-4");
+          try {
+            sessionStorage.removeItem("medex_last_viewed_job_id");
+            sessionStorage.removeItem("medex_last_viewed_job_slug");
+            sessionStorage.removeItem("medex_last_scroll_pos");
+          } catch {}
+        }, 2500);
+      } else if (attempts >= 15) {
+        clearInterval(interval);
+        try {
+          const savedScroll = sessionStorage.getItem("medex_last_scroll_pos");
+          if (savedScroll) {
+            window.scrollTo({ top: Number(savedScroll), behavior: "smooth" });
+          }
+          sessionStorage.removeItem("medex_last_viewed_job_id");
+          sessionStorage.removeItem("medex_last_viewed_job_slug");
+          sessionStorage.removeItem("medex_last_scroll_pos");
+        } catch {}
+      }
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [allJobs, featuredJobs, governmentJobs, privateJobs]);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <section className="relative z-20 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 text-white py-16 md:py-24">

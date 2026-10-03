@@ -20,7 +20,7 @@ public class DemoJobShowcaseSeeder implements CommandLineRunner {
     @Value("${SEED_SHOWCASE_JOBS:false}")
     private boolean enabled;
 
-    @Value("${CLEAN_SHOWCASE_JOBS:true}")
+    @Value("${CLEAN_SHOWCASE_JOBS:false}")
     private boolean cleanEnabled;
 
     private final DemoJobShowcaseService demoJobShowcaseService;

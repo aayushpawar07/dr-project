@@ -82,7 +82,7 @@ public class JobController {
             @RequestParam(value = "sort", defaultValue = "createdAt,desc") String sort
     ) {
         int safePage = Math.max(page, 0);
-        int safeSize = Math.min(Math.max(size, 1), 100);
+        int safeSize = Math.min(Math.max(size, 1), 200);
         String[] sortParts = sort.split(",");
         String sortField = isAllowedSortField(sortParts[0]) ? sortParts[0] : "createdAt";
         Sort.Direction direction = sortParts.length > 1 && sortParts[1].equalsIgnoreCase("asc")
@@ -912,11 +912,14 @@ public class JobController {
         job.setSpeciality(clip(Optional.ofNullable(req.speciality()).orElse(""), 255));
         job.setDutyType(req.dutyType() != null ? parseDutyType(req.dutyType()) : null);
         job.setNumberOfPosts(Optional.ofNullable(req.numberOfPosts()).orElse(1));
-        job.setSalaryRange(clip(req.salary(), 100));
-        job.setPdfUrl(clip(req.pdfUrl(), 500));
-        job.setJobDocumentUrl(clip(req.jobDocumentUrl(), 500));
+        String effectivePdf = (req.pdfUrl() != null && !req.pdfUrl().isBlank())
+                ? req.pdfUrl().trim()
+                : (req.jobDocumentUrl() != null && !req.jobDocumentUrl().isBlank() ? req.jobDocumentUrl().trim() : null);
+        job.setPdfUrl(clip(effectivePdf, 500));
+        job.setJobDocumentUrl(clip(effectivePdf, 500));
         job.setJobImageUrl(clip(req.jobImageUrl(), 500));
-        job.setApplyLink(clip(req.applyLink(), 500));
+        job.setApplyLink(clip(normalizeUrl(req.applyLink()), 500));
+        job.setOfficialWebsite(clip(normalizeUrl(req.officialWebsite()), 500));
         job.setRequirements(req.requirements());
         job.setBenefits(req.benefits());
         // Handle lastDate - required field, default to 30 days from now if not provided
@@ -1020,17 +1023,26 @@ public class JobController {
         if (req.salary() != null) {
             job.setSalaryRange(clip(req.salary(), 100));
         }
-        if (req.pdfUrl() != null) {
-            job.setPdfUrl(clip(req.pdfUrl(), 500));
+        if (req.pdfUrl() != null && !req.pdfUrl().isBlank()) {
+            job.setPdfUrl(clip(req.pdfUrl().trim(), 500));
+            if (job.getJobDocumentUrl() == null || job.getJobDocumentUrl().isBlank()) {
+                job.setJobDocumentUrl(clip(req.pdfUrl().trim(), 500));
+            }
         }
-        if (req.jobDocumentUrl() != null) {
-            job.setJobDocumentUrl(clip(req.jobDocumentUrl(), 500));
+        if (req.jobDocumentUrl() != null && !req.jobDocumentUrl().isBlank()) {
+            job.setJobDocumentUrl(clip(req.jobDocumentUrl().trim(), 500));
+            if (job.getPdfUrl() == null || job.getPdfUrl().isBlank()) {
+                job.setPdfUrl(clip(req.jobDocumentUrl().trim(), 500));
+            }
         }
-        if (req.jobImageUrl() != null) {
+        if (req.jobImageUrl() != null && !req.jobImageUrl().isBlank()) {
             job.setJobImageUrl(clip(req.jobImageUrl(), 500));
         }
         if (req.applyLink() != null) {
-            job.setApplyLink(clip(req.applyLink(), 500));
+            job.setApplyLink(clip(normalizeUrl(req.applyLink()), 500));
+        }
+        if (req.officialWebsite() != null) {
+            job.setOfficialWebsite(clip(normalizeUrl(req.officialWebsite()), 500));
         }
         if (req.requirements() != null) {
             job.setRequirements(req.requirements());
@@ -1290,6 +1302,7 @@ public class JobController {
         String jobDocumentUrl,
         String jobImageUrl,
         String applyLink,
+        String officialWebsite,
         String status,
         Boolean featured,
         Integer views,
@@ -1298,6 +1311,20 @@ public class JobController {
         String contactPhone,
         String type
     ) {}
+
+    private String normalizeUrl(String value) {
+        if (value == null || value.isBlank()) return null;
+        String trimmed = value.trim()
+                .replaceAll("^[\"\'(\\[]+|[\"\')\\].,;:]+$", "")
+                .replaceAll("\\s+", "");
+        if (trimmed.isBlank() || trimmed.equalsIgnoreCase("null") || trimmed.equalsIgnoreCase("undefined") || trimmed.equals("#")) {
+            return null;
+        }
+        if (!trimmed.matches("^(?i)https?://.*") && !trimmed.startsWith("/")) {
+            trimmed = "https://" + trimmed;
+        }
+        return trimmed;
+    }
 
     private Map<String, Object> toResponse(Job j) {
         Map<String, Object> m = new LinkedHashMap<>();
@@ -1344,9 +1371,11 @@ public class JobController {
         m.put("salary", j.getSalaryRange());
         m.put("description", j.getDescription());
         m.put("lastDate", j.getLastDate() != null ? j.getLastDate().toString() : null);
-        m.put("postedDate", j.getCreatedAt() != null ? j.getCreatedAt().toString() : null);
-        m.put("pdfUrl", j.getPdfUrl());
-        m.put("jobDocumentUrl", j.getJobDocumentUrl());
+        String effectivePdf = (j.getPdfUrl() != null && !j.getPdfUrl().isBlank())
+                ? j.getPdfUrl()
+                : (j.getJobDocumentUrl() != null && !j.getJobDocumentUrl().isBlank() ? j.getJobDocumentUrl() : null);
+        m.put("pdfUrl", effectivePdf);
+        m.put("jobDocumentUrl", effectivePdf);
         m.put("jobImageUrl", j.getJobImageUrl());
         m.put("applyLink", j.getApplyLink());
         m.put("officialWebsite", j.getOfficialWebsite());

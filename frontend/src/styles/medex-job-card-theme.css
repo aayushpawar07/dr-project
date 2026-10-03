@@ -23,6 +23,73 @@
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.09) !important;
 }
 
+/* --- SPECIFIC ROLE & CATEGORY THEMES (Color-Coded) --- */
+
+/* 🟥 1. JR (Junior Resident) - Red */
+.medex-job-card.theme-jr-red {
+  border-left: 4px solid #ef4444 !important;
+  background: radial-gradient(circle at 5% 95%, rgba(239, 68, 68, 0.09) 0%, rgba(239, 68, 68, 0) 55%), #ffffff !important;
+}
+.medex-job-card.theme-jr-red .medex-card-icon-box {
+  background: #dc2626 !important;
+}
+.medex-job-card.theme-jr-red .medex-watermark {
+  color: #fca5a5 !important;
+  opacity: 0.65 !important;
+}
+
+/* ⬛ 2. SR (Senior Resident) - Black / Dark Slate */
+.medex-job-card.theme-sr-black {
+  border-left: 4px solid #0f172a !important;
+  background: radial-gradient(circle at 5% 95%, rgba(15, 23, 42, 0.08) 0%, rgba(15, 23, 42, 0) 55%), #ffffff !important;
+}
+.medex-job-card.theme-sr-black .medex-card-icon-box {
+  background: #0f172a !important;
+}
+.medex-job-card.theme-sr-black .medex-watermark {
+  color: #94a3b8 !important;
+  opacity: 0.65 !important;
+}
+
+/* 🟨 3. FACULTY - Yellow / Amber / Gold */
+.medex-job-card.theme-faculty-yellow {
+  border-left: 4px solid #f59e0b !important;
+  background: radial-gradient(circle at 5% 95%, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0) 55%), #ffffff !important;
+}
+.medex-job-card.theme-faculty-yellow .medex-card-icon-box {
+  background: #d97706 !important;
+}
+.medex-job-card.theme-faculty-yellow .medex-watermark {
+  color: #fde68a !important;
+  opacity: 0.75 !important;
+}
+
+/* 🟩 4. MO / GDMO - Green / Emerald */
+.medex-job-card.theme-mo-green {
+  border-left: 4px solid #10b981 !important;
+  background: radial-gradient(circle at 5% 95%, rgba(16, 185, 129, 0.09) 0%, rgba(16, 185, 129, 0) 55%), #ffffff !important;
+}
+.medex-job-card.theme-mo-green .medex-card-icon-box {
+  background: #059669 !important;
+}
+.medex-job-card.theme-mo-green .medex-watermark {
+  color: #86efac !important;
+  opacity: 0.65 !important;
+}
+
+/* 🟪 5. CONSULTANT / SPECIALIST - Purple */
+.medex-job-card.theme-consultant-purple {
+  border-left: 4px solid #8b5cf6 !important;
+  background: radial-gradient(circle at 5% 95%, rgba(139, 92, 246, 0.09) 0%, rgba(139, 92, 246, 0) 55%), #ffffff !important;
+}
+.medex-job-card.theme-consultant-purple .medex-card-icon-box {
+  background: #7c3aed !important;
+}
+.medex-job-card.theme-consultant-purple .medex-watermark {
+  color: #c4b5fd !important;
+  opacity: 0.65 !important;
+}
+
 /* --- THEME VARIATIONS (Borders & Bottom-Left Gradient Washes) --- */
 
 /* 1. Blue Theme */
@@ -157,6 +224,68 @@
   background: #fffbeb !important;
   color: #b45309 !important;
   border: 1.5px solid #fde68a !important;
+}
+
+/* Role Specific Pill Badges */
+.medex-pill-badge.badge-role-jr {
+  background: #fef2f2 !important;
+  color: #dc2626 !important;
+  border: 1.5px solid #fca5a5 !important;
+  font-weight: 800 !important;
+}
+.medex-pill-badge.badge-role-sr {
+  background: #0f172a !important;
+  color: #ffffff !important;
+  border: 1.5px solid #1e293b !important;
+  font-weight: 800 !important;
+}
+.medex-pill-badge.badge-role-faculty {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+  border: 1.5px solid #fcd34d !important;
+  font-weight: 800 !important;
+}
+.medex-pill-badge.badge-role-mo {
+  background: #ecfdf5 !important;
+  color: #047857 !important;
+  border: 1.5px solid #6ee7b7 !important;
+  font-weight: 800 !important;
+}
+.medex-pill-badge.badge-role-consultant {
+  background: #f5f3ff !important;
+  color: #6d28d9 !important;
+  border: 1.5px solid #c4b5fd !important;
+  font-weight: 800 !important;
+}
+.medex-pill-badge.badge-role-default {
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+  border: 1.5px solid #93c5fd !important;
+  font-weight: 800 !important;
+}
+
+/* Card External Official / Apply Button */
+.medex-card-apply-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 7px 14px !important;
+  border-radius: 9999px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  background: #eff6ff !important;
+  color: #1d4ed8 !important;
+  border: 1px solid #bfdbfe !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  white-space: nowrap !important;
+  text-decoration: none !important;
+}
+.medex-card-apply-btn:hover {
+  background: #dbeafe !important;
+  color: #1e40af !important;
+  border-color: #93c5fd !important;
+  transform: translateY(-1px) !important;
 }
 
 /* Share Button */

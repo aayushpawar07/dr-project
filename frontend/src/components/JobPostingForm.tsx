@@ -58,6 +58,7 @@ import {
 } from '../utils/rawNoticeParser';
 import '../styles/job-posting-template.css';
 import { toast } from 'sonner';
+import { ensureAbsoluteUrl, safeOpenExternal } from '../utils/pdfUrlHelper';
 
 interface JobPostingFormProps {
   onCancel: () => void;
@@ -88,6 +89,7 @@ interface JobFormData {
   contactEmail: string;
   contactPhone: string;
   pdfUrl?: string;
+  jobDocumentUrl?: string;
   applyLink?: string;
   officialWebsite?: string;
   ageLimit?: string;
@@ -258,6 +260,8 @@ const defaultData: JobFormData = {
   benefits: '',
   contactEmail: '',
   contactPhone: '',
+  pdfUrl: '',
+  jobDocumentUrl: '',
   applyLink: '',
   officialWebsite: '',
 };
@@ -660,6 +664,8 @@ export function JobPostingForm({ onCancel, onSave, initialData, isEditing = fals
 
     onSave({
       ...formData,
+      pdfUrl: formData.pdfUrl || (initialData as any)?.pdfUrl || (initialData as any)?.jobDocumentUrl,
+      jobDocumentUrl: formData.jobDocumentUrl || (initialData as any)?.jobDocumentUrl || (initialData as any)?.pdfUrl,
       sector: isEmployer ? 'private' : formData.sector,
       location: locationWithState(formData.location, formData.state),
       jobRoles:
@@ -953,11 +959,13 @@ export function JobPostingForm({ onCancel, onSave, initialData, isEditing = fals
                     </div>
                   </div>
 
-                  {formData.pdfFile && (
+                  {(formData.pdfFile || formData.pdfUrl || formData.jobDocumentUrl) && (
                     <button
                       type="button"
                       onClick={() => {
                         setField('pdfFile', undefined);
+                        setField('pdfUrl', '');
+                        setField('jobDocumentUrl', '');
                         setPdfExtraction(null);
                         setPdfMessage('');
                       }}
@@ -978,6 +986,26 @@ export function JobPostingForm({ onCancel, onSave, initialData, isEditing = fals
                           ({(formData.pdfFile.size / 1024 / 1024).toFixed(2)} MB)
                         </span>
                       </div>
+                    ) : (formData.pdfUrl || formData.jobDocumentUrl) ? (
+                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-800 flex-wrap">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                        <span className="text-emerald-800 font-bold bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200">
+                          ✓ Currently Attached PDF
+                        </span>
+                        <span className="truncate max-w-[200px] text-slate-600 font-mono text-[11px]">
+                          {(formData.pdfUrl || formData.jobDocumentUrl || '').split('/').pop()}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            safeOpenExternal(ensureAbsoluteUrl(formData.pdfUrl || formData.jobDocumentUrl || ''));
+                          }}
+                          className="text-blue-600 hover:text-blue-800 underline text-xs font-semibold cursor-pointer ml-1"
+                        >
+                          View PDF
+                        </button>
+                      </div>
                     ) : (
                       <div className="text-xs text-slate-500">
                         No PDF selected yet. Upload notification PDF (Max 20 MB).
@@ -993,7 +1021,7 @@ export function JobPostingForm({ onCancel, onSave, initialData, isEditing = fals
                       onClick={() => fileInputRef.current?.click()}
                     >
                       <Upload className="h-4 w-4" />
-                      <span>{formData.pdfFile ? 'Change PDF' : 'Attach PDF'}</span>
+                      <span>{formData.pdfFile || formData.pdfUrl || formData.jobDocumentUrl ? 'Replace PDF' : 'Attach PDF'}</span>
                     </button>
                     <input
                       ref={fileInputRef}

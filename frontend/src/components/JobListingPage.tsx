@@ -94,7 +94,7 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
   const [showingFallback, setShowingFallback] = useState(false);
   const [fallbackReason, setFallbackReason] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 12;
+  const pageSize = 10;
 
   const resultsRef = useRef<HTMLDivElement>(null);
   const isInitialMount = useRef(true);
@@ -169,7 +169,7 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
       try {
         const keyword = selectedJobOption.trim();
         const isMultiRole = keyword.includes(",");
-        const params: any = { status: "active", size: isMultiRole ? 100 : 50 };
+        const params: any = { status: "active", size: isMultiRole ? 200 : 150 };
 
         // For comma-separated role searches, fetch a broader result set and apply OR matching locally.
         if (keyword && !isMultiRole) params.search = keyword;
@@ -212,9 +212,24 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
           sector: job.sector?.toLowerCase() || "private",
         }));
 
+        // Check if user is returning from a previously viewed card (Point 9)
+        let targetPage = 1;
+        try {
+          const lastJobId = sessionStorage.getItem("medex_last_viewed_job_id");
+          const lastSlug = sessionStorage.getItem("medex_last_viewed_job_slug");
+          if (lastJobId || lastSlug) {
+            const idx = normalizedJobs.findIndex((j: any) =>
+              String(j.id) === lastJobId || (j.slug && (j.slug === lastSlug || j.slug === lastJobId))
+            );
+            if (idx !== -1) {
+              targetPage = Math.floor(idx / pageSize) + 1;
+            }
+          }
+        } catch {}
+
         setJobs(normalizedJobs);
         setTotal(normalizedJobs.length);
-        setCurrentPage(1);
+        setCurrentPage(targetPage);
 
         if (keyword) {
           setHasSearched(true);
@@ -233,6 +248,69 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
     fetchJobsData();
   }, [selectedJobOption, locationQuery, filters, effectiveSector]);
 
+  // Point 9: Auto-scroll to exact job card when returning from View Details
+  useEffect(() => {
+    if (loading || jobs.length === 0) return;
+
+    let targetJobId: string | null = null;
+    let targetJobSlug: string | null = null;
+    try {
+      targetJobId = sessionStorage.getItem("medex_last_viewed_job_id");
+      targetJobSlug = sessionStorage.getItem("medex_last_viewed_job_slug");
+    } catch {}
+
+    if (!targetJobId && !targetJobSlug) return;
+
+    const targetIdx = jobs.findIndex(
+      (j: any) =>
+        String(j.id) === targetJobId ||
+        (j.slug && (j.slug === targetJobSlug || j.slug === targetJobId))
+    );
+
+    if (targetIdx !== -1) {
+      const requiredPage = Math.floor(targetIdx / pageSize) + 1;
+      if (currentPage !== requiredPage) {
+        setCurrentPage(requiredPage);
+        return;
+      }
+
+      const actualJob = jobs[targetIdx];
+      const elemId = `job-card-${actualJob.id}`;
+
+      let attempts = 0;
+      const interval = setInterval(() => {
+        attempts++;
+        const cardElem = document.getElementById(elemId);
+        if (cardElem) {
+          clearInterval(interval);
+          cardElem.scrollIntoView({ behavior: "smooth", block: "center" });
+          cardElem.classList.add("ring-4", "ring-blue-500", "ring-offset-4", "transition-all", "duration-500");
+          setTimeout(() => {
+            cardElem.classList.remove("ring-4", "ring-blue-500", "ring-offset-4");
+            try {
+              sessionStorage.removeItem("medex_last_viewed_job_id");
+              sessionStorage.removeItem("medex_last_viewed_job_slug");
+              sessionStorage.removeItem("medex_last_scroll_pos");
+            } catch {}
+          }, 2500);
+        } else if (attempts >= 12) {
+          clearInterval(interval);
+          try {
+            const savedScroll = sessionStorage.getItem("medex_last_scroll_pos");
+            if (savedScroll) {
+              window.scrollTo({ top: Number(savedScroll), behavior: "smooth" });
+            }
+            sessionStorage.removeItem("medex_last_viewed_job_id");
+            sessionStorage.removeItem("medex_last_viewed_job_slug");
+            sessionStorage.removeItem("medex_last_scroll_pos");
+          } catch {}
+        }
+      }, 100);
+
+      return () => clearInterval(interval);
+    }
+  }, [jobs, loading, currentPage]);
+
   const title = sector === "government" ? "Government Jobs" : sector === "private" ? "Private Jobs" : "All Jobs";
   const totalPages = Math.max(1, Math.ceil(jobs.length / pageSize));
   const paginatedJobs = jobs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -245,11 +323,8 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
   const handlePageChange = (newPage: number) => {
     if (newPage < 1 || newPage > totalPages) return;
     setCurrentPage(newPage);
-    if (resultsRef.current) {
-      resultsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    } else {
-      window.scrollTo({ top: 180, behavior: "smooth" });
-    }
+    // Point 4: Immediately scroll smoothly to top so user never lands on dark footer
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const getPageNumbers = () => {
@@ -406,58 +481,70 @@ export function JobListingPage({ onNavigate, sector }: JobListingPageProps) {
               )}
             </div>
 
-            {/* Numbered Pagination Controls */}
+            {/* Numbered Pagination Controls (Points 4 & 8) */}
             {totalPages > 1 && (
-              <div className="mt-8 sm:mt-12 flex flex-wrap items-center justify-center gap-2 pt-6 border-t border-gray-200">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="rounded-lg px-3 py-2 text-sm font-semibold flex items-center gap-1.5 border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 transition-colors"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  Previous
-                </Button>
+              <div className="mt-8 sm:mt-12 pt-6 border-t border-gray-200">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  {/* Status Indicator */}
+                  <div className="text-xs sm:text-sm font-medium text-slate-500 order-2 sm:order-1">
+                    Showing <span className="font-semibold text-slate-800">{(currentPage - 1) * pageSize + 1}</span> to{" "}
+                    <span className="font-semibold text-slate-800">{Math.min(currentPage * pageSize, jobs.length)}</span> of{" "}
+                    <span className="font-semibold text-slate-800">{jobs.length}</span> jobs (Page <span className="font-bold text-blue-600">{currentPage}</span> of {totalPages})
+                  </div>
 
-                <div className="flex items-center gap-1.5">
-                  {getPageNumbers().map((p, idx) => {
-                    if (p === "...") {
-                      return (
-                        <span key={`dots-${idx}`} className="px-2 text-gray-400 font-bold select-none">
-                          ...
-                        </span>
-                      );
-                    }
-                    const pageNum = Number(p);
-                    const isActive = pageNum === currentPage;
-                    return (
-                      <button
-                        key={pageNum}
-                        type="button"
-                        onClick={() => handlePageChange(pageNum)}
-                        className={`w-9 h-9 rounded-lg font-bold text-sm transition-all flex items-center justify-center cursor-pointer ${
-                          isActive
-                            ? "bg-blue-600 text-white shadow-sm ring-2 ring-blue-600 ring-offset-1"
-                            : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-100 hover:border-gray-300"
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
+                  {/* Buttons */}
+                  <div className="flex flex-wrap items-center justify-center gap-2 order-1 sm:order-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="rounded-xl px-3.5 py-2 text-xs sm:text-sm font-semibold flex items-center gap-1.5 border-gray-300 shadow-xs disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 transition-all cursor-pointer"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      Previous
+                    </Button>
+
+                    <div className="flex items-center gap-1">
+                      {getPageNumbers().map((p, idx) => {
+                        if (p === "...") {
+                          return (
+                            <span key={`dots-${idx}`} className="px-2 text-gray-400 font-bold select-none text-xs">
+                              ...
+                            </span>
+                          );
+                        }
+                        const pageNum = Number(p);
+                        const isActive = pageNum === currentPage;
+                        return (
+                          <button
+                            key={pageNum}
+                            type="button"
+                            onClick={() => handlePageChange(pageNum)}
+                            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center justify-center cursor-pointer ${
+                              isActive
+                                ? "bg-blue-600 text-white shadow-md ring-2 ring-blue-600 ring-offset-1"
+                                : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 shadow-2xs"
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="rounded-xl px-3.5 py-2 text-xs sm:text-sm font-semibold flex items-center gap-1.5 border-gray-300 shadow-xs disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 transition-all cursor-pointer"
+                    >
+                      Next
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="rounded-lg px-3 py-2 text-sm font-semibold flex items-center gap-1.5 border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300 transition-colors"
-                >
-                  Next
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
               </div>
             )}
           </div>

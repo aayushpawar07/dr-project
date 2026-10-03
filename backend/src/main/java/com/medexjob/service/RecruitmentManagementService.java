@@ -466,9 +466,10 @@ public class RecruitmentManagementService {
         job.setContactEmail("jobs@medexjob.com");
         job.setContactPhone("0000000000");
         job.setPdfUrl(clip(r.getOfficialNotificationUrl(), 500));
+        job.setJobDocumentUrl(clip(r.getOfficialNotificationUrl(), 500));
         job.setApplyLink(clip(firstNonBlank(r.getOfficialApplicationUrl(), r.getOfficialWebsite()), 500));
         job.setOfficialWebsite(clip(r.getOfficialWebsite(), 500));
-        job.setStatus(job.getLastDate().isBefore(LocalDate.now()) ? Job.JobStatus.CLOSED : Job.JobStatus.ACTIVE);
+        job.setStatus(Job.JobStatus.ACTIVE);
         job.setIsFeatured(false);
         job.setViews(0);
         job.setApplicationsCount(0);

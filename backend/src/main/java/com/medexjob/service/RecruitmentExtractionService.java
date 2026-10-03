@@ -90,10 +90,14 @@ public class RecruitmentExtractionService {
         }
         if (rawWeb != null) {
             String clean = cleanUrl(rawWeb);
-            if (!clean.startsWith("http://") && !clean.startsWith("https://")) {
-                clean = "https://" + clean;
-            }
             recruitment.setOfficialWebsite(clean);
+        }
+
+        String rawApply = group(fullText, "(?i)(?:apply\\s+online|application\\s+portal|online\\s+portal|portal)\\s*:\\s*(?:https?://)?([a-zA-Z0-9.-]+\\.[a-z]{2,}(?:/\\S*)?)", 1);
+        if (rawApply != null) {
+            recruitment.setOfficialApplicationUrl(cleanUrl(rawApply));
+        } else if (recruitment.getOfficialWebsite() != null) {
+            recruitment.setOfficialApplicationUrl(recruitment.getOfficialWebsite());
         }
 
         String normLower = normalized.toLowerCase(Locale.ROOT);
@@ -546,7 +550,13 @@ public class RecruitmentExtractionService {
     }
 
     private String cleanUrl(String value) {
-        return value == null ? null : value.replaceAll("[.,;]+$", "");
+        if (value == null) return null;
+        String v = value.trim().replaceAll("^[\"\'(\\[]+|[\"\')\\].,;:]+$", "").replaceAll("\\s+", "");
+        if (v.isBlank()) return null;
+        if (!v.matches("^(?i)https?://.*") && !v.startsWith("/")) {
+            v = "https://" + v;
+        }
+        return v;
     }
 
     private String group(String input, String regex, int group) {

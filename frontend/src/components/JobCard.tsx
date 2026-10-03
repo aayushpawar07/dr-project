@@ -8,6 +8,8 @@ import {
   Calendar,
   Check,
   ChevronRight,
+  Clock,
+  ExternalLink,
   GraduationCap,
   HeartPulse,
   MapPin,
@@ -26,11 +28,14 @@ import { Job } from '../types';
 import { buildJobShareText, getJobShareUrl, shareTextWithoutUrl } from '../utils/shareContent';
 import {
   formatCardQualification,
+  formatCardExperience,
   formatCardSalary,
+  isNotMentioned,
 } from '../utils/extractedFieldDisplay';
 import { cleanLocation } from '../utils/locationCleaner';
 import { useAuth } from '../contexts/AuthContext';
 import { deleteAdminJob, deleteJob } from '../api/jobs';
+import { ensureAbsoluteUrl } from '../utils/pdfUrlHelper';
 import { toast } from 'sonner';
 
 interface JobCardProps {
@@ -43,67 +48,129 @@ interface JobCardProps {
   index?: number;
 }
 
-const CARD_THEMES = [
-  {
+export type JobRoleCategory = 'JR' | 'SR' | 'FACULTY' | 'MO_GDMO' | 'CONSULTANT_SPECIALIST' | 'OTHER';
+
+export interface CategoryTheme {
+  type: JobRoleCategory;
+  roleBadgeLabel: string;
+  badgeClass: string;
+  themeClass: string;
+  iconBg: string;
+  calendarColor: string;
+  watermark: string;
+  watermarkColor: string;
+  Icon: any;
+}
+
+/**
+ * Detects the specific role category and returns the exact color theme matching user requirements:
+ * 🟥 JR (Junior Resident) -> Red
+ * ⬛ SR (Senior Resident) -> Black / Dark Slate
+ * 🟨 FACULTY -> Yellow / Amber / Gold
+ * 🟩 MO/GDMO (Medical Officer / General Duty Medical Officer) -> Green / Emerald
+ * 🟪 CONSULTANT / SPECIALIST -> Purple / Violet
+ */
+function getJobCategoryTheme(job: any): CategoryTheme {
+  const textToScan = [
+    job.category,
+    ...(Array.isArray(job.jobRoles) ? job.jobRoles : [job.jobRoles]),
+    job.title,
+    job.displayTitle,
+    job.department,
+    job.speciality,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+
+  // 1. 🟥 JR (Junior Resident)
+  if (/\b(junior\s*resident|jr\b|jr\s*resident|junior\s*residency)\b/i.test(textToScan)) {
+    return {
+      type: 'JR',
+      roleBadgeLabel: '🟥 JR',
+      badgeClass: 'badge-role-jr',
+      themeClass: 'theme-jr-red',
+      iconBg: '#dc2626',
+      calendarColor: '#dc2626',
+      watermark: 'pulse',
+      watermarkColor: '#fca5a5',
+      Icon: UserCheck,
+    };
+  }
+
+  // 2. ⬛ SR (Senior Resident)
+  if (/\b(senior\s*resident|sr\b|sr\s*resident|senior\s*residency)\b/i.test(textToScan)) {
+    return {
+      type: 'SR',
+      roleBadgeLabel: '⬛ SR',
+      badgeClass: 'badge-role-sr',
+      themeClass: 'theme-sr-black',
+      iconBg: '#0f172a',
+      calendarColor: '#334155',
+      watermark: 'hospital',
+      watermarkColor: '#94a3b8',
+      Icon: Stethoscope,
+    };
+  }
+
+  // 3. 🟨 FACULTY
+  if (/\b(faculty|professor|associate\s*prof|assistant\s*prof|lecturer|tutor|dean|director|principal)\b/i.test(textToScan)) {
+    return {
+      type: 'FACULTY',
+      roleBadgeLabel: '🟨 FACULTY',
+      badgeClass: 'badge-role-faculty',
+      themeClass: 'theme-faculty-yellow',
+      iconBg: '#d97706',
+      calendarColor: '#b45309',
+      watermark: 'cross',
+      watermarkColor: '#fde68a',
+      Icon: GraduationCap,
+    };
+  }
+
+  // 4. 🟩 MO / GDMO
+  if (/\b(medical\s*officer|gdmo|general\s*duty|smo\b|cmo\b|rmo\b|casualty\s*medical|duty\s*doctor)\b/i.test(textToScan)) {
+    return {
+      type: 'MO_GDMO',
+      roleBadgeLabel: '🟩 MO / GDMO',
+      badgeClass: 'badge-role-mo',
+      themeClass: 'theme-mo-green',
+      iconBg: '#059669',
+      calendarColor: '#059669',
+      watermark: 'ambulance',
+      watermarkColor: '#86efac',
+      Icon: ShieldCheck,
+    };
+  }
+
+  // 5. 🟪 CONSULTANT / SPECIALIST
+  if (/\b(consultant|specialist|super\s*specialist|attending\s*consultant|intensivist|surgeon|physician)\b/i.test(textToScan)) {
+    return {
+      type: 'CONSULTANT_SPECIALIST',
+      roleBadgeLabel: '🟪 SPECIALIST / CONSULTANT',
+      badgeClass: 'badge-role-consultant',
+      themeClass: 'theme-consultant-purple',
+      iconBg: '#7c3aed',
+      calendarColor: '#7c3aed',
+      watermark: 'pulse',
+      watermarkColor: '#c4b5fd',
+      Icon: Briefcase,
+    };
+  }
+
+  // Default / Other Healthcare roles
+  const displayCat = job.category || 'Medical Staff';
+  return {
+    type: 'OTHER',
+    roleBadgeLabel: displayCat,
+    badgeClass: 'badge-role-default',
     themeClass: 'theme-blue',
     iconBg: '#1463ff',
-    Icon: UserCheck,
     calendarColor: '#3b82f6',
-    watermark: 'pulse',
-    watermarkColor: '#60a5fa',
-  },
-  {
-    themeClass: 'theme-purple',
-    iconBg: '#8b5cf6',
-    Icon: Briefcase,
-    calendarColor: '#8b5cf6',
-    watermark: 'cross',
-    watermarkColor: '#c4b5fd',
-  },
-  {
-    themeClass: 'theme-emerald',
-    iconBg: '#10b981',
-    Icon: User,
-    calendarColor: '#10b981',
-    watermark: 'pulse',
-    watermarkColor: '#86efac',
-  },
-  {
-    themeClass: 'theme-emerald-stethoscope',
-    iconBg: '#059669',
-    Icon: Stethoscope,
-    calendarColor: '#059669',
-    watermark: 'hospital',
-    watermarkColor: '#86efac',
-  },
-  {
-    themeClass: 'theme-indigo',
-    iconBg: '#6366f1',
-    Icon: ShieldCheck,
-    calendarColor: '#6366f1',
-    watermark: 'ambulance',
-    watermarkColor: '#a5b4fc',
-  },
-  {
-    themeClass: 'theme-rose',
-    iconBg: '#f43f5e',
-    Icon: HeartPulse,
-    calendarColor: '#f43f5e',
     watermark: 'heart',
-    watermarkColor: '#fda4af',
-  },
-];
-
-function getCardTheme(job: any, index?: number) {
-  if (typeof index === 'number') {
-    return CARD_THEMES[Math.abs(index) % CARD_THEMES.length];
-  }
-  const idStr = String(job.id || job.title || '');
-  let hash = 0;
-  for (let i = 0; i < idStr.length; i++) {
-    hash = (hash * 31 + idStr.charCodeAt(i)) >>> 0;
-  }
-  return CARD_THEMES[hash % CARD_THEMES.length];
+    watermarkColor: '#93c5fd',
+    Icon: HeartPulse,
+  };
 }
 
 export function JobCard({
@@ -122,42 +189,13 @@ export function JobCard({
   const [expandedRoles, setExpandedRoles] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleDeleteClick = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isDeleting) return;
-
-    const jobTitle = displayTitle || job.title || 'this vacancy';
-    const orgInfo = organizationName ? `\nOrganization: ${organizationName}` : '';
-    const confirmMessage = `Are you sure you want to delete this vacancy?\n\n"${jobTitle}"${orgInfo}\n\nThis will permanently delete the vacancy from the platform.`;
-
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
-
-    try {
-      setIsDeleting(true);
-      try {
-        await deleteAdminJob(job.id);
-      } catch (adminErr: any) {
-        // Fallback to standard delete if needed
-        await deleteJob(job.id);
-      }
-      toast.success('Vacancy deleted successfully!');
-      onDelete?.(job.id);
-    } catch (err: any) {
-      console.error('Failed to delete vacancy:', err);
-      const errMsg = err?.error || err?.message || 'Failed to delete vacancy';
-      toast.error(`Error deleting vacancy: ${errMsg}`);
-    } finally {
-      setIsDeleting(false);
-    }
-  };
   const view = job as any;
   const sector = job.sector || 'private';
   const isGovernment = sector === 'government';
   const displayTitle = view.displayTitle || job.title;
   const sourceRecruitmentId = view.sourceRecruitmentId;
   const grouped = Boolean(view.recruitmentGrouped && sourceRecruitmentId);
+
   const rawOrg = [
     job.organization,
     view.organisationName,
@@ -166,7 +204,9 @@ export function JobCard({
     view.employer?.companyName,
     view.employerName,
     view.hospitalName,
-  ].map((value) => String(value ?? '').trim()).find(Boolean) || '';
+  ]
+    .map((value) => String(value ?? '').trim())
+    .find(Boolean) || '';
 
   const organizationName = /^(relative\s*clinic|referral\s*clinic|local\s*clinic|private\s*clinic|any\s*clinic)/i.test(rawOrg)
     ? 'Medical Institution'
@@ -175,8 +215,23 @@ export function JobCard({
   const rawLocation = job.location || [view.city, view.state].filter(Boolean).join(', ');
   const fallbackCityState = [view.city, view.state].filter(Boolean).join(', ');
   const locationText = cleanLocation(rawLocation, organizationName, fallbackCityState);
-  const qualificationText = formatCardQualification(job.qualification);
+
+  // Qualification and Experience formatting (matching details from share text)
+  const qualRaw = String(job.qualification || view.qualification || '').trim();
+  const qualificationText = !isNotMentioned(qualRaw)
+    ? formatCardQualification(qualRaw) || qualRaw.slice(0, 45)
+    : '';
+
+  const expRaw = String(job.experience || view.experience || '').trim();
+  const experienceText = !isNotMentioned(expRaw)
+    ? formatCardExperience(expRaw) || expRaw.slice(0, 35)
+    : '';
+
   const salaryText = formatCardSalary(job.salary || view.salaryRange);
+
+  // Official Website / Apply Link (sanitized to prevent relative link 404s)
+  const rawApply = job.applyLink || job.officialWebsite || view.officialApplicationUrl || view.officialWebsite;
+  const officialUrl = ensureAbsoluteUrl(rawApply);
 
   const displayOrganizationWithLocation = useMemo(() => {
     if (!organizationName) return '';
@@ -193,7 +248,8 @@ export function JobCard({
     return organizationName;
   }, [organizationName, locationText]);
 
-  const theme = useMemo(() => getCardTheme(job, index), [job, index]);
+  // Color-coded role theme
+  const theme = useMemo(() => getJobCategoryTheme(job), [job]);
 
   const roleBadges = useMemo(() => {
     const roles: string[] = [];
@@ -247,11 +303,50 @@ export function JobCard({
   }, [job, view]);
 
   const openDetails = () => {
+    // Save state in sessionStorage so Back button restores exact card & scroll position (Point 9)
+    try {
+      sessionStorage.setItem('medex_last_viewed_job_id', String(job.id));
+      sessionStorage.setItem('medex_last_viewed_job_slug', String(job.slug || job.id));
+      sessionStorage.setItem('medex_last_scroll_pos', String(window.scrollY));
+    } catch {
+      // sessionStorage might not be available
+    }
+
     if (grouped && sourceRecruitmentId) {
       navigate(`/recruitment/${sourceRecruitmentId}`);
       return;
     }
     onViewDetails(job.slug || job.id);
+  };
+
+  const handleDeleteClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isDeleting) return;
+
+    const jobTitle = displayTitle || job.title || 'this vacancy';
+    const orgInfo = organizationName ? `\nOrganization: ${organizationName}` : '';
+    const confirmMessage = `Are you sure you want to delete this vacancy?\n\n"${jobTitle}"${orgInfo}\n\nThis will permanently delete the vacancy from the platform.`;
+
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      try {
+        await deleteAdminJob(job.id);
+      } catch {
+        await deleteJob(job.id);
+      }
+      toast.success('Vacancy deleted successfully!');
+      onDelete?.(job.id);
+    } catch (err: any) {
+      console.error('Failed to delete vacancy:', err);
+      const errMsg = err?.error || err?.message || 'Failed to delete vacancy';
+      toast.error(`Error deleting vacancy: ${errMsg}`);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleShare = async (e: React.MouseEvent) => {
@@ -268,8 +363,8 @@ export function JobCard({
         sector,
         category: job.category,
         numberOfPosts: job.numberOfPosts,
-        qualification: qualificationText,
-        experience: job.experience,
+        qualification: qualificationText || qualRaw,
+        experience: experienceText || expRaw,
         salary: salaryText,
         lastDate: job.lastDate,
       },
@@ -286,7 +381,7 @@ export function JobCard({
         await navigator.share(shareData);
         return;
       } catch {
-        // User cancelled or unsupported
+        // User cancelled
       }
     }
 
@@ -300,24 +395,35 @@ export function JobCard({
   };
 
   return (
-    <Card className={`medex-job-card ${theme.themeClass}`} onClick={openDetails}>
+    <Card
+      id={`job-card-${job.id}`}
+      data-job-id={job.id}
+      className={`medex-job-card ${theme.themeClass}`}
+      onClick={openDetails}
+    >
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between', flex: 1 }}>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {/* Top Row: Squircle Category Icon on Left, Badges + Share on Right */}
+          {/* Top Row: Squircle Category Icon on Left, Color-Coded Role & Sector Badges + Share on Right */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
             <div className="medex-card-icon-box" style={{ backgroundColor: theme.iconBg }}>
               <theme.Icon size={22} color="#ffffff" strokeWidth={2.2} />
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: 'auto', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              {/* Color-Coded Role Category Badge (Point 3) */}
+              <span className={`medex-pill-badge ${theme.badgeClass}`}>
+                {theme.roleBadgeLabel}
+              </span>
+
+              {/* Sector Badge */}
               {isGovernment ? (
                 <span className="medex-pill-badge badge-gov">
-                  <ShieldCheck size={15} color="#1d4ed8" />
+                  <ShieldCheck size={14} color="#1d4ed8" />
                   Government
                 </span>
               ) : (
                 <span className="medex-pill-badge badge-private">
-                  <User size={15} color="#047857" />
+                  <User size={14} color="#047857" />
                   Private
                 </span>
               )}
@@ -367,7 +473,7 @@ export function JobCard({
             </div>
           )}
 
-          {/* Metadata Row: Location | Posts | Qualification */}
+          {/* Metadata Row: Location | Posts | Qualification | Experience (Point 5) */}
           <div className="medex-card-meta-row">
             {locationText && (
               <span className="medex-meta-item location">
@@ -378,13 +484,19 @@ export function JobCard({
             {job.numberOfPosts != null && (
               <span className="medex-meta-item posts">
                 <Briefcase size={14} color="#7c3aed" />
-                <span>{job.numberOfPosts} Posts</span>
+                <span>{job.numberOfPosts} Post{Number(job.numberOfPosts) === 1 ? '' : 's'}</span>
               </span>
             )}
             {qualificationText && (
               <span className="medex-meta-item qualification" title={qualificationText}>
-                <GraduationCap size={14} color="#64748b" />
-                <span>{qualificationText}</span>
+                <GraduationCap size={14} color="#0284c7" />
+                <span className="font-semibold text-slate-700">{qualificationText}</span>
+              </span>
+            )}
+            {experienceText && (
+              <span className="medex-meta-item experience" title={experienceText}>
+                <Clock size={14} color="#d97706" />
+                <span className="font-semibold text-slate-700">{experienceText}</span>
               </span>
             )}
           </div>
@@ -490,8 +602,23 @@ export function JobCard({
               )}
             </div>
 
-            {/* Action Group: Admin Delete Button + View Details / Apply Now */}
+            {/* Action Group: Official Link Button + Admin Delete + View Details / Apply Now */}
             <div className="medex-card-action-group">
+              {/* Working, Clickable Official Website / Apply Link (Points 2 & 6) */}
+              {officialUrl && (
+                <a
+                  href={officialUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="medex-card-apply-btn"
+                  title="Open Official Website / Apply Portal"
+                >
+                  <ExternalLink size={13} />
+                  <span>Official Link</span>
+                </a>
+              )}
+
               {isAdmin && (
                 <button
                   type="button"

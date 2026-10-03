@@ -87,11 +87,24 @@ function AppContent() {
   }, [location.pathname]);
 
   useEffect(() => {
+    try {
+      if (sessionStorage.getItem("medex_last_viewed_job_id")) {
+        return;
+      }
+    } catch {}
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [location.pathname]);
 
   const handleNavigate = (page: string, entityId?: string) => {
-    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    try {
+      if (sessionStorage.getItem("medex_last_viewed_job_id") && (page === "jobs" || page === "home" || page === "govt-jobs" || page === "private-jobs")) {
+        // Will be handled by destination page scroll restoration
+      } else {
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+      }
+    } catch {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }
 
     if (page === "logout") {
       logout();

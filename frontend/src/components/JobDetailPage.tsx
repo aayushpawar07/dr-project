@@ -21,6 +21,7 @@ import {
   MessageCircle,
   Send,
   Edit,
+  ArrowLeft,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -48,7 +49,7 @@ import { ResumeUploadSection } from "./ResumeUploadSection";
 import { cardFieldText, cardSalaryText, displayJobDescription, isNotMentioned } from "../utils/extractedFieldDisplay";
 import { cleanLocation } from "../utils/locationCleaner";
 import { buildJobShareText, getJobShareUrl, shareTextWithoutUrl } from "../utils/shareContent";
-import { resolveNotificationPdfUrl } from "../utils/pdfUrlHelper";
+import { resolveNotificationPdfUrl, ensureAbsoluteUrl, safeOpenExternal } from "../utils/pdfUrlHelper";
 
 interface JobDetailPageProps {
   onNavigate: (page: string, entityId?: string) => void;
@@ -481,9 +482,28 @@ export function JobDetailPage({
     }
   };
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      onNavigate("jobs");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 job-detail-page" data-sector={isGovernment ? "government" : "private"}>
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6">
+        <div className="mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleBack}
+            className="flex items-center gap-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 font-medium px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Jobs
+          </Button>
+        </div>
         <div className="job-detail-grid grid md:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="job-detail-main md:col-span-2 space-y-6">
@@ -1144,16 +1164,14 @@ export function JobDetailPage({
                       </div>
                     )}
                     {job.applyLink && (
-                      <Button variant="outline" className="w-full" asChild>
-                        <a
-                          href={job.applyLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <ExternalLink className="w-4 h-4 mr-2" />
-                          Official Apply Link
-                          <ExternalLink className="w-4 h-4 ml-auto" />
-                        </a>
+                      <Button
+                        variant="outline"
+                        className="w-full text-blue-700 border-blue-300 hover:bg-blue-50 font-semibold cursor-pointer"
+                        onClick={() => safeOpenExternal(ensureAbsoluteUrl(job.applyLink))}
+                      >
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Official Apply Link
+                        <ExternalLink className="w-4 h-4 ml-auto" />
                       </Button>
                     )}
                   </div>
@@ -1614,10 +1632,14 @@ export function JobDetailPage({
                   <div className="space-y-3">
                     {resolvedPdf && (
                       <a
-                        href={resolvedPdf}
+                        href={ensureAbsoluteUrl(resolvedPdf)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-between rounded-lg border border-blue-300 bg-blue-50 px-3 py-3 text-sm font-semibold text-blue-800 transition-colors hover:bg-blue-100"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          safeOpenExternal(ensureAbsoluteUrl(resolvedPdf));
+                        }}
+                        className="flex items-center justify-between rounded-lg border border-blue-300 bg-blue-50 px-3 py-3 text-sm font-semibold text-blue-800 transition-colors hover:bg-blue-100 cursor-pointer"
                       >
                         <span className="inline-flex items-center gap-2">
                           <FileText className="h-4 w-4" />
@@ -1628,10 +1650,14 @@ export function JobDetailPage({
                     )}
                     {job.officialWebsite && (
                       <a
-                        href={job.officialWebsite}
+                        href={ensureAbsoluteUrl(job.officialWebsite)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-between rounded-lg border border-blue-300 bg-blue-50 px-3 py-3 text-sm font-semibold text-blue-800 transition-colors hover:bg-blue-100 hover:border-blue-400"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          safeOpenExternal(ensureAbsoluteUrl(job.officialWebsite));
+                        }}
+                        className="flex items-center justify-between rounded-lg border border-blue-300 bg-blue-50 px-3 py-3 text-sm font-semibold text-blue-800 transition-colors hover:bg-blue-100 hover:border-blue-400 cursor-pointer"
                       >
                         <span className="inline-flex items-center gap-2">
                           <Building2 className="h-4 w-4 text-blue-600" />

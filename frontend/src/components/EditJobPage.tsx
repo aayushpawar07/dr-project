@@ -105,6 +105,8 @@ export function EditJobPage({ onNavigate }: EditJobPageProps) {
 
       const payload = {
         ...formData,
+        pdfUrl: formData.pdfUrl || jobData?.pdfUrl || jobData?.jobDocumentUrl || "",
+        jobDocumentUrl: formData.jobDocumentUrl || jobData?.jobDocumentUrl || jobData?.pdfUrl || "",
         status: formData.status || jobData?.status || "pending",
         featured: formData.featured ?? jobData?.featured ?? false,
         views: jobData?.views || 0,

@@ -234,15 +234,9 @@ export function AdminJobManagementPage({
     }
   };
 
-  // Helper: check if a job is closed or expired
+  // Helper: check if a job is closed. Jobs permanently stay active until manually closed or deleted (Point 1)
   const isJobClosedOrExpired = (job: Job) => {
-    if (job.status === "closed") return true;
-    try {
-      const last = new Date(job.lastDate).getTime();
-      return last < Date.now() - 86400000;
-    } catch {
-      return false;
-    }
+    return job.status === "closed";
   };
 
   // Duplicate detection for jobs
@@ -265,13 +259,11 @@ export function AdminJobManagementPage({
   // Metric counts for the 4 top summary cards (Jobs View)
   const summaryMetrics = useMemo(() => {
     const total = jobs.length;
-    const active = jobs.filter(
-      (j) => j.status === "active" && !isJobClosedOrExpired(j)
-    ).length;
+    const active = jobs.filter((j) => j.status === "active").length;
     const upcomingOrClosing = jobs.filter(
       (j) => isClosingSoon(j) || j.status === "pending"
     ).length;
-    const closedOrExpired = jobs.filter((j) => isJobClosedOrExpired(j)).length;
+    const closedOrExpired = jobs.filter((j) => j.status === "closed").length;
 
     return {
       total,
@@ -317,13 +309,13 @@ export function AdminJobManagementPage({
         }
 
         if (filterStatus === "active") {
-          if (job.status !== "active" || isJobClosedOrExpired(job)) return false;
+          if (job.status !== "active") return false;
         } else if (filterStatus === "closing_soon") {
           if (!isClosingSoon(job)) return false;
         } else if (filterStatus === "upcoming") {
           if (job.status !== "pending") return false;
         } else if (filterStatus === "closed") {
-          if (!isJobClosedOrExpired(job)) return false;
+          if (job.status !== "closed") return false;
         } else if (filterStatus === "draft") {
           if (job.status !== "draft") return false;
         }

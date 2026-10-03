@@ -15,6 +15,7 @@ import {
   Share2,
   Shield,
   Sparkles,
+  ArrowLeft,
 } from 'lucide-react';
 import { fetchJob } from '../api/jobs';
 import { fetchPublishedRecruitment, Recruitment } from '../api/recruitments';
@@ -34,7 +35,7 @@ import { Separator } from './ui/separator';
 import { cardFieldText, cardSalaryText, displayJobDescription, isNotMentioned } from '../utils/extractedFieldDisplay';
 import { cleanLocation } from '../utils/locationCleaner';
 import { buildJobShareText, getJobShareUrl, shareTextWithoutUrl } from '../utils/shareContent';
-import { resolveNotificationPdfUrl } from '../utils/pdfUrlHelper';
+import { resolveNotificationPdfUrl, ensureAbsoluteUrl, safeOpenExternal } from '../utils/pdfUrlHelper';
 
 interface Props {
   onNavigate: (page: string, entityId?: string) => void;
@@ -278,9 +279,18 @@ export function GovernmentJobDetail({
 
   const notificationUrl = resolveNotificationPdfUrl(job.jobDocumentUrl || job.pdfUrl || job.officialNotificationUrl);
   const officialWebsite = extractOfficialWebsite(job.description) || job.officialWebsite;
+  const directApplyUrl = job.applyLink || officialWebsite;
   const daysLeft = job.lastDate
     ? Math.ceil((new Date(job.lastDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      onNavigate('jobs');
+    }
+  };
 
   const displayOrgName = useMemo(() => {
     if (!organization) return '';
@@ -333,7 +343,18 @@ export function GovernmentJobDetail({
 
   return (
     <div className="min-h-screen bg-gray-50 job-detail-page" data-sector="government">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6">
+        <div className="mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleBack}
+            className="flex items-center gap-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 font-medium px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Jobs
+          </Button>
+        </div>
         <div className="job-detail-grid grid gap-6 md:grid-cols-3">
           <div className="job-detail-main space-y-6 md:col-span-2">
             {/* Same visual hierarchy as the Private job header */}
@@ -513,11 +534,32 @@ export function GovernmentJobDetail({
                 <Separator />
 
                 <div className="space-y-3">
-                  <p className="text-sm text-gray-600">
-                    Government applications are submitted through the official process. MedExJob does not collect this application.
+                  {directApplyUrl && (
+                    <Button
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold flex items-center justify-center gap-2 py-2.5 shadow-sm cursor-pointer"
+                      onClick={() => safeOpenExternal(ensureAbsoluteUrl(directApplyUrl))}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Apply on Official Website
+                    </Button>
+                  )}
+
+                  {notificationUrl && (
+                    <Button
+                      variant="outline"
+                      className="w-full border-blue-300 text-blue-700 hover:bg-blue-50 font-semibold flex items-center justify-center gap-2 py-2.5 cursor-pointer"
+                      onClick={() => safeOpenExternal(ensureAbsoluteUrl(notificationUrl))}
+                    >
+                      <FileText className="h-4 w-4" />
+                      View Notification PDF
+                    </Button>
+                  )}
+
+                  <p className="text-xs text-gray-500 text-center">
+                    Official recruitment notice &amp; application links from verified sources.
                   </p>
 
-                  <Button variant="outline" className="w-full text-blue-600 hover:bg-blue-50" onClick={handleShare}>
+                  <Button variant="outline" className="w-full text-blue-600 hover:bg-blue-50 cursor-pointer" onClick={handleShare}>
                     <Share2 className="mr-2 h-4 w-4" />
                     Share Job
                   </Button>
@@ -596,13 +638,18 @@ function OfficialLinkBox({
   label: string;
   tone: 'pdf' | 'website';
 }) {
+  const absoluteUrl = ensureAbsoluteUrl(href);
   const styles = 'border-blue-300 bg-blue-50 text-blue-800 hover:bg-blue-100 hover:border-blue-400';
   return (
     <a
-      href={href}
+      href={absoluteUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className={`flex items-center justify-between rounded-lg border px-3 py-3 text-sm font-semibold transition-colors ${styles}`}
+      onClick={(e) => {
+        e.preventDefault();
+        safeOpenExternal(absoluteUrl);
+      }}
+      className={`flex items-center justify-between rounded-lg border px-3 py-3 text-sm font-semibold transition-colors cursor-pointer ${styles}`}
     >
       <span className="inline-flex items-center gap-2">
         <Icon className="h-4 w-4 text-blue-600" />

@@ -36,6 +36,7 @@ import { cleanLocation } from '../utils/locationCleaner';
 import { useAuth } from '../contexts/AuthContext';
 import { deleteAdminJob, deleteJob } from '../api/jobs';
 import { toast } from 'sonner';
+import { resolveStandardCardTitle } from '../utils/jobGrouping';
 
 interface JobCardProps {
   job: Job;
@@ -157,6 +158,36 @@ function getJobCategoryTheme(job: any): CategoryTheme {
     };
   }
 
+  // 6. 🟦 PARAMEDICAL
+  if (/\b(paramedical|nurse|nursing|technician|pharmacist|lab\s*tech|physiotherapist|radiographer)\b/i.test(textToScan)) {
+    return {
+      type: 'OTHER',
+      roleBadgeLabel: '🟦 PARAMEDICAL',
+      badgeClass: 'badge-role-paramedical',
+      themeClass: 'theme-paramedical-cyan',
+      iconBg: '#0891b2',
+      calendarColor: '#0891b2',
+      watermark: 'cross',
+      watermarkColor: '#a5f3fc',
+      Icon: HeartPulse,
+    };
+  }
+
+  // 7. 🏢 Multiple Departments / Various Departments
+  if (/\b(various\s*departments|multiple\s*departments|various\s*posts|multiple\s*roles)\b/i.test(textToScan) || job.recruitmentGrouped) {
+    return {
+      type: 'OTHER',
+      roleBadgeLabel: '🏢 Multiple Departments',
+      badgeClass: 'badge-role-multiple',
+      themeClass: 'theme-multiple-indigo',
+      iconBg: '#4f46e5',
+      calendarColor: '#4f46e5',
+      watermark: 'hospital',
+      watermarkColor: '#c7d2fe',
+      Icon: Building2,
+    };
+  }
+
   // Default / Other Healthcare roles
   const displayCat = job.category || 'Medical Staff';
   return {
@@ -169,6 +200,115 @@ function getJobCategoryTheme(job: any): CategoryTheme {
     watermark: 'heart',
     watermarkColor: '#93c5fd',
     Icon: HeartPulse,
+  };
+}
+
+/**
+ * Returns color-coded style for individual role / category tags when clicked/expanded
+ * Matches the exact color scheme from user image:
+ * 🟩 MO / GDMO -> Green
+ * 🟥 Junior Resident -> Red
+ * ⬛ Senior Resident -> Black
+ * 🟨 Faculty -> Yellow / Amber
+ * 🟪 Specialist / Consultant & Clinical Departments -> Purple
+ * 🟦 Paramedical -> Cyan / Teal
+ * 🟦 Research / Survey -> Blue
+ * 🟧 PG Counselling / Info -> Orange
+ */
+export function getRoleBadgeColorStyle(role: string): {
+  bg: string;
+  text: string;
+  border: string;
+  dotColor: string;
+} {
+  const r = role.toLowerCase().trim();
+
+  // 1. 🟥 Junior Resident (JR)
+  if (/\b(junior\s*resident|jr\b|jr\s*resident|junior\s*residency|house\s*job|house\s*physician|house\s*surgeon)\b/i.test(r)) {
+    return {
+      bg: '#fef2f2',
+      text: '#dc2626',
+      border: '#fca5a5',
+      dotColor: '#ef4444',
+    };
+  }
+
+  // 2. ⬛ Senior Resident (SR)
+  if (/\b(senior\s*resident|sr\b|sr\s*resident|senior\s*residency)\b/i.test(r)) {
+    return {
+      bg: '#0f172a',
+      text: '#ffffff',
+      border: '#334155',
+      dotColor: '#94a3b8',
+    };
+  }
+
+  // 3. 🟨 Faculty / Professor
+  if (/\b(faculty|professor|associate\s*prof|assistant\s*prof|lecturer|tutor|dean|director|principal)\b/i.test(r)) {
+    return {
+      bg: '#fef3c7',
+      text: '#92400e',
+      border: '#fcd34d',
+      dotColor: '#f59e0b',
+    };
+  }
+
+  // 4. 🟩 MO / GDMO
+  if (/\b(medical\s*officer|gdmo|general\s*duty|smo\b|cmo\b|rmo\b|casualty|duty\s*doctor|fmo|imo|ayush|ayurved|homeopath|unani)\b/i.test(r)) {
+    return {
+      bg: '#ecfdf5',
+      text: '#047857',
+      border: '#6ee7b7',
+      dotColor: '#10b981',
+    };
+  }
+
+  // 5. 🟪 Consultant / Specialist & Clinical Departments
+  if (/\b(consultant|specialist|super\s*specialist|intensivist|surgeon|physician|cardiolog|neurolog|nephrolog|oncolog|pediatric|radiolog|patholog|anesthes|anaesthes|gynecolog|obstetric|orthopedic|dermatolog|ent|ophthalmolog|psychiatr|dentist|dental|surgery|medicine|anatomy|physiology|biochemistry|microbiology|pharmacology)\b/i.test(r)) {
+    return {
+      bg: '#f5f3ff',
+      text: '#6d28d9',
+      border: '#c4b5fd',
+      dotColor: '#8b5cf6',
+    };
+  }
+
+  // 6. 🟦 Paramedical / Nursing / Tech
+  if (/\b(paramedical|nurse|nursing|technician|pharmacist|lab|physiotherap|radiographer|optometrist|dietician|ecg)\b/i.test(r)) {
+    return {
+      bg: '#ecfeff',
+      text: '#0e7490',
+      border: '#67e8f9',
+      dotColor: '#06b6d4',
+    };
+  }
+
+  // 7. 🟦 Research / Survey
+  if (/\b(research|survey|scientist|project|fellow|fellowship)\b/i.test(r)) {
+    return {
+      bg: '#eff6ff',
+      text: '#1d4ed8',
+      border: '#93c5fd',
+      dotColor: '#3b82f6',
+    };
+  }
+
+  // 8. 🟧 PG Counselling / Info
+  if (/\b(counselling|counseling|pg\s*counselling|neet|admission|info)\b/i.test(r)) {
+    return {
+      bg: '#fff7ed',
+      text: '#c2410c',
+      border: '#fdba74',
+      dotColor: '#f97316',
+    };
+  }
+
+  // 9. Default
+  return {
+    bg: '#f8fafc',
+    text: '#334155',
+    border: '#cbd5e1',
+    dotColor: '#64748b',
   };
 }
 
@@ -191,7 +331,7 @@ export function JobCard({
   const view = job as any;
   const sector = job.sector || 'private';
   const isGovernment = sector === 'government';
-  const displayTitle = view.displayTitle || job.title;
+  const displayTitle = useMemo(() => resolveStandardCardTitle(job), [job]);
   const sourceRecruitmentId = view.sourceRecruitmentId;
   const grouped = Boolean(view.recruitmentGrouped && sourceRecruitmentId);
 
@@ -549,15 +689,39 @@ export function JobCard({
               style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #f1f5f9' }}
               onClick={(e) => e.stopPropagation()}
             >
-              {roleBadges.map((role) => (
-                <Badge
-                  key={role}
-                  variant="outline"
-                  className="px-2.5 py-0.5 text-xs font-medium text-gray-700 border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors"
-                >
-                  {role}
-                </Badge>
-              ))}
+              {roleBadges.map((role) => {
+                const badgeStyle = getRoleBadgeColorStyle(role);
+                return (
+                  <span
+                    key={role}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '3px 10px',
+                      borderRadius: '9999px',
+                      fontSize: '11.5px',
+                      fontWeight: 700,
+                      backgroundColor: badgeStyle.bg,
+                      color: badgeStyle.text,
+                      border: `1.5px solid ${badgeStyle.border}`,
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        backgroundColor: badgeStyle.dotColor,
+                        flexShrink: 0,
+                      }}
+                    />
+                    <span>{role}</span>
+                  </span>
+                );
+              })}
             </div>
           )}
 

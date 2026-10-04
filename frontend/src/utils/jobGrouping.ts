@@ -76,14 +76,88 @@ function matchesQuery(job: any, query?: string) {
   return groups.some((tokens) => tokens.every((token) => haystack.includes(token)));
 }
 
+/**
+ * Resolves standard card title according to user specifications:
+ * Strictly 2 title types:
+ * 1. Individual Cadre/Role:
+ *    - Junior Resident (JR)
+ *    - Senior Resident (SR)
+ *    - Faculty
+ *    - Medical Officer (MO / GDMO)
+ *    - Consultant / Specialist
+ *    - Paramedical Staff
+ *    - Research / Survey
+ * 2. Various Departments (Multiple Department):
+ *    - Whenever there are multiple departments, multiple roles, or multiple posts.
+ */
+export function resolveStandardCardTitle(input: any): string {
+  if (!input) return 'Medical Vacancy';
+  const items = Array.isArray(input) ? input : [input];
+  const first = items[0] || {};
+
+  const departments = unique(items.flatMap((item) => [item.department, item.speciality])).filter(Boolean);
+  const postNames = unique(items.map((item) => item._basePostName || basePostName(item))).filter(Boolean);
+
+  const allText = items
+    .map((item) => `${item.title || ''} ${item.displayTitle || ''} ${item.category || ''} ${item._basePostName || ''} ${Array.isArray(item.jobRoles) ? item.jobRoles.join(' ') : (item.jobRoles || '')} ${item.department || ''} ${item.speciality || ''}`)
+    .join(' ')
+    .toLowerCase();
+
+  // If text has legacy concatenation "+ N more posts", it is definitely Multiple Department
+  if (/\+\s*\d+\s*more\s*posts/i.test(allText)) {
+    return 'Various Departments (Multiple Department)';
+  }
+
+  // Detect individual cadres
+  const hasJR = /\b(junior\s*resident|jr\b|jr\s*resident|junior\s*residency|house\s*job|house\s*physician|house\s*surgeon)\b/i.test(allText);
+  const hasSR = /\b(senior\s*resident|sr\b|sr\s*resident|senior\s*residency)\b/i.test(allText);
+  const hasFaculty = /\b(faculty|professor|associate\s*prof|assistant\s*prof|lecturer|tutor|dean|principal)\b/i.test(allText);
+  const hasMO = /\b(medical\s*officer|gdmo|general\s*duty|smo\b|cmo\b|rmo\b|casualty|duty\s*doctor|fmo|imo|ayush|ayurved|homeopath|unani)\b/i.test(allText);
+  const hasConsultant = /\b(consultant|specialist|super\s*specialist|intensivist|surgeon|physician|cardiolog|neurolog|nephrolog|oncolog|pediatric|radiolog|patholog|anesthes|anaesthes|gynecolog|obstetric|orthopedic|dermatolog|ent|ophthalmolog|psychiatr|dentist|dental)\b/i.test(allText);
+  const hasParamedical = /\b(paramedical|nurse|nursing|technician|pharmacist|lab|physiotherap|radiographer|optometrist|dietician|ecg)\b/i.test(allText);
+  const hasResearch = /\b(research|survey|scientist|project\s*fellow|fellowship)\b/i.test(allText);
+
+  const detectedCadres: string[] = [];
+  if (hasJR) detectedCadres.push('Junior Resident (JR)');
+  if (hasSR) detectedCadres.push('Senior Resident (SR)');
+  if (hasFaculty) detectedCadres.push('Faculty');
+  if (hasMO) detectedCadres.push('Medical Officer (MO / GDMO)');
+  if (hasConsultant) detectedCadres.push('Consultant / Specialist');
+  if (hasParamedical) detectedCadres.push('Paramedical Staff');
+  if (hasResearch) detectedCadres.push('Research / Survey');
+
+  const hasMultipleKeywords = /\b(various\s*departments|multiple\s*departments|various\s*disciplines|multiple\s*disciplines|various\s*posts|multiple\s*roles|various\s*specialit)\b/i.test(allText);
+  const isMultiple = items.length > 1 || departments.length > 1 || postNames.length > 1 || detectedCadres.length > 1 || hasMultipleKeywords;
+
+  if (isMultiple) {
+    return 'Various Departments (Multiple Department)';
+  }
+
+  if (detectedCadres.length === 1) {
+    return detectedCadres[0];
+  }
+
+  // Standalone fallback: clean up raw title
+  let cleanTitle = clean(first?.title || first?.displayTitle || '');
+  if (!cleanTitle) return 'Medical Vacancy';
+  // Strip off hospital name suffixes like "- Northern Railway", "- AIIMS Patna", etc.
+  cleanTitle = cleanTitle.replace(/\s*-\s*(Northern\s*Railway|AIIMS|ESIC|Hospital|State\s*Cancer|Railway|Medical\s*College).*$/i, '').trim();
+  // Strip prefixes like "Recruitment of", "Walk-in-Interview for", "Engagement of"
+  cleanTitle = cleanTitle.replace(/^(walk-in-interview\s*for|recruitment\s*of|engagement\s*of|appointment\s*of|applications\s*are\s*invited\s*for)\s+/i, '').trim();
+  // Strip trailing "Recruitment 2026", "on contract basis", etc.
+  cleanTitle = cleanTitle.replace(/\s*(recruitment\s*\d*|on\s*contract\s*basis|contract\s*basis).*$/i, '').trim();
+
+  return cleanTitle || 'Various Departments (Multiple Department)';
+}
+
 export function groupRecruitmentJobs(jobs: any[], query?: string) {
   const groups = new Map<string, any[]>();
   const standalone: any[] = [];
 
   for (const job of Array.isArray(jobs) ? jobs : []) {
     if (!job?.sourceRecruitmentId) {
-      const displayTitle = clean(job?.title);
-      const enriched = { ...job, displayTitle };
+      const displayTitle = resolveStandardCardTitle(job);
+      const enriched = { ...job, displayTitle, title: displayTitle };
       const searchText = searchTextFor(enriched);
       standalone.push({ ...enriched, _groupSearchText: searchText, title: displayTitle });
       continue;
@@ -98,11 +172,9 @@ export function groupRecruitmentJobs(jobs: any[], query?: string) {
 
   const grouped = [...groups.values()].map((items) => {
     const first = items[0];
-    const postNames = unique(items.map((item) => item._basePostName || basePostName(item)));
-    const displayTitle = postNames.length <= 3
-      ? postNames.join(', ')
-      : `${postNames.slice(0, 2).join(', ')} + ${postNames.length - 2} more posts`;
-    const departments = unique(items.map((item) => item.department || item.speciality));
+    const departments = unique(items.map((item) => item.department || item.speciality)).filter(Boolean);
+    const postNames = unique(items.map((item) => item._basePostName || basePostName(item))).filter(Boolean);
+    const displayTitle = resolveStandardCardTitle(items);
     const specialities = unique(items.map((item) => item.speciality));
     const locations = unique(items.map((item) => item.location));
     const states = unique(items.map((item) => item.state));

@@ -257,6 +257,18 @@
   border: 1.5px solid #c4b5fd !important;
   font-weight: 800 !important;
 }
+.medex-pill-badge.badge-role-paramedical {
+  background: #ecfeff !important;
+  color: #0e7490 !important;
+  border: 1.5px solid #67e8f9 !important;
+  font-weight: 800 !important;
+}
+.medex-pill-badge.badge-role-multiple {
+  background: #f8fafc !important;
+  color: #334155 !important;
+  border: 1.5px solid #94a3b8 !important;
+  font-weight: 800 !important;
+}
 .medex-pill-badge.badge-role-default {
   background: #eff6ff !important;
   color: #1d4ed8 !important;

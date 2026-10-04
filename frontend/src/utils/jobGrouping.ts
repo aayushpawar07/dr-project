@@ -213,6 +213,36 @@ export function groupRecruitmentJobs(jobs: any[], query?: string) {
       })
     );
 
+    const groupContextText = items
+      .map((item) => `${item.title || ''} ${item.department || ''} ${item.speciality || ''} ${item.description || ''}`)
+      .join(' ')
+      .toLowerCase();
+
+    const isFacultyGroup = items.some((item) =>
+      /\b(faculty|professor|assoc\w*\s+prof|asst\w*\s+prof|assistant\s+professor|tutor|lecturer)\b/i.test(
+        `${item.title || ''} ${item.category || ''} ${item.jobRoles || ''}`
+      )
+    );
+    const hasPharmacology = /\bpharmacolog\w*\b/i.test(groupContextText);
+    const hasRealPharmacy = /\b(pharmacist|b\.?\s*pharm|d\.?\s*pharm|m\.?\s*pharm|pharm\.?\s*d|dispenser)\b/i.test(groupContextText);
+    const hasPsychiatry = /\bpsychiatr\w*\b/i.test(groupContextText);
+    const hasRealPsychology = /\b(psycholog\w*|mental\s*health|counselor|counsellor)\b/i.test(groupContextText);
+
+    const filteredRoles = allRoles.filter((r) => {
+      const lower = r.toLowerCase().trim();
+      if (isFacultyGroup) {
+        if ((lower === 'pharmacy' || lower === 'pharmacist') && !hasRealPharmacy) return false;
+        if ((lower.includes('psychology') || lower === 'psychology & mental health') && !hasRealPsychology) return false;
+      }
+      if ((lower === 'pharmacy' || lower === 'pharmacist') && (hasPharmacology && !hasRealPharmacy)) {
+        return false;
+      }
+      if ((lower.includes('psychology') || lower === 'psychology & mental health') && (hasPsychiatry && !hasRealPsychology)) {
+        return false;
+      }
+      return true;
+    });
+
     return {
       ...first,
       displayTitle,
@@ -221,7 +251,7 @@ export function groupRecruitmentJobs(jobs: any[], query?: string) {
       recruitmentGrouped: true,
       groupedVacancyRows: items.length,
       postNames,
-      jobRoles: allRoles.length > 0 ? allRoles : (first.jobRoles || (first.category ? [first.category] : undefined)),
+      jobRoles: filteredRoles.length > 0 ? filteredRoles : (first.jobRoles || (first.category ? [first.category] : undefined)),
       departments,
       specialities,
       departmentCount: departments.length,

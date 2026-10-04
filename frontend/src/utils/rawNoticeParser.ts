@@ -369,14 +369,20 @@ export function inferCategory(value?: string | null): JobCategory {
   if (/junior\s*resident|\bjr\b/.test(t)) return 'Junior Resident';
   if (/senior\s*resident|\bsr\b/.test(t)) return 'Senior Resident';
   if (/professor|faculty|lecturer|tutor|demonstrator/.test(t)) return 'Faculty';
-  if (/specialist|super\s*specialist|consultant|general\s*physician|chest\s*physician|neuro\s*physician/.test(t)) {
+  if (/specialist|super\s*specialist|consultant|general\s*physician|chest\s*physician|neuro\s*physician|psychiat/.test(t)) {
     return 'Specialist';
   }
   if (/dental|dentist|bds|mds/.test(t)) return 'Dental';
   if (/ayush|bams|bhms|unani|ayurveda|siddha|homeopath/.test(t)) return 'AYUSH';
   if (/nurs/.test(t)) return 'Nursing';
-  if (/pharmac/.test(t)) return 'Pharmacy';
-  if (/psych/.test(t)) return 'Psychology & Mental Health';
+  // Pharmacy strictly requires actual pharmacy/pharmacist keywords and NOT pharmacology
+  if (!/pharmacolog/i.test(t) && /\b(pharmacy|pharmacist|b\.?\s*pharm|d\.?\s*pharm|m\.?\s*pharm|pharm\.?\s*d|dispenser|druggist)\b/i.test(t)) {
+    return 'Pharmacy';
+  }
+  // Psychology strictly requires psychologist/counsellor keywords and NOT psychiatry
+  if (!/psychiatr/i.test(t) && /\b(psycholog\w*|mental\s*health|counselor|counsellor)\b/i.test(t)) {
+    return 'Psychology & Mental Health';
+  }
   if (/nutrition|diet/.test(t)) return 'Nutrition & Dietetics';
   if (/public health|epidemi/.test(t)) return 'Public Health';
   if (/administration|administrator/.test(t)) return 'Hospital Administration';
@@ -820,17 +826,27 @@ export function parseRawVacancyNotice(rawText: string): ParsedNoticeResult {
     { role: 'Dental', regex: /\b(dental|dentist|bds|mds)\b/i },
     { role: 'AYUSH', regex: /\b(ayush|ayurved\w*|homeopath\w*|unani|siddha|bams|bhms)\b/i },
     { role: 'Nursing', regex: /\b(nurs\w*|staff\s*nurse|sister\s*tutor|gnm|b\.sc\s*nurs\w*)\b/i },
-    { role: 'Pharmacy', regex: /\b(pharmac\w*|b\.pharm|d\.pharm)\b/i },
+    { role: 'Pharmacy', regex: /\b(pharmacy|pharmacist|b\.?\s*pharm|d\.?\s*pharm|m\.?\s*pharm|pharm\.?\s*d|dispenser|druggist)\b/i },
     { role: 'Paramedical', regex: /\b(paramedic\w*|lab\s*tech\w*|radiograph\w*|x-ray\s*tech\w*|ecg\s*tech\w*|ot\s*tech\w*)\b/i },
     { role: 'Allied Health', regex: /\b(allied\s*health|physiotherap\w*|occupational\s*therap\w*)\b/i },
-    { role: 'Psychology & Mental Health', regex: /\b(psycholog\w*|psychiatr\w*|mental\s*health|counselor)\b/i },
+    { role: 'Psychology & Mental Health', regex: /\b(psycholog\w*|clinical\s*psycholog\w*|mental\s*health|counselor|counsellor)\b/i },
     { role: 'Nutrition & Dietetics', regex: /\b(dieti\w*|nutrition\w*)\b/i },
     { role: 'Hospital Administration', regex: /\b(hospital\s*admin\w*|medical\s*superintendent|healthcare\s*admin\w*)\b/i },
     { role: 'Public Health', regex: /\b(public\s*health|epidemiolog\w*|mph\b)\b/i },
     { role: 'Life Science & Research', regex: /\b(life\s*science|research\s*officer|research\s*associate|jrf\b|srf\b)\b/i },
   ];
 
+  const isFacultyOrResidency = /\b(faculty|professor|assoc\w*\s+prof|asst\w*\s+prof|assistant\s+professor|tutor|lecturer|senior\s+resident|junior\s+resident|sr\b|jr\b)\b/i.test(normalizedText);
+
   for (const r of roleKeywords) {
+    // Prevent pharmacology from falsely tagging Pharmacy
+    if (r.role === 'Pharmacy' && (/pharmacolog/i.test(normalizedText) || isFacultyOrResidency) && !/\b(pharmacist|b\.?\s*pharm|d\.?\s*pharm|m\.?\s*pharm|pharm\.?\s*d|dispenser)\b/i.test(normalizedText)) {
+      continue;
+    }
+    // Prevent psychiatry from falsely tagging Psychology
+    if (r.role === 'Psychology & Mental Health' && (/psychiatr/i.test(normalizedText) || isFacultyOrResidency) && !/\b(psycholog\w*|clinical\s*psycholog\w*|counselor|counsellor|mental\s*health)\b/i.test(normalizedText)) {
+      continue;
+    }
     if (r.regex.test(normalizedText) && !detectedRoles.includes(r.role)) {
       detectedRoles.push(r.role);
     }

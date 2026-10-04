@@ -579,21 +579,37 @@ public class RecruitmentManagementService {
 
     private Job.JobCategory mapJobCategory(String postName) {
         String p = Optional.ofNullable(postName).orElse("").toLowerCase(Locale.ROOT);
+        // 1. Cadres take top priority (Faculty, Senior Resident, Junior Resident)
+        if (p.contains("professor") || p.contains("faculty") || p.contains("tutor") || p.contains("lecturer") || p.contains("principal") || p.contains("demonstrator") || p.contains("dean")) return Job.JobCategory.FACULTY;
+        if (p.contains("senior resident") || p.contains(" sr resident") || p.matches(".*\\bsr\\b.*")) return Job.JobCategory.SENIOR_RESIDENT;
+        if (p.contains("junior resident") || p.contains(" jr resident") || p.matches(".*\\bjr\\b.*")) return Job.JobCategory.JUNIOR_RESIDENT;
+
+        // 2. Specialists and Clinical Medical specialties (Psychiatry is Specialist Doctor, NOT Psychology!)
+        if (p.contains("specialist") || p.contains("consultant") || p.contains("surgeon") || p.contains("physician") || p.contains("psychiat")) return Job.JobCategory.SPECIALIST;
+
+        // 3. Dental & AYUSH
         if (p.contains("dental") || p.contains("bds") || p.contains("mds") || p.contains("dentist")) return Job.JobCategory.DENTAL;
         if (p.contains("ayush") || p.contains("ayurved") || p.contains("homeopath") || p.contains("homoeopath") || p.contains("unani") || p.contains("siddha") || p.contains("bams") || p.contains("bhms")) return Job.JobCategory.AYUSH;
+
+        // 4. Nursing
         if (p.contains("nurse") || p.contains("nursing") || p.contains("anm") || p.contains("gnm") || p.contains("sister")) return Job.JobCategory.NURSING;
-        if (p.contains("pharm") || p.contains("druggist") || p.contains("dispenser")) return Job.JobCategory.PHARMACY;
+
+        // 5. Pharmacy (strictly excludes Pharmacology!)
+        if (!p.contains("pharmacolog") && (p.contains("pharmacy") || p.contains("pharmacist") || p.contains("b.pharm") || p.contains("d.pharm") || p.contains("m.pharm") || p.contains("pharm.d") || p.contains("druggist") || p.contains("dispenser"))) return Job.JobCategory.PHARMACY;
+
+        // 6. Allied Health & Paramedical
         if (p.contains("physiotherap") || p.contains("occupational therap") || p.contains("audiolog") || p.contains("speech") || p.contains("prosthet") || p.contains("orthot") || p.contains("bpt") || p.contains("mpt")) return Job.JobCategory.ALLIED_HEALTH;
         if (p.contains("lab") || p.contains("radiolog") || p.contains("x-ray") || p.contains("xray") || p.contains("mri") || p.contains("ct scan") || p.contains("dialysis") || p.contains("ot tech") || p.contains("operation theatre") || p.contains("cardiac") || p.contains("blood bank") || p.contains("ophthalm") || p.contains("optometr") || p.contains("technician") || p.contains("paramedic") || p.contains("technical officer")) return Job.JobCategory.PARAMEDICAL;
-        if (p.contains("psycholog") || p.contains("mental health") || p.contains("counsellor") || p.contains("counselor") || p.contains("psychiat")) return Job.JobCategory.PSYCHOLOGY_MENTAL_HEALTH;
+
+        // 7. Psychology & Mental Health (strictly excludes Psychiatry!)
+        if (!p.contains("psychiat") && (p.contains("psycholog") || p.contains("mental health") || p.contains("counsellor") || p.contains("counselor"))) return Job.JobCategory.PSYCHOLOGY_MENTAL_HEALTH;
+
+        // 8. Other categories
         if (p.contains("diet") || p.contains("nutrition")) return Job.JobCategory.NUTRITION_DIETETICS;
         if (p.contains("research") || p.contains("scientist") || p.contains("genetic") || p.contains("clinical trial")) return Job.JobCategory.LIFE_SCIENCE_RESEARCH;
         if (p.contains("superintendent") || p.contains("administrator") || p.contains("mha") || p.contains("operations") || p.contains("executive officer")) return Job.JobCategory.HOSPITAL_ADMINISTRATION;
         if (p.contains("public health") || p.contains("epidemiol") || p.contains("health officer") || p.contains("mph")) return Job.JobCategory.PUBLIC_HEALTH;
-        if (p.contains("senior resident") || p.contains(" sr ")) return Job.JobCategory.SENIOR_RESIDENT;
-        if (p.contains("junior resident") || p.contains(" jr ")) return Job.JobCategory.JUNIOR_RESIDENT;
-        if (p.contains("professor") || p.contains("faculty") || p.contains("tutor") || p.contains("lecturer") || p.contains("principal")) return Job.JobCategory.FACULTY;
-        if (p.contains("specialist") || p.contains("consultant") || p.contains("surgeon") || p.contains("physician")) return Job.JobCategory.SPECIALIST;
+
         return Job.JobCategory.MEDICAL_OFFICER;
     }
 

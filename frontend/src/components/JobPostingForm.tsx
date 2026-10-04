@@ -167,12 +167,12 @@ function inferCategory(value?: string | null): JobCategory {
   if (/senior resident/.test(t)) return 'Senior Resident';
   if (/medical officer|gdm[o]?/.test(t)) return 'Medical Officer';
   if (/professor|faculty|lecturer|tutor/.test(t)) return 'Faculty';
-  if (/specialist|consultant/.test(t)) return 'Specialist';
+  if (/specialist|consultant|psychiatr/.test(t)) return 'Specialist';
   if (/dental|dentist|bds|mds/.test(t)) return 'Dental';
   if (/ayush|bams|bhms|unani|ayurveda/.test(t)) return 'AYUSH';
   if (/nurs/.test(t)) return 'Nursing';
-  if (/pharmac/.test(t)) return 'Pharmacy';
-  if (/psych/.test(t)) return 'Psychology & Mental Health';
+  if (!/pharmacolog/i.test(t) && /\b(pharmacy|pharmacist|b\.?\s*pharm|d\.?\s*pharm|m\.?\s*pharm|pharm\.?\s*d|dispenser|druggist)\b/i.test(t)) return 'Pharmacy';
+  if (!/psychiatr/i.test(t) && /\b(psycholog\w*|mental\s*health|counselor|counsellor)\b/i.test(t)) return 'Psychology & Mental Health';
   if (/nutrition|diet/.test(t)) return 'Nutrition & Dietetics';
   if (/public health|epidemi/.test(t)) return 'Public Health';
   if (/administration|administrator/.test(t)) return 'Hospital Administration';

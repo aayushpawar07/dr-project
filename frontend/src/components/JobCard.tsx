@@ -434,7 +434,43 @@ export function JobCard({
       detected.forEach((d) => addRole(d));
     }
 
-    return sortPositions(roles);
+    const allContextText = [
+      job.title,
+      view.displayTitle,
+      job.department,
+      job.speciality,
+      ...(Array.isArray(view.departments) ? view.departments : []),
+      ...(Array.isArray(view.specialities) ? view.specialities : []),
+      job.description,
+    ].filter(Boolean).join(' ').toLowerCase();
+
+    const isFacultyJob = /\b(faculty|professor|assoc\w*\s+prof|asst\w*\s+prof|assistant\s+professor|tutor|lecturer|demonstrator)\b/i.test(
+      `${job.title || ''} ${view.displayTitle || ''} ${job.category || ''} ${roles.join(' ')}`
+    );
+    const hasPharmacology = /\bpharmacolog\w*\b/i.test(allContextText);
+    const hasRealPharmacy = /\b(pharmacist|b\.?\s*pharm|d\.?\s*pharm|m\.?\s*pharm|pharm\.?\s*d|druggist|dispenser)\b/i.test(allContextText);
+    const hasPsychiatry = /\bpsychiatr\w*\b/i.test(allContextText);
+    const hasRealPsychology = /\b(psycholog\w*|mental\s*health|counselor|counsellor)\b/i.test(allContextText);
+
+    const filteredRoles = roles.filter((role) => {
+      const lower = role.toLowerCase().trim();
+      // If it's a Faculty circular, don't show separate bogus role tags for Pharmacology/Psychiatry
+      if (isFacultyJob) {
+        if ((lower === 'pharmacy' || lower === 'pharmacist') && !hasRealPharmacy) return false;
+        if ((lower.includes('psychology') || lower === 'psychology & mental health') && !hasRealPsychology) return false;
+      }
+      // If circular has Pharmacology (medical subject) and NO real pharmacy/pharmacist posts:
+      if ((lower === 'pharmacy' || lower === 'pharmacist') && (hasPharmacology && !hasRealPharmacy)) {
+        return false;
+      }
+      // If circular has Psychiatry (medical specialty) and NO real psychologist/counsellor posts:
+      if ((lower.includes('psychology') || lower === 'psychology & mental health') && (hasPsychiatry && !hasRealPsychology)) {
+        return false;
+      }
+      return true;
+    });
+
+    return sortPositions(filteredRoles);
   }, [job, view]);
 
   const openDetails = () => {

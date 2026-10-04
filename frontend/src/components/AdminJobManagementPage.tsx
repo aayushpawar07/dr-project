@@ -64,6 +64,7 @@ import {
   updateAdminJobStatus,
   publishAdminJob,
   createSampleJob,
+  cleanAdminShowcaseJobs,
 } from "../api/jobs";
 import {
   fetchApplications,
@@ -259,16 +260,7 @@ export function AdminJobManagementPage({
   // Metric counts for the 4 top summary cards (Jobs View)
   const summaryMetrics = useMemo(() => {
     const total = jobs.length;
-    const totalPosts = jobs.reduce(
-      (acc, j) => acc + (Number(j.numberOfPosts) > 0 ? Number(j.numberOfPosts) : 1),
-      0
-    );
-    const activeJobs = jobs.filter((j) => j.status === "active");
-    const active = activeJobs.length;
-    const activePosts = activeJobs.reduce(
-      (acc, j) => acc + (Number(j.numberOfPosts) > 0 ? Number(j.numberOfPosts) : 1),
-      0
-    );
+    const active = jobs.filter((j) => j.status === "active").length;
     const upcomingOrClosing = jobs.filter(
       (j) => isClosingSoon(j) || j.status === "pending"
     ).length;
@@ -276,9 +268,7 @@ export function AdminJobManagementPage({
 
     return {
       total,
-      totalPosts,
       active,
-      activePosts,
       upcomingOrClosing,
       closedOrExpired,
     };
@@ -596,6 +586,28 @@ export function AdminJobManagementPage({
     }
   };
 
+  const handleCleanShowcaseJobs = async () => {
+    if (
+      !window.confirm(
+        "क्या आप सभी Showcase / Demo / Sample jobs को database से हटाना चाहते हैं? इससे केवल डेमो पोस्ट्स हटेंगी, आपके असली जॉब्स सुरक्षित रहेंगे।"
+      )
+    )
+      return;
+
+    setLoading(true);
+    try {
+      if (!token) throw new Error("Authentication token not found.");
+      const res = await cleanAdminShowcaseJobs();
+      toast.success(res?.message || "Demo/Showcase jobs cleaned successfully!");
+      await loadJobs();
+    } catch (e: any) {
+      const errorMsg = e.error || e.message || "Failed to clean showcase jobs";
+      toast.error(`Error: ${errorMsg}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleEditJob = (job: Job) => {
     navigate(`/admin/jobs/edit/${job.id}`);
   };
@@ -756,12 +768,13 @@ export function AdminJobManagementPage({
               </button>
               <button
                 type="button"
-                onClick={handleQuickAddSampleJob}
+                onClick={handleCleanShowcaseJobs}
                 disabled={loading}
-                className="admin-jm-btn-secondary"
+                className="admin-jm-btn-secondary text-rose-600 hover:text-rose-700 hover:border-rose-300 hover:bg-rose-50"
+                title="Remove demo and sample jobs from database"
               >
-                <Plus className="w-4 h-4" />
-                Quick Add Sample
+                <Trash2 className="w-4 h-4" />
+                Clean Demo Jobs
               </button>
             </div>
           </div>
@@ -787,9 +800,6 @@ export function AdminJobManagementPage({
                   <span className="admin-jm-stat-value">
                     {summaryMetrics.total}
                   </span>
-                  <span className="text-[11px] font-medium text-slate-500 block mt-0.5">
-                    {summaryMetrics.totalPosts} Total Posts
-                  </span>
                 </div>
               </div>
 
@@ -808,9 +818,6 @@ export function AdminJobManagementPage({
                   <span className="admin-jm-stat-label">Active Jobs</span>
                   <span className="admin-jm-stat-value text-emerald-600">
                     {summaryMetrics.active}
-                  </span>
-                  <span className="text-[11px] font-medium text-emerald-600 block mt-0.5">
-                    {summaryMetrics.activePosts} Active Posts
                   </span>
                 </div>
               </div>
@@ -964,11 +971,6 @@ export function AdminJobManagementPage({
                     ? "closed / expired jobs"
                     : `${filterStatus} jobs`
                 }
-                {filteredAndSortedJobs.length > 0 && (
-                  <span className="ml-1.5 text-slate-500 font-normal">
-                    ({filteredAndSortedJobs.reduce((acc, j) => acc + (Number(j.numberOfPosts) > 0 ? Number(j.numberOfPosts) : 1), 0)} total posts)
-                  </span>
-                )}
               </div>
 
               <div className="admin-jm-meta-sort">
@@ -2149,7 +2151,7 @@ export function AdminJobManagementPage({
                     <div>
                       <div className="text-xs text-slate-500">Vacancies</div>
                       <div className="font-semibold text-slate-900">
-                        {previewJob.numberOfPosts} Posts
+                        {previewJob.numberOfPosts} Vacancies
                       </div>
                     </div>
                     <div>

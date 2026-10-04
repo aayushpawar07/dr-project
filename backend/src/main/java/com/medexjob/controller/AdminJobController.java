@@ -8,6 +8,7 @@ import com.medexjob.repository.EmployerRepository;
 import com.medexjob.repository.JobRepository;
 import com.medexjob.repository.UserRepository;
 import com.medexjob.repository.VacancyRecordRepository;
+import com.medexjob.service.DemoJobShowcaseService;
 import com.medexjob.service.JobSearchService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +60,9 @@ public class AdminJobController {
 
     @Autowired
     private VacancyRecordRepository vacancyRecordRepository;
+
+    @Autowired
+    private DemoJobShowcaseService demoJobShowcaseService;
 
     /**
      * Get all jobs for admin (including all statuses: DRAFT, PENDING, ACTIVE, CLOSED)
@@ -506,6 +510,53 @@ public class AdminJobController {
             logger.error("Error creating sample job: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(Map.of("error", "Failed to create sample job: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Clean showcase and demo jobs
+     */
+    @PostMapping("/clean-showcase")
+    public ResponseEntity<?> cleanShowcaseJobs() {
+        try {
+            logger.info("Admin requested cleanup of showcase/demo jobs");
+            demoJobShowcaseService.cleanShowcase();
+            return ResponseEntity.ok(Map.of("message", "Showcase/demo jobs cleaned successfully"));
+        } catch (Exception e) {
+            logger.error("Error cleaning showcase jobs: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to clean showcase jobs: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Bulk delete jobs
+     */
+    @PostMapping("/bulk-delete")
+    public ResponseEntity<?> bulkDeleteJobs(@RequestBody List<UUID> ids) {
+        try {
+            if (ids == null || ids.isEmpty()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "No job IDs provided"));
+            }
+            LocalDateTime now = LocalDateTime.now();
+            int deleted = 0;
+            for (UUID id : ids) {
+                Optional<Job> jOpt = jobRepository.findById(id);
+                if (jOpt.isPresent()) {
+                    Job j = jOpt.get();
+                    if (!j.isDeleted()) {
+                        j.setDeletedAt(now);
+                        jobRepository.save(j);
+                        deleted++;
+                    }
+                }
+            }
+            logger.info("Admin bulk soft-deleted {} jobs", deleted);
+            return ResponseEntity.ok(Map.of("message", "Bulk delete successful", "deletedCount", deleted));
+        } catch (Exception e) {
+            logger.error("Error bulk deleting jobs: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to bulk delete jobs: " + e.getMessage()));
         }
     }
 

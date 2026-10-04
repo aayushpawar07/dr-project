@@ -87,7 +87,12 @@ public class DemoJobShowcaseService {
                     recruitmentRepository.delete(r);
                 });
             }
-            logger.info("Cleaned up old demo showcase vacancies");
+            // Also clean sample jobs created by test/sample generator
+            jobRepository.findAll().stream()
+                .filter(j -> j.getEmployer() != null && "MedExJob Test Hospital".equalsIgnoreCase(j.getEmployer().getCompanyName()))
+                .forEach(jobRepository::delete);
+
+            logger.info("Cleaned up old demo showcase and test vacancies");
         } catch (Exception ex) {
             logger.warn("Could not clean old showcase jobs: {}", ex.getMessage());
         }

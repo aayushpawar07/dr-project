@@ -510,7 +510,7 @@ export function GovernmentJobDetail({
 
           {/* Same right-column composition as Private jobs */}
           <div className="job-detail-aside space-y-6 md:col-span-1">
-            <Card className="p-4 sm:p-6 md:sticky md:top-20 job-detail-apply">
+            <Card className="p-4 sm:p-6 md:sticky md:top-20 job-detail-apply hidden md:block">
               <div className="space-y-4">
                 {daysLeft != null && daysLeft > 0 && (
                   <div

@@ -240,3 +240,11 @@ export async function createSampleJob() {
   try { return (await apiClient.post('/admin/jobs/sample')).data; }
   catch (err: any) { console.error('Error creating sample job:', err); throw err.response?.data || err; }
 }
+export async function cleanAdminShowcaseJobs() {
+  try { return (await apiClient.post('/admin/jobs/clean-showcase')).data; }
+  catch (err: any) { console.error('Error cleaning showcase jobs:', err); throw err.response?.data || err; }
+}
+export async function bulkDeleteAdminJobs(ids: string[]) {
+  try { return (await apiClient.post('/admin/jobs/bulk-delete', ids)).data; }
+  catch (err: any) { console.error('Error bulk deleting admin jobs:', err); throw err.response?.data || err; }
+}

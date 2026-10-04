@@ -120,11 +120,14 @@ public class AnalyticsController {
     @GetMapping("/overview")
     @Transactional(readOnly = true)
     public ResponseEntity<Map<String, Object>> overview() {
-        // Only count ACTIVE jobs for accurate statistics
+        // Only count active non-deleted distinct jobs/recruitments for accurate, consistent statistics
         List<Job> allJobs = jobRepository.findAll().stream()
-            .filter(j -> j.getStatus() == Job.JobStatus.ACTIVE)
+            .filter(j -> j.getStatus() == Job.JobStatus.ACTIVE && !j.isDeleted())
             .collect(Collectors.toList());
-        long totalJobs = allJobs.size();
+        long totalJobs = allJobs.stream()
+            .map(j -> j.getSourceRecruitmentId() != null ? j.getSourceRecruitmentId().toString() : j.getId().toString())
+            .distinct()
+            .count();
         
         long totalUsers = userRepository.count();
         long totalEmployers = employerRepository.count();

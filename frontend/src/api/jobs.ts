@@ -26,7 +26,7 @@ export interface JobsQuery {
 export async function fetchJobs(params: JobsQuery = {}) {
   try {
     const requestedSize = params.size ?? 50;
-    const requestSize = Math.min(Math.max(requestedSize * 2, requestedSize), 200);
+    const requestSize = Math.min(Math.max(requestedSize * 2, requestedSize), 2000);
     const requestParams = {
       ...params,
       search: params.search?.trim() || undefined,

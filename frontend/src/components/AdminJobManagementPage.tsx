@@ -66,6 +66,7 @@ import {
   createSampleJob,
   cleanAdminShowcaseJobs,
 } from "../api/jobs";
+import { groupRecruitmentJobs } from "../utils/jobGrouping";
 import {
   fetchApplications,
   updateApplicationStatus,
@@ -79,6 +80,7 @@ interface Job {
   id: string;
   employerId?: string;
   title: string;
+  displayTitle?: string;
   organization: string;
   sector: JobSector;
   category: JobCategory;
@@ -104,6 +106,13 @@ interface Job {
   benefits?: string;
   speciality?: string;
   department?: string;
+  recruitmentGrouped?: boolean;
+  groupedVacancyRows?: number;
+  departments?: string[];
+  postNames?: string[];
+  childJobIds?: string[];
+  sourceRecruitmentId?: string;
+  createdAt?: string;
 }
 
 interface AdminJobManagementPageProps {
@@ -117,7 +126,20 @@ export function AdminJobManagementPage({
   const navigate = useNavigate();
 
   // Primary data state
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [rawJobs, setRawJobs] = useState<Job[]>([]);
+  const [viewGrouping, setViewGrouping] = useState<"grouped" | "raw">("grouped");
+
+  // By default, group by recruitment circular to match the public All Jobs page exactly!
+  const jobs = useMemo(() => {
+    if (viewGrouping === "grouped") {
+      return (groupRecruitmentJobs(rawJobs) as any[]).map((j: any) => ({
+        ...j,
+        postedDate: j.postedDate || j.createdAt,
+      })) as Job[];
+    }
+    return rawJobs;
+  }, [rawJobs, viewGrouping]);
+
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [appLoading, setAppLoading] = useState(false);
@@ -154,7 +176,7 @@ export function AdminJobManagementPage({
     setError(null);
     try {
       const data = await fetchAdminJobs({
-        size: 1000,
+        size: 2000,
         sort: "createdAt,desc",
       });
       const allJobs: Job[] = (data?.content || []).map((job: any) => ({
@@ -166,7 +188,7 @@ export function AdminJobManagementPage({
         numberOfPosts: job.numberOfPosts ?? 1,
         salary: job.salary || job.salaryRange || "",
       }));
-      setJobs(allJobs);
+      setRawJobs(allJobs);
     } catch (e: any) {
       setError(`Failed to fetch jobs: ${e.message || "Unknown error"}`);
       console.error("Error fetching jobs:", e);
@@ -622,7 +644,17 @@ export function AdminJobManagementPage({
     try {
       if (!token) throw new Error("Authentication token not found.");
       await deleteAdminJob(jobId);
-      setJobs((prev) => prev.filter((j) => j.id !== jobId));
+      const targetJob = rawJobs.find((j) => j.id === jobId);
+      const siblingIds = new Set<string>(targetJob?.childJobIds || []);
+      siblingIds.add(jobId);
+      if (targetJob?.sourceRecruitmentId) {
+        rawJobs.forEach((j) => {
+          if (j.sourceRecruitmentId === targetJob.sourceRecruitmentId) {
+            siblingIds.add(j.id);
+          }
+        });
+      }
+      setRawJobs((prev) => prev.filter((j) => !siblingIds.has(j.id)));
       toast.success("Job deleted successfully!");
     } catch (e: any) {
       const errorMsg = e.error || e.message || "Failed to delete job";
@@ -637,8 +669,18 @@ export function AdminJobManagementPage({
     try {
       if (!token) throw new Error("Authentication token not found.");
       await updateAdminJobStatus(jobId, newStatus);
-      setJobs((prev) =>
-        prev.map((j) => (j.id === jobId ? { ...j, status: newStatus } : j))
+      const targetJob = rawJobs.find((j) => j.id === jobId);
+      const siblingIds = new Set<string>(targetJob?.childJobIds || []);
+      siblingIds.add(jobId);
+      if (targetJob?.sourceRecruitmentId) {
+        rawJobs.forEach((j) => {
+          if (j.sourceRecruitmentId === targetJob.sourceRecruitmentId) {
+            siblingIds.add(j.id);
+          }
+        });
+      }
+      setRawJobs((prev) =>
+        prev.map((j) => (siblingIds.has(j.id) ? { ...j, status: newStatus } : j))
       );
       toast.success(`Job status changed to ${newStatus}!`);
     } catch (e: any) {
@@ -651,8 +693,18 @@ export function AdminJobManagementPage({
     try {
       if (!token) throw new Error("Authentication token not found.");
       await publishAdminJob(jobId);
-      setJobs((prev) =>
-        prev.map((j) => (j.id === jobId ? { ...j, status: "active" } : j))
+      const targetJob = rawJobs.find((j) => j.id === jobId);
+      const siblingIds = new Set<string>(targetJob?.childJobIds || []);
+      siblingIds.add(jobId);
+      if (targetJob?.sourceRecruitmentId) {
+        rawJobs.forEach((j) => {
+          if (j.sourceRecruitmentId === targetJob.sourceRecruitmentId) {
+            siblingIds.add(j.id);
+          }
+        });
+      }
+      setRawJobs((prev) =>
+        prev.map((j) => (siblingIds.has(j.id) ? { ...j, status: "active" } : j))
       );
       toast.success("Job published successfully!");
     } catch (e: any) {
@@ -755,6 +807,36 @@ export function AdminJobManagementPage({
                 Applications ({applications.length})
               </button>
             </div>
+
+            {/* Circular Grouping Switcher for Jobs (Consistency with public All Jobs page) */}
+            {activeView === "jobs" && (
+              <div className="inline-flex bg-slate-100 p-1 rounded-lg border border-slate-200/80">
+                <button
+                  type="button"
+                  onClick={() => setViewGrouping("grouped")}
+                  className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                    viewGrouping === "grouped"
+                      ? "bg-white text-blue-600 shadow-xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                  title="Group by notification (Matches public website All Jobs page)"
+                >
+                  Grouped by Notice ({(groupRecruitmentJobs(rawJobs) as any[]).length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewGrouping("raw")}
+                  className={`px-2.5 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                    viewGrouping === "raw"
+                      ? "bg-white text-blue-600 shadow-xs"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                  title="View individual vacancy records across departments"
+                >
+                  All Vacancy Rows ({rawJobs.length})
+                </button>
+              </div>
+            )}
 
             {/* Right Action Buttons */}
             <div className="admin-jm-header-actions">
@@ -1057,6 +1139,14 @@ export function AdminJobManagementPage({
                               {job.title}
                             </h3>
                             {renderStatusBadge(job)}
+                            {job.recruitmentGrouped && job.groupedVacancyRows && job.groupedVacancyRows > 1 && (
+                              <span
+                                className="admin-jm-badge bg-blue-50 text-blue-700 border-blue-200 font-semibold"
+                                title={`This notice has ${job.groupedVacancyRows} vacancy departments/roles grouped together`}
+                              >
+                                {job.groupedVacancyRows} Depts / Roles
+                              </span>
+                            )}
                             {job.featured && (
                               <span className="admin-jm-badge admin-jm-badge-featured">
                                 Featured

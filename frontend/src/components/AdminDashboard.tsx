@@ -61,6 +61,7 @@ import {
   getUnreadCount,
 } from '../api/notifications';
 import { fetchCandidateInsights } from '../api/candidateProfiles';
+import { groupRecruitmentJobs } from '../utils/jobGrouping';
 import { toast } from 'sonner';
 import '../styles/admin-dashboard.css';
 
@@ -252,9 +253,15 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     const unreadResult = valueAt(11);
     const insightsResult = valueAt(12);
 
+    const rawAdminJobs = contentOf<AdminJob>(jobsResult);
+    const groupedAdminJobs = (groupRecruitmentJobs(rawAdminJobs) as any[]).map((j: any) => ({
+      ...j,
+      postedDate: j.postedDate || j.createdAt,
+    })) as AdminJob[];
+
     setData({
-      jobs: contentOf<AdminJob>(jobsResult),
-      totalJobsFromAdmin: totalOf(jobsResult, contentOf<AdminJob>(jobsResult).length),
+      jobs: groupedAdminJobs,
+      totalJobsFromAdmin: groupedAdminJobs.length,
       applications: contentOf<ApplicationResponse>(applicationsResult),
       totalApplicationsFromApi: totalOf(
         applicationsResult,

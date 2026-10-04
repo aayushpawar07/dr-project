@@ -334,6 +334,20 @@ public class AdminJobController {
             
             Job saved = jobRepository.save(job);
             logger.info("Job status updated from {} to {} for job: {}", oldStatus, newStatus, id);
+
+            if (saved.getSourceRecruitmentId() != null) {
+                try {
+                    List<Job> siblings = jobRepository.findBySourceRecruitmentId(saved.getSourceRecruitmentId());
+                    for (Job sib : siblings) {
+                        if (!sib.getId().equals(saved.getId())) {
+                            sib.setStatus(newStatus);
+                            jobRepository.save(sib);
+                        }
+                    }
+                } catch (Exception syncEx) {
+                    logger.warn("Failed to sync status to sibling recruitment jobs: {}", syncEx.getMessage());
+                }
+            }
             
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Job status updated successfully");

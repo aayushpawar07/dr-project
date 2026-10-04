@@ -82,7 +82,7 @@ public class JobController {
             @RequestParam(value = "sort", defaultValue = "createdAt,desc") String sort
     ) {
         int safePage = Math.max(page, 0);
-        int safeSize = Math.min(Math.max(size, 1), 200);
+        int safeSize = Math.min(Math.max(size, 1), 2000);
         String[] sortParts = sort.split(",");
         String sortField = isAllowedSortField(sortParts[0]) ? sortParts[0] : "createdAt";
         Sort.Direction direction = sortParts.length > 1 && sortParts[1].equalsIgnoreCase("asc")

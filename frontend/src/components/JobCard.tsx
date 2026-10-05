@@ -331,7 +331,16 @@ export function JobCard({
   const view = job as any;
   const sector = job.sector || 'private';
   const isGovernment = sector === 'government';
-  const displayTitle = useMemo(() => resolveStandardCardTitle(job), [job]);
+  const displayTitle = useMemo(() => {
+    const candidate = String(view.displayTitle || job.title || '').trim();
+    if (candidate && !/\+\s*\d+\s*more\s*posts/i.test(candidate)) {
+      const cleanCandidate = candidate.replace(/\s*-\s*(Northern\s*Railway|AIIMS|ESIC|Hospital|State\s*Cancer|Railway|Medical\s*College).*$/i, '').trim();
+      if (cleanCandidate && cleanCandidate !== 'Various Departments (Multiple Department)') {
+        return cleanCandidate;
+      }
+    }
+    return resolveStandardCardTitle(job);
+  }, [view.displayTitle, job.title, job]);
   const sourceRecruitmentId = view.sourceRecruitmentId;
   const grouped = Boolean(view.recruitmentGrouped && sourceRecruitmentId);
 

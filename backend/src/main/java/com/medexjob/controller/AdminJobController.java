@@ -6,6 +6,7 @@ import com.medexjob.entity.User;
 import com.medexjob.entity.VacancyRecord;
 import com.medexjob.repository.EmployerRepository;
 import com.medexjob.repository.JobRepository;
+import com.medexjob.repository.RecruitmentRepository;
 import com.medexjob.repository.UserRepository;
 import com.medexjob.repository.VacancyRecordRepository;
 import com.medexjob.service.DemoJobShowcaseService;
@@ -63,6 +64,9 @@ public class AdminJobController {
 
     @Autowired
     private DemoJobShowcaseService demoJobShowcaseService;
+
+    @Autowired(required = false)
+    private RecruitmentRepository recruitmentRepository;
 
     /**
      * Get all jobs for admin (including all statuses: DRAFT, PENDING, ACTIVE, CLOSED)
@@ -252,7 +256,7 @@ public class AdminJobController {
             Job saved = jobRepository.save(job);
             logger.info("Job updated successfully: {}", saved.getId());
 
-            // If this job belongs to a multi-department recruitment circular, sync common fields to sibling jobs
+            // If this job belongs to a multi-department recruitment circular, sync common fields to sibling jobs and parent recruitment
             if (saved.getSourceRecruitmentId() != null) {
                 try {
                     List<Job> siblings = jobRepository.findBySourceRecruitmentId(saved.getSourceRecruitmentId());
@@ -269,6 +273,19 @@ public class AdminJobController {
                         if (saved.getContactPhone() != null) sib.setContactPhone(saved.getContactPhone());
                         if (req.status() != null && !req.status().isBlank()) sib.setStatus(saved.getStatus());
                         jobRepository.save(sib);
+                    }
+                    if (recruitmentRepository != null) {
+                        recruitmentRepository.findById(saved.getSourceRecruitmentId()).ifPresent(rec -> {
+                            if (saved.getTitle() != null && !saved.getTitle().isBlank()) {
+                                rec.setTitle(saved.getTitle());
+                            }
+                            if (saved.getLocation() != null) rec.setLocation(saved.getLocation());
+                            if (saved.getLastDate() != null) rec.setApplicationLastDate(saved.getLastDate());
+                            if (saved.getPdfUrl() != null) rec.setOfficialNotificationUrl(saved.getPdfUrl());
+                            if (saved.getOfficialWebsite() != null) rec.setOfficialWebsite(saved.getOfficialWebsite());
+                            if (saved.getApplyLink() != null) rec.setOfficialApplicationUrl(saved.getApplyLink());
+                            recruitmentRepository.save(rec);
+                        });
                     }
                 } catch (Exception syncEx) {
                     logger.warn("Failed to sync sibling recruitment jobs in AdminJobController: {}", syncEx.getMessage());

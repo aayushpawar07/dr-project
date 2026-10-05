@@ -723,9 +723,12 @@ export function JobPostingForm({ onCancel, onSave, initialData, isEditing = fals
             return (
               <div
                 key={s.num}
+                onClick={() => setStep(s.num)}
+                style={{ cursor: 'pointer' }}
                 className={`jpf-step-item ${isActive ? 'is-active' : ''} ${
                   isCompleted ? 'is-completed' : ''
                 }`}
+                title={`Click to go to Step ${s.num}: ${s.label}`}
               >
                 <span className="jpf-step-num">
                   {isCompleted ? '✓' : s.num}
@@ -1125,9 +1128,12 @@ export function JobPostingForm({ onCancel, onSave, initialData, isEditing = fals
                     className="jpf-input"
                     value={formData.title}
                     onChange={(e) => setField('title', e.target.value)}
-                    placeholder="e.g. Senior Resident / Specialist Consultant"
+                    placeholder="e.g. Junior Resident (JR) / Senior Resident (SR) / Faculty"
                   />
                 </div>
+                <p className="text-[11px] text-slate-500 mt-1.5 ml-1">
+                  💡 <strong>Job Card Title:</strong> This title appears on the main Job Card (e.g. Junior Resident (JR), Senior Resident (SR), Faculty, Medical Officer).
+                </p>
               </div>
 
               {/* Field 2: Organization / Hospital * */}
@@ -1318,6 +1324,26 @@ export function JobPostingForm({ onCancel, onSave, initialData, isEditing = fals
           {/* STEP 2: Eligibility & Vacancy Details */}
           {step === 2 && (
             <div className="space-y-4">
+              <div className="p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl flex items-center justify-between gap-3 text-xs text-blue-950 shadow-2xs">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-blue-600 text-white rounded-lg shrink-0">
+                    <Briefcase className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <span className="text-slate-600">Main Job / Notice Title:</span>{' '}
+                    <strong className="text-blue-900">{formData.title || '(Set in Step 1)'}</strong>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="inline-flex items-center gap-1 font-bold text-blue-700 hover:text-blue-900 bg-white border border-blue-200 px-3 py-1.5 rounded-lg shadow-2xs hover:bg-blue-50 transition cursor-pointer shrink-0"
+                  title="Click to jump to Step 1 to edit Post Job Title, Organization, Sector, or Roles"
+                >
+                  <span>Edit Title in Step 1 &rarr;</span>
+                </button>
+              </div>
+
               <div className="jpf-field-row">
                 <div className="jpf-field-card">
                   <div className="jpf-field-header">

@@ -98,24 +98,24 @@ export function resolveStandardCardTitle(input: any): string {
   const departments = unique(items.flatMap((item) => [item.department, item.speciality])).filter(Boolean);
   const postNames = unique(items.map((item) => item._basePostName || basePostName(item))).filter(Boolean);
 
-  const allText = items
-    .map((item) => `${item.title || ''} ${item.displayTitle || ''} ${item.category || ''} ${item._basePostName || ''} ${Array.isArray(item.jobRoles) ? item.jobRoles.join(' ') : (item.jobRoles || '')} ${item.department || ''} ${item.speciality || ''}`)
+  const rawUserTitle = clean(first?.title || first?.displayTitle || '');
+  const isLegacyConcat = /\+\s*\d+\s*more\s*posts/i.test(rawUserTitle);
+
+  // Extract ONLY cadre / designation fields (never clinical department names)
+  const cadreText = items
+    .map((item) => `${item.title || ''} ${item.displayTitle || ''} ${item.category || ''} ${item._basePostName || ''} ${Array.isArray(item.jobRoles) ? item.jobRoles.join(' ') : (item.jobRoles || '')}`)
     .join(' ')
     .toLowerCase();
 
-  // If text has legacy concatenation "+ N more posts", it is definitely Multiple Department
-  if (/\+\s*\d+\s*more\s*posts/i.test(allText)) {
-    return 'Various Departments (Multiple Department)';
-  }
-
-  // Detect individual cadres
-  const hasJR = /\b(junior\s*resident|jr\b|jr\s*resident|junior\s*residency|house\s*job|house\s*physician|house\s*surgeon)\b/i.test(allText);
-  const hasSR = /\b(senior\s*resident|sr\b|sr\s*resident|senior\s*residency)\b/i.test(allText);
-  const hasFaculty = /\b(faculty|professor|associate\s*prof|assistant\s*prof|lecturer|tutor|dean|principal)\b/i.test(allText);
-  const hasMO = /\b(medical\s*officer|gdmo|general\s*duty|smo\b|cmo\b|rmo\b|casualty|duty\s*doctor|fmo|imo|ayush|ayurved|homeopath|unani)\b/i.test(allText);
-  const hasConsultant = /\b(consultant|specialist|super\s*specialist|intensivist|surgeon|physician|cardiolog|neurolog|nephrolog|oncolog|pediatric|radiolog|patholog|anesthes|anaesthes|gynecolog|obstetric|orthopedic|dermatolog|ent|ophthalmolog|psychiatr|dentist|dental)\b/i.test(allText);
-  const hasParamedical = /\b(paramedical|nurse|nursing|technician|pharmacist|lab|physiotherap|radiographer|optometrist|dietician|ecg)\b/i.test(allText);
-  const hasResearch = /\b(research|survey|scientist|project\s*fellow|fellowship)\b/i.test(allText);
+  // Detect individual cadres based strictly on designation / role keywords
+  const hasJR = /\b(junior\s*resident|jr\b|jr\s*resident|junior\s*residency|house\s*job|house\s*physician|house\s*surgeon)\b/i.test(cadreText);
+  const hasSR = /\b(senior\s*resident|sr\b|sr\s*resident|senior\s*residency)\b/i.test(cadreText);
+  const hasFaculty = /\b(faculty|professor|associate\s*prof|assistant\s*prof|lecturer|tutor|dean|principal)\b/i.test(cadreText);
+  const hasMO = /\b(medical\s*officer|gdmo|general\s*duty|smo\b|cmo\b|rmo\b|casualty\s*medical|duty\s*doctor|fmo|imo|ayush|ayurved|homeopath|unani)\b/i.test(cadreText);
+  // Match explicit consultant/specialist posts only (not medical specialties like radiology or pathology)
+  const hasConsultant = /\b(consultant|specialist|super\s*specialist|attending\s*consultant|intensivist)\b/i.test(cadreText);
+  const hasParamedical = /\b(paramedical|nurse|nursing|technician|radiographer|optometrist|dietician|ecg)\b/i.test(cadreText) || (/\b(pharmacist|dispenser)\b/i.test(cadreText) && !/\bpharmacolog/i.test(cadreText));
+  const hasResearch = /\b(research\s*scientist|research\s*fellow|project\s*fellow|research\s*associate|survey\s*officer)\b/i.test(cadreText);
 
   const detectedCadres: string[] = [];
   if (hasJR) detectedCadres.push('Junior Resident (JR)');
@@ -126,28 +126,51 @@ export function resolveStandardCardTitle(input: any): string {
   if (hasParamedical) detectedCadres.push('Paramedical Staff');
   if (hasResearch) detectedCadres.push('Research / Survey');
 
-  const hasMultipleKeywords = /\b(various\s*departments|multiple\s*departments|various\s*disciplines|multiple\s*disciplines|various\s*posts|multiple\s*roles|various\s*specialit)\b/i.test(allText);
-  const isMultiple = items.length > 1 || departments.length > 1 || postNames.length > 1 || detectedCadres.length > 1 || hasMultipleKeywords;
-
-  if (isMultiple) {
-    return 'Various Departments (Multiple Department)';
-  }
-
+  // 1. If exactly 1 cadre detected across the circular (e.g. all 618 posts in Odisha are Junior Resident, or Faculty in Basti):
+  // It is an individual cadre recruitment! Do NOT call it "Various Departments"!
   if (detectedCadres.length === 1) {
+    if (rawUserTitle && !isLegacyConcat && !/various\s*departments/i.test(rawUserTitle)) {
+      const cleanUser = rawUserTitle.replace(/\s*-\s*(Northern\s*Railway|AIIMS|ESIC|Hospital|State\s*Cancer|Railway|Medical\s*College).*$/i, '').trim();
+      if (cleanUser && !/^\d+\s*posts?$/i.test(cleanUser)) {
+        if (/junior\s*resident/i.test(cleanUser)) return 'Junior Resident (JR)';
+        if (/senior\s*resident/i.test(cleanUser)) return 'Senior Resident (SR)';
+        if (/faculty|professor/i.test(cleanUser)) return 'Faculty';
+        if (/medical\s*officer|gdmo/i.test(cleanUser)) return 'Medical Officer (MO / GDMO)';
+        if (/consultant|specialist/i.test(cleanUser)) return 'Consultant / Specialist';
+        return cleanUser;
+      }
+    }
     return detectedCadres[0];
   }
 
-  // Standalone fallback: clean up raw title
-  let cleanTitle = clean(first?.title || first?.displayTitle || '');
-  if (!cleanTitle) return 'Medical Vacancy';
-  // Strip off hospital name suffixes like "- Northern Railway", "- AIIMS Patna", etc.
-  cleanTitle = cleanTitle.replace(/\s*-\s*(Northern\s*Railway|AIIMS|ESIC|Hospital|State\s*Cancer|Railway|Medical\s*College).*$/i, '').trim();
-  // Strip prefixes like "Recruitment of", "Walk-in-Interview for", "Engagement of"
-  cleanTitle = cleanTitle.replace(/^(walk-in-interview\s*for|recruitment\s*of|engagement\s*of|appointment\s*of|applications\s*are\s*invited\s*for)\s+/i, '').trim();
-  // Strip trailing "Recruitment 2026", "on contract basis", etc.
-  cleanTitle = cleanTitle.replace(/\s*(recruitment\s*\d*|on\s*contract\s*basis|contract\s*basis).*$/i, '').trim();
+  // 2. If multiple distinct cadres exist (e.g. MO + Specialist + Paramedical) or legacy concatenation or explicit multiple departments:
+  const allText = items
+    .map((item) => `${item.title || ''} ${item.displayTitle || ''} ${item.category || ''} ${item._basePostName || ''} ${Array.isArray(item.jobRoles) ? item.jobRoles.join(' ') : (item.jobRoles || '')} ${item.department || ''} ${item.speciality || ''}`)
+    .join(' ')
+    .toLowerCase();
+  const hasMultipleCadres = detectedCadres.length > 1;
+  const hasMultipleKeywords = /\b(various\s*departments|multiple\s*departments|various\s*disciplines|multiple\s*disciplines|various\s*posts|multiple\s*roles)\b/i.test(allText);
+  if (hasMultipleCadres || isLegacyConcat || hasMultipleKeywords) {
+    return 'Various Departments (Multiple Department)';
+  }
 
-  return cleanTitle || 'Various Departments (Multiple Department)';
+  // 3. If user provided a clean custom title:
+  if (rawUserTitle && !isLegacyConcat && !/various\s*departments/i.test(rawUserTitle)) {
+    const cleanUser = rawUserTitle.replace(/\s*-\s*(Northern\s*Railway|AIIMS|ESIC|Hospital|State\s*Cancer|Railway|Medical\s*College).*$/i, '').trim();
+    if (cleanUser) return cleanUser;
+  }
+
+  // 4. If single distinct post name:
+  if (postNames.length === 1 && postNames[0]) {
+    return postNames[0];
+  }
+
+  // 5. Multiple departments fallback:
+  if (departments.length > 1 || items.length > 1) {
+    return 'Various Departments (Multiple Department)';
+  }
+
+  return clean(first?.title) || 'Medical Vacancy';
 }
 
 export function groupRecruitmentJobs(jobs: any[], query?: string) {

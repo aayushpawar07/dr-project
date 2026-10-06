@@ -237,6 +237,7 @@ export function SectorAwareJobDetailPage({ onNavigate }: Props) {
           <RecruitmentExplorerView
             recruitment={activeRecruitment}
             applyByDateOverride={job.lastDate}
+            notificationUrl={job.pdfUrl || job.jobDocumentUrl || recruitment?.officialNotificationUrl}
             onNavigate={onNavigate}
             onViewStandardDetail={() => setViewMode('standard')}
             selectedPosition={selectedPosition}

@@ -899,6 +899,7 @@ export function RecruitmentPage() {
       {viewMode === 'explorer' ? (
         <RecruitmentExplorerView
           recruitment={activeRecruitment}
+          notificationUrl={effectiveNotificationUrl}
           selectedPosition={selectedPosition}
           onPositionChange={setSelectedPosition}
           availablePositions={availablePositions}
@@ -926,6 +927,7 @@ export function RecruitmentPage() {
       ) : (
         <RecruitmentExplorerView
           recruitment={activeRecruitment}
+          notificationUrl={effectiveNotificationUrl}
           selectedPosition={selectedPosition}
           onPositionChange={setSelectedPosition}
           availablePositions={availablePositions}
@@ -940,6 +942,7 @@ export function RecruitmentPage() {
 export function RecruitmentExplorerView({
   recruitment,
   applyByDateOverride,
+  notificationUrl,
   onNavigate,
   onViewStandardDetail,
   selectedPosition: externalSelectedPosition,
@@ -949,6 +952,7 @@ export function RecruitmentExplorerView({
 }: {
   recruitment: Recruitment;
   applyByDateOverride?: string;
+  notificationUrl?: string;
   onNavigate?: (page: string, entityId?: string) => void;
   onViewStandardDetail?: () => void;
   selectedPosition?: string;
@@ -960,6 +964,16 @@ export function RecruitmentExplorerView({
   const [internalPosition, setInternalPosition] = useState('All Positions');
   const selectedPosition = externalSelectedPosition ?? internalPosition;
   const onPositionChange = externalOnPositionChange ?? setInternalPosition;
+
+  const effectiveNotificationUrl = useMemo(() => {
+    if (notificationUrl && notificationUrl.trim()) return notificationUrl.trim();
+    const fromVac = recruitment?.vacancies?.find((v: any) => v.pdfUrl || v.jobDocumentUrl);
+    const vacUrl = (fromVac as any)?.pdfUrl || (fromVac as any)?.jobDocumentUrl;
+    if (vacUrl && typeof vacUrl === 'string' && vacUrl.trim().endsWith('.pdf')) {
+      return vacUrl.trim();
+    }
+    return recruitment?.officialNotificationUrl?.trim() || '';
+  }, [notificationUrl, recruitment]);
 
   const [query, setQuery] = useState('');
   const [activePost, setActivePost] = useState('');

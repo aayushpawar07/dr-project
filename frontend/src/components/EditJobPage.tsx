@@ -103,10 +103,41 @@ export function EditJobPage({ onNavigate }: EditJobPageProps) {
     try {
       setSaving(true);
 
+      let effectivePdfUrl = formData.pdfUrl || jobData?.pdfUrl || jobData?.jobDocumentUrl || "";
+      let effectiveImageUrl = formData.jobImageUrl || jobData?.jobImageUrl || "";
+
+      // 1. Upload PDF document first so that updateJob and all siblings receive the fresh document URL
+      if (formData.pdfFile) {
+        try {
+          const docRes = await uploadJobDocument(jobId, formData.pdfFile);
+          if (docRes?.jobDocumentUrl || docRes?.pdfUrl) {
+            effectivePdfUrl = docRes.jobDocumentUrl || docRes.pdfUrl;
+            console.log("Job document uploaded and URL resolved:", effectivePdfUrl);
+          }
+        } catch (uploadError: any) {
+          console.error("Error uploading job document:", uploadError);
+          toast.error("Failed to upload attached PDF document. Saving remaining changes.");
+        }
+      }
+
+      // 2. Upload image if provided
+      if (formData.imageFile) {
+        try {
+          const imgRes = await uploadJobImage(jobId, formData.imageFile);
+          if (imgRes?.jobImageUrl) {
+            effectiveImageUrl = imgRes.jobImageUrl;
+            console.log("Job image uploaded successfully:", effectiveImageUrl);
+          }
+        } catch (uploadError: any) {
+          console.error("Error uploading job image:", uploadError);
+        }
+      }
+
       const payload = {
         ...formData,
-        pdfUrl: formData.pdfUrl || jobData?.pdfUrl || jobData?.jobDocumentUrl || "",
-        jobDocumentUrl: formData.jobDocumentUrl || jobData?.jobDocumentUrl || jobData?.pdfUrl || "",
+        pdfUrl: effectivePdfUrl,
+        jobDocumentUrl: effectivePdfUrl,
+        jobImageUrl: effectiveImageUrl,
         status: formData.status || jobData?.status || "pending",
         featured: formData.featured ?? jobData?.featured ?? false,
         views: jobData?.views || 0,
@@ -115,27 +146,6 @@ export function EditJobPage({ onNavigate }: EditJobPageProps) {
       };
 
       await updateJob(jobId, payload);
-
-      // Upload PDF document if provided
-      if (formData.pdfFile) {
-        try {
-          await uploadJobDocument(jobId, formData.pdfFile);
-          console.log("Job document uploaded successfully");
-        } catch (uploadError: any) {
-          console.error("Error uploading job document:", uploadError);
-        }
-      }
-
-      // Upload image if provided
-      if (formData.imageFile) {
-        try {
-          await uploadJobImage(jobId, formData.imageFile);
-          console.log("Job image uploaded successfully");
-        } catch (uploadError: any) {
-          console.error("Error uploading job image:", uploadError);
-        }
-      }
-
       toast.success("Job updated successfully!");
 
       // Navigate back to appropriate dashboard

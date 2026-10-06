@@ -38,6 +38,7 @@ import {
 import { fetchJob } from '../api/jobs';
 import { RecruitmentViewSwitcher } from './RecruitmentViewSwitcher';
 import { GovernmentJobDetail } from './SectorAwareJobDetailPage';
+import { resolveNotificationPdfUrl, safeOpenExternal } from '../utils/pdfUrlHelper';
 import {
   cleanExtractedName,
   departmentSubtitle,
@@ -775,9 +776,19 @@ export function RecruitmentPage() {
       .finally(() => setLoading(false));
   }, [recruitmentId]);
 
+  const effectiveNotificationUrl = useMemo(() => {
+    const fromJob = (job?.pdfUrl || job?.jobDocumentUrl)?.trim();
+    if (fromJob && fromJob.endsWith('.pdf')) {
+      return fromJob;
+    }
+    const fromRecruitment = recruitment?.officialNotificationUrl?.trim();
+    return fromRecruitment || '';
+  }, [recruitment?.officialNotificationUrl, job?.pdfUrl, job?.jobDocumentUrl]);
+
   const effectiveJob = useMemo(() => {
     if (!recruitment) return null;
     const v0 = recruitment.vacancies?.[0];
+    const resolvedDoc = effectiveNotificationUrl || recruitment.officialNotificationUrl;
     return {
       id: recruitment.id,
       title: recruitment.title,
@@ -793,8 +804,8 @@ export function RecruitmentPage() {
       ageLimit: v0?.ageLimit,
       lastDate: recruitment.applicationLastDate || v0?.lastDate,
       applyLink: recruitment.officialApplicationUrl,
-      jobDocumentUrl: recruitment.officialNotificationUrl,
-      pdfUrl: recruitment.officialNotificationUrl,
+      jobDocumentUrl: resolvedDoc,
+      pdfUrl: resolvedDoc,
       officialWebsite: recruitment.officialWebsite,
       description: recruitment.jobDescription || (job && job.description) || '',
       requirements: recruitment.importantInstructions || (job && job.requirements),
@@ -802,7 +813,7 @@ export function RecruitmentPage() {
       sourceRecruitmentId: recruitment.id,
       sourceRecruitment: recruitment,
     };
-  }, [job, recruitment]);
+  }, [job, recruitment, effectiveNotificationUrl]);
 
   const [selectedPosition, setSelectedPosition] = useState<string>('All Positions');
 
@@ -1248,7 +1259,7 @@ export function RecruitmentExplorerView({
           />
         </div>
 
-        <OfficialSourcesFooter recruitment={recruitment} />
+        <OfficialSourcesFooter recruitment={recruitment} notificationUrl={effectiveNotificationUrl} />
       </div>
     </div>
   );
@@ -1476,7 +1487,7 @@ function parseRecruitmentDate(value: string) {
 }
 
 function openExternal(url?: string) {
-  if (url) window.open(url, '_blank', 'noopener,noreferrer');
+  if (url) safeOpenExternal(url);
 }
 
 function DepartmentScroller({ children }: { children: ReactNode }) {
@@ -1528,8 +1539,9 @@ function DepartmentScroller({ children }: { children: ReactNode }) {
   );
 }
 
-function OfficialSourcesFooter({ recruitment }: { recruitment: Recruitment }) {
-  if (!recruitment.officialWebsite && !recruitment.officialNotificationUrl) return null;
+function OfficialSourcesFooter({ recruitment, notificationUrl }: { recruitment: Recruitment; notificationUrl?: string }) {
+  const effectivePdf = notificationUrl || recruitment.officialNotificationUrl;
+  if (!recruitment.officialWebsite && !effectivePdf) return null;
   return (
     <section className="recruit-card" style={{ padding: '18px', marginTop: 12 }}>
       <h2 className="section-eyebrow">Official Sources</h2>
@@ -1542,8 +1554,8 @@ function OfficialSourcesFooter({ recruitment }: { recruitment: Recruitment }) {
             <Building2 size={15} />Official Website
           </button>
         )}
-        {recruitment.officialNotificationUrl && (
-          <button className="action-btn" onClick={() => openExternal(recruitment.officialNotificationUrl)}>
+        {effectivePdf && (
+          <button className="action-btn" onClick={() => openExternal(resolveNotificationPdfUrl(effectivePdf))}>
             <FileText size={15} />Notification PDF
           </button>
         )}

@@ -47,6 +47,9 @@ public class JobController {
     private final com.medexjob.service.FileUploadService fileUploadService;
     private final com.medexjob.service.PdfHyperlinkService pdfHyperlinkService;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.medexjob.repository.RecruitmentRepository recruitmentRepository;
+
     public JobController(JobRepository jobRepository, EmployerRepository employerRepository, UserRepository userRepository, SubscriptionRepository subscriptionRepository, NotificationService notificationService, JobSearchService jobSearchService, PasswordEncoder passwordEncoder, com.medexjob.service.FileUploadService fileUploadService, com.medexjob.service.PdfHyperlinkService pdfHyperlinkService) {
         this.jobRepository = jobRepository;
         this.employerRepository = employerRepository;
@@ -646,6 +649,21 @@ public class JobController {
                         if (req.status() != null && !req.status().isBlank()) sib.setStatus(saved.getStatus());
                         jobRepository.save(sib);
                     }
+                    if (recruitmentRepository != null) {
+                        recruitmentRepository.findById(saved.getSourceRecruitmentId()).ifPresent(rec -> {
+                            if (saved.getPdfUrl() != null && !saved.getPdfUrl().isBlank()) {
+                                rec.setOfficialNotificationUrl(saved.getPdfUrl());
+                            }
+                            if (saved.getTitle() != null && !saved.getTitle().isBlank()) {
+                                rec.setTitle(saved.getTitle());
+                            }
+                            if (saved.getLocation() != null) rec.setLocation(saved.getLocation());
+                            if (saved.getLastDate() != null) rec.setApplicationLastDate(saved.getLastDate());
+                            if (saved.getOfficialWebsite() != null) rec.setOfficialWebsite(saved.getOfficialWebsite());
+                            if (saved.getApplyLink() != null) rec.setOfficialApplicationUrl(saved.getApplyLink());
+                            recruitmentRepository.save(rec);
+                        });
+                    }
                 } catch (Exception syncEx) {
                     logger.warn("Failed to sync sibling recruitment jobs: {}", syncEx.getMessage());
                 }
@@ -744,6 +762,29 @@ public class JobController {
             job.setJobDocumentUrl(fileUrl);
             job.setPdfUrl(fileUrl);
             jobRepository.save(job);
+
+            // Sync document to parent Recruitment and all sibling jobs if grouped
+            if (job.getSourceRecruitmentId() != null) {
+                try {
+                    List<Job> siblings = jobRepository.findBySourceRecruitmentId(job.getSourceRecruitmentId());
+                    for (Job sib : siblings) {
+                        if (!sib.getId().equals(job.getId())) {
+                            sib.setJobDocumentUrl(fileUrl);
+                            sib.setPdfUrl(fileUrl);
+                            jobRepository.save(sib);
+                        }
+                    }
+                    if (recruitmentRepository != null) {
+                        recruitmentRepository.findById(job.getSourceRecruitmentId()).ifPresent(rec -> {
+                            rec.setOfficialNotificationUrl(fileUrl);
+                            recruitmentRepository.save(rec);
+                            logger.info("Synced uploaded document to recruitment {}: {}", rec.getId(), fileUrl);
+                        });
+                    }
+                } catch (Exception syncEx) {
+                    logger.warn("Failed to sync uploaded document to recruitment siblings: {}", syncEx.getMessage());
+                }
+            }
             
             return ResponseEntity.ok(Map.of(
                 "message", "Document uploaded successfully with MedExJob hyperlink",

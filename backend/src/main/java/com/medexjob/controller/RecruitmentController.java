@@ -75,11 +75,29 @@ public class RecruitmentController {
         m.put("applicationFee", r.getApplicationFee()); m.put("selectionProcess", r.getSelectionProcess());
         m.put("importantInstructions", r.getImportantInstructions());
         m.put("jobDescription", r.getJobDescription());
-        m.put("officialNotificationUrl", r.getOfficialNotificationUrl()); m.put("officialApplicationUrl", r.getOfficialApplicationUrl());
+        m.put("officialNotificationUrl", resolveNotificationUrl(r)); m.put("officialApplicationUrl", r.getOfficialApplicationUrl());
         m.put("officialWebsite", r.getOfficialWebsite()); m.put("officialSourceVerified", r.getOfficialSourceVerified());
         m.put("revisionNumber", r.getRevisionNumber()); m.put("previousVersionId", r.getDuplicateOf());
         m.put("vacancies", r.getVacancies().stream().filter(v -> v.getStatus() == VacancyRecord.VacancyStatus.PUBLISHED).map(this::vacancy).toList());
         return m;
+    }
+
+    private String resolveNotificationUrl(Recruitment r) {
+        String currentUrl = r.getOfficialNotificationUrl();
+        List<Job> childJobs = jobRepository.findBySourceRecruitmentId(r.getId());
+        for (Job j : childJobs) {
+            String jPdf = j.getPdfUrl();
+            if (hasText(jPdf)) {
+                if (!hasText(currentUrl) || !currentUrl.equals(jPdf)) {
+                    r.setOfficialNotificationUrl(jPdf);
+                    try {
+                        repository.save(r);
+                    } catch (Exception ignored) {}
+                    return jPdf;
+                }
+            }
+        }
+        return currentUrl;
     }
 
     private Map<String, Object> vacancy(VacancyRecord v) {
